@@ -39,12 +39,18 @@ Profile:
 
 - more technical or more detail-oriented than sale-day volunteers
 - works after the sale is finished
+- operational role rather than a named software account
 
 Primary goals:
 
 - generate seller sheets
 - mark missing items when discovered
 - regenerate final sheets
+
+Access model in V1:
+
+- `missing` changes require the shared admin password
+- this is a lightweight misuse-prevention control, not a full user/role system
 
 ### Payout Operator
 
@@ -182,6 +188,7 @@ Actor:
 Description:
 
 - Optionally print a receipt in the rare reimbursement case.
+- The operator fills one free-text receipt field only when the customer asks for a reimbursement receipt.
 
 Expected outcome:
 
@@ -210,6 +217,7 @@ Actor:
 Description:
 
 - Change an item from `in_stock` to `missing` when it cannot be found physically during post-sale gathering.
+- This action requires the shared admin password in V1.
 
 Expected outcome:
 

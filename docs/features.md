@@ -28,7 +28,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Add selected items to a cart
 - Compute the bill total automatically
 - Save a sale as paid
-- Optionally print a receipt
+- Optionally print a receipt from one receipt-details field
 
 ### Sale-Day UX Constraints
 
@@ -78,6 +78,16 @@ V1 does not use cart-level reservation.
 - the server must re-check all cart items at save time inside the sale transaction
 - if any cart item is no longer available, the save must fail clearly rather than partially succeed
 
+### Receipt UX Rule
+
+V1 receipt handling is intentionally simple:
+
+- the checkout form shows one optional receipt-details text field
+- the field is empty by default
+- if the operator leaves it empty, no receipt is requested or printed
+- if the operator fills it, the entered text is used for the printed receipt in reimbursement cases
+- V1 does not track a separate receipt-requested flag or receipt-printed flag
+
 ### Intake Modes
 
 #### Email Preregistration
@@ -106,7 +116,7 @@ Produce per-seller outputs for physical item gathering and seller payout after t
 - Group items by seller
 - Compute payable items and returned items per seller
 - Generate one printable seller sheet per seller
-- Allow marking an unsold item as missing
+- Allow marking an unsold item as missing through an admin-only action
 - Regenerate the seller sheet after a missing-item correction
 
 ### Seller Sheet Content
@@ -161,6 +171,12 @@ The following stay outside the system in V1:
 3. The sheet is regenerated.
 4. Another operator uses the final sheet to prepare the seller payout check.
 5. The check, final sheet, and returned items are physically grouped for seller pickup.
+
+In V1, `missing` is an operationally restricted action:
+
+- only an admin may mark an item as `missing`
+- in V1, "admin" means someone who knows the shared admin password
+- this control exists to reduce misuse by other operators, not to provide full identity-based security
 
 ### Excluded Items
 

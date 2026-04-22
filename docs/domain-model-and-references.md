@@ -42,10 +42,7 @@ Suggested fields:
 - sale id
 - timestamp
 - total amount
-- optional receipt requested flag
-- optional receipt name
-- optional receipt organization
-- optional receipt printed flag
+- optional `receipt_details` text
 
 ### SaleLine
 
@@ -94,6 +91,24 @@ Current business rule:
 - sale price = seller price + 20 percent
 
 V1 seller settlement uses seller price only.
+
+## Receipt Model
+
+V1 uses one optional receipt text field:
+
+- `receipt_details`
+
+Meaning:
+
+- if `receipt_details` is null or empty, no receipt was requested
+- if `receipt_details` is filled, a receipt was requested for later reimbursement handling
+
+The field may contain the customer name, organization, address, or any other text the operator needs to print on the receipt.
+
+V1 does not track a separate:
+
+- receipt requested flag
+- receipt printed flag
 
 ## Reference Scheme
 

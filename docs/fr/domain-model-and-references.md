@@ -42,10 +42,7 @@ Champs suggérés :
 - sale id
 - timestamp
 - total amount
-- indicateur optionnel de reçu demandé
-- nom optionnel pour le reçu
-- organisation optionnelle pour le reçu
-- indicateur optionnel d'impression du reçu
+- texte optionnel `receipt_details`
 
 ### SaleLine
 
@@ -83,6 +80,24 @@ Règle métier actuelle :
 - sale price = seller price + 20 pour cent
 
 Le règlement vendeur en V1 utilise uniquement `seller price`.
+
+## Modèle de reçu
+
+La V1 utilise un seul champ texte optionnel :
+
+- `receipt_details`
+
+Signification :
+
+- si `receipt_details` est nul ou vide, aucun reçu n'a été demandé
+- si `receipt_details` est renseigné, un reçu a été demandé pour un besoin de remboursement ultérieur
+
+Ce champ peut contenir le nom du client, l'organisation, l'adresse ou tout autre texte que l'opérateur doit imprimer sur le reçu.
+
+La V1 ne suit pas séparément :
+
+- un indicateur de demande de reçu
+- un indicateur d'impression du reçu
 
 ## Schéma de référence
 

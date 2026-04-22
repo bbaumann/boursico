@@ -95,14 +95,13 @@ Represents one completed checkout.
 - `event_id`
 - `sold_at`
 - `total_amount`
-- `receipt_requested`
-- `receipt_name`
-- `receipt_organization`
+- `receipt_details`
 
 ### Notes
 
 - There is no `is_paid` field in V1; persisting the sale means the checkout is complete.
-- Receipt fields are optional and only used in the rare reimbursement case.
+- `receipt_details` is an optional free-text field used only in the rare reimbursement case.
+- If `receipt_details` is null, no receipt was requested in V1.
 
 ## `sale_line`
 
@@ -190,9 +189,7 @@ Represents one sold item inside one sale.
 - `event_id`: required
 - `sold_at`: required
 - `total_amount`: required
-- `receipt_requested`: required, default `false`
-- `receipt_name`: optional
-- `receipt_organization`: optional
+- `receipt_details`: optional
 
 ## `sale_line`
 

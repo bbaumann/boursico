@@ -128,8 +128,11 @@ Ce fichier rassemble les principales décisions du projet dans un format ADR lé
   - les reçus concernent principalement les cas de remboursement
 - Décision :
   - l'impression de reçu est optionnelle et secondaire dans le flux de passage en caisse
+  - utiliser un seul champ texte optionnel `receipt_details`, vide par défaut
+  - si `receipt_details` est renseigné, cela signifie qu'un reçu a été demandé
 - Conséquence :
   - la logique de reçu ne doit pas compliquer l'action principale d'enregistrement d'une vente
+  - la V1 n'a pas besoin de champs séparés `receipt_requested` ou `receipt_printed`
 
 ## D-012 La logique de frais vendeur reste hors du système en V1
 
@@ -199,3 +202,18 @@ Ce fichier rassemble les principales décisions du projet dans un format ADR lé
 - Conséquence :
   - les références se trient de façon prévisible
   - les items ajoutés tardivement restent simples à attribuer
+
+## D-019 Les actions sensibles de rapprochement utilisent un mot de passe admin partagé
+
+- Statut : acceptée
+- Facteurs clés :
+  - marquer un item comme `missing` modifie le paiement vendeur et ne doit pas être accessible à tous les opérateurs
+  - la V1 n'a pas besoin d'un système complet de comptes utilisateurs ou d'identité
+  - le vrai objectif est d'éviter les abus ou erreurs opérationnelles, pas d'apporter une sécurité forte
+- Décision :
+  - protéger les changements vers `missing` par un mot de passe admin partagé
+  - traiter "admin" comme une capacité opérationnelle en V1, pas comme une identité logicielle nominative
+- Conséquence :
+  - les opérateurs non admin ne peuvent pas effectuer la transition `in_stock -> missing` dans le workflow normal
+  - la V1 évite d'introduire un système plus large d'authentification et d'autorisation
+  - ce contrôle est volontairement léger et ne doit pas être présenté comme une vraie sécurité ni comme de l'auditabilité

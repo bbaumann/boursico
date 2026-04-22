@@ -24,7 +24,7 @@ The schemas enforce:
 - primary keys
 - foreign keys
 - uniqueness constraints
-- simple status and boolean checks
+- simple status checks
 - basic price sanity checks
 
 They intentionally do not enforce every business invariant in the database.
@@ -71,13 +71,11 @@ If later you want strong substring/fuzzy search, likely follow-up options are:
 
 - uses `INTEGER PRIMARY KEY` for row ids
 - uses `NUMERIC` affinity for prices
-- uses integer `0/1` plus `CHECK` for booleans
 - suitable only as the central server database, not as a multi-writer shared-file client architecture
 
 ### PostgreSQL
 
 - uses `BIGINT GENERATED ALWAYS AS IDENTITY`
-- uses `BOOLEAN`
 - uses `NUMERIC(10,2)` for prices
 - gives a cleaner path for future stronger constraints and richer indexing
 

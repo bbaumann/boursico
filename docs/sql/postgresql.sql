@@ -59,18 +59,14 @@ CREATE TABLE sale (
     event_id BIGINT NOT NULL,
     sold_at TIMESTAMPTZ NOT NULL,
     total_amount NUMERIC(10,2) NOT NULL,
-    receipt_requested BOOLEAN NOT NULL DEFAULT FALSE,
-    receipt_name TEXT,
-    receipt_organization TEXT,
+    receipt_details TEXT,
     CONSTRAINT fk_sale_event
         FOREIGN KEY (event_id)
         REFERENCES event(id)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
     CONSTRAINT ck_sale_total_amount
-        CHECK (total_amount >= 0),
-    CONSTRAINT ck_sale_receipt_name_required
-        CHECK (receipt_requested = FALSE OR receipt_name IS NOT NULL)
+        CHECK (total_amount >= 0)
 );
 
 CREATE TABLE sale_line (

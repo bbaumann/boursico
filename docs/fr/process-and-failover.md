@@ -31,7 +31,7 @@ Avant le premier passage en caisse :
 
 1. L'outil de rapprochement génère une fiche vendeur pour chaque vendeur.
 2. Un opérateur regroupe physiquement tous les items retournés du stock à l'aide de la fiche.
-3. Si un item retourné ne peut pas être retrouvé, l'administrateur le marque `missing`.
+3. Si un item retourné ne peut pas être retrouvé, l'administrateur le marque `missing` après avoir saisi le mot de passe admin partagé.
 4. La fiche vendeur est régénérée.
 5. Un autre opérateur rédige le chèque en fonction du montant final à payer.
 6. Le chèque, la fiche finale vendeur et les items retournés sont regroupés physiquement pour le retrait vendeur.
@@ -48,7 +48,7 @@ Si aucun item n'est manquant :
 
 Si un item listé comme retourné ne peut pas être retrouvé physiquement :
 
-1. L'administrateur met à jour le statut de l'item de `available` vers `missing`.
+1. L'administrateur saisit le mot de passe admin partagé puis met à jour le statut de l'item de `available` vers `missing`.
 2. La fiche vendeur est régénérée.
 3. L'item passe de la liste retournée à la liste payable et est marqué `MISSING`.
 
@@ -112,11 +112,13 @@ Sur le plan opérationnel, tout ce qui n'est pas présent dans le stock physique
 - export des listes de ventes et d'items si c'est pratique
 - consignes écrites de bascule pour les opérateurs
 
-## Exigences d'auditabilité
+## Contrôle des actions sensibles
 
 - chaque `sale` doit être persistée immédiatement
 - la sélection d'un item dans un panier ne doit pas créer d'état de réservation caché
 - l'enregistrement d'une `sale` doit revérifier la disponibilité courante des items avant persistance
 - la disponibilité d'un `item` doit empêcher une double vente après confirmation
 - les fiches vendeur doivent toujours pouvoir être reproduites à partir des données courantes de la base
-- les modifications d'item manquant doivent pouvoir être attribuées à un utilisateur ou à une action administrateur lorsque c'est possible
+- marquer un item `missing` doit exiger le mot de passe admin partagé
+- la V1 n'implémente ni identité utilisateur nominative ni vrai modèle d'autorisation
+- le mot de passe sert à limiter les abus d'opérateurs non admin, pas à fournir une sécurité forte

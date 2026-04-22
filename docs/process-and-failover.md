@@ -33,7 +33,7 @@ Before the first checkout is processed:
 
 1. Reconciliation tool generates a seller sheet for each seller.
 2. An operator physically gathers all returned items from the stock using the sheet.
-3. If a returned item cannot be found, admin marks it as `missing`.
+3. If a returned item cannot be found, admin marks it as `missing` after entering the shared admin password.
 4. Seller sheet is regenerated.
 5. Another operator writes the check based on the final amount to pay.
 6. Check, final seller sheet, and returned items are physically grouped for seller pickup.
@@ -59,7 +59,7 @@ If no item is missing:
 
 If an item listed as returned cannot be found physically:
 
-1. Admin updates the item status from `in_stock` to `missing`.
+1. Admin enters the shared admin password and updates the item status from `in_stock` to `missing`.
 2. The seller sheet is regenerated.
 3. The item moves from the returned list to the payable list and is marked `MISSING`.
 
@@ -123,11 +123,13 @@ Operationally, anything not present in physical stock and not returned can be tr
 - exportable sales and item lists if practical
 - written operator fallback instructions
 
-## Auditability Requirements
+## Sensitive Action Control
 
 - every sale must be persisted immediately
 - item selection in a cart must not create a hidden reservation state
 - sale save must re-check current item availability before persisting
 - item availability must prevent double sale after confirmation
 - seller sheets must always be reproducible from current database facts
-- missing-item changes must be attributable to a user or admin action when possible
+- marking an item as `missing` must require the shared admin password
+- V1 does not implement per-user identity or a full authorization model
+- the password gate exists to reduce misuse by non-admin operators, not to provide strong security

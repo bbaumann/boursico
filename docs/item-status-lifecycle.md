@@ -73,7 +73,7 @@ No reservation status exists in V1:
 
 ### After The Sale
 
-- `in_stock -> missing` during post-sale reconciliation
+- `in_stock -> missing` during post-sale reconciliation by an admin
 
 ## Terminal States In V1
 
@@ -119,7 +119,14 @@ During the sale:
 After the sale:
 
 - move `in_stock` items to `missing` when a physically expected return cannot be found
+- must enter the shared admin password before confirming that action
 - cannot reopen or rewrite item master data as part of normal reconciliation
+
+V1 does not include:
+
+- per-user identity
+- per-user authorization
+- audit-trail requirements for `missing` changes
 
 ## Cross-References
 

@@ -95,14 +95,13 @@ Représente un passage en caisse terminé.
 - `event_id`
 - `sold_at`
 - `total_amount`
-- `receipt_requested`
-- `receipt_name`
-- `receipt_organization`
+- `receipt_details`
 
 ### Notes
 
 - Il n'y a pas de champ `is_paid` en V1 ; persister la `sale` signifie que l'encaissement est terminé.
-- Les champs de reçu sont optionnels et utilisés uniquement dans le cas rare d'un remboursement.
+- `receipt_details` est un champ texte libre optionnel utilisé uniquement dans le cas rare d'un remboursement.
+- Si `receipt_details` est nul, aucun reçu n'a été demandé en V1.
 
 ## `sale_line`
 
@@ -190,9 +189,7 @@ Représente un item vendu à l'intérieur d'une `sale`.
 - `event_id` : obligatoire
 - `sold_at` : obligatoire
 - `total_amount` : obligatoire
-- `receipt_requested` : obligatoire, par défaut `false`
-- `receipt_name` : optionnel
-- `receipt_organization` : optionnel
+- `receipt_details` : optionnel
 
 ## `sale_line`
 

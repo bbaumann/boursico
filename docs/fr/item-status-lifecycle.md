@@ -73,7 +73,7 @@ Il n'existe pas de statut de réservation en V1 :
 
 ### Après la vente
 
-- `in_stock -> missing` pendant le rapprochement post-vente
+- `in_stock -> missing` pendant le rapprochement post-vente par un admin
 
 ## Statuts terminaux en V1
 
@@ -119,7 +119,14 @@ Pendant la vente :
 Après la vente :
 
 - faire passer les items `in_stock` à `missing` lorsqu'un retour physique attendu est introuvable
+- doit saisir le mot de passe admin partagé avant de confirmer cette action
 - ne peut pas rouvrir ni réécrire les données métier des items dans le workflow normal de rapprochement
+
+La V1 n'inclut pas :
+
+- d'identité utilisateur par personne
+- d'autorisation par utilisateur
+- d'exigence de piste d'audit pour les changements `missing`
 
 ## Références croisées
 

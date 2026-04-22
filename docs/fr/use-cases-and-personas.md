@@ -39,12 +39,18 @@ Profil :
 
 - plus technique ou plus attentif au détail que les bénévoles du jour de vente
 - travaille une fois la vente terminée
+- rôle opérationnel plutôt qu'identité logicielle nominative
 
 Objectifs principaux :
 
 - générer les fiches vendeur
 - marquer les items manquants lorsqu'ils sont identifiés
 - régénérer les fiches finales
+
+Modèle d'accès en V1 :
+
+- les changements vers `missing` exigent le mot de passe admin partagé
+- il s'agit d'un contrôle léger de prévention des abus, pas d'un vrai système utilisateurs/rôles
 
 ### Opérateur de paiement
 
@@ -138,6 +144,7 @@ Acteur :
 Description :
 
 - Imprimer un reçu en option dans le cas rare d'un remboursement.
+- L'opérateur ne remplit un champ texte libre de reçu que lorsque le client demande un justificatif pour remboursement.
 
 Résultat attendu :
 
@@ -166,6 +173,7 @@ Acteur :
 Description :
 
 - Faire passer un `item` de `available` à `missing` lorsqu'il ne peut pas être retrouvé physiquement pendant le regroupement post-vente.
+- Cette action exige le mot de passe admin partagé en V1.
 
 Résultat attendu :
 

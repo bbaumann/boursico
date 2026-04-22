@@ -130,8 +130,11 @@ This file captures the main project decisions in a lightweight ADR format.
   - receipts are primarily for reimbursement cases
 - Decision:
   - receipt printing is optional and secondary in the checkout flow
+  - use one optional `receipt_details` text field, empty by default
+  - if `receipt_details` is filled, that means a receipt was requested
 - Consequence:
   - receipt logic should not complicate the main save-sale action
+  - V1 does not need separate `receipt_requested` or `receipt_printed` fields
 
 ## D-012 Seller Fee Logic Stays Outside The System In V1
 
@@ -213,3 +216,18 @@ This file captures the main project decisions in a lightweight ADR format.
   - support preregistration entered by operators, with later physical confirmation and a simple `Check all` helper for delivery review
 - Consequence:
   - V1 supports both email preregistration and in-person registration without adding a seller portal
+
+## D-019 Sensitive Reconciliation Actions Use A Shared Admin Password
+
+- Status: accepted
+- Key drivers:
+  - marking an item as `missing` changes seller payout and should not be available to every operator
+  - V1 does not need a full user-account or identity system
+  - the real goal is misuse prevention in operations, not strong security
+- Decision:
+  - protect `missing` changes with a shared admin password
+  - treat "admin" as an operational capability in V1, not as a named software identity
+- Consequence:
+  - non-admin operators cannot perform the `in_stock -> missing` transition in the normal workflow
+  - V1 avoids a broader authentication and authorization system
+  - the control is intentionally lightweight and should not be described as full security or auditability

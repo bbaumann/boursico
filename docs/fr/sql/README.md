@@ -24,7 +24,7 @@ Les schémas appliquent :
 - clés primaires
 - clés étrangères
 - contraintes d'unicité
-- checks simples sur les statuts et les booléens
+- checks simples sur les statuts
 - checks élémentaires de cohérence des prix
 
 Ils n'appliquent volontairement pas tous les invariants métier directement dans la base.
@@ -71,13 +71,11 @@ Si, plus tard, une recherche forte par sous-chaîne ou fuzzy devient nécessaire
 
 - utilise `INTEGER PRIMARY KEY` pour les row ids
 - utilise l'affinité `NUMERIC` pour les prix
-- utilise des entiers `0/1` plus `CHECK` pour les booléens
 - convient uniquement comme base du serveur central, pas comme architecture client à fichier partagé multi-writer
 
 ### PostgreSQL
 
 - utilise `BIGINT GENERATED ALWAYS AS IDENTITY`
-- utilise `BOOLEAN`
 - utilise `NUMERIC(10,2)` pour les prix
 - offre une trajectoire plus propre pour des contraintes plus fortes et une indexation plus riche dans le futur
 

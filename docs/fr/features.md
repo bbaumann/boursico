@@ -25,7 +25,7 @@ Permettre aux organisateurs d'enregistrer les jouets avant l'événement et aux 
 - ajouter les items sélectionnés à un panier
 - calculer automatiquement le total du ticket
 - enregistrer une `sale` comme payée
-- imprimer un reçu en option
+- imprimer un reçu en option à partir d'un seul champ de détails
 
 ### Contraintes UX du jour de vente
 
@@ -75,6 +75,16 @@ La V1 n'utilise pas de réservation au niveau du panier.
 - le serveur doit revérifier tous les items du panier au moment de l'enregistrement dans la transaction de vente
 - si un item du panier n'est plus disponible, l'enregistrement doit échouer clairement plutôt que réussir partiellement
 
+### Règle UX pour le reçu
+
+La gestion du reçu en V1 reste volontairement simple :
+
+- le formulaire de caisse affiche un seul champ texte optionnel `receipt_details`
+- ce champ est vide par défaut
+- si l'opérateur le laisse vide, aucun reçu n'est demandé ni imprimé
+- si l'opérateur le renseigne, le texte saisi est utilisé pour le reçu imprimé dans les cas de remboursement
+- la V1 ne suit pas séparément un indicateur de demande de reçu ni un indicateur d'impression
+
 ## Rapprochement post-vente
 
 ### Objectif
@@ -87,7 +97,7 @@ Produire, après la fin de la vente, les documents par vendeur nécessaires au r
 - regrouper les items par `seller`
 - calculer les items payables et retournés par vendeur
 - générer une fiche vendeur imprimable par vendeur
-- permettre de marquer un item invendu comme `missing`
+- permettre de marquer un item invendu comme `missing` via une action réservée à l'admin
 - régénérer la fiche vendeur après correction d'un item manquant
 
 ### Contenu de la fiche vendeur
@@ -142,6 +152,12 @@ Les éléments suivants restent hors système en V1 :
 3. La fiche est régénérée.
 4. Un autre opérateur utilise la fiche finale pour préparer le chèque vendeur.
 5. Le chèque, la fiche finale et les items retournés sont regroupés physiquement pour le retrait vendeur.
+
+En V1, `missing` est une action restreinte sur le plan opérationnel :
+
+- seul un admin peut marquer un item `missing`
+- en V1, "admin" désigne une personne qui connaît le mot de passe admin partagé
+- ce contrôle sert à réduire les abus ou erreurs d'autres opérateurs, pas à fournir une vraie sécurité basée sur l'identité
 
 ## Non-objectifs de la V1
 
