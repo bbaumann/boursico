@@ -1,0 +1,193 @@
+# Domain Model And References
+
+## Core Domain Model
+
+The project uses a small item-centric operational model with seller-aware reconciliation.
+
+## Entities
+
+### Seller
+
+Represents the person or organization that brings toys for sale.
+
+Suggested fields:
+
+- seller id
+- first name
+- last name
+- seller code
+- contact information as needed
+
+### Item
+
+Represents one physical toy.
+
+Suggested fields:
+
+- item id
+- seller id
+- reference
+- optional barcode value if later needed
+- title
+- seller price
+- sale price
+- status
+
+### Sale
+
+Represents one customer checkout event.
+
+Suggested fields:
+
+- sale id
+- timestamp
+- total amount
+- optional receipt requested flag
+- optional receipt name
+- optional receipt organization
+- optional receipt printed flag
+
+### SaleLine
+
+Represents one sold item inside a sale.
+
+Suggested fields:
+
+- sale line id
+- sale id
+- item id
+- sold price at time of sale
+
+## Item Status Model
+
+V1 uses one simple status field:
+
+- `registered`
+- `in_stock`
+- `not_provided`
+- `sold`
+- `missing`
+
+Derived meanings:
+
+- payable items = `sold` + `missing`
+- returned items = `in_stock`
+- preregistered but excluded from sale/reconciliation = `registered` + `not_provided`
+
+Lifecycle meaning:
+
+- `registered`: preregistered in the system but not yet physically handed over
+- `in_stock`: physically present in association stock and eligible for sale or return
+- `not_provided`: preregistered but never actually handed over physically
+- `sold`: sold during the event
+- `missing`: expected to be returned after the event, but not found physically
+
+## Price Model
+
+Each item stores two prices:
+
+- seller price: the amount payable to the seller if the item is payable
+- sale price: the amount charged to the customer
+
+Current business rule:
+
+- sale price = seller price + 20 percent
+
+V1 seller settlement uses seller price only.
+
+## Reference Scheme
+
+## Final Operator-Facing Format
+
+References use this format:
+
+- `SELLERCODE-ITEMNO`
+
+Example:
+
+- `BK-014`
+
+## Seller Code
+
+Seller codes are two-letter codes assigned once per seller for the event.
+
+### Safe Alphabet
+
+Use uppercase letters excluding:
+
+- `I`
+- `O`
+- `Q`
+- `V`
+
+Safe alphabet:
+
+- `A B C D E F G H J K L M N P R S T U W X Y Z`
+
+This gives 22 letters and 484 possible two-letter seller codes.
+
+### Seller Code Assignment Order
+
+Assign seller codes in a spread order by first letter first.
+
+Example prefix sequence:
+
+- `AA`
+- `BA`
+- `CA`
+- `DA`
+- ...
+- `ZA`
+- `AB`
+- `BB`
+- `CB`
+
+This is done to spread sellers across first letters for post-sale physical sorting.
+
+## Item Number Within Seller
+
+Each seller gets a fixed-width per-seller sequence:
+
+- `001`
+- `002`
+- `003`
+
+Later-added items simply continue the sequence.
+
+Example:
+
+- `BK-001`
+- `BK-002`
+- `BK-003`
+
+## Why This Reference Scheme Was Chosen
+
+- all items from a seller sort together naturally
+- post-sale triage becomes easier
+- no need for old reserved global-number gaps
+- late-added items are trivial to assign
+- references remain readable and hand-friendly
+- references do not depend on seller names or hash logic
+
+## Sheet Semantics Derived From The Model
+
+### Payable List
+
+Contains:
+
+- items with status `sold`
+- items with status `missing`
+
+Missing items are shown in the payable list with a visible `MISSING` marker.
+
+### Returned List
+
+Contains:
+
+- items with status `in_stock`
+
+### Final Amount To Pay
+
+Computed as:
+
+- sum of seller prices for all items in the payable list

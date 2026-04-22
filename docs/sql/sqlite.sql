@@ -1,0 +1,109 @@
+PRAGMA foreign_keys = ON;
+
+BEGIN;
+
+CREATE TABLE event (
+    id INTEGER PRIMARY KEY,
+    code TEXT NOT NULL,
+    name TEXT NOT NULL,
+    CONSTRAINT uq_event_code UNIQUE (code)
+);
+
+CREATE TABLE seller (
+    id INTEGER PRIMARY KEY,
+    event_id INTEGER NOT NULL,
+    seller_code TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    notes TEXT,
+    CONSTRAINT fk_seller_event
+        FOREIGN KEY (event_id)
+        REFERENCES event(id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT uq_seller_event_code UNIQUE (event_id, seller_code)
+);
+
+CREATE TABLE item (
+    id INTEGER PRIMARY KEY,
+    event_id INTEGER NOT NULL,
+    seller_id INTEGER NOT NULL,
+    reference TEXT NOT NULL,
+    item_number INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    seller_price NUMERIC NOT NULL,
+    sale_price NUMERIC NOT NULL,
+    status TEXT NOT NULL,
+    CONSTRAINT fk_item_event
+        FOREIGN KEY (event_id)
+        REFERENCES event(id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_item_seller
+        FOREIGN KEY (seller_id)
+        REFERENCES seller(id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT ck_item_status
+        CHECK (status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')),
+    CONSTRAINT ck_item_seller_price
+        CHECK (seller_price >= 0),
+    CONSTRAINT ck_item_sale_price
+        CHECK (sale_price >= 0),
+    CONSTRAINT uq_item_event_reference UNIQUE (event_id, reference),
+    CONSTRAINT uq_item_seller_number UNIQUE (seller_id, item_number)
+);
+
+CREATE TABLE sale (
+    id INTEGER PRIMARY KEY,
+    event_id INTEGER NOT NULL,
+    sold_at TEXT NOT NULL,
+    total_amount NUMERIC NOT NULL,
+    receipt_requested INTEGER NOT NULL DEFAULT 0,
+    receipt_name TEXT,
+    receipt_organization TEXT,
+    CONSTRAINT fk_sale_event
+        FOREIGN KEY (event_id)
+        REFERENCES event(id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT ck_sale_total_amount
+        CHECK (total_amount >= 0),
+    CONSTRAINT ck_sale_receipt_requested
+        CHECK (receipt_requested IN (0, 1)),
+    CONSTRAINT ck_sale_receipt_name_required
+        CHECK (receipt_requested = 0 OR receipt_name IS NOT NULL)
+);
+
+CREATE TABLE sale_line (
+    id INTEGER PRIMARY KEY,
+    sale_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    seller_price_at_sale NUMERIC NOT NULL,
+    sale_price_at_sale NUMERIC NOT NULL,
+    CONSTRAINT fk_sale_line_sale
+        FOREIGN KEY (sale_id)
+        REFERENCES sale(id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_sale_line_item
+        FOREIGN KEY (item_id)
+        REFERENCES item(id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT ck_sale_line_seller_price
+        CHECK (seller_price_at_sale >= 0),
+    CONSTRAINT ck_sale_line_sale_price
+        CHECK (sale_price_at_sale >= 0),
+    CONSTRAINT uq_sale_line_item UNIQUE (item_id)
+);
+
+CREATE INDEX idx_item_title ON item(title);
+CREATE INDEX idx_item_seller_id ON item(seller_id);
+CREATE INDEX idx_item_status ON item(status);
+CREATE INDEX idx_sale_event_sold_at ON sale(event_id, sold_at);
+CREATE INDEX idx_sale_line_sale_id ON sale_line(sale_id);
+
+COMMIT;
