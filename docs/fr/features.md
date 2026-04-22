@@ -35,6 +35,24 @@ Permettre aux organisateurs d'enregistrer les jouets avant l'événement et aux 
 - la recherche doit accepter une saisie partielle de la référence avec des suggestions rapides
 - l'opérateur doit sélectionner explicitement l'item dans la liste proposée avant qu'il soit ajouté au panier
 
+### Gel des données item à l'ouverture des ventes
+
+Une fois le passage en caisse ouvert pour l'événement, les données métier de l'item deviennent en lecture seule.
+
+Les champs suivants ne doivent plus être modifiables en fonctionnement normal :
+
+- `reference`
+- `item_number`
+- `seller_id`
+- `title`
+- `seller_price`
+- `sale_price`
+
+Après l'ouverture des ventes, seuls les changements de statut pilotés par le workflow restent autorisés en V1 :
+
+- `in_stock -> sold` lors de l'enregistrement d'une `sale`
+- `in_stock -> missing` pendant le rapprochement post-vente
+
 ### Flux de passage en caisse attendu
 
 1. L'opérateur saisit une partie ou la totalité de la référence du jouet.
@@ -43,7 +61,19 @@ Permettre aux organisateurs d'enregistrer les jouets avant l'événement et aux 
 4. L'item est ajouté au panier en cours.
 5. L'opérateur répète l'opération jusqu'à ce que le client ait terminé.
 6. L'opérateur enregistre la `sale`.
-7. L'opérateur imprime éventuellement un reçu dans les rares cas de remboursement.
+7. Le serveur revalide que tous les items du panier sont encore `in_stock` au moment de l'enregistrement.
+8. Si la validation réussit, la `sale` est persistée et les items deviennent `sold`.
+9. Si un item du panier n'est plus `in_stock`, l'enregistrement est rejeté, l'item en conflit est mis en évidence, et l'opérateur doit le retirer avant de recommencer.
+10. L'opérateur imprime éventuellement un reçu dans les rares cas de remboursement.
+
+### Règle de passage en caisse concurrent
+
+La V1 n'utilise pas de réservation au niveau du panier.
+
+- ajouter un item au panier ne le réserve pas
+- un item reste `in_stock` jusqu'à ce qu'une `sale` soit enregistrée avec succès
+- le serveur doit revérifier tous les items du panier au moment de l'enregistrement dans la transaction de vente
+- si un item du panier n'est plus disponible, l'enregistrement doit échouer clairement plutôt que réussir partiellement
 
 ## Rapprochement post-vente
 

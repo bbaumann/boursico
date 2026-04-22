@@ -38,6 +38,24 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Search must support partial reference entry with fast suggestions
 - The operator must select the item explicitly from the matching list before it is added to the cart
 
+### Item Data Freeze At Sale Start
+
+Once checkout opens for the event, item master data becomes read-only.
+
+The following fields must no longer be editable in normal operations:
+
+- `reference`
+- `item_number`
+- `seller_id`
+- `title`
+- `seller_price`
+- `sale_price`
+
+After sale start, only workflow-driven status changes remain allowed in V1:
+
+- `in_stock -> sold` when saving a sale
+- `in_stock -> missing` during post-sale reconciliation
+
 ### Expected Checkout Flow
 
 1. Operator types part or all of the toy reference.
@@ -46,7 +64,19 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 4. Item is added to the current cart.
 5. Operator repeats until the customer is done.
 6. Operator saves the sale.
-7. Operator optionally prints a receipt in rare reimbursement cases.
+7. The server re-validates that every cart item is still `in_stock` at save time.
+8. If validation succeeds, the sale is persisted and the items become `sold`.
+9. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted, and the operator must remove it before retrying.
+10. Operator optionally prints a receipt in rare reimbursement cases.
+
+### Concurrent Checkout Rule
+
+V1 does not use cart-level reservation.
+
+- adding an item to a cart does not reserve it
+- an item remains `in_stock` until a sale is successfully saved
+- the server must re-check all cart items at save time inside the sale transaction
+- if any cart item is no longer available, the save must fail clearly rather than partially succeed
 
 ### Intake Modes
 

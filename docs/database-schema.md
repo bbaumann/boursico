@@ -236,8 +236,10 @@ V1 should be conservative and prefer restriction over cascading deletion.
 ## Update Rules
 
 - `seller.seller_code` should not change once items exist for the seller
-- `item.reference` should not change once the item is used operationally
-- `item.seller_price` and `item.sale_price` should not change after the item has been sold
+- before sale start, intake staff may still correct item master data if needed
+- once sale-day checkout opens, item master data becomes read-only in normal operations
+- after sale start, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, `item.seller_price`, and `item.sale_price` should not change
+- after sale start, only workflow-driven status transitions remain allowed in V1
 - `sale.total_amount` should be treated as immutable after creation
 - `sale_line` snapshots are immutable
 
@@ -245,6 +247,8 @@ V1 should be conservative and prefer restriction over cascading deletion.
 
 These are important invariants even if they are enforced first in application logic rather than as hard database constraints.
 
+- adding an item to a cart does not reserve it in V1
+- a sale may only be persisted if every item in the cart is still `in_stock` at transaction time
 - if an item appears in `sale_line`, its status must be `sold`
 - one item can only be sold once
 - `sale.total_amount` must equal the sum of its sale lines' `sale_price_at_sale`

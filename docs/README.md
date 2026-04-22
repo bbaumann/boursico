@@ -27,6 +27,7 @@ The first version is intentionally narrow:
 - [Decisions](./decisions.md)
 - [Process And Failover](./process-and-failover.md)
 - [Domain Model And References](./domain-model-and-references.md)
+- [Item Status Lifecycle](./item-status-lifecycle.md)
 - [Scope And Phasing](./scope-and-phasing.md)
 
 ## Project Summary
@@ -67,4 +68,5 @@ If someone is new to the project, the best reading order is:
 5. [Physical SQL DDL](./sql/README.md)
 6. [Architecture](./architecture.md)
 7. [Process And Failover](./process-and-failover.md)
-8. [Decisions](./decisions.md)
+8. [Item Status Lifecycle](./item-status-lifecycle.md)
+9. [Decisions](./decisions.md)

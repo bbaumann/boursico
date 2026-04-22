@@ -85,8 +85,13 @@ If later you want strong substring/fuzzy search, likely follow-up options are:
 
 When saving a sale, the application should perform these steps in one transaction:
 
-1. create the `sale`
-2. create all `sale_line` rows
-3. update all corresponding `item.status` rows to `sold`
+1. re-check that every cart item is still `in_stock`
+2. create the `sale`
+3. create all `sale_line` rows
+4. update all corresponding `item.status` rows to `sold`
+
+V1 intentionally does not reserve items at cart time.
+
+If any cart item is no longer `in_stock`, the application must reject the save clearly and let the operator retry after removing the conflicting item.
 
 That transaction boundary matters more than adding clever database-side logic in V1.

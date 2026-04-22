@@ -12,12 +12,20 @@
 
 ### Pendant la vente
 
+Avant le premier passage en caisse :
+
+- les données métier des items sont gelées pour l'événement
+- seuls les changements de statut autorisés restent possibles à partir de ce moment
+
 1. Le bénévole du jour de vente saisit une partie ou la totalité d'une référence.
 2. Les items correspondants apparaissent.
 3. Le bénévole sélectionne le bon item.
 4. L'item est ajouté au panier.
 5. Le bénévole enregistre la `sale` lorsque le client a terminé.
-6. Le reçu est imprimé uniquement sur demande.
+6. Le serveur revalide que tous les items du panier sont encore `in_stock`.
+7. Si la validation réussit, la `sale` est enregistrée et ces items deviennent `sold`.
+8. Si un item n'est plus `in_stock`, l'enregistrement est rejeté et l'opérateur doit retirer l'item en conflit avant de recommencer.
+9. Le reçu est imprimé uniquement sur demande.
 
 ### Après la vente
 
@@ -107,6 +115,8 @@ Sur le plan opérationnel, tout ce qui n'est pas présent dans le stock physique
 ## Exigences d'auditabilité
 
 - chaque `sale` doit être persistée immédiatement
+- la sélection d'un item dans un panier ne doit pas créer d'état de réservation caché
+- l'enregistrement d'une `sale` doit revérifier la disponibilité courante des items avant persistance
 - la disponibilité d'un `item` doit empêcher une double vente après confirmation
 - les fiches vendeur doivent toujours pouvoir être reproduites à partir des données courantes de la base
 - les modifications d'item manquant doivent pouvoir être attribuées à un utilisateur ou à une action administrateur lorsque c'est possible

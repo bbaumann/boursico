@@ -85,8 +85,13 @@ Si, plus tard, une recherche forte par sous-chaîne ou fuzzy devient nécessaire
 
 Lors de l'enregistrement d'une `sale`, l'application doit effectuer les étapes suivantes dans une seule transaction :
 
-1. créer la `sale`
-2. créer toutes les lignes `sale_line`
-3. mettre à jour tous les `item.status` correspondants vers `sold`
+1. revérifier que tous les items du panier sont encore `in_stock`
+2. créer la `sale`
+3. créer toutes les lignes `sale_line`
+4. mettre à jour tous les `item.status` correspondants vers `sold`
+
+La V1 ne réserve volontairement pas les items au moment de l'ajout au panier.
+
+Si un item du panier n'est plus `in_stock`, l'application doit rejeter clairement l'enregistrement et laisser l'opérateur recommencer après avoir retiré l'item en conflit.
 
 Cette frontière transactionnelle est plus importante, en V1, que l'ajout d'une logique astucieuse côté base de données.

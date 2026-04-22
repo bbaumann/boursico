@@ -27,6 +27,7 @@ La première version reste volontairement limitée :
 - [Décisions](./decisions.md)
 - [Processus et continuité en cas de panne](./process-and-failover.md)
 - [Modèle de domaine et références](./domain-model-and-references.md)
+- [Cycle de vie des statuts d'item](./item-status-lifecycle.md)
 - [Périmètre et phasage](./scope-and-phasing.md)
 
 ## Résumé du projet
@@ -67,4 +68,5 @@ Pour une personne qui découvre le projet, l'ordre de lecture recommandé est :
 5. [DDL SQL physique](./sql/README.md)
 6. [Architecture](./architecture.md)
 7. [Processus et continuité en cas de panne](./process-and-failover.md)
-8. [Décisions](./decisions.md)
+8. [Cycle de vie des statuts d'item](./item-status-lifecycle.md)
+9. [Décisions](./decisions.md)

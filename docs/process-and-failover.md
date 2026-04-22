@@ -14,12 +14,20 @@
 
 ### During The Sale
 
+Before the first checkout is processed:
+
+- item master data is frozen for the event
+- only allowed status changes remain possible after this point
+
 1. Sale-day volunteer types part or all of a reference.
 2. Matching items appear.
 3. Volunteer selects the correct item.
 4. Item is added to the cart.
 5. Volunteer saves the sale when the customer is done.
-6. Receipt is printed only when requested.
+6. Server re-validates that all cart items are still `in_stock`.
+7. If validation passes, the sale is saved and those items become `sold`.
+8. If any item is no longer `in_stock`, the save is rejected and the operator must remove the conflicting item and retry.
+9. Receipt is printed only when requested.
 
 ### After The Sale
 
@@ -118,6 +126,8 @@ Operationally, anything not present in physical stock and not returned can be tr
 ## Auditability Requirements
 
 - every sale must be persisted immediately
+- item selection in a cart must not create a hidden reservation state
+- sale save must re-check current item availability before persisting
 - item availability must prevent double sale after confirmation
 - seller sheets must always be reproducible from current database facts
 - missing-item changes must be attributable to a user or admin action when possible

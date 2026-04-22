@@ -232,8 +232,10 @@ La V1 doit rester conservatrice et préférer la restriction à la suppression e
 ## Règles de mise à jour
 
 - `seller.seller_code` ne doit pas changer une fois que des `item` existent pour ce vendeur
-- `item.reference` ne doit pas changer une fois que l'item est utilisé en conditions réelles
-- `item.seller_price` et `item.sale_price` ne doivent pas changer après la vente de l'item
+- avant l'ouverture des ventes, l'équipe de saisie peut encore corriger les données métier des items si nécessaire
+- une fois le passage en caisse ouvert, les données métier des items deviennent en lecture seule en fonctionnement normal
+- après l'ouverture des ventes, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, `item.seller_price` et `item.sale_price` ne doivent plus changer
+- après l'ouverture des ventes, seuls les changements de statut pilotés par le workflow restent autorisés en V1
 - `sale.total_amount` doit être traité comme immuable après sa création
 - les instantanés de `sale_line` sont immuables
 
@@ -241,6 +243,8 @@ La V1 doit rester conservatrice et préférer la restriction à la suppression e
 
 Ce sont des invariants importants même s'ils sont d'abord appliqués dans la logique applicative plutôt que comme contraintes fortes en base.
 
+- l'ajout d'un item à un panier ne le réserve pas en V1
+- une `sale` ne peut être persistée que si tous les items du panier sont encore `in_stock` au moment de la transaction
 - si un `item` apparaît dans `sale_line`, son `status` doit être `sold`
 - un `item` ne peut être vendu qu'une seule fois
 - `sale.total_amount` doit être égal à la somme des `sale_price_at_sale` de ses lignes
