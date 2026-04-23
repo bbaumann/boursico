@@ -337,5 +337,13 @@ This file captures the main project decisions in a lightweight ADR format.
   - the implementing agent needs one obvious configuration source
 - Decision:
   - use `appsettings.json` as the primary configuration source in V1
+  - use the sections `Database`, `Event`, `Admin`, and `Printing`
+  - do not create a `Paths` section in V1
+  - keep the section contents minimal:
+    - `Database`: SQLite file path only
+    - `Event`: event name only
+    - `Admin`: shared admin password only
+    - `Printing`: receipt header text only
 - Consequence:
-  - application settings such as the database path, event metadata, admin password, printing behavior, and local paths should be modeled through standard ASP.NET Core configuration
+  - the agent has one small and explicit configuration contract to implement
+  - runtime behavior such as SQLite pragmas and retry policies should be handled in application code rather than as V1 config switches

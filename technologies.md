@@ -319,7 +319,25 @@ This is an operational misuse-prevention mechanism, not a full security model.
 
 - use `appsettings.json` as the configuration source for V1
 
-This should cover the practical application settings such as database path, event metadata, admin password, printing behavior, and local paths.
+The V1 configuration structure is intentionally small and explicit.
+
+Use these sections:
+
+- `Database`
+- `Event`
+- `Admin`
+- `Printing`
+
+Do not add a `Paths` section in V1.
+
+Expected contents:
+
+- `Database`: SQLite file path only
+- `Event`: event name only
+- `Admin`: shared admin password only
+- `Printing`: receipt header text only
+
+Operational settings such as SQLite pragmas, retry behavior, and similar runtime concerns should be enforced in application code rather than exposed as V1 configuration toggles.
 
 ## Core Principles
 
