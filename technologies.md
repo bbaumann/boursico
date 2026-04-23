@@ -234,7 +234,6 @@ HTML pages:
 - `/checkout`
 - `/intake/...`
 - `/reconciliation/...`
-- `/print/receipt/{id}`
 - `/print/seller-sheet/{sellerId}`
 
 Interactive endpoints:
