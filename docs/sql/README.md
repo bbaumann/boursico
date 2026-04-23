@@ -5,14 +5,12 @@ This directory contains concrete SQL DDL for the agreed V1 logical schema.
 Files:
 
 - [SQLite schema](./sqlite.sql)
-- [PostgreSQL reference schema](./postgresql.sql)
 
 ## Purpose
 
 These files are intended to:
 
 - provide the V1 SQLite schema directly
-- keep a PostgreSQL reference for a possible later migration path
 - keep the logical schema and the physical schema aligned
 
 ## Important Notes
@@ -67,9 +65,8 @@ For V1, the current index plan is acceptable if autocomplete is implemented as:
 If later you want strong substring/fuzzy search, likely follow-up options are:
 
 - SQLite FTS
-- PostgreSQL trigram indexes (`pg_trgm`)
 
-## 4. SQLite Vs PostgreSQL Differences
+## 4. SQLite V1 Specifics
 
 ### SQLite
 
@@ -77,12 +74,6 @@ If later you want strong substring/fuzzy search, likely follow-up options are:
 - is the chosen V1 engine
 - stores money as integer cents in `INTEGER` columns
 - suitable only as the central server database, not as a multi-writer shared-file client architecture
-
-### PostgreSQL
-
-- uses `BIGINT GENERATED ALWAYS AS IDENTITY`
-- is kept as a migration reference, not as the chosen V1 default
-- can remain a future path for stronger concurrency and richer database operations
 
 ## 5. Transaction Boundary Recommendation
 

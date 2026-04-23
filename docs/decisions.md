@@ -247,10 +247,10 @@ This file captures the main project decisions in a lightweight ADR format.
   - store all money values as integer cents
   - store timestamps in UTC with one consistent format
 - Consequence:
-  - deployment and machine transfer are simpler than with PostgreSQL
+  - deployment and machine transfer stay simple
   - write concurrency remains limited compared with a server database, but is acceptable for the expected event load
   - the application must keep sale write transactions short and handle brief lock contention cleanly
-  - later migration to PostgreSQL remains possible if operational needs grow beyond SQLite's comfort zone
+  - the active implementation and documentation path stays focused on one production database engine
 
 ## D-021 Use .NET 8 LTS And EF Core With Code-First Migrations
 

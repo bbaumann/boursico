@@ -132,16 +132,6 @@ Why not:
 - code-first migrations give a clearer path for schema evolution during early development
 - the app's scope does not justify optimizing for lower-level database access complexity up front
 
-### PostgreSQL For V1
-
-Not chosen as the V1 default.
-
-Why not:
-
-- it adds installation and operational complexity on Windows
-- it makes pre-sale to sale-day server transfer more cumbersome
-- the current expected concurrency does not justify the extra overhead
-
 ### Multi-Event Schema And UI In V1
 
 Not chosen.

@@ -10,14 +10,11 @@ V1 uses one database file per event.
 
 Event metadata such as the event name or year code lives in application configuration rather than in relational tables.
 
-The schema still stays conventional enough that a later migration to PostgreSQL remains feasible if the project outgrows SQLite.
-
 The schema is designed for a minimal normalized relational model.
 
 Concrete DDL drafts are available in:
 
 - [SQLite DDL](./sql/sqlite.sql)
-- [PostgreSQL reference DDL](./sql/postgresql.sql)
 - [DDL Notes](./sql/README.md)
 
 ## Design Principles
@@ -304,8 +301,6 @@ Generation rule:
 
 ## Engine Notes
 
-This logical schema is deliberately portable.
-
 ### SQLite Fit
 
 - chosen engine for V1
@@ -314,11 +309,3 @@ This logical schema is deliberately portable.
 - fine for V1 volume and expected write concurrency
 - should run on the server's local disk with `WAL` mode enabled
 - keep application-side discipline for business invariants, connection pragmas, and migration management
-
-### PostgreSQL Fit
-
-- plausible future migration target if the app outgrows SQLite's operational comfort zone
-- if needed later, an event table and event relations can be introduced by migration
-- offers stronger concurrency and richer administrative features at the cost of more setup and migration complexity
-
-The schema itself should not block either choice.

@@ -14,8 +14,6 @@ This choice is based on the current project shape:
 - operational simplicity matters more than large-scale database features
 - moving the system between machines is easier when the database is a file rather than a separately managed service
 
-PostgreSQL remains a plausible future migration target, but it is not the default for V1.
-
 ## Why SQLite Was Chosen
 
 ### Main Advantages For This Project
@@ -25,20 +23,6 @@ PostgreSQL remains a plausible future migration target, but it is not the defaul
 - easy backup story for a small event tool
 - sufficient read/write capacity for the expected number of sale stations
 - strong fit with one web application talking to one local database file on the server
-
-### Why PostgreSQL Was Not Chosen For V1
-
-PostgreSQL would provide:
-
-- stronger write concurrency
-- richer administrative tooling
-- more long-term headroom
-
-For this project, those benefits do not currently outweigh:
-
-- extra installation and operational complexity on Windows
-- more moving parts during pre-sale to sale-day server transfer
-- more backup, restore, and service-management work for a once-a-year tool
 
 ## Operational Rules
 
@@ -122,7 +106,7 @@ At minimum:
 
 ## Revisit Triggers
 
-The project should reconsider PostgreSQL if one or more of these become true:
+The project should revisit the database strategy if one or more of these become true:
 
 - checkout stations increase materially beyond the current expectation
 - real lock contention appears during realistic concurrency tests
