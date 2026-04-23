@@ -1,18 +1,18 @@
 # Physical SQL DDL
 
-This directory contains concrete SQL DDL drafts for the agreed V1 logical schema.
+This directory contains concrete SQL DDL for the agreed V1 logical schema.
 
 Files:
 
 - [SQLite schema](./sqlite.sql)
-- [PostgreSQL schema](./postgresql.sql)
+- [PostgreSQL reference schema](./postgresql.sql)
 
 ## Purpose
 
 These files are intended to:
 
-- make engine tradeoffs explicit
-- let implementation start quickly on either SQLite or PostgreSQL
+- provide the V1 SQLite schema directly
+- keep a PostgreSQL reference for a possible later migration path
 - keep the logical schema and the physical schema aligned
 
 ## Important Notes
@@ -70,14 +70,15 @@ If later you want strong substring/fuzzy search, likely follow-up options are:
 ### SQLite
 
 - uses `INTEGER PRIMARY KEY` for row ids
-- uses `NUMERIC` affinity for prices
+- is the chosen V1 engine
+- stores money as integer cents in `INTEGER` columns
 - suitable only as the central server database, not as a multi-writer shared-file client architecture
 
 ### PostgreSQL
 
 - uses `BIGINT GENERATED ALWAYS AS IDENTITY`
-- uses `NUMERIC(10,2)` for prices
-- gives a cleaner path for future stronger constraints and richer indexing
+- is kept as a migration reference, not as the chosen V1 default
+- can remain a future path for stronger concurrency and richer database operations
 
 ## 5. Transaction Boundary Recommendation
 

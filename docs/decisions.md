@@ -231,3 +231,40 @@ This file captures the main project decisions in a lightweight ADR format.
   - non-admin operators cannot perform the `in_stock -> missing` transition in the normal workflow
   - V1 avoids a broader authentication and authorization system
   - the control is intentionally lightweight and should not be described as full security or auditability
+
+## D-020 Use SQLite As The V1 Database Engine
+
+- Status: accepted
+- Key drivers:
+  - V1 has one central server and a small number of client stations
+  - expected checkout write transactions are short
+  - operational simplicity matters more than database-server features
+  - moving the system between pre-sale and sale-day machines is easier with a database file than with a separately managed database service
+- Decision:
+  - use SQLite as the V1 production database engine
+  - keep the database file on the server's local disk only
+  - enable `WAL` mode and foreign-key enforcement
+  - store all money values as integer cents
+  - store timestamps in UTC with one consistent format
+- Consequence:
+  - deployment and machine transfer are simpler than with PostgreSQL
+  - write concurrency remains limited compared with a server database, but is acceptable for the expected event load
+  - the application must keep sale write transactions short and handle brief lock contention cleanly
+  - later migration to PostgreSQL remains possible if operational needs grow beyond SQLite's comfort zone
+
+## D-021 Use .NET 8 LTS And EF Core With Code-First Migrations
+
+- Status: accepted
+- Key drivers:
+  - the backend stack should match the developer's strongest platform knowledge
+  - the implementation should follow a conventional and agent-friendly .NET path
+  - the schema will likely evolve during early development and needs a clear migration workflow
+- Decision:
+  - use .NET 8 LTS as the application runtime baseline
+  - use ASP.NET Core with Razor Pages
+  - use EF Core as the default data access layer
+  - use code-first migrations for schema evolution
+- Consequence:
+  - implementation has a clearer standard structure for agents and future maintainers
+  - database changes can be tracked through normal EF Core migration workflows
+  - lower-level data access approaches such as Dapper or raw SQL remain possible for isolated cases later, but are not the default architecture

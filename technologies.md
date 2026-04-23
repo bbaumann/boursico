@@ -22,7 +22,10 @@ The goal is a stack that fits the actual project shape:
 ### Backend
 
 - ASP.NET Core
+- .NET 8 LTS
 - Razor Pages for the main HTML UI
+- EF Core
+- code-first migrations
 
 Why:
 
@@ -30,6 +33,7 @@ Why:
 - natural fit for Windows self-hosting
 - one deployable application
 - well suited to a mostly form- and workflow-driven internal tool
+- gives the implementing agent a conventional and well-supported .NET stack
 
 ### Frontend
 
@@ -50,11 +54,19 @@ Why:
 - central server on the event LAN
 - one central database as the single source of truth
 
+### Database
+
+- SQLite for V1
+- `WAL` mode enabled
+- foreign keys enforced
+- money stored as integer cents
+
 Why:
 
 - aligns with the project docs and V1 reliability model
 - avoids unnecessary distributed or offline-first complexity
 - keeps deployment and troubleshooting simple
+- keeps machine-to-machine transfer much simpler than a separate database server
 
 ## Deliberately Not Chosen
 
@@ -94,6 +106,26 @@ Why not:
 
 - V1 does not require real user identity or role management
 - the only protected behavior is a lightweight admin capability gate for sensitive actions
+
+### Dapper Or Raw SQL As The Default Data Access Layer
+
+Not chosen as the implementation default.
+
+Why not:
+
+- EF Core is the more conventional and agent-friendly baseline for this project
+- code-first migrations give a clearer path for schema evolution during early development
+- the app's scope does not justify optimizing for lower-level database access complexity up front
+
+### PostgreSQL For V1
+
+Not chosen as the V1 default.
+
+Why not:
+
+- it adds installation and operational complexity on Windows
+- it makes pre-sale to sale-day server transfer more cumbersome
+- the current expected concurrency does not justify the extra overhead
 
 ## Frontend Architecture Decision
 
@@ -289,9 +321,15 @@ This is an operational misuse-prevention mechanism, not a full security model.
 The agreed technology direction for V1 is:
 
 - ASP.NET Core
+- .NET 8 LTS
 - Razor Pages
+- EF Core
+- code-first migrations
 - vanilla JavaScript for checkout only
 - plain CSS
+- SQLite
+- `WAL` mode
+- integer-cent money storage
 - resource-oriented `/api/...` endpoints for interactive operations
 - self-hosted Windows deployment on the local network
 - lightweight in-app password gate for sensitive admin actions

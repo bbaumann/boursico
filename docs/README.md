@@ -17,10 +17,17 @@ The first version is intentionally narrow:
 - remove the historical end-of-day Excel/VBA consolidation pain
 - keep post-sale reconciliation independent from sale-day operations
 
+## Canonical Source
+
+The English documentation in `docs/` is the canonical source of truth for implementation.
+
+Archived or translated variants may exist elsewhere in the repository, but agent-driven development should follow the documents in `docs/` unless a newer canonical note says otherwise.
+
 ## Document Map
 
 - [Features](./features.md)
 - [Architecture](./architecture.md)
+- [Database Choice](./database-choice.md)
 - [Database Schema](./database-schema.md)
 - [Physical SQL DDL](./sql/README.md)
 - [Use Cases And Personas](./use-cases-and-personas.md)
@@ -64,9 +71,10 @@ If someone is new to the project, the best reading order is:
 1. [Scope And Phasing](./scope-and-phasing.md)
 2. [Features](./features.md)
 3. [Domain Model And References](./domain-model-and-references.md)
-4. [Database Schema](./database-schema.md)
-5. [Physical SQL DDL](./sql/README.md)
-6. [Architecture](./architecture.md)
-7. [Process And Failover](./process-and-failover.md)
-8. [Item Status Lifecycle](./item-status-lifecycle.md)
-9. [Decisions](./decisions.md)
+4. [Database Choice](./database-choice.md)
+5. [Database Schema](./database-schema.md)
+6. [Physical SQL DDL](./sql/README.md)
+7. [Architecture](./architecture.md)
+8. [Process And Failover](./process-and-failover.md)
+9. [Item Status Lifecycle](./item-status-lifecycle.md)
+10. [Decisions](./decisions.md)

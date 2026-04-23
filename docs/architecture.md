@@ -108,14 +108,16 @@ Properties:
 
 ## Suggested Technical Direction
 
-No specific framework is locked yet, but the architecture assumes:
+The chosen technical direction for V1 is:
 
-- a simple web app rather than a desktop client
-- a server-rendered UI or light frontend rather than a heavy SPA by default
-- a database-backed backend with clear domain entities
+- an ASP.NET Core web application
+- Razor Pages for the main UI
+- vanilla JavaScript only where local interactivity is genuinely needed, mainly checkout
+- SQLite on the central server as the V1 database
+- `WAL` mode for SQLite concurrency behavior
 - a separate reconciliation implementation that can evolve independently
 
-The exact framework and database are still open implementation choices.
+This keeps the architecture small, self-hosted, and operationally simple while preserving a future migration path if the app later outgrows the V1 choices.
 
 ## Reasons This Architecture Was Chosen
 

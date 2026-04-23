@@ -1,4 +1,5 @@
 PRAGMA foreign_keys = ON;
+PRAGMA journal_mode = WAL;
 
 BEGIN;
 
@@ -33,8 +34,8 @@ CREATE TABLE item (
     reference TEXT NOT NULL,
     item_number INTEGER NOT NULL,
     title TEXT NOT NULL,
-    seller_price NUMERIC NOT NULL,
-    sale_price NUMERIC NOT NULL,
+    seller_price_cents INTEGER NOT NULL,
+    sale_price_cents INTEGER NOT NULL,
     status TEXT NOT NULL,
     CONSTRAINT fk_item_event
         FOREIGN KEY (event_id)
@@ -48,10 +49,10 @@ CREATE TABLE item (
         ON DELETE RESTRICT,
     CONSTRAINT ck_item_status
         CHECK (status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')),
-    CONSTRAINT ck_item_seller_price
-        CHECK (seller_price >= 0),
-    CONSTRAINT ck_item_sale_price
-        CHECK (sale_price >= 0),
+    CONSTRAINT ck_item_seller_price_cents
+        CHECK (seller_price_cents >= 0),
+    CONSTRAINT ck_item_sale_price_cents
+        CHECK (sale_price_cents >= 0),
     CONSTRAINT uq_item_event_reference UNIQUE (event_id, reference),
     CONSTRAINT uq_item_seller_number UNIQUE (seller_id, item_number)
 );
@@ -60,23 +61,23 @@ CREATE TABLE sale (
     id INTEGER PRIMARY KEY,
     event_id INTEGER NOT NULL,
     sold_at TEXT NOT NULL,
-    total_amount NUMERIC NOT NULL,
+    total_amount_cents INTEGER NOT NULL,
     receipt_details TEXT,
     CONSTRAINT fk_sale_event
         FOREIGN KEY (event_id)
         REFERENCES event(id)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
-    CONSTRAINT ck_sale_total_amount
-        CHECK (total_amount >= 0)
+    CONSTRAINT ck_sale_total_amount_cents
+        CHECK (total_amount_cents >= 0)
 );
 
 CREATE TABLE sale_line (
     id INTEGER PRIMARY KEY,
     sale_id INTEGER NOT NULL,
     item_id INTEGER NOT NULL,
-    seller_price_at_sale NUMERIC NOT NULL,
-    sale_price_at_sale NUMERIC NOT NULL,
+    seller_price_at_sale_cents INTEGER NOT NULL,
+    sale_price_at_sale_cents INTEGER NOT NULL,
     CONSTRAINT fk_sale_line_sale
         FOREIGN KEY (sale_id)
         REFERENCES sale(id)
@@ -87,10 +88,10 @@ CREATE TABLE sale_line (
         REFERENCES item(id)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
-    CONSTRAINT ck_sale_line_seller_price
-        CHECK (seller_price_at_sale >= 0),
-    CONSTRAINT ck_sale_line_sale_price
-        CHECK (sale_price_at_sale >= 0),
+    CONSTRAINT ck_sale_line_seller_price_cents
+        CHECK (seller_price_at_sale_cents >= 0),
+    CONSTRAINT ck_sale_line_sale_price_cents
+        CHECK (sale_price_at_sale_cents >= 0),
     CONSTRAINT uq_sale_line_item UNIQUE (item_id)
 );
 
