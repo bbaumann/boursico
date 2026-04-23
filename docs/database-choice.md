@@ -8,6 +8,7 @@ This choice is based on the current project shape:
 
 - one central ASP.NET Core server
 - local-network deployment
+- one database file per event
 - fewer than 10 client stations, usually around 5
 - short checkout write transactions
 - operational simplicity matters more than large-scale database features
@@ -46,9 +47,16 @@ These rules are part of the database decision, not optional implementation detai
 ### 1. SQLite Runs Only On The Server
 
 - the SQLite database file lives on the local disk of the central server
+- one database file represents one event
 - clients never open the database directly
 - clients talk only to the ASP.NET Core application
 - the database file must not be placed on a shared network drive
+
+### 1b. Event Metadata Lives In Configuration
+
+- event-specific metadata such as the event name or year code lives in application configuration
+- V1 does not use a relational `event` table
+- V1 does not expose event selection in the UI
 
 ### 2. WAL Mode Is Required
 
@@ -127,5 +135,6 @@ For V1, SQLite is the right trade-off:
 
 - simpler to deploy
 - simpler to move between machines
+- cleaner operational boundary because one database file equals one event
 - sufficient for the expected concurrency
 - compatible with the narrow, centralized architecture already chosen for the app

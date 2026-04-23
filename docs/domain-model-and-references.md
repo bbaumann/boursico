@@ -4,6 +4,8 @@
 
 The project uses a small item-centric operational model with seller-aware reconciliation.
 
+Operationally, one database file represents one event in V1. Event metadata is stored in application configuration rather than as a relational entity.
+
 ## Entities
 
 ### Seller
@@ -91,6 +93,10 @@ Current business rule:
 - sale price = seller price + 20 percent
 
 V1 seller settlement uses seller price only.
+
+Persistence rule:
+
+- money values are stored as integer cents in the database
 
 ## Receipt Model
 

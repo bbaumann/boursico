@@ -51,12 +51,15 @@ Why:
 ### Hosting
 
 - one self-hosted ASP.NET Core application on the local server
+- Kestrel only in V1
+- started locally as a simple executable on the LAN
 - central server on the event LAN
 - one central database as the single source of truth
 
 ### Database
 
 - SQLite for V1
+- one database file per event
 - `WAL` mode enabled
 - foreign keys enforced
 - money stored as integer cents
@@ -67,6 +70,18 @@ Why:
 - avoids unnecessary distributed or offline-first complexity
 - keeps deployment and troubleshooting simple
 - keeps machine-to-machine transfer much simpler than a separate database server
+- avoids event-selection complexity in the UI
+
+### Application Structure
+
+- one web project
+- internal folders for `Controllers`, `Pages`, `Domain`, and `Infrastructure`
+
+Why:
+
+- keeps the solution simple for a small internal tool
+- avoids premature multi-project complexity
+- still provides enough structure for the implementing agent
 
 ## Deliberately Not Chosen
 
@@ -126,6 +141,16 @@ Why not:
 - it adds installation and operational complexity on Windows
 - it makes pre-sale to sale-day server transfer more cumbersome
 - the current expected concurrency does not justify the extra overhead
+
+### Multi-Event Schema And UI In V1
+
+Not chosen.
+
+Why not:
+
+- one event per database file is operationally clearer
+- seller and item lists stay clean for the current event
+- it avoids event-selection and event-scoping complexity throughout the app
 
 ## Frontend Architecture Decision
 
@@ -237,6 +262,8 @@ src/
     Program.cs
     appsettings.json
 
+    Controllers/
+
     Pages/
       Index.cshtml
       Sellers/
@@ -247,16 +274,6 @@ src/
       Print/
       Admin/
       Shared/
-
-    Api/
-      Items/
-      Sales/
-      Reconciliation/
-
-    Application/
-      Items/
-      Sales/
-      Reconciliation/
 
     Domain/
     Infrastructure/
@@ -279,7 +296,7 @@ This is intentionally modest:
 
 - Razor Pages for the UI
 - focused API endpoints for interactive actions
-- a small internal application/service structure
+- a single-project layout with internal folders
 - a lightweight modular JS structure for checkout only
 
 ## Styling Direction
@@ -322,12 +339,15 @@ The agreed technology direction for V1 is:
 
 - ASP.NET Core
 - .NET 8 LTS
+- Kestrel only
 - Razor Pages
 - EF Core
 - code-first migrations
+- one web project with internal folders
 - vanilla JavaScript for checkout only
 - plain CSS
 - SQLite
+- one database file per event
 - `WAL` mode
 - integer-cent money storage
 - resource-oriented `/api/...` endpoints for interactive operations

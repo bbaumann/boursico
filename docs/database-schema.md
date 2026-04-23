@@ -6,6 +6,10 @@ This document defines the V1 logical database schema for the association toy sal
 
 V1 will run on SQLite on the central server.
 
+V1 uses one database file per event.
+
+Event metadata such as the event name or year code lives in application configuration rather than in relational tables.
+
 The schema still stays conventional enough that a later migration to PostgreSQL remains feasible if the project outgrows SQLite.
 
 The schema is designed for a minimal normalized relational model.
@@ -22,33 +26,17 @@ Concrete DDL drafts are available in:
 - One completed checkout equals one sale.
 - One sold toy appears in exactly one sale line.
 - Seller sheets are derived from current data, not stored as their own primary business objects in V1.
-- The schema supports multiple events logically, even if V1 may run one event per database operationally.
+- One database file represents one event operationally in V1.
 
 ## Tables
 
-## `event`
-
-Represents one sale event.
-
-### Columns
-
-- `id`
-- `code`
-- `name`
-
-### Notes
-
-- `code` is a short identifier such as `2026`.
-- No event dates or status fields are included in V1.
-
 ## `seller`
 
-Represents one seller for one event.
+Represents one seller.
 
 ### Columns
 
 - `id`
-- `event_id`
 - `seller_code`
 - `first_name`
 - `last_name`
@@ -68,7 +56,6 @@ Represents one physical toy.
 ### Columns
 
 - `id`
-- `event_id`
 - `seller_id`
 - `reference`
 - `item_number`
@@ -92,7 +79,6 @@ Represents one completed checkout.
 ### Columns
 
 - `id`
-- `event_id`
 - `sold_at`
 - `total_amount_cents`
 - `receipt_details`
@@ -125,9 +111,6 @@ Represents one sold item inside one sale.
 
 ## Relationships
 
-- one `event` has many `seller`
-- one `event` has many `item`
-- one `event` has many `sale`
 - one `seller` has many `item`
 - one `sale` has many `sale_line`
 - one `item` has at most one `sale_line`
@@ -136,7 +119,6 @@ Represents one sold item inside one sale.
 
 ## Primary Keys
 
-- `event.id`
 - `seller.id`
 - `item.id`
 - `sale.id`
@@ -144,31 +126,21 @@ Represents one sold item inside one sale.
 
 ## Foreign Keys
 
-- `seller.event_id -> event.id`
-- `item.event_id -> event.id`
 - `item.seller_id -> seller.id`
-- `sale.event_id -> event.id`
 - `sale_line.sale_id -> sale.id`
 - `sale_line.item_id -> item.id`
 
 ## Uniqueness Constraints
 
-- `event.code` unique
-- `(seller.event_id, seller.seller_code)` unique
-- `(item.event_id, item.reference)` unique
+- `seller.seller_code` unique
+- `item.reference` unique
 - `(item.seller_id, item.item_number)` unique
 - `sale_line.item_id` unique
 
 ## Nullability
 
-## `event`
-
-- `code`: required
-- `name`: required
-
 ## `seller`
 
-- `event_id`: required
 - `seller_code`: required
 - `first_name`: required
 - `last_name`: required
@@ -178,7 +150,6 @@ Represents one sold item inside one sale.
 
 ## `item`
 
-- `event_id`: required
 - `seller_id`: required
 - `reference`: required
 - `item_number`: required
@@ -189,7 +160,6 @@ Represents one sold item inside one sale.
 
 ## `sale`
 
-- `event_id`: required
 - `sold_at`: required
 - `total_amount_cents`: required
 - `receipt_details`: optional
@@ -227,7 +197,6 @@ V1 should be conservative and prefer restriction over cascading deletion.
 
 ## Delete Rules
 
-- do not delete an `event` once business data exists for it
 - do not delete a `seller` if items exist for that seller
 - do not delete an `item` if it is linked to a sale line
 - do not delete a `sale` in normal operations once created
@@ -294,16 +263,15 @@ The EUR 2 per 15 items seller fee stays outside the system in V1.
 
 Recommended indexes:
 
-- unique index on `event.code`
-- unique index on `(seller.event_id, seller.seller_code)`
-- unique index on `(item.event_id, item.reference)`
+- unique index on `seller.seller_code`
+- unique index on `item.reference`
 - unique index on `(item.seller_id, item.item_number)`
 - unique index on `sale_line.item_id`
 - index on `item.reference`
 - index on `item.title`
 - index on `item.seller_id`
 - index on `item.status`
-- index on `(sale.event_id, sale.sold_at)`
+- index on `sale.sold_at`
 - index on `sale_line.sale_id`
 
 These support:
@@ -341,6 +309,7 @@ This logical schema is deliberately portable.
 ### SQLite Fit
 
 - chosen engine for V1
+- one SQLite database file per event
 - suitable if used only as the central server database
 - fine for V1 volume and expected write concurrency
 - should run on the server's local disk with `WAL` mode enabled
@@ -349,6 +318,7 @@ This logical schema is deliberately portable.
 ### PostgreSQL Fit
 
 - plausible future migration target if the app outgrows SQLite's operational comfort zone
+- if needed later, an event table and event relations can be introduced by migration
 - offers stronger concurrency and richer administrative features at the cost of more setup and migration complexity
 
 The schema itself should not block either choice.

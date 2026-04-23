@@ -26,6 +26,7 @@ Properties:
 - located on the private local network
 - internet is optional, not required for the event to run
 - single digital point of truth during the event
+- runs as one self-hosted executable using Kestrel only in V1
 
 ### 2. Central Database
 
@@ -37,7 +38,7 @@ Responsibilities:
 
 Properties:
 
-- only one database for the event
+- one SQLite database file per event
 - no per-station local databases in V1
 - no client replay logs in V1
 
@@ -111,7 +112,9 @@ Properties:
 The chosen technical direction for V1 is:
 
 - an ASP.NET Core web application
+- .NET 8 LTS
 - Razor Pages for the main UI
+- one web project with internal folders rather than a multi-project solution
 - vanilla JavaScript only where local interactivity is genuinely needed, mainly checkout
 - SQLite on the central server as the V1 database
 - `WAL` mode for SQLite concurrency behavior

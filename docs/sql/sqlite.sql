@@ -3,33 +3,19 @@ PRAGMA journal_mode = WAL;
 
 BEGIN;
 
-CREATE TABLE event (
-    id INTEGER PRIMARY KEY,
-    code TEXT NOT NULL,
-    name TEXT NOT NULL,
-    CONSTRAINT uq_event_code UNIQUE (code)
-);
-
 CREATE TABLE seller (
     id INTEGER PRIMARY KEY,
-    event_id INTEGER NOT NULL,
     seller_code TEXT NOT NULL,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT,
     phone TEXT,
     notes TEXT,
-    CONSTRAINT fk_seller_event
-        FOREIGN KEY (event_id)
-        REFERENCES event(id)
-        ON UPDATE RESTRICT
-        ON DELETE RESTRICT,
-    CONSTRAINT uq_seller_event_code UNIQUE (event_id, seller_code)
+    CONSTRAINT uq_seller_code UNIQUE (seller_code)
 );
 
 CREATE TABLE item (
     id INTEGER PRIMARY KEY,
-    event_id INTEGER NOT NULL,
     seller_id INTEGER NOT NULL,
     reference TEXT NOT NULL,
     item_number INTEGER NOT NULL,
@@ -37,11 +23,6 @@ CREATE TABLE item (
     seller_price_cents INTEGER NOT NULL,
     sale_price_cents INTEGER NOT NULL,
     status TEXT NOT NULL,
-    CONSTRAINT fk_item_event
-        FOREIGN KEY (event_id)
-        REFERENCES event(id)
-        ON UPDATE RESTRICT
-        ON DELETE RESTRICT,
     CONSTRAINT fk_item_seller
         FOREIGN KEY (seller_id)
         REFERENCES seller(id)
@@ -53,21 +34,15 @@ CREATE TABLE item (
         CHECK (seller_price_cents >= 0),
     CONSTRAINT ck_item_sale_price_cents
         CHECK (sale_price_cents >= 0),
-    CONSTRAINT uq_item_event_reference UNIQUE (event_id, reference),
+    CONSTRAINT uq_item_reference UNIQUE (reference),
     CONSTRAINT uq_item_seller_number UNIQUE (seller_id, item_number)
 );
 
 CREATE TABLE sale (
     id INTEGER PRIMARY KEY,
-    event_id INTEGER NOT NULL,
     sold_at TEXT NOT NULL,
     total_amount_cents INTEGER NOT NULL,
     receipt_details TEXT,
-    CONSTRAINT fk_sale_event
-        FOREIGN KEY (event_id)
-        REFERENCES event(id)
-        ON UPDATE RESTRICT
-        ON DELETE RESTRICT,
     CONSTRAINT ck_sale_total_amount_cents
         CHECK (total_amount_cents >= 0)
 );
@@ -98,7 +73,7 @@ CREATE TABLE sale_line (
 CREATE INDEX idx_item_title ON item(title);
 CREATE INDEX idx_item_seller_id ON item(seller_id);
 CREATE INDEX idx_item_status ON item(status);
-CREATE INDEX idx_sale_event_sold_at ON sale(event_id, sold_at);
+CREATE INDEX idx_sale_sold_at ON sale(sold_at);
 CREATE INDEX idx_sale_line_sale_id ON sale_line(sale_id);
 
 COMMIT;

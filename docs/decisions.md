@@ -268,3 +268,43 @@ This file captures the main project decisions in a lightweight ADR format.
   - implementation has a clearer standard structure for agents and future maintainers
   - database changes can be tracked through normal EF Core migration workflows
   - lower-level data access approaches such as Dapper or raw SQL remain possible for isolated cases later, but are not the default architecture
+
+## D-022 Use One Database File Per Event And Remove Event Data From The Relational Schema
+
+- Status: accepted
+- Key drivers:
+  - operational clarity matters more than theoretical multi-event flexibility in V1
+  - yearly events should not create noise in seller and item lists inside one database
+  - event selection and event scoping would add avoidable application complexity
+- Decision:
+  - use one database file per event
+  - remove the relational `event` table and all `event_id` relations from the V1 schema
+  - keep event metadata such as the event name or year code in application configuration
+- Consequence:
+  - the V1 schema is smaller and more directly aligned with the operational model
+  - the UI does not need event management or current-event selection behavior
+  - a future multi-event schema remains possible through later migration if it becomes valuable
+
+## D-023 Run The App As A Self-Hosted Kestrel Executable In V1
+
+- Status: accepted
+- Key drivers:
+  - deployment should be as simple as possible for a local-network internal tool
+  - V1 does not need IIS or Windows Service complexity up front
+- Decision:
+  - run the application as a self-hosted ASP.NET Core executable using Kestrel only in V1
+- Consequence:
+  - startup and deployment stay simple
+  - future hosting changes remain possible if operational needs change
+
+## D-024 Use A Single Web Project With Internal Folders
+
+- Status: accepted
+- Key drivers:
+  - the app is small and should avoid unnecessary solution complexity
+  - the implementing agent benefits from a conventional but lightweight structure
+- Decision:
+  - use one web project with internal folders such as `Controllers`, `Pages`, `Domain`, and `Infrastructure`
+- Consequence:
+  - the solution stays easier to navigate at V1 size
+  - project boundaries can be split later if real complexity emerges

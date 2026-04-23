@@ -43,6 +43,10 @@ The database stores both:
 - the seller-local item number
 - the final reference
 
+The database does not store an `event` table in V1.
+
+Each database file represents one event operationally, and event metadata such as the event name or year code lives in application configuration.
+
 The app is expected to generate and persist the final reference rather than deriving it on every read.
 
 ## 3. Autocomplete Indexing Limits
