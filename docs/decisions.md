@@ -88,7 +88,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - returned items are derived as `in_stock`
   - preregistration and physical stock confirmation can be modeled without extra lifecycle tables
 
-## D-008 Checkout Uses Typed Reference Search With Autocomplete
+## D-008 Checkout Uses A Live-Filtered Reference And Title Lookup Table
 
 - Status: accepted
 - Key drivers:
@@ -96,9 +96,11 @@ This file captures the main project decisions in a lightweight ADR format.
   - exact-code-only entry would be more stressful and error-prone
   - barcode scanning is not required in V1
 - Decision:
-  - operators type a reference, see matching results, and explicitly select the intended item
+  - operators type into a text field that live-filters a visible results table
+  - matching is done against `reference + title`
+  - operators explicitly select an item from the filtered table
 - Consequence:
-  - sale-day UI centers on a large autocomplete lookup component
+  - sale-day UI centers on a large live-filtered lookup table rather than an autocomplete widget
 
 ## D-009 Do Not Show Seller Information During Checkout
 
@@ -308,3 +310,32 @@ This file captures the main project decisions in a lightweight ADR format.
 - Consequence:
   - the solution stays easier to navigate at V1 size
   - project boundaries can be split later if real complexity emerges
+
+## D-025 Use A Two-Stage Checkout Finalization Flow
+
+- Status: accepted
+- Key drivers:
+  - operators need one last clear chance to review the cart before the sale is committed
+  - the UI should detect stale cart conflicts early without sacrificing authoritative save-time validation
+  - printing must not create ambiguity about whether a sale was persisted
+- Decision:
+  - when the operator clicks `Finalize`, the cart is first validated against the live database
+  - if validation succeeds, a finalization modal is shown with the total amount, item count, and the actions `Go back`, `Save`, and `Save and print receipt`
+  - `Go back` returns to the editable cart without saving
+  - both `Save` and `Save and print receipt` perform a second authoritative validation inside the save transaction
+  - `Save and print receipt` is disabled unless `receipt_details` was filled, and it saves before opening the browser print dialog
+- Consequence:
+  - operators get a safer and clearer last-step review flow
+  - sale correctness still depends on the authoritative server-side save validation
+  - the checkout page resets to a fresh state and reloads its in-memory catalog after successful save actions
+
+## D-026 Use appsettings.json As The V1 Configuration Source
+
+- Status: accepted
+- Key drivers:
+  - configuration should stay simple and familiar for a self-hosted Windows deployment
+  - the implementing agent needs one obvious configuration source
+- Decision:
+  - use `appsettings.json` as the primary configuration source in V1
+- Consequence:
+  - application settings such as the database path, event metadata, admin password, printing behavior, and local paths should be modeled through standard ASP.NET Core configuration

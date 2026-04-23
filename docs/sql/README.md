@@ -57,7 +57,7 @@ Normal B-tree indexes help well for:
 
 They do not fully solve arbitrary substring search like `%lego%` on large text fields.
 
-For V1, the current index plan is acceptable if autocomplete is implemented as:
+For V1, the current index plan is acceptable if checkout lookup is implemented as:
 
 - prefix search on `reference`
 - prefix or lightweight match on `title`

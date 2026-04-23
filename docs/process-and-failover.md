@@ -20,14 +20,16 @@ Before the first checkout is processed:
 - only allowed status changes remain possible after this point
 
 1. Sale-day volunteer types part or all of a reference.
-2. Matching items appear.
-3. Volunteer selects the correct item.
+2. The visible item table is filtered on each keystroke using `reference + title` matching from the in-memory checkout catalog.
+3. Volunteer selects the correct item from the filtered table.
 4. Item is added to the cart.
-5. Volunteer saves the sale when the customer is done.
-6. Server re-validates that all cart items are still `in_stock`.
-7. If validation passes, the sale is saved and those items become `sold`.
-8. If any item is no longer `in_stock`, the save is rejected and the operator must remove the conflicting item and retry.
-9. Receipt is printed only when requested.
+5. When the customer is done, volunteer clicks `Finalize`.
+6. The cart is validated against the live database before the finalization modal is shown.
+7. If validation passes, the finalization modal shows the item count, total amount, and the actions `Go back`, `Save`, and `Save and print receipt`.
+8. If the volunteer chooses `Save` or `Save and print receipt`, the server re-validates that all cart items are still `in_stock` inside the save transaction.
+9. If validation passes, the sale is saved and those items become `sold`.
+10. If any item is no longer `in_stock`, the save is rejected, the conflicting item is highlighted prominently in red, and the operator must remove it and retry.
+11. After a successful save, checkout resets to a fresh state and reloads the in-memory catalog.
 
 ### After The Sale
 

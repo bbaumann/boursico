@@ -24,7 +24,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Confirm preregistered items against physically delivered toys
 - Assign one unique reference per item
 - Store seller price and customer sale price per item
-- Search items by reference using typed autocomplete
+- Search items by `reference + title` using a live-filtered table
 - Add selected items to a cart
 - Compute the bill total automatically
 - Save a sale as paid
@@ -35,8 +35,8 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - No seller information in the checkout flow
 - No payment method tracking beyond the fact that the sale was completed
 - No barcode scanner required in V1
-- Search must support partial reference entry with fast suggestions
-- The operator must select the item explicitly from the matching list before it is added to the cart
+- Search must support partial `reference + title` filtering with immediate updates on each keystroke
+- The operator selects an item explicitly from the filtered table before it is added to the cart
 
 ### Item Data Freeze At Sale Start
 
@@ -58,16 +58,20 @@ After sale start, only workflow-driven status changes remain allowed in V1:
 
 ### Expected Checkout Flow
 
-1. Operator types part or all of the toy reference.
-2. Matching items are proposed in a high-contrast list.
-3. Operator selects the correct item.
-4. Item is added to the current cart.
-5. Operator repeats until the customer is done.
-6. Operator saves the sale.
-7. The server re-validates that every cart item is still `in_stock` at save time.
-8. If validation succeeds, the sale is persisted and the items become `sold`.
-9. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted, and the operator must remove it before retrying.
-10. Operator optionally prints a receipt in rare reimbursement cases.
+1. Checkout loads a lightweight item catalog into page memory when the page opens.
+2. Operator types in the lookup field.
+3. The item table is filtered on each keystroke using `reference + title` matching.
+4. Operator selects the correct item from the filtered table.
+5. Item is added to the current cart.
+6. Operator repeats until the customer is done.
+7. Operator clicks `Finalize`.
+8. The app validates the cart against the live database before showing the finalization modal.
+9. If validation succeeds, a finalization modal shows the total and item count.
+10. Operator chooses `Go back`, `Save`, or `Save and print receipt`.
+11. The server re-validates that every cart item is still `in_stock` at save time inside the save transaction.
+12. If validation succeeds, the sale is persisted and the items become `sold`.
+13. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
+14. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
 
 ### Concurrent Checkout Rule
 
@@ -75,6 +79,7 @@ V1 does not use cart-level reservation.
 
 - adding an item to a cart does not reserve it
 - an item remains `in_stock` until a sale is successfully saved
+- the app may validate the cart before showing the finalization modal for UX reasons
 - the server must re-check all cart items at save time inside the sale transaction
 - if any cart item is no longer available, the save must fail clearly rather than partially succeed
 
@@ -84,8 +89,9 @@ V1 receipt handling is intentionally simple:
 
 - the checkout form shows one optional receipt-details text field
 - the field is empty by default
-- if the operator leaves it empty, no receipt is requested or printed
-- if the operator fills it, the entered text is used for the printed receipt in reimbursement cases
+- if the operator leaves it empty, `Save and print receipt` stays disabled in the finalization modal
+- if the operator fills it, `Save and print receipt` becomes available in the finalization modal
+- `Save and print receipt` saves first, then opens the browser print dialog
 - V1 does not track a separate receipt-requested flag or receipt-printed flag
 
 ### Intake Modes

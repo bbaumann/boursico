@@ -13,7 +13,7 @@ V1 is deliberately narrow.
 - preregistration confirmation against physically delivered toys
 - one item record per toy
 - seller-aware reference generation
-- sale-day lookup by typed reference with autocomplete
+- sale-day lookup by live-filtered `reference + title` table
 - cart and total computation
 - sale persistence
 - optional receipt printing

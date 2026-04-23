@@ -40,6 +40,7 @@ Why:
 - server-rendered Razor Pages for almost the whole application
 - vanilla JavaScript for the checkout page only
 - plain CSS for styling
+- application configuration in `appsettings.json`
 
 Why:
 
@@ -163,7 +164,6 @@ These pages should remain standard server-rendered pages:
 - reconciliation overview
 - seller reconciliation detail pages
 - printable seller sheet pages
-- printable receipt pages
 - admin password entry page
 
 These are forms, lists, print views, and operator workflows, not client-side applications.
@@ -178,40 +178,41 @@ Razor still renders the page shell, but the checkout JavaScript module owns the 
 
 ### Checkout JavaScript Owns
 
-- current search query
-- debounced item search requests
-- cancelling stale requests
-- current suggestion list
-- highlighted search result
-- keyboard navigation and selection behavior
+- the lightweight in-memory checkout catalog for the lifetime of the page
+- current filter text
+- live client-side filtering by `reference + title`
+- results-table rendering and row selection behavior
 - cart contents in memory
 - running total for immediate feedback
-- busy state while saving
+- duplicate-item messaging
+- finalize request handling
+- finalization modal state
 - rendering of conflicts and network failures
-- success reset after a saved sale
-- redirect to or open the printable receipt after success
+- reset and catalog reload after a successful save
 
 ### Razor Checkout Page Owns
 
 - the page shell
 - labels and operator instructions
 - search input container
-- suggestion list container
+- filtered results table container
 - cart container
 - total display
 - receipt details input
-- action buttons
+- `Finalize` action button
 - message and banner regions
+- finalization modal markup shell
 
 ### Server Owns
 
-- item search rules
+- authoritative checkout-catalog payload shape
+- pre-finalize cart validation
 - item availability truth
 - sale validation
 - concurrency checks at save time
 - item status transition to `sold`
 - final persisted total
-- receipt generation and print routes
+- response payloads for conflict and success cases
 
 ## Backend API Style
 
@@ -238,7 +239,8 @@ HTML pages:
 
 Interactive endpoints:
 
-- `GET /api/items/search?q=BK-0`
+- one lightweight checkout-catalog endpoint
+- one pre-finalize validation endpoint
 - `POST /api/sales`
 - optionally `POST /api/items/{id}/missing` if asynchronous reconciliation interaction is later useful
 
@@ -272,9 +274,9 @@ src/
       js/
         checkout/
           checkout-page.js
-          search-service.js
+          catalog-service.js
           cart-store.js
-          keyboard.js
+          finalize-check.js
           save-sale.js
       css/
         site.css
@@ -312,6 +314,12 @@ Recommended approach:
 - redirect protected pages to an admin unlock page when needed
 
 This is an operational misuse-prevention mechanism, not a full security model.
+
+## Configuration Direction
+
+- use `appsettings.json` as the configuration source for V1
+
+This should cover the practical application settings such as database path, event metadata, admin password, printing behavior, and local paths.
 
 ## Core Principles
 

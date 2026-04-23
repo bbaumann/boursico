@@ -273,7 +273,7 @@ Recommended indexes:
 
 These support:
 
-- fast autocomplete on item reference and title
+- fast live-filtered lookup on item reference and title
 - seller sheet generation
 - post-sale filtering by item status
 - event-level sale listing and export
