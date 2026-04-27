@@ -84,6 +84,28 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
+    public async Task SellerDetailsPage_Get_DefaultsToEmailPreregistrationWithTenRows()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(IntakeMode.EmailPreregistration, pageModel.Input.IntakeMode);
+        Assert.Equal(10, pageModel.Input.Rows.Count);
+    }
+
+    [Fact]
     public async Task SellerEditPage_Post_UpdatesSellerAndRedirectsToDetails()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

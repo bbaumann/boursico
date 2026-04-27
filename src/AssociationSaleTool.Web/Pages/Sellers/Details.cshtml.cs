@@ -9,7 +9,7 @@ namespace AssociationSaleTool.Web.Pages.Sellers;
 
 public sealed class DetailsModel(IntakeService intakeService) : PageModel
 {
-    private const int DefaultRowCount = 5;
+    private const int DefaultRowCount = 10;
 
     [BindProperty]
     public ItemBatchInput Input { get; set; } = CreateDefaultInput();
@@ -142,7 +142,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
     {
         return new ItemBatchInput
         {
-            IntakeMode = IntakeMode.InPerson,
+            IntakeMode = IntakeMode.EmailPreregistration,
             Rows = Enumerable.Range(0, DefaultRowCount)
                 .Select(_ => new ItemRowInput())
                 .ToList()

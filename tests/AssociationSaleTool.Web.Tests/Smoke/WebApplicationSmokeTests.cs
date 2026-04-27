@@ -157,6 +157,85 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellerDetailsDisplaysTenDefaultRegistrationRowsAndAddRowButton()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-006",
+                FirstName = "Jeanne",
+                LastName = "Moreau",
+                Email = "jeanne@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("name=\"Input.Rows[9].Title\"", content);
+        Assert.DoesNotContain("name=\"Input.Rows[10].Title\"", content);
+        Assert.Contains("data-item-registration-table", content);
+        Assert.Contains("data-add-item-row", content);
+        Assert.Contains("aria-label=\"Ajouter une ligne\"", content);
+    }
+
+    [Fact]
+    public async Task SellerDetailsLoadsAddRowScript()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-007",
+                FirstName = "Alice",
+                LastName = "Lemoine",
+                Email = "alice@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("/js/site.js", content);
+    }
+
+    [Fact]
+    public async Task SiteCssPlacesAddRowButtonOnLeft()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/css/site.css");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains(".item-registration-actions", content);
+        Assert.Contains("justify-content: flex-start;", content);
+    }
+
+    [Fact]
     public async Task SellerDetailsDisplaysDeleteActionWithConfirmationForDeletableItemsOnly()
     {
         var client = _factory.CreateClient();
