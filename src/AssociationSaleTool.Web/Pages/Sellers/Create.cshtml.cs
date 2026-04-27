@@ -31,13 +31,13 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
 
     public sealed class InputModel
     {
-        [Required]
+        [Required(ErrorMessage = "Le prénom est obligatoire.")]
         public string FirstName { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Le nom est obligatoire.")]
         public string LastName { get; set; } = string.Empty;
 
-        [EmailAddress]
+        [EmailAddress(ErrorMessage = "L'adresse e-mail doit être valide.")]
         public string? Email { get; set; }
 
         public string? Phone { get; set; }

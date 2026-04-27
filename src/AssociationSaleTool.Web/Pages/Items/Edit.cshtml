@@ -1,30 +1,30 @@
-@page "{id:long}"
+@page "/articles/{id:long}/modifier"
 @model AssociationSaleTool.Web.Pages.Items.EditModel
 @{
-    ViewData["Title"] = "Edit Item";
+    ViewData["Title"] = "Modifier l'article";
 }
 
 <section class="page-card form-card">
-    <p class="eyebrow">Intake</p>
-    <h1 class="page-title">Edit Item</h1>
+    <p class="eyebrow">Saisie</p>
+    <h1 class="page-title">Modifier l'article</h1>
     <p class="seller-meta">@Model.Item!.Reference</p>
 
     <form method="post" class="stack-form">
         <label>
-            <span>Title</span>
+            <span>Titre</span>
             <input asp-for="Input.Title" />
             <span asp-validation-for="Input.Title" class="validation"></span>
         </label>
 
         <label>
-            <span>Seller price (cents)</span>
-            <input asp-for="Input.SellerPriceCents" />
-            <span asp-validation-for="Input.SellerPriceCents" class="validation"></span>
+            <span>Prix vendeur (EUR)</span>
+            <input asp-for="Input.SellerPrice" inputmode="decimal" />
+            <span asp-validation-for="Input.SellerPrice" class="validation"></span>
         </label>
 
         <div class="form-actions">
-            <button type="submit" class="button-link button-link-solid">Save Item</button>
-            <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.Item.SellerId">Cancel</a>
+            <button type="submit" class="button-link button-link-solid">Enregistrer l'article</button>
+            <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.Item.SellerId">Annuler</a>
         </div>
     </form>
 </section>

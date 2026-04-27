@@ -1,5 +1,6 @@
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Domain.Pricing;
+using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -58,9 +59,14 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         return RedirectToPage("/Sellers/Details", new { id });
     }
 
-    public static int? PreviewSalePrice(int? sellerPriceCents)
+    public static int? PreviewSalePrice(string? sellerPrice)
     {
-        return sellerPriceCents is >= 0 ? PriceCalculator.ToSalePriceCents(sellerPriceCents.Value) : null;
+        if (!EuroPriceInput.TryParseToCents(sellerPrice, out var cents) || cents < 0)
+        {
+            return null;
+        }
+
+        return PriceCalculator.ToSalePriceCents(cents);
     }
 
     private List<CreateItemRowRequest> ValidateRows()
@@ -71,7 +77,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         {
             var row = Input.Rows[index];
             var titleMissing = string.IsNullOrWhiteSpace(row.Title);
-            var priceMissing = !row.SellerPriceCents.HasValue;
+            var priceMissing = string.IsNullOrWhiteSpace(row.SellerPrice);
 
             if (titleMissing && priceMissing)
             {
@@ -80,21 +86,25 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
             if (titleMissing)
             {
-                ModelState.AddModelError($"Input.Rows[{index}].Title", "Title is required when a price is entered.");
+                ModelState.AddModelError($"Input.Rows[{index}].Title", "Le titre est obligatoire lorsqu'un prix est saisi.");
                 continue;
             }
 
             if (priceMissing)
             {
-                ModelState.AddModelError($"Input.Rows[{index}].SellerPriceCents", "Seller price is required when a title is entered.");
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur est obligatoire lorsqu'un titre est saisi.");
                 continue;
             }
 
-            var sellerPriceCents = row.SellerPriceCents!.Value;
+            if (!EuroPriceInput.TryParseToCents(row.SellerPrice, out var sellerPriceCents))
+            {
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur doit être un montant décimal en euros.");
+                continue;
+            }
 
             if (sellerPriceCents < 0)
             {
-                ModelState.AddModelError($"Input.Rows[{index}].SellerPriceCents", "Seller price must be zero or greater.");
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur doit être supérieur ou égal à zéro.");
                 continue;
             }
 
@@ -103,7 +113,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
         if (rowsToCreate.Count == 0)
         {
-            ModelState.AddModelError(string.Empty, "Enter at least one complete item row.");
+            ModelState.AddModelError(string.Empty, "Saisissez au moins une ligne d'article complète.");
         }
 
         return rowsToCreate;
@@ -139,6 +149,6 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
     {
         public string? Title { get; set; }
 
-        public int? SellerPriceCents { get; set; }
+        public string? SellerPrice { get; set; }
     }
 }

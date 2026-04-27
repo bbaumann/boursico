@@ -1,21 +1,21 @@
-@page
+@page "/vendeurs"
 @model AssociationSaleTool.Web.Pages.Sellers.IndexModel
 @{
-    ViewData["Title"] = "Sellers";
+    ViewData["Title"] = "Vendeurs";
 }
 
 <section class="page-card">
     <div class="page-header">
         <div>
-            <p class="eyebrow">Intake</p>
-            <h1 class="page-title">Sellers</h1>
+            <p class="eyebrow">Saisie</p>
+            <h1 class="page-title">Vendeurs</h1>
         </div>
-        <a class="button-link" asp-page="/Sellers/Create">Create Seller</a>
+        <a class="button-link" asp-page="/Sellers/Create">Créer un vendeur</a>
     </div>
 
     @if (Model.Sellers.Count == 0)
     {
-        <p class="empty-state">No sellers yet.</p>
+        <p class="empty-state">Aucun vendeur pour le moment.</p>
     }
     else
     {
@@ -23,9 +23,9 @@
             <thead>
                 <tr>
                     <th>Code</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Items</th>
+                    <th>Nom</th>
+                    <th>E-mail</th>
+                    <th>Articles</th>
                     <th></th>
                 </tr>
             </thead>
@@ -37,7 +37,7 @@
                     <td>@seller.FirstName @seller.LastName</td>
                     <td>@(seller.Email ?? "—")</td>
                     <td>@seller.Items.Count</td>
-                    <td><a asp-page="/Sellers/Details" asp-route-id="@seller.Id">Open</a></td>
+                    <td><a asp-page="/Sellers/Details" asp-route-id="@seller.Id">Ouvrir</a></td>
                 </tr>
             }
             </tbody>

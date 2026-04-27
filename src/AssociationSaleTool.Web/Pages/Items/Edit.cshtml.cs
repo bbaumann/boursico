@@ -1,4 +1,5 @@
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         Input = new InputModel
         {
             Title = item.Title,
-            SellerPriceCents = item.SellerPriceCents
+            SellerPrice = EuroPriceInput.FormatFromCents(item.SellerPriceCents)
         };
 
         return Page();
@@ -47,16 +48,28 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             return Page();
         }
 
-        await intakeService.UpdateItemAsync(id, new UpdateItemRequest(Input.Title, Input.SellerPriceCents), cancellationToken);
+        if (!EuroPriceInput.TryParseToCents(Input.SellerPrice, out var sellerPriceCents))
+        {
+            ModelState.AddModelError($"{nameof(Input)}.{nameof(Input.SellerPrice)}", "Le prix vendeur doit être un montant décimal en euros.");
+            return Page();
+        }
+
+        if (sellerPriceCents < 0)
+        {
+            ModelState.AddModelError($"{nameof(Input)}.{nameof(Input.SellerPrice)}", "Le prix vendeur doit être supérieur ou égal à zéro.");
+            return Page();
+        }
+
+        await intakeService.UpdateItemAsync(id, new UpdateItemRequest(Input.Title, sellerPriceCents), cancellationToken);
         return RedirectToPage("/Sellers/Details", new { id = item.SellerId });
     }
 
     public sealed class InputModel
     {
-        [Required]
+        [Required(ErrorMessage = "Le titre est obligatoire.")]
         public string Title { get; set; } = string.Empty;
 
-        [Range(0, int.MaxValue)]
-        public int SellerPriceCents { get; set; }
+        [Required(ErrorMessage = "Le prix vendeur est obligatoire.")]
+        public string SellerPrice { get; set; } = string.Empty;
     }
 }

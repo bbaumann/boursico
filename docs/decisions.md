@@ -347,3 +347,17 @@ This file captures the main project decisions in a lightweight ADR format.
 - Consequence:
   - the agent has one small and explicit configuration contract to implement
   - runtime behavior such as SQLite pragmas and retry policies should be handled in application code rather than as V1 config switches
+
+## D-027 Use French For The User-Facing UI And Routes
+
+- Status: accepted
+- Key drivers:
+  - all operators are French-speaking
+  - English labels and URLs add avoidable friction during event operations
+  - V1 does not need a multilingual UI framework
+- Decision:
+  - use French for all operator-facing UI labels, titles, helper text, validation messages, and user-facing URLs
+  - keep internal code identifiers and canonical technical documentation in English
+- Consequence:
+  - Razor Pages should use explicit French route templates where needed
+  - the UI contract is French even though the implementation language remains English

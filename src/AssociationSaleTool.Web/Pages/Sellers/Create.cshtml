@@ -1,32 +1,32 @@
-@page
+@page "/vendeurs/creer"
 @model AssociationSaleTool.Web.Pages.Sellers.CreateModel
 @{
-    ViewData["Title"] = "Create Seller";
+    ViewData["Title"] = "Créer un vendeur";
 }
 
 <section class="page-card form-card">
-    <p class="eyebrow">Intake</p>
-    <h1 class="page-title">Create Seller</h1>
+    <p class="eyebrow">Saisie</p>
+    <h1 class="page-title">Créer un vendeur</h1>
 
     <form method="post" class="stack-form">
         <div class="field-grid">
             <label>
-                <span>First name</span>
+                <span>Prénom</span>
                 <input asp-for="Input.FirstName" />
                 <span asp-validation-for="Input.FirstName" class="validation"></span>
             </label>
             <label>
-                <span>Last name</span>
+                <span>Nom</span>
                 <input asp-for="Input.LastName" />
                 <span asp-validation-for="Input.LastName" class="validation"></span>
             </label>
             <label>
-                <span>Email</span>
+                <span>E-mail</span>
                 <input asp-for="Input.Email" />
                 <span asp-validation-for="Input.Email" class="validation"></span>
             </label>
             <label>
-                <span>Phone</span>
+                <span>Téléphone</span>
                 <input asp-for="Input.Phone" />
             </label>
         </div>
@@ -37,8 +37,8 @@
         </label>
 
         <div class="form-actions">
-            <button type="submit" class="button-link button-link-solid">Create Seller</button>
-            <a class="button-link" asp-page="/Sellers/Index">Cancel</a>
+            <button type="submit" class="button-link button-link-solid">Créer le vendeur</button>
+            <a class="button-link" asp-page="/Sellers/Index">Annuler</a>
         </div>
     </form>
 </section>

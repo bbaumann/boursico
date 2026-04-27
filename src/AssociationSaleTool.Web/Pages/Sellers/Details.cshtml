@@ -1,39 +1,38 @@
-@page "{id:long}"
-@using AssociationSaleTool.Web.Domain.Pricing
+@page "/vendeurs/{id:long}"
 @model AssociationSaleTool.Web.Pages.Sellers.DetailsModel
 @{
-    ViewData["Title"] = "Seller Details";
+    ViewData["Title"] = "Détail du vendeur";
 }
 
 <section class="page-card seller-detail-card">
     <div class="page-header">
         <div>
-            <p class="eyebrow">Intake</p>
+            <p class="eyebrow">Saisie</p>
             <h1 class="page-title">@Model.Seller!.FirstName @Model.Seller.LastName</h1>
-            <p class="seller-meta">@Model.Seller.SellerCode · @(Model.Seller.Email ?? "No email")</p>
+            <p class="seller-meta">@Model.Seller.SellerCode · @(Model.Seller.Email ?? "Sans e-mail")</p>
         </div>
         <div class="header-actions">
-            <a class="button-link" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Edit Seller</a>
-            <a class="button-link" asp-page="/Sellers/Index">Back to Sellers</a>
+            <a class="button-link" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Modifier le vendeur</a>
+            <a class="button-link" asp-page="/Sellers/Index">Retour aux vendeurs</a>
         </div>
     </div>
 
     <section class="subsection">
-        <h2>Items</h2>
+        <h2>Articles</h2>
         @if (Model.Items.Count == 0)
         {
-            <p class="empty-state">No items yet for this seller.</p>
+            <p class="empty-state">Aucun article pour ce vendeur.</p>
         }
         else
         {
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Reference</th>
-                        <th>Title</th>
-                        <th>Seller Price</th>
-                        <th>Sale Price</th>
-                        <th>Status</th>
+                        <th>Référence</th>
+                        <th>Titre</th>
+                        <th>Prix vendeur</th>
+                        <th>Prix de vente</th>
+                        <th>Statut</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -45,8 +44,8 @@
                         <td>@item.Title</td>
                         <td>@((item.SellerPriceCents / 100m).ToString("0.00")) EUR</td>
                         <td>@((item.SalePriceCents / 100m).ToString("0.00")) EUR</td>
-                        <td>@item.Status</td>
-                        <td><a asp-page="/Items/Edit" asp-route-id="@item.Id">Edit</a></td>
+                        <td>@AssociationSaleTool.Web.Infrastructure.ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
+                        <td><a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a></td>
                     </tr>
                 }
                 </tbody>
@@ -55,22 +54,22 @@
     </section>
 
     <section class="subsection">
-        <h2>Add Items</h2>
+        <h2>Ajouter des articles</h2>
 
         <form method="post" class="stack-form">
             <div asp-validation-summary="All" class="validation"></div>
 
             <label class="mode-field">
-                <span>Intake Mode</span>
+                <span>Mode de saisie</span>
                 <select asp-for="Input.IntakeMode" asp-items="Html.GetEnumSelectList<AssociationSaleTool.Web.Services.Models.IntakeMode>()"></select>
             </label>
 
             <table class="data-table intake-table">
                 <thead>
                     <tr>
-                        <th>Title</th>
-                        <th>Seller Price (cents)</th>
-                        <th>Sale Price Preview</th>
+                        <th>Titre</th>
+                        <th>Prix vendeur (EUR)</th>
+                        <th>Aperçu prix de vente</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -82,12 +81,12 @@
                             <span asp-validation-for="Input.Rows[i].Title" class="validation"></span>
                         </td>
                         <td>
-                            <input asp-for="Input.Rows[i].SellerPriceCents" />
-                            <span asp-validation-for="Input.Rows[i].SellerPriceCents" class="validation"></span>
+                            <input asp-for="Input.Rows[i].SellerPrice" inputmode="decimal" />
+                            <span asp-validation-for="Input.Rows[i].SellerPrice" class="validation"></span>
                         </td>
                         <td>
                             @{
-                                var preview = AssociationSaleTool.Web.Pages.Sellers.DetailsModel.PreviewSalePrice(Model.Input.Rows[i].SellerPriceCents);
+                                var preview = AssociationSaleTool.Web.Pages.Sellers.DetailsModel.PreviewSalePrice(Model.Input.Rows[i].SellerPrice);
                             }
                             @(preview.HasValue ? $"{preview.Value / 100m:0.00} EUR" : "—")
                         </td>
@@ -97,7 +96,7 @@
             </table>
 
             <div class="form-actions">
-                <button type="submit" class="button-link button-link-solid">Save Item Batch</button>
+                <button type="submit" class="button-link button-link-solid">Enregistrer le lot</button>
             </div>
         </form>
     </section>

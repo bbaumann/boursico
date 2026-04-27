@@ -44,6 +44,8 @@ It intentionally leaves `UC-02C Confirm Preregistered Delivery` for the next int
 
 The intake workflow is seller-centric rather than item-centric.
 
+The operator-facing implementation for this workflow must use French UI labels and French user-facing URLs.
+
 The operator first creates or opens a seller, then works on that seller’s items from a single seller detail page. The page includes:
 
 - seller identity summary

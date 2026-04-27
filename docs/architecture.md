@@ -55,6 +55,7 @@ Properties:
 
 - browser-based
 - large, simple, high-contrast UI
+- French labels and French user-facing URLs
 - optimized for elderly volunteers
 - very narrow workflow
 

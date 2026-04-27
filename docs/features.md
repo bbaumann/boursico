@@ -35,6 +35,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - No seller information in the checkout flow
 - No payment method tracking beyond the fact that the sale was completed
 - No barcode scanner required in V1
+- All operator-facing UI labels and URLs must be in French
 - Search must support partial `reference + title` filtering with immediate updates on each keystroke
 - The operator selects an item explicitly from the filtered table before it is added to the cart
 

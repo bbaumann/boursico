@@ -4,6 +4,7 @@ using AssociationSaleTool.Web.Pages.Sellers;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -65,8 +66,8 @@ public sealed class SellersPageModelTests
                 IntakeMode = IntakeMode.InPerson,
                 Rows =
                 [
-                    new DetailsModel.ItemRowInput { Title = "Toy train", SellerPriceCents = 500 },
-                    new DetailsModel.ItemRowInput { Title = "Toy piano", SellerPriceCents = 1000 }
+                    new DetailsModel.ItemRowInput { Title = "Toy train", SellerPrice = "4,50" },
+                    new DetailsModel.ItemRowInput { Title = "Toy piano", SellerPrice = "10.00" }
                 ]
             }
         };
@@ -76,6 +77,10 @@ public sealed class SellersPageModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal(2, await context.Items.CountAsync());
+        Assert.Collection(
+            await context.Items.OrderBy(x => x.ItemNumber).ToListAsync(),
+            first => Assert.Equal(450, first.SellerPriceCents),
+            second => Assert.Equal(1000, second.SellerPriceCents));
     }
 
     [Fact]
@@ -134,7 +139,7 @@ public sealed class SellersPageModelTests
             Input = new ItemEditModel.InputModel
             {
                 Title = "Concert toy piano",
-                SellerPriceCents = 1200
+                SellerPrice = "12,00"
             }
         };
 
@@ -143,5 +148,68 @@ public sealed class SellersPageModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal("Concert toy piano", (await context.Items.SingleAsync()).Title);
+        Assert.Equal(1200, (await context.Items.SingleAsync()).SellerPriceCents);
+    }
+
+    [Fact]
+    public async Task SellerDetailsPage_Post_RoundsEuroInputToTwoDecimals()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+
+        var pageModel = new DetailsModel(service)
+        {
+            Input = new DetailsModel.ItemBatchInput
+            {
+                IntakeMode = IntakeMode.InPerson,
+                Rows = [new DetailsModel.ItemRowInput { Title = "Rounded toy", SellerPrice = "4.555" }]
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(456, (await context.Items.SingleAsync()).SellerPriceCents);
+    }
+
+    [Fact]
+    public async Task ItemEditPage_Post_ReturnsPageForInvalidEuroPrice()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var pageModel = new ItemEditModel(service)
+        {
+            Input = new ItemEditModel.InputModel
+            {
+                Title = "Concert toy piano",
+                SellerPrice = "abc"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(item.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
     }
 }
