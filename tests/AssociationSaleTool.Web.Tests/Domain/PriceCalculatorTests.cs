@@ -2,11 +2,20 @@ using AssociationSaleTool.Web.Domain.Pricing;
 
 namespace AssociationSaleTool.Web.Tests.Domain;
 
-public class PriceCalculatorTests
+public class CheckoutPricingCalculatorTests
 {
-    [Fact]
-    public void AppliesTwentyPercentMarginToSellerPrice()
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(500, 50, 550)]
+    [InlineData(999, 100, 1099)]
+    [InlineData(105, 11, 116)]
+    [InlineData(104, 10, 114)]
+    public void CalculateTotals_AppliesTenPercentSaleLevelFee(int subtotalCents, int expectedFeeCents, int expectedTotalCents)
     {
-        Assert.Equal(600, PriceCalculator.ToSalePriceCents(500));
+        var totals = CheckoutPricingCalculator.CalculateTotals(subtotalCents);
+
+        Assert.Equal(subtotalCents, totals.SubtotalSellerPriceCents);
+        Assert.Equal(expectedFeeCents, totals.CheckoutFeeCents);
+        Assert.Equal(expectedTotalCents, totals.TotalPaidCents);
     }
 }

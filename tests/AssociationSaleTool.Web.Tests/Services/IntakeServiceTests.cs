@@ -60,7 +60,6 @@ public sealed class IntakeServiceTests
                 Assert.Equal(1, first.ItemNumber);
                 Assert.Equal("AA-001", first.Reference);
                 Assert.Equal(500, first.SellerPriceCents);
-                Assert.Equal(600, first.SalePriceCents);
                 Assert.Equal("in_stock", first.Status);
             },
             second =>
@@ -68,7 +67,6 @@ public sealed class IntakeServiceTests
                 Assert.Equal(2, second.ItemNumber);
                 Assert.Equal("AA-002", second.Reference);
                 Assert.Equal(650, second.SellerPriceCents);
-                Assert.Equal(780, second.SalePriceCents);
                 Assert.Equal("in_stock", second.Status);
             });
     }
@@ -124,7 +122,7 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
-    public async Task UpdateItemAsync_ChangesTitleAndRecomputesSalePriceFromSellerPrice()
+    public async Task UpdateItemAsync_ChangesTitleAndSellerPrice()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -147,7 +145,6 @@ public sealed class IntakeServiceTests
         var updatedItem = await context.Items.SingleAsync();
         Assert.Equal("Large toy piano", updatedItem.Title);
         Assert.Equal(1200, updatedItem.SellerPriceCents);
-        Assert.Equal(1440, updatedItem.SalePriceCents);
         Assert.Equal("AA-001", updatedItem.Reference);
         Assert.Equal("in_stock", updatedItem.Status);
     }

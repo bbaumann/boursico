@@ -70,7 +70,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 450,
-                SalePriceCents = 500,
                 Status = "registered"
             });
 

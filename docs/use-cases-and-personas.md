@@ -91,7 +91,7 @@ Description:
 
 Expected outcome:
 
-- Item has a unique reference, seller price, customer sale price, and an initial status consistent with the intake mode.
+- Item has a unique reference, one seller-set printed price, and an initial status consistent with the intake mode.
 
 ### UC-02A Record Email Preregistration
 
@@ -163,7 +163,7 @@ Description:
 
 Expected outcome:
 
-- Item is shown in the cart with its price and contributes to the total.
+- Item is shown in the cart with its printed price and contributes to the subtotal, fee, and final total.
 
 ### UC-05 Save Sale
 
@@ -177,7 +177,7 @@ Description:
 
 Expected outcome:
 
-- Sale is persisted, affected items are no longer in stock, and the screen resets for the next customer.
+- Sale is persisted with subtotal, checkout fee, and total paid; affected items are no longer in stock; and the screen resets for the next customer.
 
 ### UC-06 Print Receipt
 

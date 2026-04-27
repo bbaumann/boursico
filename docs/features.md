@@ -23,11 +23,12 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Register sellers and items in person when toys are physically brought in
 - Confirm preregistered items against physically delivered toys
 - Assign one unique reference per item
-- Store seller price and customer sale price per item
+- Store one seller-set printed price per item
 - Search items by `reference + title` using a live-filtered table
 - Add selected items to a cart
-- Compute the bill total automatically
+- Compute subtotal, checkout fee, and final bill total automatically
 - Save a sale as paid
+- Store sale subtotal, checkout fee, and total paid
 - Optionally print a receipt from one receipt-details field
 
 ### Sale-Day UX Constraints
@@ -38,6 +39,14 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - All operator-facing UI labels and URLs must be in French
 - Search must support partial `reference + title` filtering with immediate updates on each keystroke
 - The operator selects an item explicitly from the filtered table before it is added to the cart
+
+### Checkout Pricing Rule
+
+- the seller-entered item price is also the printed price seen by the customer
+- cart subtotal = sum of item seller prices
+- checkout fee = 10 percent of subtotal, rounded to the nearest cent with midpoint values rounded away from zero
+- final amount paid = subtotal + checkout fee
+- seller payout never includes the checkout fee
 
 ### Item Data Freeze At Sale Start
 
@@ -50,7 +59,6 @@ The following fields must no longer be editable in normal operations:
 - `seller_id`
 - `title`
 - `seller_price`
-- `sale_price`
 
 After sale start, only workflow-driven status changes remain allowed in V1:
 
@@ -67,7 +75,7 @@ After sale start, only workflow-driven status changes remain allowed in V1:
 6. Operator repeats until the customer is done.
 7. Operator clicks `Finalize`.
 8. The app validates the cart against the live database before showing the finalization modal.
-9. If validation succeeds, a finalization modal shows the total and item count.
+9. If validation succeeds, a finalization modal shows the subtotal, checkout fee, final total, and item count.
 10. Operator chooses `Go back`, `Save`, or `Save and print receipt`.
 11. The server re-validates that every cart item is still `in_stock` at save time inside the save transaction.
 12. If validation succeeds, the sale is persisted and the items become `sold`.

@@ -58,7 +58,6 @@ Represents one physical toy.
 - `item_number`
 - `title`
 - `seller_price_cents`
-- `sale_price_cents`
 - `status`
 
 ### Notes
@@ -66,7 +65,8 @@ Represents one physical toy.
 - `reference` is the human-facing code, e.g. `BK-014`.
 - `item_number` is the seller-local internal sequence used to build the reference.
 - `title` is the item label shown in search results, carts, and sheets.
-- prices are stored as integer cents, e.g. `250` for `2.50 EUR`.
+- `seller_price_cents` is both the seller payout price and the printed per-item customer price in V1.
+- money values are stored as integer cents, e.g. `250` for `2.50 EUR`.
 - `status` uses the V1 status model: `registered`, `in_stock`, `not_provided`, `sold`, `missing`.
 
 ## `sale`
@@ -77,14 +77,16 @@ Represents one completed checkout.
 
 - `id`
 - `sold_at`
-- `total_amount_cents`
+- `subtotal_seller_price_cents`
+- `checkout_fee_cents`
+- `total_paid_cents`
 - `receipt_details`
 
 ### Notes
 
 - There is no `is_paid` field in V1; persisting the sale means the checkout is complete.
 - `sold_at` should be stored in UTC.
-- `total_amount_cents` is stored as integer cents.
+- `subtotal_seller_price_cents`, `checkout_fee_cents`, and `total_paid_cents` are stored as integer cents.
 - `receipt_details` is an optional free-text field used only in the rare reimbursement case.
 - If `receipt_details` is null, no receipt was requested in V1.
 
@@ -98,11 +100,11 @@ Represents one sold item inside one sale.
 - `sale_id`
 - `item_id`
 - `seller_price_at_sale_cents`
-- `sale_price_at_sale_cents`
 
 ### Notes
 
-- Price snapshots are stored on the sale line to protect reconciliation if item data is later edited by mistake.
+- `seller_price_at_sale_cents` is the per-item snapshot stored to protect reconciliation if item data is later edited by mistake.
+- In V1, this snapshot is also the printed item price seen by the customer.
 - Snapshot prices are stored as integer cents.
 - An item can appear in at most one sale line.
 
@@ -152,13 +154,14 @@ Represents one sold item inside one sale.
 - `item_number`: required
 - `title`: required
 - `seller_price_cents`: required
-- `sale_price_cents`: required
 - `status`: required
 
 ## `sale`
 
 - `sold_at`: required
-- `total_amount_cents`: required
+- `subtotal_seller_price_cents`: required
+- `checkout_fee_cents`: required
+- `total_paid_cents`: required
 - `receipt_details`: optional
 
 ## `sale_line`
@@ -166,7 +169,6 @@ Represents one sold item inside one sale.
 - `sale_id`: required
 - `item_id`: required
 - `seller_price_at_sale_cents`: required
-- `sale_price_at_sale_cents`: required
 
 ## Enumerations
 
@@ -204,9 +206,9 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - `seller.seller_code` should not change once items exist for the seller
 - before sale start, intake staff may still correct item master data if needed
 - once sale-day checkout opens, item master data becomes read-only in normal operations
-- after sale start, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, `item.seller_price_cents`, and `item.sale_price_cents` should not change
+- after sale start, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
 - after sale start, only workflow-driven status transitions remain allowed in V1
-- `sale.total_amount_cents` should be treated as immutable after creation
+- `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
 - `sale_line` snapshots are immutable
 
 ## Business Invariants
@@ -217,7 +219,9 @@ These are important invariants even if they are enforced first in application lo
 - a sale may only be persisted if every item in the cart is still `in_stock` at transaction time
 - if an item appears in `sale_line`, its status must be `sold`
 - one item can only be sold once
-- `sale.total_amount_cents` must equal the sum of its sale lines' `sale_price_at_sale_cents`
+- `sale.subtotal_seller_price_cents` must equal the sum of its sale lines' `seller_price_at_sale_cents`
+- `sale.checkout_fee_cents` must equal 10 percent of `sale.subtotal_seller_price_cents`, rounded to the nearest cent with midpoint values rounded away from zero
+- `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
 - `item.reference` must match the event seller code and seller-local item number used to generate it
 
 ## Derived Business Meaning

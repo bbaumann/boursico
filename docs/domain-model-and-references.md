@@ -32,7 +32,6 @@ Suggested fields:
 - optional barcode value if later needed
 - title
 - seller price
-- sale price
 - status
 
 ### Sale
@@ -43,7 +42,9 @@ Suggested fields:
 
 - sale id
 - timestamp
-- total amount
+- subtotal seller price
+- checkout fee
+- total paid
 - optional `receipt_details` text
 
 ### SaleLine
@@ -55,7 +56,7 @@ Suggested fields:
 - sale line id
 - sale id
 - item id
-- sold price at time of sale
+- seller price at time of sale
 
 ## Item Status Model
 
@@ -83,14 +84,15 @@ Lifecycle meaning:
 
 ## Price Model
 
-Each item stores two prices:
+Each item stores one price:
 
-- seller price: the amount payable to the seller if the item is payable
-- sale price: the amount charged to the customer
+- seller price: the amount payable to the seller if the item is payable and the printed per-item price seen by the customer in V1
 
-Current business rule:
+Each sale stores the transaction-level customer payment values:
 
-- sale price = seller price + 20 percent
+- subtotal seller price: the sum of the item prices in the cart
+- checkout fee: 10 percent of the subtotal, rounded to the nearest cent with midpoint values rounded away from zero
+- total paid: subtotal + checkout fee
 
 V1 seller settlement uses seller price only.
 

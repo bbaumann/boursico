@@ -14,8 +14,6 @@ public sealed class ItemEntity
 
     public int SellerPriceCents { get; set; }
 
-    public int SalePriceCents { get; set; }
-
     public string Status { get; set; } = string.Empty;
 
     public SellerEntity Seller { get; set; } = null!;

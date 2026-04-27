@@ -1,7 +1,6 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Domain.Items;
-using AssociationSaleTool.Web.Domain.Pricing;
 using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.EntityFrameworkCore;
@@ -79,7 +78,6 @@ public sealed class IntakeService(AppDbContext dbContext)
                 ItemNumber = nextItemNumber,
                 Title = row.Title.Trim(),
                 SellerPriceCents = row.SellerPriceCents,
-                SalePriceCents = PriceCalculator.ToSalePriceCents(row.SellerPriceCents),
                 Status = status
             };
 
@@ -108,7 +106,6 @@ public sealed class IntakeService(AppDbContext dbContext)
         var item = await dbContext.Items.SingleAsync(x => x.Id == itemId, cancellationToken);
         item.Title = request.Title.Trim();
         item.SellerPriceCents = request.SellerPriceCents;
-        item.SalePriceCents = PriceCalculator.ToSalePriceCents(request.SellerPriceCents);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }

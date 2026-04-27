@@ -23,7 +23,7 @@ The lightweight checkout catalog should contain only the fields needed for looku
 - item id
 - reference
 - title
-- sale price in cents
+- seller price in cents
 - current status
 
 The catalog exists to make lookup fast and local.
@@ -52,6 +52,16 @@ Rules:
 - if the operator tries to add the same item twice, the UI shows a clear `already in cart` message
 - duplicate adds are not silently ignored
 - duplicate adds are not allowed to proceed to save-time failure
+- the cart shows each item at its printed item price, which is the seller price in V1
+- the cart computes a subtotal, a checkout fee, and a final total
+
+## Fee Computation
+
+- item printed price = seller price
+- subtotal = sum of item seller prices in the cart
+- checkout fee = 10 percent of the subtotal
+- fee rounding = nearest cent, with midpoint values rounded away from zero
+- final total = subtotal + checkout fee
 
 ## Finalize Flow
 
@@ -81,7 +91,9 @@ If the first validation succeeds, a finalization modal is shown.
 
 The modal must show:
 
-- total amount
+- subtotal
+- checkout fee
+- final total
 - number of items
 
 The modal has exactly three actions:

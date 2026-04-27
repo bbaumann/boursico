@@ -151,7 +151,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-013 Association Margin Is Stored Per Item But Not Used For Seller Settlement
 
-- Status: accepted
+- Status: superseded by D-028
 - Key drivers:
   - sale price is seller price plus 20 percent
   - seller settlement should stay simple and based on seller price only
@@ -320,7 +320,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - printing must not create ambiguity about whether a sale was persisted
 - Decision:
   - when the operator clicks `Finalize`, the cart is first validated against the live database
-  - if validation succeeds, a finalization modal is shown with the total amount, item count, and the actions `Go back`, `Save`, and `Save and print receipt`
+  - if validation succeeds, a finalization modal is shown with the subtotal, checkout fee, final total, item count, and the actions `Go back`, `Save`, and `Save and print receipt`
   - `Go back` returns to the editable cart without saving
   - both `Save` and `Save and print receipt` perform a second authoritative validation inside the save transaction
   - `Save and print receipt` is disabled unless `receipt_details` was filled, and it saves before opening the browser print dialog
@@ -361,3 +361,22 @@ This file captures the main project decisions in a lightweight ADR format.
 - Consequence:
   - Razor Pages should use explicit French route templates where needed
   - the UI contract is French even though the implementation language remains English
+
+## D-028 Model The Association Fee As A Sale-Level 10 Percent Surcharge
+
+- Status: accepted
+- Key drivers:
+  - the seller-entered item price is the printed price the customer sees on each toy
+  - the association fee is applied to the customer checkout total rather than baked into each item price
+  - seller settlement should stay simple and based on seller prices only
+- Decision:
+  - store one item price in V1: `seller_price`
+  - treat that item price as both the seller payout price and the printed per-item customer price
+  - compute a checkout fee equal to 10 percent of the cart subtotal
+  - round the checkout fee to the nearest cent, with midpoint values rounded away from zero
+  - store sale-level payment values on `sale`: subtotal, checkout fee, and total paid
+  - store only `seller_price_at_sale` on each `sale_line`
+- Consequence:
+  - seller settlement remains based on seller price only
+  - customer-paid money is audited at the sale level rather than through a second per-item price
+  - intake no longer needs to compute or show a derived per-item sale price

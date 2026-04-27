@@ -30,7 +30,8 @@ They intentionally do not enforce every business invariant in the database.
 Some rules remain application-level in V1, especially:
 
 - when an item status transitions to `sold`
-- sale total matching the sum of sale lines
+- sale subtotal matching the sum of sale lines
+- checkout fee and total-paid computation
 - preventing unsafe edits once an item has been sold
 
 ## 2. Reference And Seller-Code Semantics
@@ -80,9 +81,10 @@ If later you want strong substring/fuzzy search, likely follow-up options are:
 When saving a sale, the application should perform these steps in one transaction:
 
 1. re-check that every cart item is still `in_stock`
-2. create the `sale`
-3. create all `sale_line` rows
-4. update all corresponding `item.status` rows to `sold`
+2. compute the sale subtotal, checkout fee, and final total
+3. create the `sale`
+4. create all `sale_line` rows
+5. update all corresponding `item.status` rows to `sold`
 
 V1 intentionally does not reserve items at cart time.
 

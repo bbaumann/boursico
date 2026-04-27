@@ -1,5 +1,4 @@
 using AssociationSaleTool.Web.Data.Entities;
-using AssociationSaleTool.Web.Domain.Pricing;
 using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
@@ -57,16 +56,6 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
             cancellationToken);
 
         return RedirectToPage("/Sellers/Details", new { id });
-    }
-
-    public static int? PreviewSalePrice(string? sellerPrice)
-    {
-        if (!EuroPriceInput.TryParseToCents(sellerPrice, out var cents) || cents < 0)
-        {
-            return null;
-        }
-
-        return PriceCalculator.ToSalePriceCents(cents);
     }
 
     private List<CreateItemRowRequest> ValidateRows()

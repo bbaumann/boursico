@@ -31,7 +31,6 @@
                         <th>Référence</th>
                         <th>Titre</th>
                         <th>Prix vendeur</th>
-                        <th>Prix de vente</th>
                         <th>Statut</th>
                         <th></th>
                     </tr>
@@ -43,7 +42,6 @@
                         <td>@item.Reference</td>
                         <td>@item.Title</td>
                         <td>@((item.SellerPriceCents / 100m).ToString("0.00")) EUR</td>
-                        <td>@((item.SalePriceCents / 100m).ToString("0.00")) EUR</td>
                         <td>@AssociationSaleTool.Web.Infrastructure.ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
                         <td><a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a></td>
                     </tr>
@@ -69,7 +67,6 @@
                     <tr>
                         <th>Titre</th>
                         <th>Prix vendeur (EUR)</th>
-                        <th>Aperçu prix de vente</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,12 +80,6 @@
                         <td>
                             <input asp-for="Input.Rows[i].SellerPrice" inputmode="decimal" />
                             <span asp-validation-for="Input.Rows[i].SellerPrice" class="validation"></span>
-                        </td>
-                        <td>
-                            @{
-                                var preview = AssociationSaleTool.Web.Pages.Sellers.DetailsModel.PreviewSalePrice(Model.Input.Rows[i].SellerPrice);
-                            }
-                            @(preview.HasValue ? $"{preview.Value / 100m:0.00} EUR" : "—")
                         </td>
                     </tr>
                 }

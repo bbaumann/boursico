@@ -23,7 +23,7 @@
 - [ ] **Step 1: Write the failing service tests**
 - [ ] **Step 2: Run the targeted tests to verify the missing service behavior fails**
 - [ ] **Step 3: Implement seller creation with next-code allocation**
-- [ ] **Step 4: Implement batch item creation with numbering, references, prices, and initial status**
+- [ ] **Step 4: Implement batch item creation with numbering, references, seller price, and initial status**
 - [ ] **Step 5: Run the targeted service tests until they pass**
 
 ### Task 2: Add edit coverage for pre-sale seller and item correction
@@ -68,7 +68,7 @@
 - [ ] **Step 1: Write failing tests for posting a multi-row intake batch**
 - [ ] **Step 2: Run the targeted tests to verify they fail**
 - [ ] **Step 3: Implement a server-rendered multi-row item intake form on the seller detail page**
-- [ ] **Step 4: Show existing items with reference, title, seller price, sale price, and status**
+- [ ] **Step 4: Show existing items with reference, title, seller price, and status**
 - [ ] **Step 5: Run the targeted page-model tests until they pass**
 
 ### Task 5: Add item correction UI and full verification
@@ -82,7 +82,7 @@
 
 - [ ] **Step 1: Write failing tests for item edit page behavior**
 - [ ] **Step 2: Run the targeted tests to verify they fail**
-- [ ] **Step 3: Implement item edit UI for title and prices**
+- [ ] **Step 3: Implement item edit UI for title and seller price**
 - [ ] **Step 4: Extend the smoke test to cover the seller pages happy path at a basic level**
 - [ ] **Step 5: Run the full test project and confirm the intake slice passes**
 - [ ] **Step 6: Commit**

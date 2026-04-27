@@ -63,7 +63,6 @@ It must support:
 
 - adding multiple items in one submission
 - entering item title and seller price per row
-- showing computed sale price per row
 - persisting new rows with the chosen intake mode
 - keeping existing items visible below or beside the entry form
 
@@ -95,14 +94,14 @@ For this slice, seller editing is still allowed because the sale-start freeze is
 - item numbers are allocated per seller and increment monotonically
 - item references are stored in final form as `SELLERCODE-NNN`
 - seller price is entered by the operator
-- sale price is computed from seller price using the documented 20 percent margin rule
+- seller price is also the printed per-item customer price in V1
+- checkout fee logic is not part of intake
 - initial item status is derived from intake mode
 
 Pre-sale correction is allowed in this slice for:
 
 - title
 - seller price
-- sale price
 
 The reference, seller link, and item number should be treated as stable once assigned.
 
@@ -122,7 +121,7 @@ The service must be the place where seller code allocation, item number allocati
 2. The system allocates the next seller code.
 3. Operator opens the seller page.
 4. Operator chooses intake mode and enters multiple item rows.
-5. The service validates rows, allocates seller-local item numbers, computes references and sale prices, and inserts the items.
+5. The service validates rows, allocates seller-local item numbers, computes references, and inserts the items.
 6. The page reloads with the newly created items visible.
 
 ## Validation
@@ -144,7 +143,6 @@ Automated coverage for this slice should focus on:
 - item batch creation allocates sequential seller-local item numbers
 - item batch creation persists correct references
 - intake mode maps to the correct initial status
-- sale price is computed correctly from seller price
 - pages load and post successfully for the basic happy paths
 
 ## Milestone Definition
@@ -155,5 +153,5 @@ The intake foundation slice is complete when:
 - sellers can be listed and opened
 - multiple items can be added for one seller in a single submission
 - both preregistration and in-person intake modes work
-- stored items show correct reference, numbering, prices, and status
+- stored items show correct reference, numbering, seller price, and status
 - pre-sale seller and item correction is possible through the UI

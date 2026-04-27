@@ -6,7 +6,11 @@ public sealed class SaleEntity
 
     public DateTime SoldAt { get; set; }
 
-    public int TotalAmountCents { get; set; }
+    public int SubtotalSellerPriceCents { get; set; }
+
+    public int CheckoutFeeCents { get; set; }
+
+    public int TotalPaidCents { get; set; }
 
     public string? ReceiptDetails { get; set; }
 

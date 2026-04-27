@@ -39,7 +39,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.ItemNumber).HasColumnName("item_number").IsRequired();
             entity.Property(x => x.Title).HasColumnName("title").IsRequired();
             entity.Property(x => x.SellerPriceCents).HasColumnName("seller_price_cents").IsRequired();
-            entity.Property(x => x.SalePriceCents).HasColumnName("sale_price_cents").IsRequired();
             entity.Property(x => x.Status).HasColumnName("status").IsRequired();
 
             entity.HasOne(x => x.Seller)
@@ -59,7 +58,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             {
                 table.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')");
                 table.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
-                table.HasCheckConstraint("ck_item_sale_price_cents", "sale_price_cents >= 0");
             });
         });
 
@@ -68,13 +66,17 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("sale");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.SoldAt).HasColumnName("sold_at").IsRequired();
-            entity.Property(x => x.TotalAmountCents).HasColumnName("total_amount_cents").IsRequired();
+            entity.Property(x => x.SubtotalSellerPriceCents).HasColumnName("subtotal_seller_price_cents").IsRequired();
+            entity.Property(x => x.CheckoutFeeCents).HasColumnName("checkout_fee_cents").IsRequired();
+            entity.Property(x => x.TotalPaidCents).HasColumnName("total_paid_cents").IsRequired();
             entity.Property(x => x.ReceiptDetails).HasColumnName("receipt_details");
             entity.HasIndex(x => x.SoldAt);
 
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("ck_sale_total_amount_cents", "total_amount_cents >= 0");
+                table.HasCheckConstraint("ck_sale_subtotal_seller_price_cents", "subtotal_seller_price_cents >= 0");
+                table.HasCheckConstraint("ck_sale_checkout_fee_cents", "checkout_fee_cents >= 0");
+                table.HasCheckConstraint("ck_sale_total_paid_cents", "total_paid_cents >= 0");
             });
         });
 
@@ -85,7 +87,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.SaleId).HasColumnName("sale_id").IsRequired();
             entity.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
             entity.Property(x => x.SellerPriceAtSaleCents).HasColumnName("seller_price_at_sale_cents").IsRequired();
-            entity.Property(x => x.SalePriceAtSaleCents).HasColumnName("sale_price_at_sale_cents").IsRequired();
 
             entity.HasOne(x => x.Sale)
                 .WithMany(x => x.SaleLines)
@@ -103,7 +104,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable(table =>
             {
                 table.HasCheckConstraint("ck_sale_line_seller_price_cents", "seller_price_at_sale_cents >= 0");
-                table.HasCheckConstraint("ck_sale_line_sale_price_cents", "sale_price_at_sale_cents >= 0");
             });
         });
     }

@@ -21,7 +21,6 @@ CREATE TABLE item (
     item_number INTEGER NOT NULL,
     title TEXT NOT NULL,
     seller_price_cents INTEGER NOT NULL,
-    sale_price_cents INTEGER NOT NULL,
     status TEXT NOT NULL,
     CONSTRAINT fk_item_seller
         FOREIGN KEY (seller_id)
@@ -32,8 +31,6 @@ CREATE TABLE item (
         CHECK (status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')),
     CONSTRAINT ck_item_seller_price_cents
         CHECK (seller_price_cents >= 0),
-    CONSTRAINT ck_item_sale_price_cents
-        CHECK (sale_price_cents >= 0),
     CONSTRAINT uq_item_reference UNIQUE (reference),
     CONSTRAINT uq_item_seller_number UNIQUE (seller_id, item_number)
 );
@@ -41,10 +38,16 @@ CREATE TABLE item (
 CREATE TABLE sale (
     id INTEGER PRIMARY KEY,
     sold_at TEXT NOT NULL,
-    total_amount_cents INTEGER NOT NULL,
+    subtotal_seller_price_cents INTEGER NOT NULL,
+    checkout_fee_cents INTEGER NOT NULL,
+    total_paid_cents INTEGER NOT NULL,
     receipt_details TEXT,
-    CONSTRAINT ck_sale_total_amount_cents
-        CHECK (total_amount_cents >= 0)
+    CONSTRAINT ck_sale_subtotal_seller_price_cents
+        CHECK (subtotal_seller_price_cents >= 0),
+    CONSTRAINT ck_sale_checkout_fee_cents
+        CHECK (checkout_fee_cents >= 0),
+    CONSTRAINT ck_sale_total_paid_cents
+        CHECK (total_paid_cents >= 0)
 );
 
 CREATE TABLE sale_line (
@@ -52,7 +55,6 @@ CREATE TABLE sale_line (
     sale_id INTEGER NOT NULL,
     item_id INTEGER NOT NULL,
     seller_price_at_sale_cents INTEGER NOT NULL,
-    sale_price_at_sale_cents INTEGER NOT NULL,
     CONSTRAINT fk_sale_line_sale
         FOREIGN KEY (sale_id)
         REFERENCES sale(id)
@@ -65,8 +67,6 @@ CREATE TABLE sale_line (
         ON DELETE RESTRICT,
     CONSTRAINT ck_sale_line_seller_price_cents
         CHECK (seller_price_at_sale_cents >= 0),
-    CONSTRAINT ck_sale_line_sale_price_cents
-        CHECK (sale_price_at_sale_cents >= 0),
     CONSTRAINT uq_sale_line_item UNIQUE (item_id)
 );
 
