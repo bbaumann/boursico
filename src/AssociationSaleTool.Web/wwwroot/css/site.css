@@ -108,6 +108,125 @@ h1 {
   font-size: 1rem;
 }
 
+.page-card {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(72, 61, 43, 0.12);
+  padding: 2rem;
+}
+
+.page-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.page-header {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.header-actions,
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+}
+
+.button-link-solid {
+  border-color: transparent;
+  color: #fffdf8;
+  background: var(--accent);
+}
+
+.stack-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  font: inherit;
+}
+
+.validation {
+  color: #8a1f11;
+  font-size: 0.9rem;
+}
+
+.empty-state,
+.seller-meta {
+  color: var(--muted);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table th {
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subsection {
+  margin-top: 2rem;
+}
+
+.form-card {
+  max-width: 760px;
+}
+
+.seller-detail-card .data-table input {
+  min-width: 0;
+}
+
+.mode-field {
+  max-width: 280px;
+}
+
 @media (max-width: 640px) {
   .page-frame {
     inset: 12px;
@@ -121,5 +240,13 @@ h1 {
 
   .hero {
     padding: 1.5rem;
+  }
+
+  .page-card {
+    padding: 1.25rem;
+  }
+
+  .page-header {
+    flex-direction: column;
   }
 }

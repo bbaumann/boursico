@@ -1,0 +1,104 @@
+@page "{id:long}"
+@using AssociationSaleTool.Web.Domain.Pricing
+@model AssociationSaleTool.Web.Pages.Sellers.DetailsModel
+@{
+    ViewData["Title"] = "Seller Details";
+}
+
+<section class="page-card seller-detail-card">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Intake</p>
+            <h1 class="page-title">@Model.Seller!.FirstName @Model.Seller.LastName</h1>
+            <p class="seller-meta">@Model.Seller.SellerCode · @(Model.Seller.Email ?? "No email")</p>
+        </div>
+        <div class="header-actions">
+            <a class="button-link" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Edit Seller</a>
+            <a class="button-link" asp-page="/Sellers/Index">Back to Sellers</a>
+        </div>
+    </div>
+
+    <section class="subsection">
+        <h2>Items</h2>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="empty-state">No items yet for this seller.</p>
+        }
+        else
+        {
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Title</th>
+                        <th>Seller Price</th>
+                        <th>Sale Price</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Reference</td>
+                        <td>@item.Title</td>
+                        <td>@((item.SellerPriceCents / 100m).ToString("0.00")) EUR</td>
+                        <td>@((item.SalePriceCents / 100m).ToString("0.00")) EUR</td>
+                        <td>@item.Status</td>
+                        <td><a asp-page="/Items/Edit" asp-route-id="@item.Id">Edit</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="subsection">
+        <h2>Add Items</h2>
+
+        <form method="post" class="stack-form">
+            <div asp-validation-summary="All" class="validation"></div>
+
+            <label class="mode-field">
+                <span>Intake Mode</span>
+                <select asp-for="Input.IntakeMode" asp-items="Html.GetEnumSelectList<AssociationSaleTool.Web.Services.Models.IntakeMode>()"></select>
+            </label>
+
+            <table class="data-table intake-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Seller Price (cents)</th>
+                        <th>Sale Price Preview</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @for (var i = 0; i < Model.Input.Rows.Count; i++)
+                {
+                    <tr>
+                        <td>
+                            <input asp-for="Input.Rows[i].Title" />
+                            <span asp-validation-for="Input.Rows[i].Title" class="validation"></span>
+                        </td>
+                        <td>
+                            <input asp-for="Input.Rows[i].SellerPriceCents" />
+                            <span asp-validation-for="Input.Rows[i].SellerPriceCents" class="validation"></span>
+                        </td>
+                        <td>
+                            @{
+                                var preview = AssociationSaleTool.Web.Pages.Sellers.DetailsModel.PreviewSalePrice(Model.Input.Rows[i].SellerPriceCents);
+                            }
+                            @(preview.HasValue ? $"{preview.Value / 100m:0.00} EUR" : "—")
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+
+            <div class="form-actions">
+                <button type="submit" class="button-link button-link-solid">Save Item Batch</button>
+            </div>
+        </form>
+    </section>
+</section>

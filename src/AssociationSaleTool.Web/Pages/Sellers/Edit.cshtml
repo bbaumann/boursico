@@ -1,0 +1,44 @@
+@page "{id:long}"
+@model AssociationSaleTool.Web.Pages.Sellers.EditModel
+@{
+    ViewData["Title"] = "Edit Seller";
+}
+
+<section class="page-card form-card">
+    <p class="eyebrow">Intake</p>
+    <h1 class="page-title">Edit Seller</h1>
+
+    <form method="post" class="stack-form">
+        <div class="field-grid">
+            <label>
+                <span>First name</span>
+                <input asp-for="Input.FirstName" />
+                <span asp-validation-for="Input.FirstName" class="validation"></span>
+            </label>
+            <label>
+                <span>Last name</span>
+                <input asp-for="Input.LastName" />
+                <span asp-validation-for="Input.LastName" class="validation"></span>
+            </label>
+            <label>
+                <span>Email</span>
+                <input asp-for="Input.Email" />
+                <span asp-validation-for="Input.Email" class="validation"></span>
+            </label>
+            <label>
+                <span>Phone</span>
+                <input asp-for="Input.Phone" />
+            </label>
+        </div>
+
+        <label>
+            <span>Notes</span>
+            <textarea asp-for="Input.Notes" rows="3"></textarea>
+        </label>
+
+        <div class="form-actions">
+            <button type="submit" class="button-link button-link-solid">Save</button>
+            <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.SellerId">Cancel</a>
+        </div>
+    </form>
+</section>

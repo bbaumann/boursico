@@ -1,0 +1,144 @@
+using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Pricing;
+using AssociationSaleTool.Web.Services;
+using AssociationSaleTool.Web.Services.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace AssociationSaleTool.Web.Pages.Sellers;
+
+public sealed class DetailsModel(IntakeService intakeService) : PageModel
+{
+    private const int DefaultRowCount = 5;
+
+    [BindProperty]
+    public ItemBatchInput Input { get; set; } = CreateDefaultInput();
+
+    public SellerEntity? Seller { get; private set; }
+
+    public IReadOnlyList<ItemEntity> Items { get; private set; } = [];
+
+    public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
+    {
+        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (loaded is null)
+        {
+            return NotFound();
+        }
+
+        Seller = loaded;
+        Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        Input = CreateDefaultInput();
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostAsync(long id, CancellationToken cancellationToken)
+    {
+        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (loaded is null)
+        {
+            return NotFound();
+        }
+
+        Seller = loaded;
+        Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+
+        var rowsToCreate = ValidateRows();
+        EnsureDefaultRows();
+
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        await intakeService.CreateItemBatchAsync(
+            new CreateItemBatchRequest(id, Input.IntakeMode, rowsToCreate),
+            cancellationToken);
+
+        return RedirectToPage("/Sellers/Details", new { id });
+    }
+
+    public static int? PreviewSalePrice(int? sellerPriceCents)
+    {
+        return sellerPriceCents is >= 0 ? PriceCalculator.ToSalePriceCents(sellerPriceCents.Value) : null;
+    }
+
+    private List<CreateItemRowRequest> ValidateRows()
+    {
+        var rowsToCreate = new List<CreateItemRowRequest>();
+
+        for (var index = 0; index < Input.Rows.Count; index++)
+        {
+            var row = Input.Rows[index];
+            var titleMissing = string.IsNullOrWhiteSpace(row.Title);
+            var priceMissing = !row.SellerPriceCents.HasValue;
+
+            if (titleMissing && priceMissing)
+            {
+                continue;
+            }
+
+            if (titleMissing)
+            {
+                ModelState.AddModelError($"Input.Rows[{index}].Title", "Title is required when a price is entered.");
+                continue;
+            }
+
+            if (priceMissing)
+            {
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPriceCents", "Seller price is required when a title is entered.");
+                continue;
+            }
+
+            var sellerPriceCents = row.SellerPriceCents!.Value;
+
+            if (sellerPriceCents < 0)
+            {
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPriceCents", "Seller price must be zero or greater.");
+                continue;
+            }
+
+            rowsToCreate.Add(new CreateItemRowRequest(row.Title!, sellerPriceCents));
+        }
+
+        if (rowsToCreate.Count == 0)
+        {
+            ModelState.AddModelError(string.Empty, "Enter at least one complete item row.");
+        }
+
+        return rowsToCreate;
+    }
+
+    private void EnsureDefaultRows()
+    {
+        while (Input.Rows.Count < DefaultRowCount)
+        {
+            Input.Rows.Add(new ItemRowInput());
+        }
+    }
+
+    private static ItemBatchInput CreateDefaultInput()
+    {
+        return new ItemBatchInput
+        {
+            IntakeMode = IntakeMode.InPerson,
+            Rows = Enumerable.Range(0, DefaultRowCount)
+                .Select(_ => new ItemRowInput())
+                .ToList()
+        };
+    }
+
+    public sealed class ItemBatchInput
+    {
+        public IntakeMode IntakeMode { get; set; }
+
+        public List<ItemRowInput> Rows { get; set; } = [];
+    }
+
+    public sealed class ItemRowInput
+    {
+        public string? Title { get; set; }
+
+        public int? SellerPriceCents { get; set; }
+    }
+}
