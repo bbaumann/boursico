@@ -148,4 +148,75 @@ public sealed class IntakeServiceTests
         Assert.Equal("AA-001", updatedItem.Reference);
         Assert.Equal("in_stock", updatedItem.Status);
     }
+
+    [Theory]
+    [InlineData("registered")]
+    [InlineData("in_stock")]
+    public async Task DeleteSellerItemAsync_RemovesItemsInDeletableStatuses(string status)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            ItemNumber = 1,
+            Title = "Toy piano",
+            SellerPriceCents = 1000,
+            Status = status
+        };
+
+        context.Items.Add(item);
+        await context.SaveChangesAsync();
+
+        var result = await service.DeleteSellerItemAsync(seller.Id, item.Id);
+
+        Assert.Equal(DeleteItemResult.Deleted, result);
+        Assert.Empty(await context.Items.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData("not_provided")]
+    [InlineData("sold")]
+    [InlineData("missing")]
+    public async Task DeleteSellerItemAsync_RejectsItemsOutsideDeletableStatuses(string status)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            ItemNumber = 1,
+            Title = "Toy piano",
+            SellerPriceCents = 1000,
+            Status = status
+        };
+
+        context.Items.Add(item);
+        await context.SaveChangesAsync();
+
+        var result = await service.DeleteSellerItemAsync(seller.Id, item.Id);
+
+        Assert.Equal(DeleteItemResult.NotAllowed, result);
+        Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+    }
 }

@@ -58,6 +58,28 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         return RedirectToPage("/Sellers/Details", new { id });
     }
 
+    public async Task<IActionResult> OnPostDeleteItemAsync(long id, long itemId, CancellationToken cancellationToken)
+    {
+        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (loaded is null)
+        {
+            return NotFound();
+        }
+
+        Seller = loaded;
+        Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        Input = CreateDefaultInput();
+
+        var result = await intakeService.DeleteSellerItemAsync(id, itemId, cancellationToken);
+        if (result is DeleteItemResult.NotAllowed)
+        {
+            ModelState.AddModelError(string.Empty, "Seuls les articles enregistrés ou en stock peuvent être supprimés.");
+            return Page();
+        }
+
+        return RedirectToPage("/Sellers/Details", new { id });
+    }
+
     private List<CreateItemRowRequest> ValidateRows()
     {
         var rowsToCreate = new List<CreateItemRowRequest>();

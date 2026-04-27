@@ -110,6 +110,29 @@ public sealed class IntakeService(AppDbContext dbContext)
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<DeleteItemResult> DeleteSellerItemAsync(
+        long sellerId,
+        long itemId,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await dbContext.Items
+            .SingleOrDefaultAsync(x => x.Id == itemId && x.SellerId == sellerId, cancellationToken);
+
+        if (item is null)
+        {
+            return DeleteItemResult.NotFound;
+        }
+
+        if (!ItemDeletionPolicy.CanDelete(item.Status))
+        {
+            return DeleteItemResult.NotAllowed;
+        }
+
+        dbContext.Items.Remove(item);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return DeleteItemResult.Deleted;
+    }
+
     private static string? NormalizeOptional(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();

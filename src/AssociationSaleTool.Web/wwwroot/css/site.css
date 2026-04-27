@@ -223,8 +223,88 @@ textarea {
   min-width: 0;
 }
 
+.seller-items-table,
+.seller-intake-table {
+  table-layout: fixed;
+}
+
+.seller-items-reference-column {
+  width: 8rem;
+}
+
+.seller-items-title-column,
+.seller-intake-title-column {
+  width: auto;
+}
+
+.seller-items-price-column {
+  width: 7.5rem;
+}
+
+.seller-items-status-column {
+  width: 8rem;
+}
+
+.seller-items-action-column {
+  width: 10rem;
+}
+
+.seller-intake-price-column {
+  width: 8.5rem;
+}
+
 .mode-field {
+  padding: 0;
+  border: 0;
+  margin: 0;
   max-width: 280px;
+}
+
+.mode-field legend {
+  margin-bottom: 0.35rem;
+}
+
+.radio-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.radio-option input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inline-form {
+  margin: 0;
+}
+
+.table-action-button {
+  padding: 0;
+  border: 0;
+  color: #8a1f11;
+  background: transparent;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 @media (max-width: 640px) {

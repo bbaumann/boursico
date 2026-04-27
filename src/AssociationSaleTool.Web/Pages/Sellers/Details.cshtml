@@ -1,4 +1,5 @@
 @page "/vendeurs/{id:long}"
+@using AssociationSaleTool.Web.Domain.Items
 @model AssociationSaleTool.Web.Pages.Sellers.DetailsModel
 @{
     ViewData["Title"] = "Détail du vendeur";
@@ -25,7 +26,14 @@
         }
         else
         {
-            <table class="data-table">
+            <table class="data-table seller-items-table">
+                <colgroup>
+                    <col class="seller-items-reference-column" />
+                    <col class="seller-items-title-column" />
+                    <col class="seller-items-price-column" />
+                    <col class="seller-items-status-column" />
+                    <col class="seller-items-action-column" />
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Référence</th>
@@ -43,7 +51,22 @@
                         <td>@item.Title</td>
                         <td>@((item.SellerPriceCents / 100m).ToString("0.00")) EUR</td>
                         <td>@AssociationSaleTool.Web.Infrastructure.ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
-                        <td><a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a></td>
+                        <td>
+                            <div class="table-actions">
+                                <a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a>
+                                @if (ItemDeletionPolicy.CanDelete(item.Status))
+                                {
+                                    <form method="post"
+                                          class="inline-form"
+                                          asp-page-handler="DeleteItem"
+                                          asp-route-id="@Model.Seller.Id"
+                                          asp-route-itemId="@item.Id"
+                                          onsubmit="return confirm('Voulez-vous vraiment supprimer cet article ?');">
+                                        <button type="submit" class="table-action-button">Supprimer</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
                     </tr>
                 }
                 </tbody>
@@ -57,12 +80,25 @@
         <form method="post" class="stack-form">
             <div asp-validation-summary="All" class="validation"></div>
 
-            <label class="mode-field">
-                <span>Mode de saisie</span>
-                <select asp-for="Input.IntakeMode" asp-items="Html.GetEnumSelectList<AssociationSaleTool.Web.Services.Models.IntakeMode>()"></select>
-            </label>
+            <fieldset class="mode-field">
+                <legend>Mode de saisie</legend>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input asp-for="Input.IntakeMode" type="radio" value="InPerson" />
+                        <span>Dépot</span>
+                    </label>
+                    <label class="radio-option">
+                        <input asp-for="Input.IntakeMode" type="radio" value="EmailPreregistration" />
+                        <span>Enregistrement</span>
+                    </label>
+                </div>
+            </fieldset>
 
-            <table class="data-table intake-table">
+            <table class="data-table intake-table seller-intake-table">
+                <colgroup>
+                    <col class="seller-intake-title-column" />
+                    <col class="seller-intake-price-column" />
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Titre</th>

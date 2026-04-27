@@ -212,4 +212,66 @@ public sealed class SellersPageModelTests
         Assert.IsType<PageResult>(result);
         Assert.False(pageModel.ModelState.IsValid);
     }
+
+    [Fact]
+    public async Task SellerDetailsPage_PostDeleteItem_DeletesAllowedItemAndRedirectsToSelf()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnPostDeleteItemAsync(seller.Id, item.Id, CancellationToken.None);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("/Sellers/Details", redirect.PageName);
+        Assert.Empty(await context.Items.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SellerDetailsPage_PostDeleteItem_ReturnsPageForDisallowedStatus()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = new AssociationSaleTool.Web.Data.Entities.ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            ItemNumber = 1,
+            Title = "Toy piano",
+            SellerPriceCents = 1000,
+            Status = "sold"
+        };
+
+        context.Items.Add(item);
+        await context.SaveChangesAsync();
+
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnPostDeleteItemAsync(seller.Id, item.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.Equal("sold", (await context.Items.SingleAsync()).Status);
+    }
 }
