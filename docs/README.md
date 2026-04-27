@@ -37,6 +37,7 @@ Archived or translated variants may exist elsewhere in the repository, but agent
 - [Domain Model And References](./domain-model-and-references.md)
 - [Item Status Lifecycle](./item-status-lifecycle.md)
 - [Scope And Phasing](./scope-and-phasing.md)
+- [VNext Backlog](./vnext-backlog.md)
 
 ## Project Summary
 
@@ -80,3 +81,4 @@ If someone is new to the project, the best reading order is:
 9. [Process And Failover](./process-and-failover.md)
 10. [Item Status Lifecycle](./item-status-lifecycle.md)
 11. [Decisions](./decisions.md)
+12. [VNext Backlog](./vnext-backlog.md)

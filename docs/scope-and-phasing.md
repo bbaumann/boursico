@@ -43,6 +43,8 @@ These are known ideas but not part of the current V1 commitment:
 - automated formal statement generation beyond the seller sheet workflow
 - broader import tooling
 
+Additional post-V1 feature requests are tracked in [VNext Backlog](./vnext-backlog.md).
+
 ## Why V1 Is Intentionally Small
 
 - the event is yearly, not a daily retail business
