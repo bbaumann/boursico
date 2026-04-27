@@ -48,6 +48,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     public async Task SellerDetailsDisplaysFrenchItemStatusLabels()
     {
         var client = _factory.CreateClient();
+        long sellerId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -74,14 +75,49 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             });
 
             await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
         }
 
-        var response = await client.GetAsync("/vendeurs/1");
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
 
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("enregistré", content);
         Assert.DoesNotContain(">registered<", content);
+    }
+
+    [Fact]
+    public async Task SellerDetailsDisplaysFrenchIntakeModeLabels()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-002",
+                FirstName = "Nina",
+                LastName = "Robert",
+                Email = "nina@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains(">Dépot<", content);
+        Assert.Contains(">Enregistrement<", content);
+        Assert.DoesNotContain(">InPerson<", content);
+        Assert.DoesNotContain(">EmailPreregistration<", content);
     }
 }
