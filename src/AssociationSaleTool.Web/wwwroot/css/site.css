@@ -246,7 +246,7 @@ textarea {
 }
 
 .seller-items-action-column {
-  width: 10rem;
+  width: 12rem;
 }
 
 .seller-intake-price-column {
@@ -305,6 +305,10 @@ textarea {
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.table-action-button-primary {
+  color: var(--accent);
 }
 
 .item-registration-actions {

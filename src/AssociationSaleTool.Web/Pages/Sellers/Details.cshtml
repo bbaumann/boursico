@@ -54,6 +54,16 @@
                         <td>
                             <div class="table-actions">
                                 <a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a>
+                                @if (item.Status == "registered")
+                                {
+                                    <form method="post"
+                                          class="inline-form"
+                                          asp-page-handler="MarkItemInStock"
+                                          asp-route-id="@Model.Seller.Id"
+                                          asp-route-itemId="@item.Id">
+                                        <button type="submit" class="table-action-button table-action-button-primary">Marquer en stock</button>
+                                    </form>
+                                }
                                 @if (ItemDeletionPolicy.CanDelete(item.Status))
                                 {
                                     <form method="post"

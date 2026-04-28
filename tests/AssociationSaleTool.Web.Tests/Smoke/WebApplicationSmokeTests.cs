@@ -296,6 +296,66 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellerDetailsDisplaysMarkInStockActionForRegisteredItemsOnly()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+        long registeredItemId;
+        long inStockItemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-008",
+                FirstName = "Laura",
+                LastName = "Girard",
+                Email = "laura@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var registeredItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-008-001",
+                ItemNumber = 1,
+                Title = "Puzzle",
+                SellerPriceCents = 450,
+                Status = "registered"
+            };
+            var inStockItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-008-002",
+                ItemNumber = 2,
+                Title = "Camion",
+                SellerPriceCents = 700,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.AddRange(registeredItem, inStockItem);
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+            registeredItemId = registeredItem.Id;
+            inStockItemId = inStockItem.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Marquer en stock", content);
+        Assert.Contains("handler=MarkItemInStock", content);
+        Assert.Contains($"itemId={registeredItemId}", content);
+        Assert.DoesNotContain($"handler=MarkItemInStock&amp;itemId={inStockItemId}", content);
+    }
+
+    [Fact]
     public async Task SellerDetailsUsesNarrowPriceColumnsAndWideTitleColumns()
     {
         var client = _factory.CreateClient();

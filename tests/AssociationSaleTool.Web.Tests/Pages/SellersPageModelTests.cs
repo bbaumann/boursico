@@ -296,4 +296,58 @@ public sealed class SellersPageModelTests
         Assert.False(pageModel.ModelState.IsValid);
         Assert.Equal("sold", (await context.Items.SingleAsync()).Status);
     }
+
+    [Fact]
+    public async Task SellerDetailsPage_PostMarkItemInStock_ChangesRegisteredItemAndRedirectsToSelf()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnPostMarkItemInStockAsync(seller.Id, item.Id, CancellationToken.None);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("/Sellers/Details", redirect.PageName);
+        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task SellerDetailsPage_PostMarkItemInStock_ReturnsPageForDisallowedStatus()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnPostMarkItemInStockAsync(seller.Id, item.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+    }
 }

@@ -133,6 +133,29 @@ public sealed class IntakeService(AppDbContext dbContext)
         return DeleteItemResult.Deleted;
     }
 
+    public async Task<ItemStatusChangeResult> MarkSellerItemInStockAsync(
+        long sellerId,
+        long itemId,
+        CancellationToken cancellationToken = default)
+    {
+        var item = await dbContext.Items
+            .SingleOrDefaultAsync(x => x.Id == itemId && x.SellerId == sellerId, cancellationToken);
+
+        if (item is null)
+        {
+            return ItemStatusChangeResult.NotFound;
+        }
+
+        if (item.Status != "registered")
+        {
+            return ItemStatusChangeResult.NotAllowed;
+        }
+
+        item.Status = "in_stock";
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return ItemStatusChangeResult.Changed;
+    }
+
     private static string? NormalizeOptional(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();

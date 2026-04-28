@@ -219,4 +219,66 @@ public sealed class IntakeServiceTests
         Assert.Equal(DeleteItemResult.NotAllowed, result);
         Assert.Equal(status, (await context.Items.SingleAsync()).Status);
     }
+
+    [Fact]
+    public async Task MarkSellerItemInStockAsync_ChangesRegisteredItemToInStock()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var result = await service.MarkSellerItemInStockAsync(seller.Id, item.Id);
+
+        Assert.Equal(ItemStatusChangeResult.Changed, result);
+        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+    }
+
+    [Theory]
+    [InlineData("in_stock")]
+    [InlineData("not_provided")]
+    [InlineData("sold")]
+    [InlineData("missing")]
+    public async Task MarkSellerItemInStockAsync_RejectsItemsThatAreNotRegistered(string status)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            ItemNumber = 1,
+            Title = "Toy piano",
+            SellerPriceCents = 1000,
+            Status = status
+        };
+
+        context.Items.Add(item);
+        await context.SaveChangesAsync();
+
+        var result = await service.MarkSellerItemInStockAsync(seller.Id, item.Id);
+
+        Assert.Equal(ItemStatusChangeResult.NotAllowed, result);
+        Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+    }
 }
