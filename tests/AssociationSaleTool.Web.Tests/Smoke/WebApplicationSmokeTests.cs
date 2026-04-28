@@ -495,7 +495,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Rechercher un article", content);
         Assert.Contains("Panier", content);
         Assert.Contains("Sous-total", content);
-        Assert.Contains("Frais de caisse", content);
+        Assert.Contains("Frais association familiale", content);
+        Assert.DoesNotContain("Frais de caisse", content);
         Assert.Contains("Total", content);
         Assert.Contains("checkout-catalog-data", content);
         Assert.Contains("data-checkout-root", content);
