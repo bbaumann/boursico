@@ -2,6 +2,20 @@
 
 This backlog captures known feature requests that are intentionally outside the current V1 commitment.
 
+## Checkout And Item Lifecycle
+
+### Prevent Editing Sold Items
+
+Prevent operators from updating item master data after the item has been sold.
+
+The future design should define:
+
+- which item fields become read-only after sale persistence
+- how the item edit page communicates that a sold item cannot be changed
+- whether admins need an exceptional correction workflow
+- how attempted updates are rejected server-side
+- how this rule interacts with reconciliation and seller payout auditability
+
 ## Item Intake
 
 ### Create Items From An Excel File
