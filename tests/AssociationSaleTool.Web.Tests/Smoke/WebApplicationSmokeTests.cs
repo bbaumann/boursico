@@ -38,6 +38,40 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellersPageShowsMainNavigationWithSellersActive()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/vendeurs");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("main-navigation", content);
+        Assert.Contains("href=\"/vendeurs\"", content);
+        Assert.Contains("href=\"/caisse\"", content);
+        Assert.Contains("VENDEURS", content);
+        Assert.Contains("CAISSE", content);
+        Assert.Matches("class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"/vendeurs\"\\s+aria-current=\"page\"", content);
+    }
+
+    [Fact]
+    public async Task CheckoutPageShowsMainNavigationWithCheckoutActive()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/caisse");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("main-navigation", content);
+        Assert.Contains("href=\"/vendeurs\"", content);
+        Assert.Contains("href=\"/caisse\"", content);
+        Assert.Contains("VENDEURS", content);
+        Assert.Contains("CAISSE", content);
+        Assert.Matches("class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"/caisse\"\\s+aria-current=\"page\"", content);
+    }
+
+    [Fact]
     public async Task SellerCreatePageLoadsSuccessfully()
     {
         var client = _factory.CreateClient();
@@ -240,6 +274,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("cursor: pointer;", content);
         Assert.Contains(".button-link:disabled", content);
         Assert.Contains("cursor: not-allowed;", content);
+        Assert.Contains(".main-navigation", content);
+        Assert.Contains(".main-navigation-link", content);
+        Assert.Contains(".main-navigation-link-active", content);
     }
 
     [Fact]

@@ -1,3 +1,9 @@
+@{
+    var requestPath = Context.Request.Path;
+    var sellersActive = requestPath.StartsWithSegments("/vendeurs")
+        || requestPath.StartsWithSegments("/articles");
+    var checkoutActive = requestPath.StartsWithSegments("/caisse");
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +14,14 @@
 </head>
 <body>
     <div class="page-frame"></div>
+    <nav class="main-navigation" aria-label="Navigation principale">
+        <a class="main-navigation-link @(sellersActive ? "main-navigation-link-active" : null)"
+           href="/vendeurs"
+           aria-current="@(sellersActive ? "page" : null)">VENDEURS</a>
+        <a class="main-navigation-link @(checkoutActive ? "main-navigation-link-active" : null)"
+           href="/caisse"
+           aria-current="@(checkoutActive ? "page" : null)">CAISSE</a>
+    </nav>
     <main class="page-shell">
         @RenderBody()
     </main>

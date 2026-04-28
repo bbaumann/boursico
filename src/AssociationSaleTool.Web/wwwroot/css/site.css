@@ -30,10 +30,57 @@ body {
   pointer-events: none;
 }
 
+.main-navigation {
+  position: sticky;
+  top: 1rem;
+  z-index: 20;
+  display: flex;
+  gap: 1rem;
+  width: min(960px, calc(100% - 3rem));
+  margin: 1.5rem auto 0;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(255, 252, 245, 0.96);
+  box-shadow: 0 16px 48px rgba(72, 61, 43, 0.12);
+}
+
+.main-navigation-link {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 4rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+.main-navigation-link:hover {
+  border-color: rgba(13, 92, 99, 0.32);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.main-navigation-link-active {
+  color: #fffdf8;
+  background: var(--accent);
+}
+
+.main-navigation-link-active:hover {
+  border-color: transparent;
+  background: var(--accent);
+}
+
 .page-shell {
   width: min(960px, calc(100% - 3rem));
   margin: 0 auto;
-  padding: 4rem 0 5rem;
+  padding: 1.5rem 0 5rem;
 }
 
 .hero {
