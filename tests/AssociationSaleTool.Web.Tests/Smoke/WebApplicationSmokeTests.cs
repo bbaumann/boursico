@@ -236,6 +236,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains(".item-registration-actions", content);
         Assert.Contains("justify-content: flex-start;", content);
+        Assert.Contains(".button-link:not(:disabled)", content);
+        Assert.Contains("cursor: pointer;", content);
+        Assert.Contains(".button-link:disabled", content);
+        Assert.Contains("cursor: not-allowed;", content);
     }
 
     [Fact]
