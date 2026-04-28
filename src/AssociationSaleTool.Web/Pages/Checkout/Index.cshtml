@@ -87,6 +87,43 @@
                     <dd data-checkout-total>0.00 EUR</dd>
                 </div>
             </dl>
+
+            <div class="form-actions checkout-finalize-actions">
+                <button type="button"
+                        class="button-link button-link-solid"
+                        data-checkout-finalize
+                        disabled>
+                    Finaliser
+                </button>
+            </div>
         </aside>
+    </div>
+
+    <div class="checkout-modal" data-checkout-modal hidden role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
+        <div class="checkout-modal-panel">
+            <h2 id="checkout-modal-title">Finaliser la vente</h2>
+            <dl class="checkout-totals">
+                <div>
+                    <dt>Articles</dt>
+                    <dd data-checkout-modal-count>0</dd>
+                </div>
+                <div>
+                    <dt>Sous-total</dt>
+                    <dd data-checkout-modal-subtotal>0.00 EUR</dd>
+                </div>
+                <div>
+                    <dt>Frais de caisse</dt>
+                    <dd data-checkout-modal-fee>0.00 EUR</dd>
+                </div>
+                <div class="checkout-total-row">
+                    <dt>Total</dt>
+                    <dd data-checkout-modal-total>0.00 EUR</dd>
+                </div>
+            </dl>
+            <div class="form-actions checkout-modal-actions">
+                <button type="button" class="button-link" data-checkout-modal-back>Retour</button>
+                <button type="button" class="button-link button-link-solid" data-checkout-save-sale>Enregistrer la vente</button>
+            </div>
+        </div>
     </div>
 </section>

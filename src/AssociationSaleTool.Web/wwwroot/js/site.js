@@ -73,6 +73,21 @@ function createCheckoutEmptyRow(message, columnCount) {
   return row;
 }
 
+async function postCheckoutCart(url, cart) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      itemIds: cart.map(item => item.id)
+    })
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : {};
+  return { response, payload };
+}
+
 function initializeCheckout(root) {
   const dataElement = document.getElementById("checkout-catalog-data");
   const searchInput = root.querySelector("[data-checkout-search]");
@@ -83,6 +98,14 @@ function initializeCheckout(root) {
   const subtotalElement = root.querySelector("[data-checkout-subtotal]");
   const feeElement = root.querySelector("[data-checkout-fee]");
   const totalElement = root.querySelector("[data-checkout-total]");
+  const finalizeButton = root.querySelector("[data-checkout-finalize]");
+  const modal = root.querySelector("[data-checkout-modal]");
+  const modalBackButton = root.querySelector("[data-checkout-modal-back]");
+  const saveSaleButton = root.querySelector("[data-checkout-save-sale]");
+  const modalCount = root.querySelector("[data-checkout-modal-count]");
+  const modalSubtotal = root.querySelector("[data-checkout-modal-subtotal]");
+  const modalFee = root.querySelector("[data-checkout-modal-fee]");
+  const modalTotal = root.querySelector("[data-checkout-modal-total]");
 
   if (!dataElement || !searchInput || !resultsBody || !cartBody) {
     return;
@@ -90,6 +113,7 @@ function initializeCheckout(root) {
 
   const catalog = JSON.parse(dataElement.textContent || "[]");
   const cart = [];
+  const conflictItemIds = new Set();
 
   function findCatalogItem(itemId) {
     return catalog.find(item => String(item.id) === String(itemId));
@@ -99,6 +123,41 @@ function initializeCheckout(root) {
     if (message) {
       message.textContent = text;
     }
+  }
+
+  function setConflictItems(itemIds) {
+    conflictItemIds.clear();
+    itemIds.forEach(itemId => conflictItemIds.add(Number(itemId)));
+  }
+
+  function hideModal() {
+    if (modal) {
+      modal.hidden = true;
+    }
+  }
+
+  function showModal(totals, itemCount) {
+    if (!modal) {
+      return;
+    }
+
+    if (modalCount) {
+      modalCount.textContent = itemCount.toString();
+    }
+
+    if (modalSubtotal) {
+      modalSubtotal.textContent = formatCheckoutPrice(totals.subtotalSellerPriceCents);
+    }
+
+    if (modalFee) {
+      modalFee.textContent = formatCheckoutPrice(totals.checkoutFeeCents);
+    }
+
+    if (modalTotal) {
+      modalTotal.textContent = formatCheckoutPrice(totals.totalPaidCents);
+    }
+
+    modal.hidden = false;
   }
 
   function renderResults() {
@@ -138,6 +197,10 @@ function initializeCheckout(root) {
 
     for (const item of cart) {
       const row = document.createElement("tr");
+      if (conflictItemIds.has(Number(item.id))) {
+        row.className = "checkout-conflict-row";
+      }
+
       row.appendChild(createCheckoutCell(item.reference));
       row.appendChild(createCheckoutCell(item.title));
       row.appendChild(createCheckoutCell(formatCheckoutPrice(item.sellerPriceCents)));
@@ -168,6 +231,10 @@ function initializeCheckout(root) {
     if (totalElement) {
       totalElement.textContent = formatCheckoutPrice(total);
     }
+
+    if (finalizeButton) {
+      finalizeButton.disabled = cart.length === 0;
+    }
   }
 
   searchInput.addEventListener("input", renderResults);
@@ -190,6 +257,7 @@ function initializeCheckout(root) {
 
     cart.push(item);
     setMessage("");
+    conflictItemIds.delete(Number(item.id));
     renderCart();
   });
 
@@ -201,10 +269,65 @@ function initializeCheckout(root) {
 
     const index = cart.findIndex(item => String(item.id) === button.dataset.checkoutRemove);
     if (index >= 0) {
+      conflictItemIds.delete(Number(cart[index].id));
       cart.splice(index, 1);
-      setMessage("");
+      if (conflictItemIds.size === 0) {
+        setMessage("");
+      }
       renderCart();
     }
+  });
+
+  finalizeButton?.addEventListener("click", async () => {
+    if (cart.length === 0) {
+      setMessage("Ajoutez au moins un article au panier.");
+      return;
+    }
+
+    setMessage("");
+    setConflictItems([]);
+    renderCart();
+
+    const { response, payload } = await postCheckoutCart("/api/caisse/validation", cart);
+    if (response.ok && payload.isValid) {
+      showModal(payload.totals, payload.itemCount);
+      return;
+    }
+
+    if (response.status === 409) {
+      setConflictItems(payload.conflictItemIds || []);
+      setMessage("Un article du panier n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
+      hideModal();
+      renderCart();
+      return;
+    }
+
+    setMessage("La validation du panier a échoué. Réessayez.");
+  });
+
+  modalBackButton?.addEventListener("click", hideModal);
+
+  saveSaleButton?.addEventListener("click", async () => {
+    const { response, payload } = await postCheckoutCart("/api/ventes", cart);
+    if (response.status === 201 && payload.saved) {
+      cart.splice(0, cart.length);
+      setConflictItems([]);
+      setMessage("Vente enregistrée.");
+      renderCart();
+      window.location.reload();
+      return;
+    }
+
+    if (response.status === 409) {
+      setConflictItems(payload.conflictItemIds || []);
+      setMessage("La vente n'a pas été enregistrée : un article n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
+      hideModal();
+      renderCart();
+      return;
+    }
+
+    setMessage("La vente n'a pas pu être enregistrée. Réessayez.");
+    hideModal();
   });
 
   renderResults();

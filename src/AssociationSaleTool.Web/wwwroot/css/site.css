@@ -412,6 +412,49 @@ textarea {
   font-weight: 700;
 }
 
+.checkout-finalize-actions {
+  margin-top: 1.25rem;
+  justify-content: flex-end;
+}
+
+.checkout-conflict-row {
+  background: rgba(138, 31, 17, 0.14);
+  outline: 2px solid #8a1f11;
+  outline-offset: -2px;
+}
+
+.checkout-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(31, 35, 29, 0.45);
+}
+
+.checkout-modal[hidden] {
+  display: none;
+}
+
+.checkout-modal-panel {
+  width: min(520px, 100%);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: 0 24px 80px rgba(31, 35, 29, 0.24);
+}
+
+.checkout-modal-panel h2 {
+  margin-top: 0;
+}
+
+.checkout-modal-actions {
+  margin-top: 1.25rem;
+  justify-content: flex-end;
+}
+
 @media (max-width: 640px) {
   .page-frame {
     inset: 12px;

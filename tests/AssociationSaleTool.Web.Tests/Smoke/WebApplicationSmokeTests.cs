@@ -251,6 +251,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-root", content);
         Assert.Contains("Cet article est déjà dans le panier.", content);
         Assert.Contains("data-checkout-remove", content);
+        Assert.Contains("/api/caisse/validation", content);
+        Assert.Contains("/api/ventes", content);
+        Assert.Contains("checkout-conflict-row", content);
     }
 
     [Fact]
@@ -271,6 +274,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(".checkout-results-table", content);
         Assert.Contains(".checkout-cart-panel", content);
         Assert.Contains(".checkout-totals", content);
+        Assert.Contains(".checkout-modal", content);
+        Assert.Contains(".checkout-conflict-row", content);
     }
 
     [Fact]
@@ -487,6 +492,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-results", content);
         Assert.Contains("data-checkout-cart", content);
         Assert.Contains("data-checkout-subtotal", content);
+        Assert.Contains("data-checkout-finalize", content);
+        Assert.Contains("Finaliser", content);
+        Assert.Contains("data-checkout-modal", content);
+        Assert.Contains("data-checkout-modal-count", content);
+        Assert.Contains("data-checkout-save-sale", content);
+        Assert.Contains("Enregistrer la vente", content);
         Assert.Contains("checkout-results-frame", content);
         Assert.Contains("<th>REF</th>", content);
         Assert.Contains("CK-001-001", content);
@@ -535,7 +546,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("Secret", content);
         Assert.DoesNotContain("noelle.secret@example.test", content);
         Assert.DoesNotContain("0601020304", content);
-        Assert.DoesNotContain("Enregistrer", content);
         Assert.DoesNotContain("Confirmer", content);
         Assert.DoesNotContain("Imprimer", content);
     }
