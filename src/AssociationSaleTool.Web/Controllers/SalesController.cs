@@ -18,7 +18,7 @@ public sealed class SalesController(CheckoutService checkoutService) : Controlle
             return BadRequest(new { message = "Le panier est vide." });
         }
 
-        var result = await checkoutService.SaveSaleAsync(request.ItemIds, cancellationToken);
+        var result = await checkoutService.SaveSaleAsync(request.ItemIds, request.ReceiptDetails, cancellationToken);
         return result.Saved
             ? Created($"/api/ventes/{result.SaleId}", result)
             : Conflict(result);

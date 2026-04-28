@@ -159,6 +159,48 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task SaveSaleAsync_StoresTrimmedReceiptDetails()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync([firstItem.Id], "  Association sportive\n12 rue des Lilas  ");
+
+        Assert.True(result.Saved);
+        var sale = await context.Sales.SingleAsync();
+        Assert.Equal("Association sportive\n12 rue des Lilas", sale.ReceiptDetails);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_StoresNullForBlankReceiptDetails()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync([firstItem.Id], " \r\n ");
+
+        Assert.True(result.Saved);
+        var sale = await context.Sales.SingleAsync();
+        Assert.Null(sale.ReceiptDetails);
+    }
+
+    [Fact]
     public async Task SaveSaleAsync_RejectsUnavailableItemsWithoutPersistingPartialSale()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

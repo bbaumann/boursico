@@ -696,6 +696,55 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SalesApiPersistsReceiptDetails()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-003",
+                FirstName = "Sonia",
+                LastName = "Recu",
+                Email = "sonia.recu@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-003-001",
+                ItemNumber = 1,
+                Title = "Jeu avec recu",
+                SellerPriceCents = 1500,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync(
+            "/api/ventes",
+            new { itemIds = new[] { itemId }, receiptDetails = "  Association sportive  " });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var sale = await dbContext.Sales.Include(x => x.SaleLines).SingleAsync(x => x.SaleLines.Any(line => line.ItemId == itemId));
+            Assert.Equal("Association sportive", sale.ReceiptDetails);
+        }
+    }
+
+    [Fact]
     public async Task SalesApiReturnsConflictWithoutPersistingUnavailableItems()
     {
         var client = _factory.CreateClient();

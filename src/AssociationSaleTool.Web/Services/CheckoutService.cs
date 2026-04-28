@@ -32,6 +32,7 @@ public sealed class CheckoutService(AppDbContext dbContext)
 
     public async Task<CheckoutSaleResult> SaveSaleAsync(
         IReadOnlyList<long> itemIds,
+        string? receiptDetails = null,
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -53,7 +54,8 @@ public sealed class CheckoutService(AppDbContext dbContext)
             SoldAt = DateTime.UtcNow,
             SubtotalSellerPriceCents = validation.Totals.SubtotalSellerPriceCents,
             CheckoutFeeCents = validation.Totals.CheckoutFeeCents,
-            TotalPaidCents = validation.Totals.TotalPaidCents
+            TotalPaidCents = validation.Totals.TotalPaidCents,
+            ReceiptDetails = NormalizeReceiptDetails(receiptDetails)
         };
 
         foreach (var item in items)
@@ -76,6 +78,12 @@ public sealed class CheckoutService(AppDbContext dbContext)
             [],
             validation.Totals,
             validation.ItemCount);
+    }
+
+    private static string? NormalizeReceiptDetails(string? receiptDetails)
+    {
+        var normalized = receiptDetails?.Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 
     private async Task<List<ItemEntity>> LoadCartItemsAsync(
