@@ -63,4 +63,164 @@ public sealed class CheckoutServiceTests
         Assert.Equal("Train en bois", item.Title);
         Assert.Equal(500, item.SellerPriceCents);
     }
+
+    [Fact]
+    public async Task ValidateCartAsync_ReturnsTotalsForInStockItems()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.ValidateCartAsync([firstItem.Id, secondItem.Id]);
+
+        Assert.True(result.IsValid);
+        Assert.Empty(result.ConflictItemIds);
+        Assert.Equal(2, result.ItemCount);
+        Assert.NotNull(result.Totals);
+        Assert.Equal(1500, result.Totals!.SubtotalSellerPriceCents);
+        Assert.Equal(150, result.Totals.CheckoutFeeCents);
+        Assert.Equal(1650, result.Totals.TotalPaidCents);
+    }
+
+    [Fact]
+    public async Task ValidateCartAsync_ReturnsConflictsForItemsThatAreNotInStock()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "sold");
+        var service = new CheckoutService(context);
+
+        var result = await service.ValidateCartAsync([firstItem.Id, secondItem.Id]);
+
+        Assert.False(result.IsValid);
+        Assert.Equal([secondItem.Id], result.ConflictItemIds);
+        Assert.Null(result.Totals);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_CreatesSaleAndMarksItemsSold()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync([firstItem.Id, secondItem.Id]);
+
+        Assert.True(result.Saved);
+        Assert.NotNull(result.SaleId);
+        Assert.Empty(result.ConflictItemIds);
+        Assert.NotNull(result.Totals);
+        Assert.Equal(1500, result.Totals!.SubtotalSellerPriceCents);
+        Assert.Equal(150, result.Totals.CheckoutFeeCents);
+        Assert.Equal(1650, result.Totals.TotalPaidCents);
+
+        var sale = await context.Sales.Include(x => x.SaleLines).SingleAsync();
+        Assert.Equal(result.SaleId, sale.Id);
+        Assert.Equal(1500, sale.SubtotalSellerPriceCents);
+        Assert.Equal(150, sale.CheckoutFeeCents);
+        Assert.Equal(1650, sale.TotalPaidCents);
+        Assert.Null(sale.ReceiptDetails);
+        Assert.Equal(DateTimeKind.Utc, sale.SoldAt.Kind);
+
+        Assert.Collection(
+            sale.SaleLines.OrderBy(x => x.ItemId),
+            firstLine =>
+            {
+                Assert.Equal(firstItem.Id, firstLine.ItemId);
+                Assert.Equal(500, firstLine.SellerPriceAtSaleCents);
+            },
+            secondLine =>
+            {
+                Assert.Equal(secondItem.Id, secondLine.ItemId);
+                Assert.Equal(1000, secondLine.SellerPriceAtSaleCents);
+            });
+
+        Assert.All(await context.Items.ToListAsync(), item => Assert.Equal("sold", item.Status));
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_RejectsUnavailableItemsWithoutPersistingPartialSale()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "sold");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync([firstItem.Id, secondItem.Id]);
+
+        Assert.False(result.Saved);
+        Assert.Null(result.SaleId);
+        Assert.Equal([secondItem.Id], result.ConflictItemIds);
+        Assert.Null(result.Totals);
+        Assert.Empty(await context.Sales.ToListAsync());
+        Assert.Empty(await context.SaleLines.ToListAsync());
+        Assert.Equal("in_stock", (await context.Items.SingleAsync(x => x.Id == firstItem.Id)).Status);
+        Assert.Equal("sold", (await context.Items.SingleAsync(x => x.Id == secondItem.Id)).Status);
+    }
+
+    private static async Task<(ItemEntity FirstItem, ItemEntity SecondItem)> SeedTwoItemsAsync(
+        AppDbContext context,
+        string firstStatus,
+        string secondStatus)
+    {
+        var seller = new SellerEntity
+        {
+            SellerCode = "BB",
+            FirstName = "Grace",
+            LastName = "Hopper",
+            Email = "grace@example.test"
+        };
+
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var firstItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "BB-001",
+            ItemNumber = 1,
+            Title = "Puzzle",
+            SellerPriceCents = 500,
+            Status = firstStatus
+        };
+        var secondItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "BB-002",
+            ItemNumber = 2,
+            Title = "Camion",
+            SellerPriceCents = 1000,
+            Status = secondStatus
+        };
+
+        context.Items.AddRange(firstItem, secondItem);
+        await context.SaveChangesAsync();
+        return (firstItem, secondItem);
+    }
 }
