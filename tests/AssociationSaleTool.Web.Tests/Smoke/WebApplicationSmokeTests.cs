@@ -236,6 +236,36 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SiteJsContainsCheckoutCatalogInteraction()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/js/site.js");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("initializeCheckout", content);
+        Assert.Contains("data-checkout-root", content);
+        Assert.Contains("Cet article est déjà dans le panier.", content);
+        Assert.Contains("data-checkout-remove", content);
+    }
+
+    [Fact]
+    public async Task SiteCssContainsCheckoutCatalogLayout()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/css/site.css");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains(".checkout-grid", content);
+        Assert.Contains(".checkout-results-table", content);
+        Assert.Contains(".checkout-cart-panel", content);
+        Assert.Contains(".checkout-totals", content);
+    }
+
+    [Fact]
     public async Task SellerDetailsDisplaysDeleteActionWithConfirmationForDeletableItemsOnly()
     {
         var client = _factory.CreateClient();
