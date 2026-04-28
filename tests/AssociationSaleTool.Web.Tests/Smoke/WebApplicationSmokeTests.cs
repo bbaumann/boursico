@@ -399,4 +399,104 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("seller-intake-title-column", content);
         Assert.Contains("seller-intake-price-column", content);
     }
+
+    [Fact]
+    public async Task CheckoutPageLoadsCatalogShellInFrench()
+    {
+        var client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "CK-001",
+                FirstName = "Nora",
+                LastName = "Bernier",
+                Email = "nora@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "CK-001-001",
+                ItemNumber = 1,
+                Title = "Jeu de cubes",
+                SellerPriceCents = 900,
+                Status = "in_stock"
+            });
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/caisse");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Caisse", content);
+        Assert.Contains("Rechercher un article", content);
+        Assert.Contains("Panier", content);
+        Assert.Contains("Sous-total", content);
+        Assert.Contains("Frais de caisse", content);
+        Assert.Contains("Total", content);
+        Assert.Contains("checkout-catalog-data", content);
+        Assert.Contains("data-checkout-root", content);
+        Assert.Contains("data-checkout-search", content);
+        Assert.Contains("data-checkout-results", content);
+        Assert.Contains("data-checkout-cart", content);
+        Assert.Contains("data-checkout-subtotal", content);
+        Assert.Contains("CK-001-001", content);
+        Assert.Contains("Jeu de cubes", content);
+    }
+
+    [Fact]
+    public async Task CheckoutPageHidesSellerInformationAndUnavailableActions()
+    {
+        var client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "CK-002",
+                FirstName = "Noelle",
+                LastName = "Secret",
+                Email = "noelle.secret@example.test",
+                Phone = "0601020304"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "CK-002-001",
+                ItemNumber = 1,
+                Title = "Toboggan miniature",
+                SellerPriceCents = 1200,
+                Status = "in_stock"
+            });
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/caisse");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.DoesNotContain("Noelle", content);
+        Assert.DoesNotContain("Secret", content);
+        Assert.DoesNotContain("noelle.secret@example.test", content);
+        Assert.DoesNotContain("0601020304", content);
+        Assert.DoesNotContain("Enregistrer", content);
+        Assert.DoesNotContain("Confirmer", content);
+        Assert.DoesNotContain("Imprimer", content);
+    }
 }

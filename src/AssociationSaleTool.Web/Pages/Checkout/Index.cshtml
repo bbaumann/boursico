@@ -1,0 +1,90 @@
+@page "/caisse"
+@model AssociationSaleTool.Web.Pages.Checkout.IndexModel
+@{
+    ViewData["Title"] = "Caisse";
+}
+
+<section class="page-card checkout-page" data-checkout-root>
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Vente</p>
+            <h1 class="page-title">Caisse</h1>
+            <p class="seller-meta">Recherche locale dans les articles en stock.</p>
+        </div>
+    </div>
+
+    <script type="application/json" id="checkout-catalog-data">
+        @Html.Raw(Model.CatalogJson)
+    </script>
+
+    <div class="checkout-grid">
+        <section class="subsection checkout-lookup">
+            <label for="checkout-search">Rechercher un article</label>
+            <input id="checkout-search"
+                   type="search"
+                   autocomplete="off"
+                   data-checkout-search
+                   placeholder="Référence ou titre" />
+
+            <table class="data-table checkout-results-table">
+                <colgroup>
+                    <col class="checkout-reference-column" />
+                    <col class="checkout-title-column" />
+                    <col class="checkout-price-column" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Titre</th>
+                        <th>Prix</th>
+                    </tr>
+                </thead>
+                <tbody data-checkout-results>
+                    <tr>
+                        <td colspan="3" class="empty-state">Saisissez une recherche pour filtrer les articles.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <aside class="subsection checkout-cart-panel">
+            <h2>Panier</h2>
+            <p class="validation" data-checkout-message role="status" aria-live="polite"></p>
+            <p class="empty-state" data-checkout-empty-cart>Le panier est vide.</p>
+
+            <table class="data-table checkout-cart-table">
+                <colgroup>
+                    <col class="checkout-reference-column" />
+                    <col class="checkout-title-column" />
+                    <col class="checkout-price-column" />
+                    <col class="checkout-cart-action-column" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Titre</th>
+                        <th>Prix</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody data-checkout-cart>
+                </tbody>
+            </table>
+
+            <dl class="checkout-totals">
+                <div>
+                    <dt>Sous-total</dt>
+                    <dd data-checkout-subtotal>0.00 EUR</dd>
+                </div>
+                <div>
+                    <dt>Frais de caisse</dt>
+                    <dd data-checkout-fee>0.00 EUR</dd>
+                </div>
+                <div class="checkout-total-row">
+                    <dt>Total</dt>
+                    <dd data-checkout-total>0.00 EUR</dd>
+                </div>
+            </dl>
+        </aside>
+    </div>
+</section>
