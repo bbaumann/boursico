@@ -1,8 +1,11 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Tests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace AssociationSaleTool.Web.Tests.Smoke;
 
@@ -535,5 +538,190 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("Enregistrer", content);
         Assert.DoesNotContain("Confirmer", content);
         Assert.DoesNotContain("Imprimer", content);
+    }
+
+    [Fact]
+    public async Task CheckoutValidationApiReturnsTotalsForAvailableItems()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "CV-001",
+                FirstName = "Claire",
+                LastName = "Valide",
+                Email = "claire.valide@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "CV-001-001",
+                ItemNumber = 1,
+                Title = "Jeu valide",
+                SellerPriceCents = 1200,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync("/api/caisse/validation", new { itemIds = new[] { itemId } });
+
+        response.EnsureSuccessStatusCode();
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(document.RootElement.GetProperty("isValid").GetBoolean());
+        Assert.Equal(1, document.RootElement.GetProperty("itemCount").GetInt32());
+        Assert.Equal(1200, document.RootElement.GetProperty("totals").GetProperty("subtotalSellerPriceCents").GetInt32());
+        Assert.Equal(120, document.RootElement.GetProperty("totals").GetProperty("checkoutFeeCents").GetInt32());
+        Assert.Equal(1320, document.RootElement.GetProperty("totals").GetProperty("totalPaidCents").GetInt32());
+    }
+
+    [Fact]
+    public async Task CheckoutValidationApiReturnsConflictForUnavailableItems()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "CV-002",
+                FirstName = "Claire",
+                LastName = "Conflit",
+                Email = "claire.conflit@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "CV-002-001",
+                ItemNumber = 1,
+                Title = "Jeu indisponible",
+                SellerPriceCents = 800,
+                Status = "sold"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync("/api/caisse/validation", new { itemIds = new[] { itemId } });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.False(document.RootElement.GetProperty("isValid").GetBoolean());
+        Assert.Equal(itemId, document.RootElement.GetProperty("conflictItemIds")[0].GetInt64());
+    }
+
+    [Fact]
+    public async Task SalesApiPersistsSaleAndMarksItemSold()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-001",
+                FirstName = "Sonia",
+                LastName = "Vente",
+                Email = "sonia.vente@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-001-001",
+                ItemNumber = 1,
+                Title = "Jeu vendu",
+                SellerPriceCents = 1500,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync("/api/ventes", new { itemIds = new[] { itemId } });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var sale = await dbContext.Sales.Include(x => x.SaleLines).SingleAsync(x => x.SaleLines.Any(line => line.ItemId == itemId));
+            Assert.Equal(1500, sale.SubtotalSellerPriceCents);
+            Assert.Equal(150, sale.CheckoutFeeCents);
+            Assert.Equal(1650, sale.TotalPaidCents);
+            Assert.Equal("sold", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+        }
+    }
+
+    [Fact]
+    public async Task SalesApiReturnsConflictWithoutPersistingUnavailableItems()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-002",
+                FirstName = "Sonia",
+                LastName = "Conflit",
+                Email = "sonia.conflit@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-002-001",
+                ItemNumber = 1,
+                Title = "Jeu deja vendu",
+                SellerPriceCents = 1500,
+                Status = "sold"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync("/api/ventes", new { itemIds = new[] { itemId } });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.False(document.RootElement.GetProperty("saved").GetBoolean());
+        Assert.Equal(itemId, document.RootElement.GetProperty("conflictItemIds")[0].GetInt64());
     }
 }

@@ -12,6 +12,7 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
 builder.Services.AddSingleton<SqliteConnectionInterceptor>();
 builder.Services
     .AddOptions<DatabaseOptions>()
@@ -75,6 +76,7 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapControllers();
 
 app.Run();
 
