@@ -26,25 +26,27 @@
                    data-checkout-search
                    placeholder="Référence ou titre" />
 
-            <table class="data-table checkout-results-table">
-                <colgroup>
-                    <col class="checkout-reference-column" />
-                    <col class="checkout-title-column" />
-                    <col class="checkout-price-column" />
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th>Référence</th>
-                        <th>Titre</th>
-                        <th>Prix</th>
-                    </tr>
-                </thead>
-                <tbody data-checkout-results>
-                    <tr>
-                        <td colspan="3" class="empty-state">Saisissez une recherche pour filtrer les articles.</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="checkout-results-frame">
+                <table class="data-table checkout-results-table">
+                    <colgroup>
+                        <col class="checkout-reference-column" />
+                        <col class="checkout-title-column" />
+                        <col class="checkout-price-column" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>REF</th>
+                            <th>Titre</th>
+                            <th>Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody data-checkout-results>
+                        <tr>
+                            <td colspan="3" class="empty-state">Saisissez une recherche pour filtrer les articles.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <aside class="subsection checkout-cart-panel">
@@ -61,7 +63,7 @@
                 </colgroup>
                 <thead>
                     <tr>
-                        <th>Référence</th>
+                        <th>REF</th>
                         <th>Titre</th>
                         <th>Prix</th>
                         <th></th>

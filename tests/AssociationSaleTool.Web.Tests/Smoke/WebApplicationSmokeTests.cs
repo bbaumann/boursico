@@ -260,6 +260,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains(".checkout-grid", content);
+        Assert.Contains("grid-template-columns: minmax(0, 1fr);", content);
+        Assert.DoesNotContain("minmax(320px", content);
+        Assert.Contains(".checkout-results-frame", content);
+        Assert.Contains("max-height: min(52vh, 32rem);", content);
+        Assert.Contains("overflow-y: auto;", content);
         Assert.Contains(".checkout-results-table", content);
         Assert.Contains(".checkout-cart-panel", content);
         Assert.Contains(".checkout-totals", content);
@@ -479,6 +484,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-results", content);
         Assert.Contains("data-checkout-cart", content);
         Assert.Contains("data-checkout-subtotal", content);
+        Assert.Contains("checkout-results-frame", content);
+        Assert.Contains("<th>REF</th>", content);
         Assert.Contains("CK-001-001", content);
         Assert.Contains("Jeu de cubes", content);
     }

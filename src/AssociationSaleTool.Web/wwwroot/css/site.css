@@ -335,7 +335,7 @@ textarea {
 
 .checkout-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 2rem;
   align-items: start;
 }
@@ -347,12 +347,18 @@ textarea {
 
 .checkout-results-table,
 .checkout-cart-table {
-  margin-top: 1rem;
   table-layout: fixed;
 }
 
+.checkout-results-frame {
+  max-height: min(52vh, 32rem);
+  margin-top: 1rem;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--border);
+}
+
 .checkout-reference-column {
-  width: 8.5rem;
+  width: 6rem;
 }
 
 .checkout-title-column {
@@ -427,9 +433,5 @@ textarea {
 
   .page-header {
     flex-direction: column;
-  }
-
-  .checkout-grid {
-    grid-template-columns: 1fr;
   }
 }
