@@ -88,6 +88,15 @@
                 </div>
             </dl>
 
+            <label class="receipt-details-field" for="checkout-receipt-details">
+                Détails du reçu
+                <textarea id="checkout-receipt-details"
+                          rows="3"
+                          data-checkout-receipt-details
+                          placeholder="Nom, organisation ou adresse"></textarea>
+                <span class="seller-meta">À remplir uniquement si le client demande un reçu.</span>
+            </label>
+
             <div class="form-actions checkout-finalize-actions">
                 <button type="button"
                         class="button-link button-link-solid"
@@ -123,7 +132,53 @@
             <div class="form-actions checkout-modal-actions">
                 <button type="button" class="button-link" data-checkout-modal-back>Retour</button>
                 <button type="button" class="button-link button-link-solid" data-checkout-save-sale>Enregistrer la vente</button>
+                <button type="button"
+                        class="button-link button-link-solid"
+                        data-checkout-save-print
+                        disabled>
+                    Enregistrer et imprimer
+                </button>
             </div>
         </div>
     </div>
+</section>
+
+<section class="checkout-print-receipt" data-checkout-receipt aria-hidden="true">
+    <header>
+        <h1 data-checkout-receipt-header>@Model.ReceiptHeaderText</h1>
+        <p>Reçu de vente <span data-checkout-receipt-sale-id></span></p>
+        <p>Date : <span data-checkout-receipt-date></span></p>
+    </header>
+
+    <section>
+        <h2>Détails du reçu</h2>
+        <p data-checkout-receipt-details-text></p>
+    </section>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>REF</th>
+                <th>Titre</th>
+                <th>Prix</th>
+            </tr>
+        </thead>
+        <tbody data-checkout-receipt-lines>
+        </tbody>
+    </table>
+
+    <dl class="checkout-totals">
+        <div>
+            <dt>Sous-total</dt>
+            <dd data-checkout-receipt-subtotal>0.00 EUR</dd>
+        </div>
+        <div>
+            <dt>Frais de caisse</dt>
+            <dd data-checkout-receipt-fee>0.00 EUR</dd>
+        </div>
+        <div class="checkout-total-row">
+            <dt>Total</dt>
+            <dd data-checkout-receipt-total>0.00 EUR</dd>
+        </div>
+    </dl>
 </section>

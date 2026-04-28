@@ -73,15 +73,21 @@ function createCheckoutEmptyRow(message, columnCount) {
   return row;
 }
 
-async function postCheckoutCart(url, cart) {
+async function postCheckoutCart(url, cart, receiptDetails) {
+  const body = {
+    itemIds: cart.map(item => item.id)
+  };
+
+  if (receiptDetails !== undefined) {
+    body.receiptDetails = receiptDetails;
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      itemIds: cart.map(item => item.id)
-    })
+    body: JSON.stringify(body)
   });
   const text = await response.text();
   const payload = text ? JSON.parse(text) : {};
@@ -98,14 +104,24 @@ function initializeCheckout(root) {
   const subtotalElement = root.querySelector("[data-checkout-subtotal]");
   const feeElement = root.querySelector("[data-checkout-fee]");
   const totalElement = root.querySelector("[data-checkout-total]");
+  const receiptDetailsInput = root.querySelector("[data-checkout-receipt-details]");
   const finalizeButton = root.querySelector("[data-checkout-finalize]");
   const modal = root.querySelector("[data-checkout-modal]");
   const modalBackButton = root.querySelector("[data-checkout-modal-back]");
   const saveSaleButton = root.querySelector("[data-checkout-save-sale]");
+  const savePrintButton = root.querySelector("[data-checkout-save-print]");
   const modalCount = root.querySelector("[data-checkout-modal-count]");
   const modalSubtotal = root.querySelector("[data-checkout-modal-subtotal]");
   const modalFee = root.querySelector("[data-checkout-modal-fee]");
   const modalTotal = root.querySelector("[data-checkout-modal-total]");
+  const receipt = document.querySelector("[data-checkout-receipt]");
+  const receiptSaleId = document.querySelector("[data-checkout-receipt-sale-id]");
+  const receiptDate = document.querySelector("[data-checkout-receipt-date]");
+  const receiptDetailsText = document.querySelector("[data-checkout-receipt-details-text]");
+  const receiptLines = document.querySelector("[data-checkout-receipt-lines]");
+  const receiptSubtotal = document.querySelector("[data-checkout-receipt-subtotal]");
+  const receiptFee = document.querySelector("[data-checkout-receipt-fee]");
+  const receiptTotal = document.querySelector("[data-checkout-receipt-total]");
 
   if (!dataElement || !searchInput || !resultsBody || !cartBody) {
     return;
@@ -128,6 +144,16 @@ function initializeCheckout(root) {
   function setConflictItems(itemIds) {
     conflictItemIds.clear();
     itemIds.forEach(itemId => conflictItemIds.add(Number(itemId)));
+  }
+
+  function getReceiptDetails() {
+    return receiptDetailsInput?.value.trim() || "";
+  }
+
+  function updateSavePrintButtonState() {
+    if (savePrintButton) {
+      savePrintButton.disabled = getReceiptDetails().length === 0;
+    }
   }
 
   function hideModal() {
@@ -158,6 +184,56 @@ function initializeCheckout(root) {
     }
 
     modal.hidden = false;
+    updateSavePrintButtonState();
+  }
+
+  function renderReceipt(payload, receiptDetails) {
+    if (!receipt || !receiptLines) {
+      return;
+    }
+
+    if (receiptSaleId) {
+      receiptSaleId.textContent = payload.saleId ? `#${payload.saleId}` : "";
+    }
+
+    if (receiptDate) {
+      receiptDate.textContent = new Date().toLocaleString("fr-FR");
+    }
+
+    if (receiptDetailsText) {
+      receiptDetailsText.textContent = receiptDetails;
+    }
+
+    receiptLines.replaceChildren();
+    for (const item of cart) {
+      const row = document.createElement("tr");
+      row.appendChild(createCheckoutCell(item.reference));
+      row.appendChild(createCheckoutCell(item.title));
+      row.appendChild(createCheckoutCell(formatCheckoutPrice(item.sellerPriceCents)));
+      receiptLines.appendChild(row);
+    }
+
+    if (payload.totals) {
+      if (receiptSubtotal) {
+        receiptSubtotal.textContent = formatCheckoutPrice(payload.totals.subtotalSellerPriceCents);
+      }
+
+      if (receiptFee) {
+        receiptFee.textContent = formatCheckoutPrice(payload.totals.checkoutFeeCents);
+      }
+
+      if (receiptTotal) {
+        receiptTotal.textContent = formatCheckoutPrice(payload.totals.totalPaidCents);
+      }
+    }
+  }
+
+  function printReceiptAndReload() {
+    document.body.classList.add("checkout-printing");
+    window.onafterprint = () => {
+      window.location.reload();
+    };
+    window.print();
   }
 
   function renderResults() {
@@ -238,6 +314,7 @@ function initializeCheckout(root) {
   }
 
   searchInput.addEventListener("input", renderResults);
+  receiptDetailsInput?.addEventListener("input", updateSavePrintButtonState);
 
   resultsBody.addEventListener("click", event => {
     const row = event.target.closest("[data-checkout-item-id]");
@@ -308,7 +385,7 @@ function initializeCheckout(root) {
   modalBackButton?.addEventListener("click", hideModal);
 
   saveSaleButton?.addEventListener("click", async () => {
-    const { response, payload } = await postCheckoutCart("/api/ventes", cart);
+    const { response, payload } = await postCheckoutCart("/api/ventes", cart, getReceiptDetails());
     if (response.status === 201 && payload.saved) {
       cart.splice(0, cart.length);
       setConflictItems([]);
@@ -330,8 +407,34 @@ function initializeCheckout(root) {
     hideModal();
   });
 
+  savePrintButton?.addEventListener("click", async () => {
+    const receiptDetails = getReceiptDetails();
+    if (receiptDetails.length === 0) {
+      return;
+    }
+
+    const { response, payload } = await postCheckoutCart("/api/ventes", cart, receiptDetails);
+    if (response.status === 201 && payload.saved) {
+      renderReceipt(payload, receiptDetails);
+      printReceiptAndReload();
+      return;
+    }
+
+    if (response.status === 409) {
+      setConflictItems(payload.conflictItemIds || []);
+      setMessage("La vente n'a pas été enregistrée : un article n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
+      hideModal();
+      renderCart();
+      return;
+    }
+
+    setMessage("La vente n'a pas pu être enregistrée. Réessayez.");
+    hideModal();
+  });
+
   renderResults();
   renderCart();
+  updateSavePrintButtonState();
 }
 
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);

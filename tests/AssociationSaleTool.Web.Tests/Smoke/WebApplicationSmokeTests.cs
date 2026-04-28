@@ -258,6 +258,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("/api/caisse/validation", content);
         Assert.Contains("/api/ventes", content);
         Assert.Contains("checkout-conflict-row", content);
+        Assert.Contains("receiptDetails", content);
+        Assert.Contains("data-checkout-save-print", content);
+        Assert.Contains("data-checkout-receipt-lines", content);
+        Assert.Contains("window.print()", content);
     }
 
     [Fact]
@@ -280,6 +284,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(".checkout-totals", content);
         Assert.Contains(".checkout-modal", content);
         Assert.Contains(".checkout-conflict-row", content);
+        Assert.Contains(".checkout-print-receipt", content);
+        Assert.Contains("@media print", content);
+        Assert.Contains("body.checkout-printing", content);
     }
 
     [Fact]
@@ -502,6 +509,15 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-modal-count", content);
         Assert.Contains("data-checkout-save-sale", content);
         Assert.Contains("Enregistrer la vente", content);
+        Assert.Contains("data-checkout-receipt-details", content);
+        Assert.Contains("Détails du reçu", content);
+        Assert.Contains("data-checkout-save-print", content);
+        Assert.Contains("Enregistrer et imprimer", content);
+        Assert.Contains("data-checkout-receipt", content);
+        Assert.Contains("data-checkout-receipt-header", content);
+        Assert.Contains("Association Toy Sale", content);
+        Assert.Contains("data-checkout-receipt-lines", content);
+        Assert.Contains("data-checkout-receipt-total", content);
         Assert.Contains("checkout-results-frame", content);
         Assert.Contains("<th>REF</th>", content);
         Assert.Contains("CK-001-001", content);
@@ -551,7 +567,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("noelle.secret@example.test", content);
         Assert.DoesNotContain("0601020304", content);
         Assert.DoesNotContain("Confirmer", content);
-        Assert.DoesNotContain("Imprimer", content);
     }
 
     [Fact]

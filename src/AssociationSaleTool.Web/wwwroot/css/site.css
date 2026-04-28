@@ -426,6 +426,10 @@ textarea {
   justify-content: flex-end;
 }
 
+.receipt-details-field {
+  margin-top: 1.25rem;
+}
+
 .checkout-conflict-row {
   background: rgba(138, 31, 17, 0.14);
   outline: 2px solid #8a1f11;
@@ -462,6 +466,42 @@ textarea {
 .checkout-modal-actions {
   margin-top: 1.25rem;
   justify-content: flex-end;
+}
+
+.checkout-print-receipt {
+  display: none;
+}
+
+.checkout-print-receipt header {
+  margin-bottom: 1.5rem;
+}
+
+.checkout-print-receipt h1,
+.checkout-print-receipt h2 {
+  margin: 0 0 0.75rem;
+}
+
+@media print {
+  body.checkout-printing {
+    background: #fff;
+  }
+
+  body.checkout-printing .page-frame,
+  body.checkout-printing .checkout-page {
+    display: none !important;
+  }
+
+  body.checkout-printing .page-shell {
+    width: 100%;
+    padding: 0;
+  }
+
+  body.checkout-printing .checkout-print-receipt {
+    display: block;
+    color: #000;
+    background: #fff;
+    font-family: Georgia, "Times New Roman", serif;
+  }
 }
 
 @media (max-width: 640px) {
