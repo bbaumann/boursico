@@ -380,3 +380,22 @@ This file captures the main project decisions in a lightweight ADR format.
   - seller settlement remains based on seller price only
   - customer-paid money is audited at the sale level rather than through a second per-item price
   - intake no longer needs to compute or show a derived per-item sale price
+
+## D-029 Use Resource-Oriented API Endpoints For Interactive Checkout Actions
+
+- Status: accepted
+- Key drivers:
+  - checkout is the only V1 page with substantial client-side state and asynchronous interaction
+  - `technologies.md` defines a page-oriented HTML app with a narrow `/api/...` surface for interactive operations
+  - validation and sale save are resource actions, not reusable page rendering concerns
+  - the app should not become broadly API-first just because checkout uses JavaScript
+- Decision:
+  - keep `/caisse` as the Razor Page that owns checkout page structure and initial rendering
+  - expose checkout validation and sale creation through narrow resource-oriented API endpoints
+  - use `POST /api/caisse/validation` for pre-finalize cart validation
+  - use `POST /api/ventes` for sale creation
+  - keep the API controllers thin; business rules and persistence stay in `CheckoutService`
+- Consequence:
+  - checkout JavaScript calls explicit API resources instead of Razor Page handlers
+  - the API surface remains intentionally small and driven by sale-day UI needs
+  - future checkout API additions should be justified by real interactive workflow needs

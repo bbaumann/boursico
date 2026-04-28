@@ -240,7 +240,7 @@ Interactive endpoints:
 
 - one lightweight checkout-catalog endpoint
 - one pre-finalize validation endpoint
-- `POST /api/sales`
+- `POST /api/ventes`
 - optionally `POST /api/items/{id}/missing` if asynchronous reconciliation interaction is later useful
 
 The initial API surface should stay narrow and driven by real UI needs.
