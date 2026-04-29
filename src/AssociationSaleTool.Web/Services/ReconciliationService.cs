@@ -133,9 +133,20 @@ public sealed class ReconciliationService(AppDbContext dbContext)
     private static SellerSheetItem BuildPayableItem(ItemEntity item)
     {
         var isMissing = item.Status == "missing";
-        var priceCents = isMissing
-            ? item.SellerPriceCents
-            : item.SaleLine!.SellerPriceAtSaleCents;
+        int priceCents;
+
+        if (isMissing)
+        {
+            priceCents = item.SellerPriceCents;
+        }
+        else if (item.SaleLine is null)
+        {
+            throw new ReconciliationSellerSheetDataException(item.Reference);
+        }
+        else
+        {
+            priceCents = item.SaleLine.SellerPriceAtSaleCents;
+        }
 
         return new SellerSheetItem(
             item.Id,
@@ -156,4 +167,10 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             item.SellerPriceCents,
             false);
     }
+}
+
+public sealed class ReconciliationSellerSheetDataException(string itemReference)
+    : InvalidOperationException($"Sold item {itemReference} has no sale line.")
+{
+    public string ItemReference { get; } = itemReference;
 }

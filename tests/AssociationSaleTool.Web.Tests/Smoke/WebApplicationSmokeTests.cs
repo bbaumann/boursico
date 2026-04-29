@@ -333,6 +333,61 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task ReconciliationDashboardCanMarkItemInStockWhenUnlocked()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RC-003",
+                FirstName = "Ines",
+                LastName = "Stock",
+                Email = "ines.stock@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "RC-003-001",
+                ItemNumber = 1,
+                Title = "Jeu retrouve",
+                SellerPriceCents = 900,
+                Status = "missing"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var dashboardContent = await UnlockReconciliationDashboardAsync(client);
+        var response = await client.PostAsync(
+            "/rapprochement?handler=MarkInStock&sellerCode=RC-003",
+            BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("/rapprochement", response.RequestMessage?.RequestUri?.PathAndQuery);
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Article remis en stock.", content);
+        Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-003\"", content);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var item = await dbContext.Items.SingleAsync(x => x.Id == itemId);
+            Assert.Equal("in_stock", item.Status);
+        }
+    }
+
+    [Fact]
     public async Task ReconciliationSheetsPageRendersAllActiveSellerSheetsWhenUnlocked()
     {
         var (client, _) = await UnlockReconciliationDashboardAsync();
@@ -414,6 +469,48 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Aucune feuille vendeur pour le code RS-404.", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationSheetsPageShowsFrenchErrorForSoldItemWithoutSaleLine()
+    {
+        var (client, _) = await UnlockReconciliationDashboardAsync();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RS-500",
+                FirstName = "Erreur",
+                LastName = "Vente",
+                Email = "erreur.vente@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "RS-500-001",
+                ItemNumber = 1,
+                Title = "Article vendu incoherent",
+                SellerPriceCents = 1200,
+                Status = "sold"
+            });
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-500");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Données de vente incohérentes pour l'article RS-500-001.", content);
+        Assert.Contains("La feuille vendeur ne peut pas être imprimée.", content);
+        Assert.DoesNotContain("Total à payer", content);
     }
 
     [Fact]

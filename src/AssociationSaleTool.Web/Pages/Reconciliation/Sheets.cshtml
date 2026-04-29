@@ -20,7 +20,13 @@
     </div>
 </section>
 
-@if (Model.Sheets.Count == 0)
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <section class="page-card">
+        <p class="validation">@Model.ErrorMessage</p>
+    </section>
+}
+else if (Model.Sheets.Count == 0)
 {
     <section class="page-card">
         @if (!string.IsNullOrWhiteSpace(Model.RequestedSellerCode))

@@ -12,6 +12,8 @@ public sealed class SheetsModel(ReconciliationService reconciliationService) : P
 
     public string? RequestedSellerCode { get; private set; }
 
+    public string? ErrorMessage { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(string? codeVendeur, CancellationToken cancellationToken)
     {
         if (!ReconciliationAdminSession.IsUnlocked(HttpContext))
@@ -23,7 +25,16 @@ public sealed class SheetsModel(ReconciliationService reconciliationService) : P
             ? null
             : codeVendeur.Trim().ToUpperInvariant();
 
-        Sheets = await reconciliationService.ListSellerSheetsAsync(RequestedSellerCode, cancellationToken);
+        try
+        {
+            Sheets = await reconciliationService.ListSellerSheetsAsync(RequestedSellerCode, cancellationToken);
+        }
+        catch (ReconciliationSellerSheetDataException exception)
+        {
+            ErrorMessage =
+                $"Données de vente incohérentes pour l'article {exception.ItemReference}. La feuille vendeur ne peut pas être imprimée.";
+            Sheets = [];
+        }
 
         return Page();
     }

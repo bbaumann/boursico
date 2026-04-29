@@ -66,6 +66,44 @@ public class OptionsBindingTests
         }
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void StartupValidationRejectsBlankAdminPassword(string sharedPassword)
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"association-sale-tool-blank-admin-{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var factory = new WebApplicationFactory<Program>()
+                .WithWebHostBuilder(builder =>
+                {
+                    builder.UseEnvironment("Development");
+                    builder.ConfigureAppConfiguration((_, configurationBuilder) =>
+                    {
+                        var values = new Dictionary<string, string?>
+                        {
+                            ["Database:SqlitePath"] = databasePath,
+                            ["Event:Name"] = "Association Toy Sale Tests",
+                            ["Admin:SharedPassword"] = sharedPassword,
+                            ["Printing:ReceiptHeaderText"] = "Association Toy Sale"
+                        };
+
+                        configurationBuilder.AddInMemoryCollection(values);
+                    });
+                });
+
+            var exception = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+            Assert.Contains("Admin:SharedPassword is required", exception.ToString());
+        }
+        finally
+        {
+            TryDelete(databasePath);
+            TryDelete($"{databasePath}-wal");
+            TryDelete($"{databasePath}-shm");
+        }
+    }
+
     private static void TryDelete(string path)
     {
         try
