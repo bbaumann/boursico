@@ -1,4 +1,6 @@
 using AssociationSaleTool.Web.Configuration;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 
 namespace AssociationSaleTool.Web.Tests.Configuration;
@@ -24,5 +26,60 @@ public class OptionsBindingTests
         Assert.Equal("2026 Toy Sale", configuration.GetSection(EventOptions.SectionName).Get<EventOptions>()!.Name);
         Assert.Equal("secret", configuration.GetSection(AdminOptions.SectionName).Get<AdminOptions>()!.SharedPassword);
         Assert.Equal("Association Toy Sale", configuration.GetSection(PrintingOptions.SectionName).Get<PrintingOptions>()!.ReceiptHeaderText);
+    }
+
+    [Theory]
+    [InlineData("change-me")]
+    [InlineData("CHANGE-ME")]
+    public void StartupValidationRejectsPlaceholderAdminPassword(string sharedPassword)
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"association-sale-tool-placeholder-{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var factory = new WebApplicationFactory<Program>()
+                .WithWebHostBuilder(builder =>
+                {
+                    builder.UseEnvironment("Development");
+                    builder.ConfigureAppConfiguration((_, configurationBuilder) =>
+                    {
+                        var values = new Dictionary<string, string?>
+                        {
+                            ["Database:SqlitePath"] = databasePath,
+                            ["Event:Name"] = "Association Toy Sale Tests",
+                            ["Admin:SharedPassword"] = sharedPassword,
+                            ["Printing:ReceiptHeaderText"] = "Association Toy Sale"
+                        };
+
+                        configurationBuilder.AddInMemoryCollection(values);
+                    });
+                });
+
+            var exception = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+            Assert.Contains("Admin:SharedPassword must not use the placeholder value.", exception.ToString());
+        }
+        finally
+        {
+            TryDelete(databasePath);
+            TryDelete($"{databasePath}-wal");
+            TryDelete($"{databasePath}-shm");
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 }

@@ -34,6 +34,9 @@ builder.Services
     .AddOptions<AdminOptions>()
     .Bind(builder.Configuration.GetSection(AdminOptions.SectionName))
     .Validate(options => !string.IsNullOrWhiteSpace(options.SharedPassword), "Admin:SharedPassword is required")
+    .Validate(
+        options => !string.Equals(options.SharedPassword?.Trim(), "change-me", StringComparison.OrdinalIgnoreCase),
+        "Admin:SharedPassword must not use the placeholder value.")
     .ValidateOnStart();
 builder.Services
     .AddOptions<PrintingOptions>()
