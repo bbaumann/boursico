@@ -74,16 +74,17 @@ No reservation status exists in V1:
 ### After The Sale
 
 - `in_stock -> missing` during post-sale reconciliation by an admin
+- restore a mistakenly marked `missing` item to `in_stock` only as an explicit admin reconciliation correction
 
-## Terminal States In V1
+## Final States In V1
 
-The following are terminal in normal V1 operations:
+The following are final in normal V1 operations:
 
 - `not_provided`
 - `sold`
-- `missing`
+- `missing`, except for an explicit admin reconciliation correction when the item was marked missing by mistake
 
-No transition back out of those states is defined in V1.
+No transition back out of `not_provided` or `sold` is defined in V1.
 
 ## Forbidden Transitions In V1
 
@@ -92,9 +93,8 @@ No transition back out of those states is defined in V1.
 - `not_provided -> in_stock`
 - `sold -> in_stock`
 - `sold -> missing`
-- `missing -> in_stock`
 
-If an operator mistake is discovered, correction should be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI.
+If an operator mistake is discovered, correction should be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow.
 
 ## Role Summary
 
@@ -119,6 +119,7 @@ During the sale:
 After the sale:
 
 - move `in_stock` items to `missing` when a physically expected return cannot be found
+- restore a mistakenly marked `missing` item to `in_stock` only as a correction
 - must enter the shared admin password before confirming that action
 - cannot reopen or rewrite item master data as part of normal reconciliation
 

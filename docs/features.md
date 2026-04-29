@@ -64,6 +64,7 @@ After sale start, only workflow-driven status changes remain allowed in V1:
 
 - `in_stock -> sold` when saving a sale
 - `in_stock -> missing` during post-sale reconciliation
+- restoring a mistakenly marked `missing` item to `in_stock` as an admin reconciliation correction
 
 ### Expected Checkout Flow
 
@@ -127,11 +128,14 @@ Produce per-seller outputs for physical item gathering and seller payout after t
 
 ### V1 Capabilities
 
+- Provide an admin-gated reconciliation dashboard at `/rapprochement`
 - Read authoritative item and sale data from the shared database
 - Group items by seller
 - Compute payable items and returned items per seller
-- Generate one printable seller sheet per seller
+- Print all seller sheets from the dashboard through `/rapprochement/feuilles`
+- Generate one printable seller sheet per seller with at least one `sold`, `missing`, or `in_stock` item
 - Allow marking an unsold item as missing through an admin-only action
+- Allow restoring a mistakenly marked `missing` item to `in_stock` only as an admin reconciliation correction
 - Regenerate the seller sheet after a missing-item correction
 
 ### Seller Sheet Content
@@ -155,7 +159,7 @@ The payable list contains:
 For each payable item, show:
 
 - reference
-- short description if useful
+- item title when useful
 - seller price
 - a visible `MISSING` marker when relevant
 
@@ -166,7 +170,7 @@ The returned list contains all items still marked `in_stock`.
 For each returned item, show:
 
 - reference
-- short description if useful
+- item title when useful
 
 ### Final Amount To Pay
 
@@ -184,13 +188,17 @@ The following stay outside the system in V1:
 1. An operator uses the sheet to gather all returned items.
 2. If a returned item cannot be found physically, an admin marks it as `missing`.
 3. The sheet is regenerated.
-4. Another operator uses the final sheet to prepare the seller payout check.
-5. The check, final sheet, and returned items are physically grouped for seller pickup.
+4. If a missing mark was a mistake and the item is found before finalization, an admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
+5. Another operator uses the final sheet to prepare the seller payout check.
+6. The check, final sheet, and returned items are physically grouped for seller pickup.
 
 In V1, `missing` is an operationally restricted action:
 
 - only an admin may mark an item as `missing`
+- only an admin may restore a mistakenly marked `missing` item to `in_stock`
 - in V1, "admin" means someone who knows the shared admin password
+- the dashboard at `/rapprochement` is admin-gated
+- `Admin:SharedPassword` must be configured for production; blank values and `change-me` are invalid
 - this control exists to reduce misuse by other operators, not to provide full identity-based security
 
 ### Excluded Items
@@ -200,11 +208,13 @@ The following item states are excluded from seller-sheet payable/returned output
 - `registered`
 - `not_provided`
 
+Sellers whose items are only in excluded states do not get seller sheets.
+
 ## V1 Non-Goals
 
 - Seller self-service portal
 - Generic stock management beyond event needs
-- Integrated payment terminal flows
+- Integrated card-payment device flows
 - Complex ERP/accounting features
 - Multi-station offline sync
 - In-app fee management for the EUR 2 per 15 items seller fee

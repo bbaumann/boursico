@@ -7,7 +7,7 @@ The recommended V1 architecture is a small custom local-network system:
 - one local server machine on the event network
 - one central authoritative database
 - one browser-based operations UI for intake and sale-day use
-- one separate reconciliation tool or script for post-sale processing
+- one admin-gated in-app reconciliation dashboard for post-sale processing
 
 This is intentionally not an offline-first distributed architecture.
 
@@ -59,20 +59,24 @@ Properties:
 - optimized for elderly volunteers
 - very narrow workflow
 
-### 4. Reconciliation Tool
+### 4. Reconciliation Dashboard
 
 Responsibilities:
 
+- expose the reconciliation dashboard at `/rapprochement`
 - compute seller-level outputs after sales are over
-- generate printable seller sheets
-- support marking items as missing
-- regenerate corrected seller sheets
+- print seller sheets from `/rapprochement/feuilles`
+- generate sheets only for sellers with at least one `sold`, `missing`, or `in_stock` item
+- support marking items as `missing`
+- support restoring mistakenly marked `missing` items to `in_stock` as reconciliation corrections
+- regenerate corrected seller sheets from current database facts
 
 Properties:
 
-- can be a separate UI, console application, or script in V1
+- admin-gated by the shared admin password
+- uses `Admin:SharedPassword`; production configuration must provide a non-blank value other than `change-me`
 - does not need to run during sales
-- can be used by more technical staff first
+- can be used by administrators after sales are over
 
 ## Data Flow
 
@@ -94,11 +98,11 @@ Properties:
 
 ### Post-Sale Phase
 
-1. Reconciliation tool reads database facts.
-2. Seller sheets are generated.
+1. Reconciliation dashboard reads database facts.
+2. Admin prints seller sheets from `/rapprochement/feuilles`.
 3. Physical stock is checked against returned item lists.
-4. Admin marks missing items where needed.
-5. Sheets are regenerated.
+4. Admin marks missing items where needed or restores mistaken missing marks as corrections.
+5. Corrected sheets are regenerated from the dashboard.
 6. Final seller payout workflow is executed.
 
 ## Architectural Principles
@@ -119,7 +123,7 @@ The chosen technical direction for V1 is:
 - vanilla JavaScript only where local interactivity is genuinely needed, mainly checkout
 - SQLite on the central server as the V1 database
 - `WAL` mode for SQLite concurrency behavior
-- a separate reconciliation implementation that can evolve independently
+- in-app reconciliation pages that can evolve independently from checkout
 
 This keeps the architecture small, self-hosted, and operationally simple while preserving a future migration path if the app later outgrows the V1 choices.
 

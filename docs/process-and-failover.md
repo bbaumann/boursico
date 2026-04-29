@@ -33,12 +33,14 @@ Before the first checkout is processed:
 
 ### After The Sale
 
-1. Reconciliation tool generates a seller sheet for each seller.
-2. An operator physically gathers all returned items from the stock using the sheet.
-3. If a returned item cannot be found, admin marks it as `missing` after entering the shared admin password.
-4. Seller sheet is regenerated.
-5. Another operator writes the check based on the final amount to pay.
-6. Check, final seller sheet, and returned items are physically grouped for seller pickup.
+1. Admin opens the reconciliation dashboard at `/rapprochement` after entering the shared admin password.
+2. Admin prints all seller sheets from `/rapprochement/feuilles`; sheets are generated only for sellers with at least one `sold`, `missing`, or `in_stock` item.
+3. An operator physically gathers all returned items from the stock using the sheet.
+4. If a returned item cannot be found, admin marks it as `missing`.
+5. Seller sheet is regenerated from the dashboard.
+6. If a missing mark was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
+7. Another operator writes the check based on the final amount to pay.
+8. Check, final seller sheet, and returned items are physically grouped for seller pickup.
 
 ## Preregistration Confirmation Workflow
 
@@ -64,6 +66,14 @@ If an item listed as returned cannot be found physically:
 1. Admin enters the shared admin password and updates the item status from `in_stock` to `missing`.
 2. The seller sheet is regenerated.
 3. The item moves from the returned list to the payable list and is marked `MISSING`.
+
+### Correction Case
+
+If an item was marked `missing` by mistake and is found before the seller packet is finalized:
+
+1. Admin enters the shared admin password and restores the item to `in_stock`.
+2. The seller sheet is regenerated.
+3. The item moves back from the payable list to the returned list.
 
 ## Operational Failures
 
@@ -133,5 +143,9 @@ Operationally, anything not present in physical stock and not returned can be tr
 - item availability must prevent double sale after confirmation
 - seller sheets must always be reproducible from current database facts
 - marking an item as `missing` must require the shared admin password
+- restoring a mistakenly marked `missing` item to `in_stock` must require the shared admin password
+- the reconciliation dashboard at `/rapprochement` must be admin-gated
+- all seller sheets must be printed from `/rapprochement/feuilles`
+- `Admin:SharedPassword` must be configured for production; blank values and `change-me` are invalid
 - V1 does not implement per-user identity or a full authorization model
 - the password gate exists to reduce misuse by non-admin operators, not to provide strong security

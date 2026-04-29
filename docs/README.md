@@ -15,7 +15,7 @@ The first version is intentionally narrow:
 - make intake manageable
 - make sale-day operations simple and safe for non-technical volunteers
 - remove the historical end-of-day Excel/VBA consolidation pain
-- keep post-sale reconciliation independent from sale-day operations
+- keep post-sale reconciliation separated from sale-day checkout while keeping it inside the same app
 
 ## Canonical Source
 
@@ -41,21 +41,21 @@ Archived or translated variants may exist elsewhere in the repository, but agent
 
 ## Project Summary
 
-The tool is split into two independent features over one shared database:
+The tool contains two independent in-app features over one shared database:
 
 1. Event operations
 2. Post-sale reconciliation
 
 Event operations are optimized for elderly, non-technical volunteers during the sale day.
 
-Post-sale reconciliation is optimized for correctness and auditability, and can initially be implemented as a separate technical tool or script rather than as a full UI.
+Post-sale reconciliation is optimized for correctness and auditability. It is an admin-gated in-app dashboard at `/rapprochement`, with printable seller sheets at `/rapprochement/feuilles`.
 
 ## Key Principles
 
 - One physical toy maps to one item record.
 - One central database is the only digital source of truth.
 - Sale-day UX must feel like an appliance, not like an admin application.
-- Reconciliation happens after sales are over and can be treated as a separate feature.
+- Reconciliation happens after sales are over and is treated as a separate in-app feature.
 - Simplicity is preferred over cleverness in V1.
 
 ## Current V1 Orientation
@@ -65,6 +65,7 @@ Post-sale reconciliation is optimized for correctness and auditability, and can 
 - Central server only, no offline sync between stations
 - Paper fallback if the server is unavailable
 - Seller self-service is out of scope for V1
+- `Admin:SharedPassword` must be configured for production; blank values and `change-me` are invalid.
 
 ## Suggested Extra Reading Order
 
