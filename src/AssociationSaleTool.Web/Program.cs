@@ -13,6 +13,12 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 builder.Services.AddSingleton<SqliteConnectionInterceptor>();
 builder.Services
     .AddOptions<DatabaseOptions>()
@@ -72,6 +78,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseSession();
 
 app.UseAuthorization();
 

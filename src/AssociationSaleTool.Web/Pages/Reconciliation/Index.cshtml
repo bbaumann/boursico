@@ -1,0 +1,144 @@
+@page "/rapprochement"
+@using AssociationSaleTool.Web.Infrastructure
+@model AssociationSaleTool.Web.Pages.Reconciliation.IndexModel
+@{
+    ViewData["Title"] = "Rapprochement";
+}
+
+@if (!Model.IsUnlocked)
+{
+    <section class="page-card">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Administration</p>
+                <h1 class="page-title">Rapprochement</h1>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="Unlock">
+            <div asp-validation-summary="ModelOnly" class="validation"></div>
+            <label asp-for="PasswordInput.Password">Mot de passe administrateur</label>
+            <input asp-for="PasswordInput.Password" type="password" autocomplete="current-password" />
+            <span asp-validation-for="PasswordInput.Password" class="validation"></span>
+
+            <div class="form-actions">
+                <button type="submit" class="button-link button-link-solid">Déverrouiller</button>
+            </div>
+        </form>
+    </section>
+}
+else
+{
+    <section class="page-card">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Administration</p>
+                <h1 class="page-title">Rapprochement</h1>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+        {
+            <p class="validation" role="status">@Model.SuccessMessage</p>
+
+            @if (!string.IsNullOrWhiteSpace(Model.SheetInput.SellerCode))
+            {
+                <p>
+                    <a href="/rapprochement/feuilles?codeVendeur=@Model.SheetInput.SellerCode">
+                        Imprimer la feuille du vendeur @Model.SheetInput.SellerCode
+                    </a>
+                </p>
+            }
+        }
+
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
+
+        <section class="subsection">
+            <div class="page-header">
+                <div>
+                    <h2>Feuilles vendeurs</h2>
+                </div>
+                <a class="button-link button-link-solid" href="/rapprochement/feuilles">Imprimer toutes les feuilles</a>
+            </div>
+
+            <form method="get" action="/rapprochement/feuilles">
+                <label asp-for="SheetInput.SellerCode">Code vendeur</label>
+                <input name="codeVendeur"
+                       id="SheetInput_SellerCode"
+                       value="@Model.SheetInput.SellerCode"
+                       autocomplete="off" />
+
+                <div class="form-actions">
+                    <button type="submit" class="button-link">Imprimer une feuille</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="subsection">
+            <h2>Correction des articles</h2>
+
+            <form method="post" asp-page-handler="Search">
+                <label asp-for="SearchInput.Query">Référence ou titre</label>
+                <input asp-for="SearchInput.Query" type="search" autocomplete="off" />
+                <span asp-validation-for="SearchInput.Query" class="validation"></span>
+
+                <div class="form-actions">
+                    <button type="submit" class="button-link button-link-solid">Rechercher</button>
+                </div>
+            </form>
+
+            @if (Model.SearchResults.Count > 0)
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>REF</th>
+                            <th>Titre</th>
+                            <th>Vendeur</th>
+                            <th>Statut</th>
+                            <th>Prix</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.SearchResults)
+                    {
+                        <tr>
+                            <td>@item.Reference</td>
+                            <td>@item.Title</td>
+                            <td>@item.SellerCode - @item.SellerName</td>
+                            <td>@ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
+                            <td>@IndexModel.FormatPrice(item.SellerPriceCents)</td>
+                            <td>
+                                @if (item.Status == "in_stock")
+                                {
+                                    <form method="post"
+                                          asp-page-handler="MarkMissing"
+                                          asp-route-itemId="@item.ItemId"
+                                          asp-route-sellerCode="@item.SellerCode">
+                                        <button type="submit" class="button-link">Marquer manquant</button>
+                                    </form>
+                                }
+
+                                @if (item.Status == "missing")
+                                {
+                                    <form method="post"
+                                          asp-page-handler="MarkInStock"
+                                          asp-route-itemId="@item.ItemId"
+                                          asp-route-sellerCode="@item.SellerCode">
+                                        <button type="submit" class="button-link">Remettre en stock</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            else if (!string.IsNullOrWhiteSpace(Model.SearchInput.Query) && ViewContext.ModelState.IsValid)
+            {
+                <p class="empty-state">Aucun article trouvé.</p>
+            }
+        </section>
+    </section>
+}

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace AssociationSaleTool.Web.Tests.Smoke;
 
@@ -69,6 +70,170 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("VENDEURS", content);
         Assert.Contains("CAISSE", content);
         Assert.Matches("class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"/caisse\"\\s+aria-current=\"page\"", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationPageShowsAdminGateWhenLocked()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/rapprochement");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Rapprochement", content);
+        Assert.Contains("Mot de passe administrateur", content);
+        Assert.Contains("Déverrouiller", content);
+        Assert.DoesNotContain("Correction des articles", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationUnlockRejectsInvalidAdminPasswordInFrench()
+    {
+        var client = _factory.CreateClient();
+        var gate = await client.GetAsync("/rapprochement");
+        var gateContent = await gate.Content.ReadAsStringAsync();
+
+        gate.EnsureSuccessStatusCode();
+
+        var response = await client.PostAsync(
+            "/rapprochement?handler=Unlock",
+            BuildFormContent(gateContent, ("PasswordInput.Password", "wrong-password")));
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Mot de passe administrateur", content);
+        Assert.Contains("Mot de passe administrateur incorrect.", content);
+        Assert.DoesNotContain("Correction des articles", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationUnlockShowsDashboardWithSellerSheetAndCorrectionSections()
+    {
+        var (_, content) = await UnlockReconciliationDashboardAsync();
+
+        Assert.Contains("Feuilles vendeurs", content);
+        Assert.Contains("Correction des articles", content);
+        Assert.Contains("href=\"/rapprochement/feuilles\"", content);
+        Assert.Contains("Imprimer toutes les feuilles", content);
+        Assert.Contains("Code vendeur", content);
+        Assert.Contains("Imprimer une feuille", content);
+        Assert.Contains("Référence ou titre", content);
+        Assert.Contains("Rechercher", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationDashboardSearchShowsFrenchStatusesAndCorrectionActions()
+    {
+        var client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RC-001",
+                FirstName = "Renee",
+                LastName = "Controle",
+                Email = "renee.controle@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.AddRange(
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RC-001-001",
+                    ItemNumber = 1,
+                    Title = "Puzzle rapprochement",
+                    SellerPriceCents = 450,
+                    Status = "in_stock"
+                },
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RC-001-002",
+                    ItemNumber = 2,
+                    Title = "Train rapprochement",
+                    SellerPriceCents = 800,
+                    Status = "missing"
+                });
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var dashboardContent = await UnlockReconciliationDashboardAsync(client);
+        var response = await client.PostAsync(
+            "/rapprochement?handler=Search",
+            BuildFormContent(dashboardContent, ("SearchInput.Query", "RC-001")));
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("RC-001-001", content);
+        Assert.Contains("Puzzle rapprochement", content);
+        Assert.Contains("en stock", content);
+        Assert.Contains("RC-001-002", content);
+        Assert.Contains("Train rapprochement", content);
+        Assert.Contains("manquant", content);
+        Assert.Contains("Marquer manquant", content);
+        Assert.Contains("Remettre en stock", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationDashboardCanMarkItemMissingWhenUnlocked()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RC-002",
+                FirstName = "Marc",
+                LastName = "Manquant",
+                Email = "marc.manquant@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "RC-002-001",
+                ItemNumber = 1,
+                Title = "Camion rapprochement",
+                SellerPriceCents = 700,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var dashboardContent = await UnlockReconciliationDashboardAsync(client);
+        var response = await client.PostAsync(
+            "/rapprochement?handler=MarkMissing",
+            BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Article marqué manquant.", content);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var item = await dbContext.Items.SingleAsync(x => x.Id == itemId);
+            Assert.Equal("missing", item.Status);
+        }
     }
 
     [Fact]
@@ -746,6 +911,59 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Equal(1650, sale.TotalPaidCents);
             Assert.Equal("sold", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
         }
+    }
+
+    private async Task<(HttpClient Client, string Content)> UnlockReconciliationDashboardAsync()
+    {
+        var client = _factory.CreateClient();
+        var content = await UnlockReconciliationDashboardAsync(client);
+
+        return (client, content);
+    }
+
+    private static async Task<string> UnlockReconciliationDashboardAsync(HttpClient client)
+    {
+        var gate = await client.GetAsync("/rapprochement");
+        var gateContent = await gate.Content.ReadAsStringAsync();
+
+        gate.EnsureSuccessStatusCode();
+
+        var response = await client.PostAsync(
+            "/rapprochement?handler=Unlock",
+            BuildFormContent(gateContent, ("PasswordInput.Password", "test-password")));
+
+        response.EnsureSuccessStatusCode();
+
+        return WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+    }
+
+    private static FormUrlEncodedContent BuildFormContent(string html, params (string Name, string Value)[] fields)
+    {
+        var values = new List<KeyValuePair<string, string>>
+        {
+            new("__RequestVerificationToken", ExtractRequestVerificationToken(html))
+        };
+
+        values.AddRange(fields.Select(field => new KeyValuePair<string, string>(field.Name, field.Value)));
+
+        return new FormUrlEncodedContent(values);
+    }
+
+    private static string ExtractRequestVerificationToken(string html)
+    {
+        var inputMatch = Regex.Match(html, "<input[^>]*name=\"__RequestVerificationToken\"[^>]*>", RegexOptions.IgnoreCase);
+        if (!inputMatch.Success)
+        {
+            throw new InvalidOperationException("The page did not render an antiforgery token.");
+        }
+
+        var valueMatch = Regex.Match(inputMatch.Value, "value=\"(?<value>[^\"]+)\"", RegexOptions.IgnoreCase);
+        if (!valueMatch.Success)
+        {
+            throw new InvalidOperationException("The antiforgery token input did not include a value.");
+        }
+
+        return WebUtility.HtmlDecode(valueMatch.Groups["value"].Value);
     }
 
     [Fact]
