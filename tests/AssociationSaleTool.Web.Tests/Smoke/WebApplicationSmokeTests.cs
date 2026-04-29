@@ -2,6 +2,7 @@ using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
@@ -111,7 +112,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     [Fact]
     public async Task ReconciliationUnlockShowsDashboardWithSellerSheetAndCorrectionSections()
     {
-        var (_, content) = await UnlockReconciliationDashboardAsync();
+        var (client, content) = await UnlockReconciliationDashboardAsync();
 
         Assert.Contains("Feuilles vendeurs", content);
         Assert.Contains("Correction des articles", content);
@@ -121,6 +122,99 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Imprimer une feuille", content);
         Assert.Contains("Référence ou titre", content);
         Assert.Contains("Rechercher", content);
+
+        await EnsureSoldItemsHaveSaleLinesAsync();
+
+        var sheetsResponse = await client.GetAsync("/rapprochement/feuilles");
+        sheetsResponse.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task ReconciliationSheetsRedirectsToAdminGateWhenLocked()
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.GetAsync("/rapprochement/feuilles");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/rapprochement", response.Headers.Location?.OriginalString);
+    }
+
+    [Fact]
+    public async Task ReconciliationLockedPostHandlersShowAdminGateAndDoNotChangeItemStatus()
+    {
+        var client = _factory.CreateClient();
+        long inStockItemId;
+        long missingItemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RL-001",
+                FirstName = "Lea",
+                LastName = "Verrou",
+                Email = "lea.verrou@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var inStockItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "RL-001-001",
+                ItemNumber = 1,
+                Title = "Article verrouille",
+                SellerPriceCents = 500,
+                Status = "in_stock"
+            };
+            var missingItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "RL-001-002",
+                ItemNumber = 2,
+                Title = "Article deja manquant",
+                SellerPriceCents = 600,
+                Status = "missing"
+            };
+
+            dbContext.Items.AddRange(inStockItem, missingItem);
+            await dbContext.SaveChangesAsync();
+
+            inStockItemId = inStockItem.Id;
+            missingItemId = missingItem.Id;
+        }
+
+        var searchResponse = await client.PostAsync(
+            "/rapprochement?handler=Search",
+            BuildFormContent(await GetReconciliationGateAsync(client), ("SearchInput.Query", "RL-001")));
+        var markMissingResponse = await client.PostAsync(
+            $"/rapprochement?handler=MarkMissing&itemId={inStockItemId}&sellerCode=RL-001",
+            BuildFormContent(await GetReconciliationGateAsync(client)));
+        var markInStockResponse = await client.PostAsync(
+            $"/rapprochement?handler=MarkInStock&itemId={missingItemId}&sellerCode=RL-001",
+            BuildFormContent(await GetReconciliationGateAsync(client)));
+
+        foreach (var response in new[] { searchResponse, markMissingResponse, markInStockResponse })
+        {
+            response.EnsureSuccessStatusCode();
+            var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+            Assert.Contains("Mot de passe administrateur", content);
+            Assert.Contains("Déverrouiller", content);
+            Assert.DoesNotContain("Correction des articles", content);
+        }
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal("in_stock", (await dbContext.Items.SingleAsync(x => x.Id == inStockItemId)).Status);
+            Assert.Equal("missing", (await dbContext.Items.SingleAsync(x => x.Id == missingItemId)).Status);
+        }
     }
 
     [Fact]
@@ -220,13 +314,15 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var dashboardContent = await UnlockReconciliationDashboardAsync(client);
         var response = await client.PostAsync(
-            "/rapprochement?handler=MarkMissing",
+            "/rapprochement?handler=MarkMissing&sellerCode=RC-002",
             BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
 
         response.EnsureSuccessStatusCode();
+        Assert.Equal("/rapprochement", response.RequestMessage?.RequestUri?.PathAndQuery);
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Article marqué manquant.", content);
+        Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-002\"", content);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -234,6 +330,105 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var item = await dbContext.Items.SingleAsync(x => x.Id == itemId);
             Assert.Equal("missing", item.Status);
         }
+    }
+
+    [Fact]
+    public async Task ReconciliationSheetsPageRendersAllActiveSellerSheetsWhenUnlocked()
+    {
+        var (client, _) = await UnlockReconciliationDashboardAsync();
+        await SeedReconciliationSheetAsync(
+            "RS-101",
+            "Alice",
+            "Feuille",
+            "alice.feuille@example.test",
+            "0600000001",
+            ("RS-101-001", "Jeu manquant", "missing", 900),
+            ("RS-101-002", "Puzzle a rendre", "in_stock", 450));
+        await SeedReconciliationSheetAsync(
+            "RS-102",
+            "Bruno",
+            "Feuille",
+            null,
+            null,
+            ("RS-102-001", "Train a rendre", "in_stock", 800));
+        await EnsureSoldItemsHaveSaleLinesAsync();
+
+        var response = await client.GetAsync("/rapprochement/feuilles");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("seller-sheet-print-page", content);
+        Assert.Contains("Feuille vendeur", content);
+        Assert.Contains("RS-101", content);
+        Assert.Contains("Alice Feuille", content);
+        Assert.Contains("alice.feuille@example.test", content);
+        Assert.Contains("Articles à payer", content);
+        Assert.Contains("Jeu manquant", content);
+        Assert.Contains("MANQUANT", content);
+        Assert.Contains("Articles à rendre", content);
+        Assert.Contains("Puzzle a rendre", content);
+        Assert.Contains("Total à payer", content);
+        Assert.Contains("RS-102", content);
+        Assert.Contains("Bruno Feuille", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationSheetsPageFiltersBySellerCodeWhenUnlocked()
+    {
+        var (client, _) = await UnlockReconciliationDashboardAsync();
+        await SeedReconciliationSheetAsync(
+            "RS-201",
+            "Claire",
+            "Filtre",
+            null,
+            null,
+            ("RS-201-001", "Article cible", "missing", 300));
+        await SeedReconciliationSheetAsync(
+            "RS-202",
+            "Denis",
+            "Filtre",
+            null,
+            null,
+            ("RS-202-001", "Article autre vendeur", "missing", 400));
+
+        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-201");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("RS-201", content);
+        Assert.Contains("Article cible", content);
+        Assert.DoesNotContain("RS-202", content);
+        Assert.DoesNotContain("Article autre vendeur", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationSheetsPageShowsFrenchMessageForUnknownSellerCode()
+    {
+        var (client, _) = await UnlockReconciliationDashboardAsync();
+
+        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-404");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Aucune feuille vendeur pour le code RS-404.", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationPrintCssContainsSellerSheetPrintRules()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/css/site.css");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains(".no-print", content);
+        Assert.Contains(".seller-sheet-print-page", content);
+        Assert.Contains("page-break-after: always;", content);
+        Assert.Contains(".seller-sheet-print-page:last-child", content);
     }
 
     [Fact]
@@ -923,10 +1118,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
     private static async Task<string> UnlockReconciliationDashboardAsync(HttpClient client)
     {
-        var gate = await client.GetAsync("/rapprochement");
-        var gateContent = await gate.Content.ReadAsStringAsync();
-
-        gate.EnsureSuccessStatusCode();
+        var gateContent = await GetReconciliationGateAsync(client);
 
         var response = await client.PostAsync(
             "/rapprochement?handler=Unlock",
@@ -935,6 +1127,86 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         return WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<string> GetReconciliationGateAsync(HttpClient client)
+    {
+        var gate = await client.GetAsync("/rapprochement");
+        var gateContent = await gate.Content.ReadAsStringAsync();
+
+        gate.EnsureSuccessStatusCode();
+
+        return gateContent;
+    }
+
+    private async Task SeedReconciliationSheetAsync(
+        string sellerCode,
+        string firstName,
+        string lastName,
+        string? email,
+        string? phone,
+        params (string Reference, string Title, string Status, int PriceCents)[] items)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seller = new SellerEntity
+        {
+            SellerCode = sellerCode,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
+            Phone = phone
+        };
+
+        dbContext.Sellers.Add(seller);
+        await dbContext.SaveChangesAsync();
+
+        for (var index = 0; index < items.Length; index++)
+        {
+            var item = items[index];
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = item.Reference,
+                ItemNumber = index + 1,
+                Title = item.Title,
+                SellerPriceCents = item.PriceCents,
+                Status = item.Status
+            });
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsureSoldItemsHaveSaleLinesAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var soldItemsWithoutSaleLines = await dbContext.Items
+            .Include(x => x.SaleLine)
+            .Where(x => x.Status == "sold" && x.SaleLine == null)
+            .ToListAsync();
+
+        foreach (var item in soldItemsWithoutSaleLines)
+        {
+            dbContext.Sales.Add(new SaleEntity
+            {
+                SoldAt = DateTime.UtcNow,
+                SubtotalSellerPriceCents = item.SellerPriceCents,
+                CheckoutFeeCents = 0,
+                TotalPaidCents = item.SellerPriceCents,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = item.Id,
+                        SellerPriceAtSaleCents = item.SellerPriceCents
+                    }
+                ]
+            });
+        }
+
+        await dbContext.SaveChangesAsync();
     }
 
     private static FormUrlEncodedContent BuildFormContent(string html, params (string Name, string Value)[] fields)

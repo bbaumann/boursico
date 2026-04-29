@@ -39,13 +39,13 @@ else
 
         @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
         {
-            <p class="validation" role="status">@Model.SuccessMessage</p>
+            <p class="success-message" role="status">@Model.SuccessMessage</p>
 
-            @if (!string.IsNullOrWhiteSpace(Model.SheetInput.SellerCode))
+            @if (!string.IsNullOrWhiteSpace(Model.CorrectedSellerCode))
             {
                 <p>
-                    <a href="/rapprochement/feuilles?codeVendeur=@Model.SheetInput.SellerCode">
-                        Imprimer la feuille du vendeur @Model.SheetInput.SellerCode
+                    <a href="/rapprochement/feuilles?codeVendeur=@Model.CorrectedSellerCode">
+                        Imprimer la feuille du vendeur @Model.CorrectedSellerCode
                     </a>
                 </p>
             }

@@ -25,9 +25,13 @@ public sealed class IndexModel(
 
     public IReadOnlyList<ReconciliationItemSearchResult> SearchResults { get; private set; } = [];
 
-    public string? SuccessMessage { get; private set; }
+    [TempData]
+    public string? SuccessMessage { get; set; }
 
-    public Task OnGetAsync(CancellationToken cancellationToken)
+    [TempData]
+    public string? CorrectedSellerCode { get; set; }
+
+    public Task OnGetAsync()
     {
         IsUnlocked = ReconciliationAdminSession.IsUnlocked(HttpContext);
 
@@ -77,13 +81,12 @@ public sealed class IndexModel(
         }
 
         var result = await reconciliationService.MarkItemMissingAsync(itemId, cancellationToken);
-        ApplyStatusChangeResult(
+        return ApplyStatusChangeResult(
             result,
             "Article marqué manquant.",
             "L'article ne peut pas être marqué manquant dans son état actuel.",
             sellerCode);
 
-        return Page();
     }
 
     public async Task<IActionResult> OnPostMarkInStockAsync(
@@ -97,13 +100,12 @@ public sealed class IndexModel(
         }
 
         var result = await reconciliationService.MarkItemInStockAsync(itemId, cancellationToken);
-        ApplyStatusChangeResult(
+        return ApplyStatusChangeResult(
             result,
             "Article remis en stock.",
             "L'article ne peut pas être remis en stock dans son état actuel.",
             sellerCode);
 
-        return Page();
     }
 
     public static string FormatPrice(int priceCents)
@@ -118,7 +120,7 @@ public sealed class IndexModel(
         return IsUnlocked;
     }
 
-    private void ApplyStatusChangeResult(
+    private IActionResult ApplyStatusChangeResult(
         ReconciliationStatusChangeResult result,
         string successMessage,
         string notAllowedMessage,
@@ -127,8 +129,8 @@ public sealed class IndexModel(
         if (result == ReconciliationStatusChangeResult.Changed)
         {
             SuccessMessage = successMessage;
-            SheetInput.SellerCode = sellerCode?.Trim().ToUpperInvariant();
-            return;
+            CorrectedSellerCode = sellerCode?.Trim().ToUpperInvariant();
+            return RedirectToPage();
         }
 
         var message = result == ReconciliationStatusChangeResult.NotFound
@@ -136,6 +138,7 @@ public sealed class IndexModel(
             : notAllowedMessage;
 
         ModelState.AddModelError(string.Empty, message);
+        return Page();
     }
 
     public sealed class PasswordInputModel

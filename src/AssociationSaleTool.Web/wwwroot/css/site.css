@@ -242,6 +242,12 @@ textarea {
   font-size: 0.9rem;
 }
 
+.success-message {
+  color: #1f6b3a;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .empty-state,
 .seller-meta {
   color: var(--muted);
@@ -528,7 +534,48 @@ textarea {
   margin: 0 0 0.75rem;
 }
 
+.seller-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.seller-sheet-contact {
+  margin: 0;
+  text-align: right;
+}
+
+.seller-sheet-contact div {
+  margin-bottom: 0.5rem;
+}
+
+.seller-sheet-contact dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.seller-sheet-contact dd {
+  margin: 0;
+}
+
 @media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .seller-sheet-print-page {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .seller-sheet-print-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
   body.checkout-printing {
     background: #fff;
   }

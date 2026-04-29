@@ -1,0 +1,141 @@
+@page "/rapprochement/feuilles"
+@using AssociationSaleTool.Web.Infrastructure
+@model AssociationSaleTool.Web.Pages.Reconciliation.SheetsModel
+@{
+    ViewData["Title"] = "Feuilles vendeurs";
+}
+
+<section class="page-card no-print">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Rapprochement</p>
+            <h1 class="page-title">Feuilles vendeurs</h1>
+        </div>
+        <div class="form-actions">
+            <a class="button-link" href="/rapprochement">Retour</a>
+            <button type="button" class="button-link button-link-solid" onclick="window.print()">Imprimer</button>
+        </div>
+    </div>
+</section>
+
+@if (Model.Sheets.Count == 0)
+{
+    <section class="page-card">
+        @if (!string.IsNullOrWhiteSpace(Model.RequestedSellerCode))
+        {
+            <p class="empty-state">Aucune feuille vendeur pour le code @Model.RequestedSellerCode.</p>
+        }
+        else
+        {
+            <p class="empty-state">Aucune feuille vendeur à imprimer.</p>
+        }
+    </section>
+}
+else
+{
+    @foreach (var sheet in Model.Sheets)
+    {
+        <section class="page-card seller-sheet-print-page">
+            <header class="seller-sheet-header">
+                <div>
+                    <p class="eyebrow">Feuille vendeur</p>
+                    <h1 class="page-title">@sheet.SellerCode - @sheet.SellerName</h1>
+                </div>
+                <dl class="seller-sheet-contact">
+                    @if (!string.IsNullOrWhiteSpace(sheet.Email))
+                    {
+                        <div>
+                            <dt>E-mail</dt>
+                            <dd>@sheet.Email</dd>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(sheet.Phone))
+                    {
+                        <div>
+                            <dt>Téléphone</dt>
+                            <dd>@sheet.Phone</dd>
+                        </div>
+                    }
+                </dl>
+            </header>
+
+            <section class="subsection">
+                <h2>Articles à payer</h2>
+                @if (sheet.PayableItems.Count == 0)
+                {
+                    <p class="empty-state">Aucun article à payer.</p>
+                }
+                else
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>REF</th>
+                                <th>Titre</th>
+                                <th>Statut</th>
+                                <th>Prix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in sheet.PayableItems)
+                        {
+                            <tr>
+                                <td>@item.Reference</td>
+                                <td>@item.Title</td>
+                                <td>
+                                    @if (item.IsMissing)
+                                    {
+                                        <strong>MANQUANT</strong>
+                                    }
+                                    else
+                                    {
+                                        @ItemStatusDisplay.ToFrenchLabel(item.Status)
+                                    }
+                                </td>
+                                <td>@SheetsModel.FormatPrice(item.PriceCents)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </section>
+
+            <section class="subsection">
+                <h2>Articles à rendre</h2>
+                @if (sheet.ReturnedItems.Count == 0)
+                {
+                    <p class="empty-state">Aucun article à rendre.</p>
+                }
+                else
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>REF</th>
+                                <th>Titre</th>
+                                <th>Prix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in sheet.ReturnedItems)
+                        {
+                            <tr>
+                                <td>@item.Reference</td>
+                                <td>@item.Title</td>
+                                <td>@SheetsModel.FormatPrice(item.PriceCents)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </section>
+
+            <dl class="checkout-totals">
+                <div class="checkout-total-row">
+                    <dt>Total à payer</dt>
+                    <dd>@SheetsModel.FormatPrice(sheet.TotalPayableCents)</dd>
+                </div>
+            </dl>
+        </section>
+    }
+}
