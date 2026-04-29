@@ -167,6 +167,62 @@ public sealed class ReconciliationServiceTests
         Assert.All(sheet.ReturnedItems, item => Assert.Equal("in_stock", item.Status));
     }
 
+    [Fact]
+    public async Task ListSellerSheetsAsync_FiltersByTrimmedUppercaseSellerCode()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var firstSeller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        var secondSeller = new SellerEntity { SellerCode = "BB", FirstName = "Grace", LastName = "Hopper" };
+        context.Sellers.AddRange(firstSeller, secondSeller);
+        await context.SaveChangesAsync();
+
+        AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
+        AddItem(context, secondSeller, "BB-001", 1, "Puzzle", 600, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var sheet = Assert.Single(await service.ListSellerSheetsAsync(" aa "));
+
+        Assert.Equal("AA", sheet.SellerCode);
+    }
+
+    [Fact]
+    public async Task ListSellerSheetsAsync_TreatsWhitespaceSellerCodeAsNoFilter()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var firstSeller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        var secondSeller = new SellerEntity { SellerCode = "BB", FirstName = "Grace", LastName = "Hopper" };
+        context.Sellers.AddRange(firstSeller, secondSeller);
+        await context.SaveChangesAsync();
+
+        AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
+        AddItem(context, secondSeller, "BB-001", 1, "Puzzle", 600, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var sheets = await service.ListSellerSheetsAsync("   ");
+
+        Assert.Equal(["AA", "BB"], sheets.Select(sheet => sheet.SellerCode));
+    }
+
     private static ItemEntity AddItem(
         AppDbContext context,
         SellerEntity seller,

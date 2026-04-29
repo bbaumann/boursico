@@ -12,7 +12,9 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         CancellationToken cancellationToken = default)
     {
         var activeStatuses = new[] { "sold", "missing", "in_stock" };
-        var normalizedSellerCode = sellerCode?.Trim().ToUpperInvariant();
+        var normalizedSellerCode = string.IsNullOrWhiteSpace(sellerCode)
+            ? null
+            : sellerCode.Trim().ToUpperInvariant();
 
         var sellers = await dbContext.Sellers
             .AsNoTracking()
