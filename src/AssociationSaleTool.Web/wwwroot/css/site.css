@@ -566,6 +566,20 @@ textarea {
     display: none !important;
   }
 
+  body:has(.seller-sheets-print-root) {
+    background: #fff;
+  }
+
+  body:has(.seller-sheets-print-root) .main-navigation,
+  body:has(.seller-sheets-print-root) .page-frame {
+    display: none !important;
+  }
+
+  body:has(.seller-sheets-print-root) .page-shell {
+    width: 100%;
+    padding: 0;
+  }
+
   .seller-sheet-print-page {
     page-break-after: always;
     break-after: page;

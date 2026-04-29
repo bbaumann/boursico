@@ -426,6 +426,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains(".no-print", content);
+        Assert.Contains("body:has(.seller-sheets-print-root) .main-navigation", content);
+        Assert.Contains("body:has(.seller-sheets-print-root) .page-frame", content);
+        Assert.Contains("body:has(.seller-sheets-print-root) .page-shell", content);
         Assert.Contains(".seller-sheet-print-page", content);
         Assert.Contains("page-break-after: always;", content);
         Assert.Contains(".seller-sheet-print-page:last-child", content);
