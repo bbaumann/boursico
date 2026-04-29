@@ -225,7 +225,7 @@ public sealed class ReconciliationServiceTests
     }
 
     [Fact]
-    public async Task SearchItemsAsync_FindsItemsByPartialReference()
+    public async Task SearchItemsAsync_FindsItemsByPartialReferenceCaseInsensitively()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
@@ -240,14 +240,14 @@ public sealed class ReconciliationServiceTests
 
         var service = new ReconciliationService(context);
 
-        var result = Assert.Single(await service.SearchItemsAsync(" 001 "));
+        var result = Assert.Single(await service.SearchItemsAsync(" aa-001 "));
 
         Assert.Equal(expectedItem.Id, result.ItemId);
         Assert.Equal("AA-001", result.Reference);
     }
 
     [Fact]
-    public async Task SearchItemsAsync_FindsItemsByPartialTitle()
+    public async Task SearchItemsAsync_FindsItemsByPartialTitleCaseInsensitively()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
@@ -262,7 +262,7 @@ public sealed class ReconciliationServiceTests
 
         var service = new ReconciliationService(context);
 
-        var result = Assert.Single(await service.SearchItemsAsync("uzz"));
+        var result = Assert.Single(await service.SearchItemsAsync("puzzle"));
 
         Assert.Equal(expectedItem.Id, result.ItemId);
         Assert.Equal("Puzzle en bois", result.Title);
@@ -363,7 +363,7 @@ public sealed class ReconciliationServiceTests
         var result = await service.MarkItemMissingAsync(item.Id);
 
         Assert.Equal(ReconciliationStatusChangeResult.Changed, result);
-        Assert.Equal("missing", (await context.Items.SingleAsync()).Status);
+        Assert.Equal("missing", await GetSavedItemStatusAsync(connection));
     }
 
     [Fact]
@@ -384,13 +384,67 @@ public sealed class ReconciliationServiceTests
         var result = await service.MarkItemInStockAsync(item.Id);
 
         Assert.Equal(ReconciliationStatusChangeResult.Changed, result);
-        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+        Assert.Equal("in_stock", await GetSavedItemStatusAsync(connection));
+    }
+
+    [Fact]
+    public async Task MarkItemMissingAsync_ReturnsNotAllowedWhenTrackedItemWasChangedByAnotherContext()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        var options = await CreateOptionsWithSchemaAsync(connection);
+
+        await using var firstContext = new AppDbContext(options);
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        firstContext.Sellers.Add(seller);
+        await firstContext.SaveChangesAsync();
+
+        var item = AddItem(firstContext, seller, "AA-001", 1, "Train", 500, "in_stock");
+        await firstContext.SaveChangesAsync();
+
+        await using var secondContext = new AppDbContext(options);
+        var sameItem = await secondContext.Items.SingleAsync(x => x.Id == item.Id);
+        sameItem.Status = "sold";
+        await secondContext.SaveChangesAsync();
+
+        var service = new ReconciliationService(firstContext);
+
+        var result = await service.MarkItemMissingAsync(item.Id);
+
+        Assert.Equal(ReconciliationStatusChangeResult.NotAllowed, result);
+        Assert.Equal("sold", await GetSavedItemStatusAsync(connection));
+    }
+
+    [Fact]
+    public async Task MarkItemMissingAsync_ReturnsNotFoundWhenItemDoesNotExist()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var service = new ReconciliationService(context);
+
+        var result = await service.MarkItemMissingAsync(999);
+
+        Assert.Equal(ReconciliationStatusChangeResult.NotFound, result);
+    }
+
+    [Fact]
+    public async Task MarkItemInStockAsync_ReturnsNotFoundWhenItemDoesNotExist()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var service = new ReconciliationService(context);
+
+        var result = await service.MarkItemInStockAsync(999);
+
+        Assert.Equal(ReconciliationStatusChangeResult.NotFound, result);
     }
 
     [Theory]
     [InlineData("registered")]
     [InlineData("not_provided")]
     [InlineData("sold")]
+    [InlineData("missing")]
     public async Task MarkItemMissingAsync_RejectsItemsThatAreNotInStock(string status)
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -408,13 +462,14 @@ public sealed class ReconciliationServiceTests
         var result = await service.MarkItemMissingAsync(item.Id);
 
         Assert.Equal(ReconciliationStatusChangeResult.NotAllowed, result);
-        Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+        Assert.Equal(status, await GetSavedItemStatusAsync(connection));
     }
 
     [Theory]
     [InlineData("registered")]
     [InlineData("not_provided")]
     [InlineData("sold")]
+    [InlineData("in_stock")]
     public async Task MarkItemInStockAsync_RejectsItemsThatAreNotMissing(string status)
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -432,19 +487,39 @@ public sealed class ReconciliationServiceTests
         var result = await service.MarkItemInStockAsync(item.Id);
 
         Assert.Equal(ReconciliationStatusChangeResult.NotAllowed, result);
-        Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+        Assert.Equal(status, await GetSavedItemStatusAsync(connection));
     }
 
     private static async Task<AppDbContext> CreateContextAsync(SqliteConnection connection)
+    {
+        var options = await CreateOptionsWithSchemaAsync(connection);
+
+        return new AppDbContext(options);
+    }
+
+    private static async Task<DbContextOptions<AppDbContext>> CreateOptionsWithSchemaAsync(SqliteConnection connection)
     {
         await connection.OpenAsync();
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(connection)
             .Options;
 
-        var context = new AppDbContext(options);
+        await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
-        return context;
+        return options;
+    }
+
+    private static async Task<string> GetSavedItemStatusAsync(SqliteConnection connection)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        return await context.Items
+            .AsNoTracking()
+            .Select(x => x.Status)
+            .SingleAsync();
     }
 
     private static ItemEntity AddItem(

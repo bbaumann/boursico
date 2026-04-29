@@ -11,7 +11,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         string query,
         CancellationToken cancellationToken = default)
     {
-        var normalizedQuery = query.Trim();
+        var normalizedQuery = query.Trim().ToLowerInvariant();
         if (string.IsNullOrEmpty(normalizedQuery))
         {
             return [];
@@ -19,7 +19,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
 
         return await dbContext.Items
             .AsNoTracking()
-            .Where(x => x.Reference.Contains(normalizedQuery) || x.Title.Contains(normalizedQuery))
+            .Where(x => x.Reference.ToLower().Contains(normalizedQuery) || x.Title.ToLower().Contains(normalizedQuery))
             .OrderBy(x => x.Reference)
             .Take(25)
             .Select(x => new ReconciliationItemSearchResult(
@@ -99,22 +99,24 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         string nextStatus,
         CancellationToken cancellationToken)
     {
-        var item = await dbContext.Items
-            .SingleOrDefaultAsync(x => x.Id == itemId, cancellationToken);
+        var updatedRows = await dbContext.Items
+            .Where(x => x.Id == itemId && x.Status == expectedStatus)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(x => x.Status, nextStatus),
+                cancellationToken);
 
-        if (item is null)
+        if (updatedRows > 0)
         {
-            return ReconciliationStatusChangeResult.NotFound;
+            return ReconciliationStatusChangeResult.Changed;
         }
 
-        if (item.Status != expectedStatus)
-        {
-            return ReconciliationStatusChangeResult.NotAllowed;
-        }
+        var itemExists = await dbContext.Items
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == itemId, cancellationToken);
 
-        item.Status = nextStatus;
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return ReconciliationStatusChangeResult.Changed;
+        return itemExists
+            ? ReconciliationStatusChangeResult.NotAllowed
+            : ReconciliationStatusChangeResult.NotFound;
     }
 
     private static SellerSheetItem BuildPayableItem(ItemEntity item)
