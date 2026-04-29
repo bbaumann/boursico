@@ -1,6 +1,7 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Services;
+using AssociationSaleTool.Web.Services.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -221,6 +222,229 @@ public sealed class ReconciliationServiceTests
         var sheets = await service.ListSellerSheetsAsync("   ");
 
         Assert.Equal(["AA", "BB"], sheets.Select(sheet => sheet.SellerCode));
+    }
+
+    [Fact]
+    public async Task SearchItemsAsync_FindsItemsByPartialReference()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var expectedItem = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        AddItem(context, seller, "AA-002", 2, "Puzzle", 600, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = Assert.Single(await service.SearchItemsAsync(" 001 "));
+
+        Assert.Equal(expectedItem.Id, result.ItemId);
+        Assert.Equal("AA-001", result.Reference);
+    }
+
+    [Fact]
+    public async Task SearchItemsAsync_FindsItemsByPartialTitle()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        var expectedItem = AddItem(context, seller, "AA-002", 2, "Puzzle en bois", 600, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = Assert.Single(await service.SearchItemsAsync("uzz"));
+
+        Assert.Equal(expectedItem.Id, result.ItemId);
+        Assert.Equal("Puzzle en bois", result.Title);
+    }
+
+    [Fact]
+    public async Task SearchItemsAsync_ReturnsSellerContext()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = Assert.Single(await service.SearchItemsAsync("Train"));
+
+        Assert.Equal(item.Id, result.ItemId);
+        Assert.Equal(seller.Id, result.SellerId);
+        Assert.Equal("AA", result.SellerCode);
+        Assert.Equal("Ada Lovelace", result.SellerName);
+    }
+
+    [Fact]
+    public async Task SearchItemsAsync_ReturnsEmptyListForBlankQuery()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var results = await service.SearchItemsAsync("   ");
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task SearchItemsAsync_OrdersByReferenceAndCapsResults()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        for (var itemNumber = 30; itemNumber >= 1; itemNumber--)
+        {
+            AddItem(
+                context,
+                seller,
+                $"AA-{itemNumber:000}",
+                itemNumber,
+                "Lot commun",
+                500,
+                "in_stock");
+        }
+
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var results = await service.SearchItemsAsync("Lot");
+
+        Assert.Equal(25, results.Count);
+        Assert.Equal(
+            Enumerable.Range(1, 25).Select(itemNumber => $"AA-{itemNumber:000}"),
+            results.Select(result => result.Reference));
+    }
+
+    [Fact]
+    public async Task MarkItemMissingAsync_ChangesInStockItemToMissing()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = await service.MarkItemMissingAsync(item.Id);
+
+        Assert.Equal(ReconciliationStatusChangeResult.Changed, result);
+        Assert.Equal("missing", (await context.Items.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task MarkItemInStockAsync_ChangesMissingItemToInStock()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "missing");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = await service.MarkItemInStockAsync(item.Id);
+
+        Assert.Equal(ReconciliationStatusChangeResult.Changed, result);
+        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+    }
+
+    [Theory]
+    [InlineData("registered")]
+    [InlineData("not_provided")]
+    [InlineData("sold")]
+    public async Task MarkItemMissingAsync_RejectsItemsThatAreNotInStock(string status)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, status);
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = await service.MarkItemMissingAsync(item.Id);
+
+        Assert.Equal(ReconciliationStatusChangeResult.NotAllowed, result);
+        Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+    }
+
+    [Theory]
+    [InlineData("registered")]
+    [InlineData("not_provided")]
+    [InlineData("sold")]
+    public async Task MarkItemInStockAsync_RejectsItemsThatAreNotMissing(string status)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, status);
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = await service.MarkItemInStockAsync(item.Id);
+
+        Assert.Equal(ReconciliationStatusChangeResult.NotAllowed, result);
+        Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+    }
+
+    private static async Task<AppDbContext> CreateContextAsync(SqliteConnection connection)
+    {
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        return context;
     }
 
     private static ItemEntity AddItem(
