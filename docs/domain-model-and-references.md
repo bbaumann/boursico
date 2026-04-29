@@ -201,7 +201,7 @@ Contains:
 - items with status `sold`
 - items with status `missing`
 
-Missing items are shown in the payable list with a visible `MISSING` marker.
+Missing items are shown in the payable list with a visible `MANQUANT` marker.
 
 ### Returned List
 

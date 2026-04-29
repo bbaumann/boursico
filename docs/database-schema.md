@@ -235,7 +235,7 @@ All seller items with:
 - `status = sold`
 - or `status = missing`
 
-Missing items must appear in the payable list with a visible `MISSING` mention.
+Missing items must appear in the payable list with a visible `MANQUANT` mention.
 
 ## Returned Items Per Seller
 
