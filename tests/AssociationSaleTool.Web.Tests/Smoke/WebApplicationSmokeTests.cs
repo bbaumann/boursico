@@ -30,6 +30,18 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task PagesDeclareFrenchDocumentLanguage()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/vendeurs");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("<html lang=\"fr\">", content);
+    }
+
+    [Fact]
     public async Task SellersIndexLoadsSuccessfully()
     {
         var client = _factory.CreateClient();
