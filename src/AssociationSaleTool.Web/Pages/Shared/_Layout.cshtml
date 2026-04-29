@@ -3,6 +3,7 @@
     var sellersActive = requestPath.StartsWithSegments("/vendeurs")
         || requestPath.StartsWithSegments("/articles");
     var checkoutActive = requestPath.StartsWithSegments("/caisse");
+    var reconciliationActive = requestPath.StartsWithSegments("/rapprochement");
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -21,6 +22,9 @@
         <a class="main-navigation-link @(checkoutActive ? "main-navigation-link-active" : null)"
            href="/caisse"
            aria-current="@(checkoutActive ? "page" : null)">CAISSE</a>
+        <a class="main-navigation-link @(reconciliationActive ? "main-navigation-link-active" : null)"
+           href="/rapprochement"
+           aria-current="@(reconciliationActive ? "page" : null)">RAPPROCHEMENT</a>
     </nav>
     <main class="page-shell">
         @RenderBody()

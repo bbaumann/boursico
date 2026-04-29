@@ -48,12 +48,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("main-navigation", content);
-        Assert.Contains("href=\"/vendeurs\"", content);
-        Assert.Contains("href=\"/caisse\"", content);
-        Assert.Contains("VENDEURS", content);
-        Assert.Contains("CAISSE", content);
-        Assert.Matches("class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"/vendeurs\"\\s+aria-current=\"page\"", content);
+        AssertMainNavigationContainsExpectedLinks(content);
+        AssertMainNavigationActive("/vendeurs", content);
     }
 
     [Fact]
@@ -65,12 +61,34 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("main-navigation", content);
-        Assert.Contains("href=\"/vendeurs\"", content);
-        Assert.Contains("href=\"/caisse\"", content);
-        Assert.Contains("VENDEURS", content);
-        Assert.Contains("CAISSE", content);
-        Assert.Matches("class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"/caisse\"\\s+aria-current=\"page\"", content);
+        AssertMainNavigationContainsExpectedLinks(content);
+        AssertMainNavigationActive("/caisse", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationPageShowsMainNavigationWithReconciliationActive()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/rapprochement");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        AssertMainNavigationContainsExpectedLinks(content);
+        AssertMainNavigationActive("/rapprochement", content);
+    }
+
+    [Fact]
+    public async Task ReconciliationSheetsPageShowsMainNavigationWithReconciliationActive()
+    {
+        var (client, _) = await UnlockReconciliationDashboardAsync();
+        var response = await client.GetAsync("/rapprochement/feuilles");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        AssertMainNavigationContainsExpectedLinks(content);
+        AssertMainNavigationActive("/rapprochement", content);
     }
 
     [Fact]
@@ -1237,6 +1255,26 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         gate.EnsureSuccessStatusCode();
 
         return gateContent;
+    }
+
+    private static void AssertMainNavigationContainsExpectedLinks(string content)
+    {
+        Assert.Contains("main-navigation", content);
+        Assert.Contains("href=\"/vendeurs\"", content);
+        Assert.Contains("href=\"/caisse\"", content);
+        Assert.Contains("href=\"/rapprochement\"", content);
+        Assert.Contains("VENDEURS", content);
+        Assert.Contains("CAISSE", content);
+        Assert.True(
+            content.Contains("Rapprochement", StringComparison.OrdinalIgnoreCase),
+            "La navigation principale doit contenir le lien Rapprochement.");
+    }
+
+    private static void AssertMainNavigationActive(string href, string content)
+    {
+        Assert.Matches(
+            $"class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"{Regex.Escape(href)}\"\\s+aria-current=\"page\"",
+            content);
     }
 
     private async Task SeedReconciliationSheetAsync(
