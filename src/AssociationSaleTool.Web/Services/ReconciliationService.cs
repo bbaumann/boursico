@@ -1,3 +1,4 @@
+using System.Globalization;
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Services.Models;
@@ -7,21 +8,20 @@ namespace AssociationSaleTool.Web.Services;
 
 public sealed class ReconciliationService(AppDbContext dbContext)
 {
+    private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+
     public async Task<List<ReconciliationItemSearchResult>> SearchItemsAsync(
         string query,
         CancellationToken cancellationToken = default)
     {
-        var normalizedQuery = query.Trim().ToLowerInvariant();
+        var normalizedQuery = query.Trim().ToLower(FrenchCulture);
         if (string.IsNullOrEmpty(normalizedQuery))
         {
             return [];
         }
 
-        return await dbContext.Items
+        var candidates = await dbContext.Items
             .AsNoTracking()
-            .Where(x => x.Reference.ToLower().Contains(normalizedQuery) || x.Title.ToLower().Contains(normalizedQuery))
-            .OrderBy(x => x.Reference)
-            .Take(25)
             .Select(x => new ReconciliationItemSearchResult(
                 x.Id,
                 x.SellerId,
@@ -32,6 +32,12 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                 x.Status,
                 x.SellerPriceCents))
             .ToListAsync(cancellationToken);
+
+        return candidates
+            .Where(x => ContainsNormalized(x.Reference, normalizedQuery) || ContainsNormalized(x.Title, normalizedQuery))
+            .OrderBy(x => x.Reference)
+            .Take(25)
+            .ToList();
     }
 
     public async Task<ReconciliationStatusChangeResult> MarkItemMissingAsync(
@@ -117,6 +123,11 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         return itemExists
             ? ReconciliationStatusChangeResult.NotAllowed
             : ReconciliationStatusChangeResult.NotFound;
+    }
+
+    private static bool ContainsNormalized(string value, string normalizedQuery)
+    {
+        return value.ToLower(FrenchCulture).Contains(normalizedQuery);
     }
 
     private static SellerSheetItem BuildPayableItem(ItemEntity item)

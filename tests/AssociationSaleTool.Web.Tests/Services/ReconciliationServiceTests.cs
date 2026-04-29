@@ -225,7 +225,7 @@ public sealed class ReconciliationServiceTests
     }
 
     [Fact]
-    public async Task SearchItemsAsync_FindsItemsByPartialReferenceCaseInsensitively()
+    public async Task SearchItemsAsync_FindsItemsByPartialReference()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
@@ -240,7 +240,7 @@ public sealed class ReconciliationServiceTests
 
         var service = new ReconciliationService(context);
 
-        var result = Assert.Single(await service.SearchItemsAsync(" aa-001 "));
+        var result = Assert.Single(await service.SearchItemsAsync(" 001 "));
 
         Assert.Equal(expectedItem.Id, result.ItemId);
         Assert.Equal("AA-001", result.Reference);
@@ -266,6 +266,28 @@ public sealed class ReconciliationServiceTests
 
         Assert.Equal(expectedItem.Id, result.ItemId);
         Assert.Equal("Puzzle en bois", result.Title);
+    }
+
+    [Fact]
+    public async Task SearchItemsAsync_FindsItemsByAccentedTitleCaseInsensitively()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        var expectedItem = AddItem(context, seller, "AA-002", 2, "ÉCOLE en bois", 600, "in_stock");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var result = Assert.Single(await service.SearchItemsAsync("école"));
+
+        Assert.Equal(expectedItem.Id, result.ItemId);
+        Assert.Equal("ÉCOLE en bois", result.Title);
     }
 
     [Fact]
