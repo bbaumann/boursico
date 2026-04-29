@@ -50,7 +50,7 @@ The status field remains editable only through the workflow transitions defined 
 ### `missing`
 
 - expected to be returned after the event but not found physically
-- payable to the seller and marked `MISSING` on the seller sheet
+- payable to the seller and marked `MANQUANT` on the seller sheet
 
 ## Allowed Transitions
 
@@ -82,7 +82,7 @@ The following are final in normal V1 operations:
 
 - `not_provided`
 - `sold`
-- `missing`, except for an explicit admin reconciliation correction when the item was marked missing by mistake
+- `missing`, except for an explicit admin reconciliation correction when the item was marked `missing` by mistake
 
 No transition back out of `not_provided` or `sold` is defined in V1.
 

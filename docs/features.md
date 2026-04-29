@@ -134,9 +134,9 @@ Produce per-seller outputs for physical item gathering and seller payout after t
 - Compute payable items and returned items per seller
 - Print all seller sheets from the dashboard through `/rapprochement/feuilles`
 - Generate one printable seller sheet per seller with at least one `sold`, `missing`, or `in_stock` item
-- Allow marking an unsold item as missing through an admin-only action
+- Allow marking an unsold item as `missing` through an admin-only action
 - Allow restoring a mistakenly marked `missing` item to `in_stock` only as an admin reconciliation correction
-- Regenerate the seller sheet after a missing-item correction
+- Regenerate the seller sheet after a `missing` status correction
 
 ### Seller Sheet Content
 
@@ -154,14 +154,14 @@ It must contain:
 The payable list contains:
 
 - sold items
-- missing items
+- items with status `missing`
 
 For each payable item, show:
 
 - reference
 - item title when useful
 - seller price
-- a visible `MISSING` marker when relevant
+- a visible `MANQUANT` marker when relevant
 
 ### Returned Items List
 
@@ -188,7 +188,7 @@ The following stay outside the system in V1:
 1. An operator uses the sheet to gather all returned items.
 2. If a returned item cannot be found physically, an admin marks it as `missing`.
 3. The sheet is regenerated.
-4. If a missing mark was a mistake and the item is found before finalization, an admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
+4. If the `missing` status change was a mistake and the item is found before finalization, an admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
 5. Another operator uses the final sheet to prepare the seller payout check.
 6. The check, final sheet, and returned items are physically grouped for seller pickup.
 

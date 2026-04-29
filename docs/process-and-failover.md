@@ -38,7 +38,7 @@ Before the first checkout is processed:
 3. An operator physically gathers all returned items from the stock using the sheet.
 4. If a returned item cannot be found, admin marks it as `missing`.
 5. Seller sheet is regenerated from the dashboard.
-6. If a missing mark was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
+6. If the `missing` status change was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
 7. Another operator writes the check based on the final amount to pay.
 8. Check, final seller sheet, and returned items are physically grouped for seller pickup.
 
@@ -55,7 +55,7 @@ Before the first checkout is processed:
 
 ### Default Case
 
-If no item is missing:
+If no item has status `missing`:
 
 - the first generated seller sheet is already the final seller sheet
 
@@ -65,7 +65,7 @@ If an item listed as returned cannot be found physically:
 
 1. Admin enters the shared admin password and updates the item status from `in_stock` to `missing`.
 2. The seller sheet is regenerated.
-3. The item moves from the returned list to the payable list and is marked `MISSING`.
+3. The item moves from the returned list to the payable list and is marked `MANQUANT`.
 
 ### Correction Case
 

@@ -44,7 +44,7 @@ Profile:
 Primary goals:
 
 - generate seller sheets
-- mark missing items when discovered
+- mark items as `missing` when discovered
 - regenerate final sheets
 
 Access model in V1:
@@ -221,7 +221,7 @@ Description:
 
 Expected outcome:
 
-- Regenerated seller sheet moves the item from returned to payable with a `MISSING` marker.
+- Regenerated seller sheet moves the item from returned to payable with a `MANQUANT` marker.
 
 ### UC-09 Prepare Seller Pickup Bag
 
