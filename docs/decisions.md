@@ -399,3 +399,26 @@ This file captures the main project decisions in a lightweight ADR format.
   - checkout JavaScript calls explicit API resources instead of Razor Page handlers
   - the API surface remains intentionally small and driven by sale-day UI needs
   - future checkout API additions should be justified by real interactive workflow needs
+
+## D-030 Implement Post-Sale Reconciliation Inside The Web App
+
+- Status: accepted
+- Key drivers:
+  - reconciliation is an operational admin workflow, not just an offline reporting task
+  - volunteers print seller sheets once, reconcile physical stock, and route missing-item corrections to admins before seller settlement
+  - admins need to search by item reference or title and correct item status against the authoritative event database
+  - a separate script or app would add deployment, access control, and context-switching cost without improving the V1 workflow
+- Decision:
+  - implement post-sale reconciliation as an admin-protected feature in the ASP.NET Core web app
+  - expose a French reconciliation dashboard at `/rapprochement`
+  - expose printable seller sheets at `/rapprochement/feuilles`
+  - protect the whole reconciliation area with the shared `Admin:SharedPassword`
+  - include seller sheets only for sellers with at least one `sold`, `missing`, or `in_stock` item
+  - allow admin corrections between `in_stock` and `missing`
+  - keep seller fee calculation outside the system in V1
+- Consequence:
+  - V1 does not need a separate reconciliation executable, script, or deployment path
+  - reconciliation uses the same database and status lifecycle as sale-day operations
+  - checkout remains focused on sales while reconciliation has its own page and print workflow
+  - production configuration must set a real admin password; blank or placeholder values are invalid
+  - older documentation that described reconciliation as living outside the app is superseded by this decision
