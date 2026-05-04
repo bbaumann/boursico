@@ -70,21 +70,21 @@ Implementation should cover:
 
 Prevent operators from accidentally creating a second seller when another seller already exists with the same identifying information.
 
-The first matching rule to design should use exact normalized:
+Status: implemented by the seller duplicate prevention slice.
 
-- last name
-- first name
-- phone number
+Relevant design:
 
-The future design should define:
+- [Seller Duplicate Prevention Design](./superpowers/specs/2026-05-04-seller-duplicate-prevention-design.md)
 
-- how seller names and phone numbers are normalized before comparison
-- whether the duplicate check runs only on create, or also when editing seller details
-- how the create-seller form communicates that a matching seller already exists
-- whether the operator is redirected to the existing seller page with pending item rows
-- whether new items should be appended to the existing seller after operator confirmation
-- whether any seller fields may be amended on the existing seller, or whether existing seller details remain unchanged by default
-- how this interacts with Excel prefill, where a parsed workbook may identify an already-known seller before the operator saves
+Implemented behavior:
+
+- create and edit both block exact normalized duplicate sellers
+- matching uses normalized first name and last name, with accent-insensitive comparison
+- when a submitted phone is present, the trimmed phone must also match
+- when a submitted phone is blank, same-name matches block and ask the operator to verify manually
+- all duplicate matches are shown with seller code, contact context, item count, and a link to the existing seller
+- existing historical duplicates are not cleaned up by this feature
+- future Excel prefill should reuse the same duplicate-check service and redirect to the existing seller with pending item rows
 
 ## Seller Fee Management
 
