@@ -80,11 +80,13 @@ The parser should support the existing historical template shape:
 - seller name near the `NOM PRENOM` label
 - postal/city near the `CP VILLE` label
 - phone near the `TELEPHONE` label
-- item rows under the `libellé` and `prix` columns
+- item rows in columns `A:B`, with title in column `A` and seller price in column `B`
 
-The parser should find labels instead of hard-coding every cell. This keeps it tolerant of minor row/column shifts inside the template.
+For seller information, the parser should find labels instead of hard-coding every cell. Product rows use the fixed historical template area in columns `A:B`.
 
-Only non-empty item rows are imported. Blank rows are ignored.
+The example workbook shows product rows from `A7:B7` through `A21:B21`. Row `21` is not a hard limit. In real files, sellers may add more product rows below row `21`, so the parser must continue reading the same `A:B` product block beyond row `21`.
+
+The first product row is `7`. The parser should read rows downward until the first fully blank row after the product block, then stop so footer text below the product area is not treated as an item. Only complete title-and-price rows before that stop point are imported.
 
 ## Field Mapping
 
@@ -97,8 +99,8 @@ Seller fields:
 
 Item fields:
 
-- `libellé` maps to item title
-- `prix` maps to seller price
+- column `A` maps to item title
+- column `B` maps to seller price
 
 Intake mode:
 
@@ -253,9 +255,9 @@ Service tests should cover:
 Parser tests should cover:
 
 - valid one-sheet workbook maps seller and rows
-- blank item rows are ignored
+- product rows after row `21` are imported
+- parsing stops at the first fully blank row after the product block
 - missing seller name is rejected
-- missing item headers are rejected
 - title without price is rejected
 - price without title is rejected
 - non-`.xlsx` files are rejected

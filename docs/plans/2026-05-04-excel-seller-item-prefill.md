@@ -225,9 +225,10 @@ Create result records for:
 Build small `.xlsx` files in test memory with ClosedXML. Cover:
 
 - valid workbook maps seller and rows
-- blank item rows ignored
+- product rows from `A7:B7` through `A21:B21`
+- product rows after row `21` are still imported
+- parsing stops at the first fully blank row after the product block
 - missing seller name rejected
-- missing `libellé` / `prix` headers rejected
 - title without price rejected
 - price without title rejected
 
@@ -237,8 +238,10 @@ Implementation rules:
 
 - accept `.xlsx` only
 - require exactly one worksheet
-- find labels by normalized text
-- find item header row containing `libellé` and `prix`
+- find seller information labels by normalized text
+- read product rows from columns `A:B`, starting at row `7`
+- continue reading product rows after row `21` when they are present
+- stop reading the product block at the first fully blank row after row `7`
 - parse price values as whole or decimal euro amounts using existing euro parsing rules where possible
 - return rows without saving anything
 
