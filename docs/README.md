@@ -26,6 +26,7 @@ Archived or translated variants may exist elsewhere in the repository, but agent
 ## Document Map
 
 - [Features](./features.md)
+- [Guide utilisateur simplifié](./guide-utilisateur.md)
 - [Architecture](./architecture.md)
 - [Checkout Contract](./checkout-contract.md)
 - [Database Choice](./database-choice.md)
