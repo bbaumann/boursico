@@ -25,6 +25,22 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SellerStoresFeePaidColumn()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var entityType = context.Model.FindEntityType(typeof(SellerEntity));
+        Assert.NotNull(entityType);
+        var feePaid = Assert.Single(entityType!.GetProperties(), property => property.Name == nameof(SellerEntity.FeePaidCents));
+        Assert.Equal("fee_paid_cents", feePaid.GetColumnName());
+        Assert.False(feePaid.IsNullable);
+    }
+
+    [Fact]
     public void SellerTableRequiresPhoneAndPostalAddress()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
@@ -42,6 +58,26 @@ public class AppDbContextModelTests
         var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
         Assert.Contains("\"phone\" TEXT NOT NULL", createTableSql);
         Assert.Contains("\"postal_address\" TEXT NOT NULL", createTableSql);
+    }
+
+    [Fact]
+    public void SellerTableRequiresNonNegativeFeePaid()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'seller'";
+        var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
+        Assert.Contains("\"fee_paid_cents\" INTEGER NOT NULL DEFAULT 0", createTableSql);
+        Assert.Contains("CHECK (fee_paid_cents >= 0)", createTableSql);
     }
 
     [Fact]

@@ -16,6 +16,8 @@ public sealed class SellerEntity
 
     public string PostalAddress { get; set; } = string.Empty;
 
+    public int FeePaidCents { get; set; }
+
     public string? Notes { get; set; }
 
     public List<ItemEntity> Items { get; set; } = [];
