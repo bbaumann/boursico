@@ -58,6 +58,7 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     options.AddInterceptors(serviceProvider.GetRequiredService<SqliteConnectionInterceptor>());
 });
 builder.Services.AddScoped<IntakeService>();
+builder.Services.AddScoped<SellerDuplicateService>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<ReconciliationService>();
 builder.Services.AddScoped<SalePhaseService>();

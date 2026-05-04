@@ -54,6 +54,53 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task CreateSellerAsync_ReturnsDuplicateResultAndDoesNotCreateSellerForSameNameAndPhone()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", null))).Seller!;
+
+        var result = await service.CreateSellerAsync(new CreateSellerRequest(" ada ", "lovelace", null, "0123", null));
+
+        Assert.Equal(CreateSellerOutcome.DuplicateFound, result.Outcome);
+        Assert.Null(result.Seller);
+        var match = Assert.Single(result.DuplicateMatches);
+        Assert.Equal(existing.Id, match.SellerId);
+        Assert.Equal(SellerDuplicateMatchReason.NameAndPhone, match.Reason);
+        Assert.Equal(1, await context.Sellers.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateSellerAsync_ReturnsNameOnlyDuplicateWhenSubmittedPhoneIsBlank()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", null));
+
+        var result = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+
+        Assert.Equal(CreateSellerOutcome.DuplicateFound, result.Outcome);
+        Assert.Equal(SellerDuplicateMatchReason.NameOnlySubmittedPhoneMissing, Assert.Single(result.DuplicateMatches).Reason);
+        Assert.Equal(1, await context.Sellers.CountAsync());
+    }
+
+    [Fact]
     public async Task CreateItemBatchAsync_CreatesMultipleItemsForSellerWithSequentialReferences()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -170,6 +217,54 @@ public sealed class IntakeServiceTests
         Assert.Equal("1234", updatedSeller.Phone);
         Assert.Equal("Preferred contact by mail", updatedSeller.Notes);
         Assert.Equal("AA", updatedSeller.SellerCode);
+    }
+
+    [Fact]
+    public async Task UpdateSellerAsync_ReturnsDuplicateResultAndDoesNotUpdateSeller()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var first = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", null))).Seller!;
+        var second = (await service.CreateSellerAsync(new CreateSellerRequest("Grace", "Hopper", null, "9999", null))).Seller!;
+
+        var result = await service.UpdateSellerAsync(second.Id, new UpdateSellerRequest("Ada", "Lovelace", null, "0123", "Updated"));
+
+        Assert.Equal(UpdateSellerOutcome.DuplicateFound, result.Outcome);
+        Assert.Equal(first.Id, Assert.Single(result.DuplicateMatches).SellerId);
+        var unchangedSecond = await context.Sellers.SingleAsync(x => x.Id == second.Id);
+        Assert.Equal("Grace", unchangedSecond.FirstName);
+        Assert.Equal("Hopper", unchangedSecond.LastName);
+        Assert.Equal("9999", unchangedSecond.Phone);
+    }
+
+    [Fact]
+    public async Task UpdateSellerAsync_ExcludesCurrentSellerFromDuplicateCheck()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", null))).Seller!;
+
+        var result = await service.UpdateSellerAsync(seller.Id, new UpdateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", "Updated"));
+
+        Assert.Equal(UpdateSellerOutcome.Updated, result.Outcome);
+        Assert.Empty(result.DuplicateMatches);
+        Assert.Equal("ada@example.com", (await context.Sellers.SingleAsync()).Email);
     }
 
     [Theory]

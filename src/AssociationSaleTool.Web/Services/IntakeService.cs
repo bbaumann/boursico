@@ -11,11 +11,16 @@ public sealed class IntakeService
 {
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
+    private readonly SellerDuplicateService _sellerDuplicateService;
 
-    public IntakeService(AppDbContext dbContext, SalePhaseService? salePhaseService = null)
+    public IntakeService(
+        AppDbContext dbContext,
+        SalePhaseService? salePhaseService = null,
+        SellerDuplicateService? sellerDuplicateService = null)
     {
         _dbContext = dbContext;
         _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
+        _sellerDuplicateService = sellerDuplicateService ?? new SellerDuplicateService(dbContext);
     }
 
     public async Task<List<SellerEntity>> ListSellersAsync(CancellationToken cancellationToken = default)
@@ -49,11 +54,19 @@ public sealed class IntakeService
             .SingleOrDefaultAsync(x => x.Id == itemId, cancellationToken);
     }
 
-    public async Task<SellerEntity> CreateSellerAsync(CreateSellerRequest request, CancellationToken cancellationToken = default)
+    public async Task<CreateSellerResult> CreateSellerAsync(CreateSellerRequest request, CancellationToken cancellationToken = default)
     {
         if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
         {
             throw new InvalidOperationException("Seller master data is locked outside presale.");
+        }
+
+        var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
+            new SellerDuplicateCheckRequest(request.FirstName, request.LastName, request.Phone),
+            cancellationToken);
+        if (duplicateMatches.Count > 0)
+        {
+            return CreateSellerResult.DuplicateFound(duplicateMatches);
         }
 
         var seller = new SellerEntity
@@ -68,7 +81,7 @@ public sealed class IntakeService
 
         _dbContext.Sellers.Add(seller);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return seller;
+        return CreateSellerResult.Created(seller);
     }
 
     public async Task<List<ItemEntity>> CreateItemBatchAsync(CreateItemBatchRequest request, CancellationToken cancellationToken = default)
@@ -119,6 +132,14 @@ public sealed class IntakeService
         if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
         {
             return UpdateSellerResult.NotAllowed;
+        }
+
+        var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
+            new SellerDuplicateCheckRequest(request.FirstName, request.LastName, request.Phone, sellerId),
+            cancellationToken);
+        if (duplicateMatches.Count > 0)
+        {
+            return UpdateSellerResult.DuplicateFound(duplicateMatches);
         }
 
         seller.FirstName = request.FirstName.Trim();
