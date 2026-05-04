@@ -73,13 +73,33 @@ function createCheckoutEmptyRow(message, columnCount) {
   return row;
 }
 
-async function postCheckoutCart(url, cart, receiptDetails) {
+let checkoutCitiesByPostalCode = null;
+
+async function loadCheckoutCitiesByPostalCode() {
+  if (checkoutCitiesByPostalCode !== null) {
+    return checkoutCitiesByPostalCode;
+  }
+
+  try {
+    const response = await fetch("/data/isere-postal-cities.json");
+    checkoutCitiesByPostalCode = response.ok ? await response.json() : {};
+  } catch {
+    checkoutCitiesByPostalCode = {};
+  }
+
+  return checkoutCitiesByPostalCode;
+}
+
+async function postCheckoutCart(url, cart, saleDetails) {
   const body = {
     itemIds: cart.map(item => item.id)
   };
 
-  if (receiptDetails !== undefined) {
-    body.receiptDetails = receiptDetails;
+  if (saleDetails !== undefined) {
+    body.receiptDetails = saleDetails.receiptDetails;
+    body.buyerName = saleDetails.buyerName;
+    body.buyerPostalCode = saleDetails.buyerPostalCode;
+    body.buyerCity = saleDetails.buyerCity;
   }
 
   const response = await fetch(url, {
@@ -105,6 +125,10 @@ function initializeCheckout(root) {
   const feeElement = root.querySelector("[data-checkout-fee]");
   const totalElement = root.querySelector("[data-checkout-total]");
   const receiptDetailsInput = root.querySelector("[data-checkout-receipt-details]");
+  const buyerNameInput = root.querySelector("[data-checkout-buyer-name]");
+  const buyerPostalCodeInput = root.querySelector("[data-checkout-buyer-postal-code]");
+  const buyerCityInput = root.querySelector("[data-checkout-buyer-city]");
+  const buyerCityOptions = root.querySelector("[data-checkout-buyer-city-options]");
   const finalizeButton = root.querySelector("[data-checkout-finalize]");
   const modal = root.querySelector("[data-checkout-modal]");
   const modalBackButton = root.querySelector("[data-checkout-modal-back]");
@@ -117,6 +141,8 @@ function initializeCheckout(root) {
   const receipt = document.querySelector("[data-checkout-receipt]");
   const receiptSaleId = document.querySelector("[data-checkout-receipt-sale-id]");
   const receiptDate = document.querySelector("[data-checkout-receipt-date]");
+  const receiptBuyerSection = document.querySelector("[data-checkout-receipt-buyer-section]");
+  const receiptBuyerText = document.querySelector("[data-checkout-receipt-buyer-text]");
   const receiptDetailsText = document.querySelector("[data-checkout-receipt-details-text]");
   const receiptLines = document.querySelector("[data-checkout-receipt-lines]");
   const receiptSubtotal = document.querySelector("[data-checkout-receipt-subtotal]");
@@ -148,6 +174,49 @@ function initializeCheckout(root) {
 
   function getReceiptDetails() {
     return receiptDetailsInput?.value.trim() || "";
+  }
+
+  function getSaleDetails() {
+    return {
+      receiptDetails: getReceiptDetails(),
+      buyerName: buyerNameInput?.value.trim() || "",
+      buyerPostalCode: buyerPostalCodeInput?.value.trim() || "",
+      buyerCity: buyerCityInput?.value.trim() || ""
+    };
+  }
+
+  function formatBuyerDetails(saleDetails) {
+    const location = [saleDetails.buyerPostalCode, saleDetails.buyerCity]
+      .filter(value => value.length > 0)
+      .join(" ");
+
+    return [saleDetails.buyerName, location]
+      .filter(value => value.length > 0)
+      .join(" - ");
+  }
+
+  async function updateBuyerCityOptions() {
+    if (!buyerPostalCodeInput || !buyerCityOptions) {
+      return;
+    }
+
+    const postalCode = buyerPostalCodeInput.value.trim();
+    buyerCityOptions.replaceChildren();
+
+    if (!/^38\d{3}$/.test(postalCode)) {
+      return;
+    }
+
+    const cityMap = await loadCheckoutCitiesByPostalCode();
+    if (buyerPostalCodeInput.value.trim() !== postalCode) {
+      return;
+    }
+
+    for (const city of cityMap[postalCode] || []) {
+      const option = document.createElement("option");
+      option.value = city;
+      buyerCityOptions.appendChild(option);
+    }
   }
 
   function updateSavePrintButtonState() {
@@ -187,7 +256,7 @@ function initializeCheckout(root) {
     updateSavePrintButtonState();
   }
 
-  function renderReceipt(payload, receiptDetails) {
+  function renderReceipt(payload, saleDetails) {
     if (!receipt || !receiptLines) {
       return;
     }
@@ -200,8 +269,17 @@ function initializeCheckout(root) {
       receiptDate.textContent = new Date().toLocaleString("fr-FR");
     }
 
+    const buyerDetails = formatBuyerDetails(saleDetails);
+    if (receiptBuyerSection) {
+      receiptBuyerSection.hidden = buyerDetails.length === 0;
+    }
+
+    if (receiptBuyerText) {
+      receiptBuyerText.textContent = buyerDetails;
+    }
+
     if (receiptDetailsText) {
-      receiptDetailsText.textContent = receiptDetails;
+      receiptDetailsText.textContent = saleDetails.receiptDetails;
     }
 
     receiptLines.replaceChildren();
@@ -315,6 +393,7 @@ function initializeCheckout(root) {
 
   searchInput.addEventListener("input", renderResults);
   receiptDetailsInput?.addEventListener("input", updateSavePrintButtonState);
+  buyerPostalCodeInput?.addEventListener("input", updateBuyerCityOptions);
 
   resultsBody.addEventListener("click", event => {
     const row = event.target.closest("[data-checkout-item-id]");
@@ -385,7 +464,7 @@ function initializeCheckout(root) {
   modalBackButton?.addEventListener("click", hideModal);
 
   saveSaleButton?.addEventListener("click", async () => {
-    const { response, payload } = await postCheckoutCart("/api/ventes", cart, getReceiptDetails());
+    const { response, payload } = await postCheckoutCart("/api/ventes", cart, getSaleDetails());
     if (response.status === 201 && payload.saved) {
       cart.splice(0, cart.length);
       setConflictItems([]);
@@ -408,14 +487,14 @@ function initializeCheckout(root) {
   });
 
   savePrintButton?.addEventListener("click", async () => {
-    const receiptDetails = getReceiptDetails();
-    if (receiptDetails.length === 0) {
+    const saleDetails = getSaleDetails();
+    if (saleDetails.receiptDetails.length === 0) {
       return;
     }
 
-    const { response, payload } = await postCheckoutCart("/api/ventes", cart, receiptDetails);
+    const { response, payload } = await postCheckoutCart("/api/ventes", cart, saleDetails);
     if (response.status === 201 && payload.saved) {
-      renderReceipt(payload, receiptDetails);
+      renderReceipt(payload, saleDetails);
       printReceiptAndReload();
       return;
     }
@@ -435,6 +514,7 @@ function initializeCheckout(root) {
   renderResults();
   renderCart();
   updateSavePrintButtonState();
+  updateBuyerCityOptions();
 }
 
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);

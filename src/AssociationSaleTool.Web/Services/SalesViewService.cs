@@ -45,6 +45,9 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.SubtotalSellerPriceCents,
             sale.CheckoutFeeCents,
             sale.TotalPaidCents,
+            sale.BuyerName,
+            sale.BuyerPostalCode,
+            sale.BuyerCity,
             !string.IsNullOrWhiteSpace(sale.ReceiptDetails),
             BuildSearchText(sale));
     }
@@ -67,6 +70,9 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.SubtotalSellerPriceCents,
             sale.CheckoutFeeCents,
             sale.TotalPaidCents,
+            sale.BuyerName,
+            sale.BuyerPostalCode,
+            sale.BuyerCity,
             sale.ReceiptDetails,
             lines);
     }
@@ -76,6 +82,9 @@ public sealed class SalesViewService(AppDbContext dbContext)
         var terms = new List<string>
         {
             sale.Id.ToString(FrenchCulture),
+            sale.BuyerName ?? string.Empty,
+            sale.BuyerPostalCode ?? string.Empty,
+            sale.BuyerCity ?? string.Empty,
             sale.ReceiptDetails ?? string.Empty
         };
 

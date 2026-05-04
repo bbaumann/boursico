@@ -476,6 +476,18 @@ textarea {
   min-width: 0;
 }
 
+.checkout-buyer-fields {
+  margin-bottom: 1.75rem;
+}
+
+.checkout-buyer-fields h2 {
+  margin: 0 0 1rem;
+}
+
+.checkout-buyer-fields .seller-meta {
+  margin: 0.75rem 0 0;
+}
+
 .checkout-results-table,
 .checkout-cart-table {
   table-layout: fixed;

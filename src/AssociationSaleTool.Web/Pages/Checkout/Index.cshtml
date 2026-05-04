@@ -31,6 +31,42 @@
     {
     <div class="checkout-grid">
         <section class="subsection checkout-lookup">
+            <section class="checkout-buyer-fields" aria-labelledby="checkout-buyer-title">
+                <h2 id="checkout-buyer-title">Acheteur</h2>
+                <div class="field-grid">
+                    <label for="checkout-buyer-name">
+                        Nom ou structure
+                        <input id="checkout-buyer-name"
+                               type="text"
+                               autocomplete="name"
+                               maxlength="200"
+                               data-checkout-buyer-name />
+                    </label>
+                    <label for="checkout-buyer-postal-code">
+                        Code postal
+                        <input id="checkout-buyer-postal-code"
+                               type="number"
+                               inputmode="numeric"
+                               min="0"
+                               max="99999"
+                               step="1"
+                               autocomplete="postal-code"
+                               data-checkout-buyer-postal-code />
+                    </label>
+                    <label for="checkout-buyer-city">
+                        Ville
+                        <input id="checkout-buyer-city"
+                               type="text"
+                               autocomplete="address-level2"
+                               maxlength="200"
+                               list="checkout-buyer-city-options"
+                               data-checkout-buyer-city />
+                        <datalist id="checkout-buyer-city-options" data-checkout-buyer-city-options></datalist>
+                    </label>
+                </div>
+                <p class="seller-meta">Pour l'Isère, les villes connues sont proposées. Hors Isère, saisissez la ville librement.</p>
+            </section>
+
             <label for="checkout-search">Rechercher un article</label>
             <input id="checkout-search"
                    type="search"
@@ -164,6 +200,11 @@
         <p>Reçu de vente <span data-checkout-receipt-sale-id></span></p>
         <p>Date : <span data-checkout-receipt-date></span></p>
     </header>
+
+    <section data-checkout-receipt-buyer-section hidden>
+        <h2>Acheteur</h2>
+        <p data-checkout-receipt-buyer-text></p>
+    </section>
 
     <section>
         <h2>Détails du reçu</h2>

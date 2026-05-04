@@ -17,6 +17,14 @@
         </div>
     </div>
 
+    @if (Model.Sale.HasBuyerDetails)
+    {
+        <section class="subsection">
+            <h2>Acheteur</h2>
+            <p>@Model.Sale.BuyerDisplay</p>
+        </section>
+    }
+
     @if (!string.IsNullOrWhiteSpace(Model.Sale.ReceiptDetails))
     {
         <section class="subsection">

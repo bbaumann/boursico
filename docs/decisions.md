@@ -508,3 +508,21 @@ This file captures the main project decisions in a lightweight ADR format.
   - checkout and reconciliation can continue reading existing cent values if they exist
   - future cents support would mainly relax application validation rather than rename price columns
   - operator-facing price entry now matches the whole-euro event rule
+
+## D-035 Store Structured Buyer Details On Sales
+
+- Status: accepted
+- Key drivers:
+  - checkout operators need to associate a sale with a buyer name or structure without overloading the receipt free-text field
+  - buyer location should be searchable and visible in sales history
+  - city suggestions should support the local Isère workflow without adding an internet dependency during the sale
+- Decision:
+  - add optional `buyer_name`, `buyer_postal_code`, and `buyer_city` fields to `sale`
+  - render those fields at the top of `/caisse`, above item lookup
+  - keep `receipt_details` as a separate optional free-text field whose presence still controls whether receipt printing is enabled
+  - generate local city suggestion data for Isère (`38xxx`) from the official French Geo API commune dataset
+  - keep city entry free text for other French departments
+- Consequence:
+  - sale creation persists buyer identity and location as structured sale-level data
+  - read-only sale history can search and display buyer details directly
+  - the checkout page remains usable if the city suggestion data is incomplete because the city field is still editable free text

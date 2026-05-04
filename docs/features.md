@@ -26,6 +26,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Assign one unique reference per item
 - Store one seller-set printed price per item
 - Search items by `reference + title` using a live-filtered table
+- Capture optional buyer name or organization, postal code, and city on the checkout page
 - Add selected items to a cart
 - Compute subtotal, checkout fee, and final bill total automatically
 - Save a sale as paid
@@ -93,20 +94,22 @@ When seller and item master data are locked, only workflow-driven status changes
 ### Expected Checkout Flow
 
 1. Checkout loads a lightweight item catalog into page memory when the page opens.
-2. Operator types in the lookup field.
-3. The item table is filtered on each keystroke using `reference + title` matching.
-4. Operator selects the correct item from the filtered table.
-5. Item is added to the current cart.
-6. Operator repeats until the customer is done.
-7. Operator clicks `Finalize`.
-8. The app validates the cart against the live database before showing the finalization modal.
-9. If validation succeeds, a finalization modal shows the subtotal, checkout fee, final total, and item count.
-10. Operator chooses `Go back`, `Save`, or `Save and print receipt`.
-11. The server re-validates that every cart item is still `in_stock` at save time inside the save transaction.
-12. The server rejects the sale if the phase is `post_sale`.
-13. If validation succeeds, the sale is persisted and the items become `sold`.
-14. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
-15. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
+2. Operator optionally fills the buyer name or organization, postal code, and city.
+3. When the postal code is in Isère (`38xxx`), the city field offers known city suggestions from the local city lookup data. For other French departments, the city remains free text.
+4. Operator types in the item lookup field.
+5. The item table is filtered on each keystroke using `reference + title` matching.
+6. Operator selects the correct item from the filtered table.
+7. Item is added to the current cart.
+8. Operator repeats until the customer is done.
+9. Operator clicks `Finalize`.
+10. The app validates the cart against the live database before showing the finalization modal.
+11. If validation succeeds, a finalization modal shows the subtotal, checkout fee, final total, and item count.
+12. Operator chooses `Go back`, `Save`, or `Save and print receipt`.
+13. The server re-validates that every cart item is still `in_stock` at save time inside the save transaction.
+14. The server rejects the sale if the phase is `post_sale`.
+15. If validation succeeds, the sale is persisted with buyer details and the items become `sold`.
+16. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
+17. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
 
 ### Read-Only Sales View
 
@@ -115,9 +118,9 @@ Operators can inspect saved sales from the checkout area without admin unlock:
 - `/caisse` remains the default sale-creation page
 - `/caisse` links to `/caisse/ventes` with a prominent `LISTE DES VENTES` action
 - `/caisse/ventes` lists saved sales newest first
-- the list supports client-side filtering by sale id, item reference, item title, and receipt details
+- the list supports client-side filtering by sale id, buyer details, item reference, item title, and receipt details
 - `/caisse/ventes/{id}` shows one sale in read-only detail mode
-- the detail view shows sale id, sold timestamp, receipt details when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
+- the detail view shows sale id, sold timestamp, buyer details when present, receipt details when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
 - corrected sale lines remain visible as historical sale facts and are labeled `Corrigée`
 - sale totals stay historical and are not recalculated after corrections
 

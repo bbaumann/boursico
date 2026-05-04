@@ -42,6 +42,9 @@ CREATE TABLE sale (
     subtotal_seller_price_cents INTEGER NOT NULL,
     checkout_fee_cents INTEGER NOT NULL,
     total_paid_cents INTEGER NOT NULL,
+    buyer_name TEXT,
+    buyer_postal_code TEXT,
+    buyer_city TEXT,
     receipt_details TEXT,
     CONSTRAINT ck_sale_subtotal_seller_price_cents
         CHECK (subtotal_seller_price_cents >= 0),

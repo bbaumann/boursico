@@ -22,7 +22,7 @@
                type="search"
                autocomplete="off"
                data-sales-view-search
-               placeholder="Numéro, référence, titre ou reçu" />
+               placeholder="Numéro, acheteur, code postal, ville, référence, titre ou reçu" />
         <p class="empty-state" data-sales-view-empty-message hidden>Aucune vente ne correspond à cette recherche.</p>
 
         @if (Model.Sales.Count > 0)
@@ -32,6 +32,7 @@
                     <tr>
                         <th>Vente</th>
                         <th>Date</th>
+                        <th>Acheteur</th>
                         <th>Articles</th>
                         <th>Sous-total</th>
                         <th>Frais</th>
@@ -45,6 +46,7 @@
                     <tr data-sales-view-row data-sales-view-filter-text="@sale.SearchText">
                         <td><a href="/caisse/ventes/@sale.SaleId">#@sale.SaleId</a></td>
                         <td>@IndexModel.FormatSoldAt(sale.SoldAt)</td>
+                        <td>@(sale.HasBuyerDetails ? sale.BuyerDisplay : "-")</td>
                         <td>@sale.ItemCount</td>
                         <td>@IndexModel.FormatPrice(sale.SubtotalSellerPriceCents)</td>
                         <td>@IndexModel.FormatPrice(sale.CheckoutFeeCents)</td>

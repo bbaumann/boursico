@@ -1586,6 +1586,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("/api/ventes", content);
         Assert.Contains("checkout-conflict-row", content);
         Assert.Contains("receiptDetails", content);
+        Assert.Contains("buyerName", content);
+        Assert.Contains("buyerPostalCode", content);
+        Assert.Contains("buyerCity", content);
+        Assert.Contains("checkoutCitiesByPostalCode", content);
         Assert.Contains("data-checkout-save-print", content);
         Assert.Contains("data-checkout-receipt-lines", content);
         Assert.Contains("window.print()", content);
@@ -1608,12 +1612,29 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("overflow-y: auto;", content);
         Assert.Contains(".checkout-results-table", content);
         Assert.Contains(".checkout-cart-panel", content);
+        Assert.Contains(".checkout-buyer-fields", content);
         Assert.Contains(".checkout-totals", content);
         Assert.Contains(".checkout-modal", content);
         Assert.Contains(".checkout-conflict-row", content);
         Assert.Contains(".checkout-print-receipt", content);
         Assert.Contains("@media print", content);
         Assert.Contains("body.checkout-printing", content);
+    }
+
+    [Fact]
+    public async Task IsereCitySuggestionDataIsServedLocally()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/data/isere-postal-cities.json");
+
+        response.EnsureSuccessStatusCode();
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = document.RootElement;
+        Assert.Contains(root.GetProperty("38000").EnumerateArray(), city => city.GetString() == "Grenoble");
+        Assert.Contains(root.GetProperty("38100").EnumerateArray(), city => city.GetString() == "Grenoble");
+        Assert.True(root.TryGetProperty("38300", out var bourgoinPostalCode));
+        Assert.Contains(bourgoinPostalCode.EnumerateArray(), city => city.GetString() == "Bourgoin-Jallieu");
     }
 
     [Fact]
@@ -1827,6 +1848,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Total", content);
         Assert.Contains("checkout-catalog-data", content);
         Assert.Contains("data-checkout-root", content);
+        Assert.Contains("data-checkout-buyer-name", content);
+        Assert.Contains("data-checkout-buyer-postal-code", content);
+        Assert.Contains("data-checkout-buyer-city", content);
+        Assert.Contains("data-checkout-buyer-city-options", content);
+        Assert.Contains("Nom ou structure", content);
+        Assert.Contains("Code postal", content);
+        Assert.Contains("Ville", content);
         Assert.Contains("data-checkout-search", content);
         Assert.Contains("data-checkout-results", content);
         Assert.Contains("data-checkout-cart", content);
@@ -2383,6 +2411,63 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var sale = await dbContext.Sales.Include(x => x.SaleLines).SingleAsync(x => x.SaleLines.Any(line => line.ItemId == itemId));
             Assert.Equal("Association sportive", sale.ReceiptDetails);
+        }
+    }
+
+    [Fact]
+    public async Task SalesApiPersistsBuyerDetails()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-004",
+                FirstName = "Sonia",
+                LastName = "Acheteur",
+                Email = "sonia.acheteur@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-004-001",
+                ItemNumber = 1,
+                Title = "Jeu avec acheteur",
+                SellerPriceCents = 1500,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync(
+            "/api/ventes",
+            new
+            {
+                itemIds = new[] { itemId },
+                buyerName = "  Ecole du centre  ",
+                buyerPostalCode = "  38100  ",
+                buyerCity = " Grenoble "
+            });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var sale = await dbContext.Sales.Include(x => x.SaleLines).SingleAsync(x => x.SaleLines.Any(line => line.ItemId == itemId));
+            Assert.Equal("Ecole du centre", sale.BuyerName);
+            Assert.Equal("38100", sale.BuyerPostalCode);
+            Assert.Equal("Grenoble", sale.BuyerCity);
         }
     }
 

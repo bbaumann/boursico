@@ -110,6 +110,18 @@ namespace AssociationSaleTool.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BuyerCity")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("buyer_city");
+
+                    b.Property<string>("BuyerName")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("buyer_name");
+
+                    b.Property<string>("BuyerPostalCode")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("buyer_postal_code");
+
                     b.Property<int>("CheckoutFeeCents")
                         .HasColumnType("INTEGER")
                         .HasColumnName("checkout_fee_cents");
