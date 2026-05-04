@@ -96,17 +96,15 @@ public sealed class ReconciliationServiceTests
         var missingSeller = new SellerEntity { SellerCode = "BB", FirstName = "Grace", LastName = "Hopper" };
         var inStockSeller = new SellerEntity { SellerCode = "CC", FirstName = "Katherine", LastName = "Johnson" };
         var registeredSeller = new SellerEntity { SellerCode = "DD", FirstName = "Margaret", LastName = "Hamilton" };
-        var notProvidedSeller = new SellerEntity { SellerCode = "EE", FirstName = "Annie", LastName = "Easley" };
         var emptySeller = new SellerEntity { SellerCode = "FF", FirstName = "Mary", LastName = "Jackson" };
 
-        context.Sellers.AddRange(soldSeller, missingSeller, inStockSeller, registeredSeller, notProvidedSeller, emptySeller);
+        context.Sellers.AddRange(soldSeller, missingSeller, inStockSeller, registeredSeller, emptySeller);
         await context.SaveChangesAsync();
 
         var soldItem = AddItem(context, soldSeller, "AA-001", 1, "Train", 400, "sold");
         AddItem(context, missingSeller, "BB-001", 1, "Puzzle", 500, "missing");
         AddItem(context, inStockSeller, "CC-001", 1, "Camion", 600, "in_stock");
         AddItem(context, registeredSeller, "DD-001", 1, "Piano", 700, "registered");
-        AddItem(context, notProvidedSeller, "EE-001", 1, "Livre", 800, "not_provided");
         await context.SaveChangesAsync();
 
         context.Sales.Add(new SaleEntity
@@ -146,7 +144,6 @@ public sealed class ReconciliationServiceTests
         var missing = AddItem(context, seller, "AA-002", 2, "Puzzle", 700, "missing");
         var inStock = AddItem(context, seller, "AA-001", 1, "Camion", 600, "in_stock");
         AddItem(context, seller, "AA-004", 4, "Piano", 500, "registered");
-        AddItem(context, seller, "AA-005", 5, "Livre", 400, "not_provided");
         await context.SaveChangesAsync();
 
         context.Sales.Add(new SaleEntity
@@ -514,7 +511,6 @@ public sealed class ReconciliationServiceTests
 
     [Theory]
     [InlineData("registered")]
-    [InlineData("not_provided")]
     [InlineData("sold")]
     [InlineData("missing")]
     public async Task MarkItemMissingAsync_RejectsItemsThatAreNotInStock(string status)
@@ -539,7 +535,6 @@ public sealed class ReconciliationServiceTests
 
     [Theory]
     [InlineData("registered")]
-    [InlineData("not_provided")]
     [InlineData("sold")]
     [InlineData("in_stock")]
     public async Task MarkItemInStockAsync_RejectsItemsThatAreNotMissing(string status)

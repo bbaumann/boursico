@@ -8,7 +8,6 @@ public static class ItemStatusDisplay
         {
             "registered" => "enregistré",
             "in_stock" => "en stock",
-            "not_provided" => "non fourni",
             "sold" => "vendu",
             "missing" => "manquant",
             _ => status

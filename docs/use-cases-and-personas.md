@@ -134,8 +134,9 @@ Description:
 Expected outcome:
 
 - Delivered items are marked `in_stock`.
-- Undelivered preregistered items are marked `not_provided`.
-- A `Check all` helper may be used and then corrected item by item.
+- Undelivered preregistered items are deleted while still `registered`.
+- If an item was mistakenly entered as physically present, it may be deleted while still `in_stock`.
+- V1 does not use a `not_provided` status.
 
 ### UC-03 Search Item During Sale
 

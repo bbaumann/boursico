@@ -37,11 +37,6 @@ The status field remains editable only through the workflow transitions defined 
 - eligible for sale during the event
 - treated as a returned item after the sale unless later marked `missing`
 
-### `not_provided`
-
-- preregistered but never physically delivered
-- excluded from checkout and seller-sheet outputs
-
 ### `sold`
 
 - sold during checkout
@@ -59,7 +54,8 @@ The status field remains editable only through the workflow transitions defined 
 - create item directly as `in_stock` during in-person intake
 - create item as `registered` from emailed preregistration
 - `registered -> in_stock` during physical delivery confirmation
-- `registered -> not_provided` during physical delivery confirmation
+- delete a `registered` item when a preregistered toy was not physically delivered
+- delete an `in_stock` item when a physically present item was entered by mistake
 
 ### During The Sale
 
@@ -80,21 +76,21 @@ No reservation status exists in V1:
 
 The following are final in normal V1 operations:
 
-- `not_provided`
 - `sold`
 - `missing`, except for an explicit admin reconciliation correction when the item was marked `missing` by mistake
 
-No transition back out of `not_provided` or `sold` is defined in V1.
+No transition back out of `sold` is defined in V1.
 
 ## Forbidden Transitions In V1
 
 - `registered -> sold`
 - `registered -> missing`
-- `not_provided -> in_stock`
 - `sold -> in_stock`
 - `sold -> missing`
 
-If an operator mistake is discovered, correction should be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow.
+V1 does not use a `not_provided` status. If a preregistered item was not physically delivered, the item is removed while it is still `registered`. If an item was mistakenly recorded as present, it may be removed while it is still `in_stock`.
+
+If an operator mistake is discovered after an item has become `sold` or `missing`, correction should be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow.
 
 ## Role Summary
 
@@ -104,7 +100,9 @@ Before sale start:
 
 - create `registered` items from emailed lists
 - create `in_stock` items when toys are physically present
-- confirm preregistered delivery to `in_stock` or `not_provided`
+- confirm preregistered delivery by marking delivered items `in_stock`
+- delete preregistered items that were not physically delivered
+- delete `registered` or `in_stock` items that were entered by mistake
 - correct item master data if needed
 
 ### Sale-Day Volunteer

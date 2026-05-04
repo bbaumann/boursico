@@ -64,7 +64,6 @@ V1 uses one simple status field:
 
 - `registered`
 - `in_stock`
-- `not_provided`
 - `sold`
 - `missing`
 
@@ -72,15 +71,16 @@ Derived meanings:
 
 - payable items = `sold` + `missing`
 - returned items = `in_stock`
-- preregistered but excluded from sale/reconciliation = `registered` + `not_provided`
+- preregistered but excluded from sale/reconciliation = `registered`
 
 Lifecycle meaning:
 
 - `registered`: preregistered in the system but not yet physically handed over
 - `in_stock`: physically present in association stock and eligible for sale or return
-- `not_provided`: preregistered but never actually handed over physically
 - `sold`: sold during the event
 - `missing`: expected to be returned after the event, but not found physically
+
+V1 does not use a `not_provided` status. Preregistered items that are not physically delivered are deleted while still `registered`; items mistakenly entered as present may be deleted while still `in_stock`.
 
 ## Price Model
 

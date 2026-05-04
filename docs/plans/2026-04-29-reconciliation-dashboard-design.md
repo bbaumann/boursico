@@ -110,7 +110,6 @@ Returned items include:
 Excluded items are not printed by default:
 
 - `registered`
-- `not_provided`
 
 For sold items, the payable amount uses `sale_line.seller_price_at_sale_cents` because that is the immutable sale-time snapshot. For missing items, the payable amount uses `item.seller_price_cents` because the item was not sold.
 
@@ -159,7 +158,7 @@ Normal V1 lifecycle rules still apply:
 
 - checkout is the only normal path from `in_stock` to `sold`
 - reconciliation is the only normal path from `in_stock` to `missing`
-- `registered`, `not_provided`, and `sold` are not editable from the reconciliation dashboard
+- `registered` and `sold` are not editable from the reconciliation dashboard
 
 The dashboard adds one explicit admin correction:
 

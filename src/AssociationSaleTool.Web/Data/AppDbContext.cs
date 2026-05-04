@@ -56,7 +56,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')");
+                table.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing')");
                 table.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
             });
         });

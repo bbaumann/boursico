@@ -105,7 +105,7 @@ Create `ReconciliationServiceTests.cs` with tests for:
 - `ListSellerSheetsAsync` includes only sellers with at least one `sold`, `missing`, or `in_stock` item
 - sold item sheet prices use `SaleLineEntity.SellerPriceAtSaleCents`
 - missing item sheet prices use `ItemEntity.SellerPriceCents`
-- `registered` and `not_provided` items are excluded
+- `registered` items are excluded
 - returned items contain only `in_stock`
 
 Use an in-memory SQLite database like existing service tests.
@@ -486,7 +486,7 @@ rtk git commit -m "Add reconciliation dashboard page"
 Add smoke tests that:
 
 - unlocked `GET /rapprochement/feuilles` renders active seller sheets
-- sellers with only `registered` or `not_provided` items are absent
+- sellers with only `registered` items are absent
 - `GET /rapprochement/feuilles?codeVendeur=AA` renders only seller `AA`
 - unknown seller code shows a French message
 

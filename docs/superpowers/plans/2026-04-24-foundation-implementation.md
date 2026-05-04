@@ -309,7 +309,6 @@ public void FormatsReferenceWithThreeDigitItemNumber()
 ```csharp
 [Theory]
 [InlineData(ItemStatus.Registered, ItemStatus.InStock, true)]
-[InlineData(ItemStatus.Registered, ItemStatus.NotProvided, true)]
 [InlineData(ItemStatus.InStock, ItemStatus.Sold, true)]
 [InlineData(ItemStatus.InStock, ItemStatus.Missing, true)]
 [InlineData(ItemStatus.Sold, ItemStatus.InStock, false)]
@@ -341,7 +340,6 @@ public enum ItemStatus
 {
     Registered,
     InStock,
-    NotProvided,
     Sold,
     Missing
 }
@@ -357,7 +355,6 @@ public static class ItemStatusTransitions
         return (from, to) switch
         {
             (ItemStatus.Registered, ItemStatus.InStock) => true,
-            (ItemStatus.Registered, ItemStatus.NotProvided) => true,
             (ItemStatus.InStock, ItemStatus.Sold) => true,
             (ItemStatus.InStock, ItemStatus.Missing) => true,
             _ => false

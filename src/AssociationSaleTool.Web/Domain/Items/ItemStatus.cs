@@ -4,7 +4,6 @@ public enum ItemStatus
 {
     Registered,
     InStock,
-    NotProvided,
     Sold,
     Missing
 }

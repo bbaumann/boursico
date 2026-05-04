@@ -77,7 +77,7 @@ namespace AssociationSaleTool.Web.Migrations
 
                             t.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
 
-                            t.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')");
+                            t.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing')");
                         });
                 });
 

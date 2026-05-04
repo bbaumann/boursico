@@ -67,7 +67,7 @@ Represents one physical toy.
 - `title` is the item label shown in search results, carts, and sheets.
 - `seller_price_cents` is both the seller payout price and the printed per-item customer price in V1.
 - money values are stored as integer cents, e.g. `250` for `2.50 EUR`.
-- `status` uses the V1 status model: `registered`, `in_stock`, `not_provided`, `sold`, `missing`.
+- `status` uses the V1 status model: `registered`, `in_stock`, `sold`, `missing`.
 
 ## `sale`
 
@@ -178,7 +178,6 @@ Allowed values:
 
 - `registered`
 - `in_stock`
-- `not_provided`
 - `sold`
 - `missing`
 
@@ -186,9 +185,10 @@ Business meaning:
 
 - `registered`: preregistered in the system but not yet physically delivered
 - `in_stock`: physically present and eligible for sale or return
-- `not_provided`: preregistered but never physically delivered
 - `sold`: the item was sold during the event
 - `missing`: the item was not found during post-sale gathering and is therefore payable to the seller
+
+V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, the item is deleted while still `registered`.
 
 ## Delete And Update Rules
 
@@ -197,6 +197,7 @@ V1 should be conservative and prefer restriction over cascading deletion.
 ## Delete Rules
 
 - do not delete a `seller` if items exist for that seller
+- allow deleting an `item` only while its status is `registered` or `in_stock`
 - do not delete an `item` if it is linked to a sale line
 - do not delete a `sale` in normal operations once created
 - do not delete `sale_line` in normal operations
@@ -248,7 +249,6 @@ All seller items with:
 Seller items with:
 
 - `status = registered`
-- `status = not_provided`
 
 These items are not part of post-sale payable or returned outputs.
 

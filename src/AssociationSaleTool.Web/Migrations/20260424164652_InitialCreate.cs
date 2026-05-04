@@ -64,7 +64,7 @@ namespace AssociationSaleTool.Web.Migrations
                     table.PrimaryKey("PK_item", x => x.Id);
                     table.CheckConstraint("ck_item_sale_price_cents", "sale_price_cents >= 0");
                     table.CheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
-                    table.CheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')");
+                    table.CheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing')");
                     table.ForeignKey(
                         name: "FK_item_seller_seller_id",
                         column: x => x.seller_id,

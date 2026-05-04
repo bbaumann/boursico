@@ -185,7 +185,6 @@ public sealed class IntakeServiceTests
     }
 
     [Theory]
-    [InlineData("not_provided")]
     [InlineData("sold")]
     [InlineData("missing")]
     public async Task DeleteSellerItemAsync_RejectsItemsOutsideDeletableStatuses(string status)
@@ -247,7 +246,6 @@ public sealed class IntakeServiceTests
 
     [Theory]
     [InlineData("in_stock")]
-    [InlineData("not_provided")]
     [InlineData("sold")]
     [InlineData("missing")]
     public async Task MarkSellerItemInStockAsync_RejectsItemsThatAreNotRegistered(string status)

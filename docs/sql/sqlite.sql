@@ -28,7 +28,7 @@ CREATE TABLE item (
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
     CONSTRAINT ck_item_status
-        CHECK (status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')),
+        CHECK (status IN ('registered', 'in_stock', 'sold', 'missing')),
     CONSTRAINT ck_item_seller_price_cents
         CHECK (seller_price_cents >= 0),
     CONSTRAINT uq_item_reference UNIQUE (reference),

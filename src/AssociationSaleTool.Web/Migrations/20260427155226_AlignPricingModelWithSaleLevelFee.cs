@@ -51,7 +51,7 @@ namespace AssociationSaleTool.Web.Migrations
                     seller_price_cents INTEGER NOT NULL,
                     status TEXT NOT NULL,
                     CONSTRAINT ck_item_status
-                        CHECK (status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')),
+                        CHECK (status IN ('registered', 'in_stock', 'sold', 'missing')),
                     CONSTRAINT ck_item_seller_price_cents
                         CHECK (seller_price_cents >= 0),
                     CONSTRAINT FK_item_seller_seller_id
@@ -143,7 +143,7 @@ namespace AssociationSaleTool.Web.Migrations
                     CONSTRAINT ck_item_seller_price_cents
                         CHECK (seller_price_cents >= 0),
                     CONSTRAINT ck_item_status
-                        CHECK (status IN ('registered', 'in_stock', 'not_provided', 'sold', 'missing')),
+                        CHECK (status IN ('registered', 'in_stock', 'sold', 'missing')),
                     CONSTRAINT FK_item_seller_seller_id
                         FOREIGN KEY (seller_id)
                         REFERENCES seller(Id)

@@ -7,7 +7,7 @@
 1. Some sellers send their item lists outside the system, typically by email.
 2. Intake operator creates sellers in the system.
 3. For emailed preregistration, items are entered as `registered`.
-4. When preregistered sellers physically deliver toys, operator reviews the preregistered list and marks items as `in_stock` or `not_provided`.
+4. When preregistered sellers physically deliver toys, operator reviews the preregistered list, marks delivered items as `in_stock`, and deletes entries for toys that were not brought.
 5. Other sellers may register in person with toys physically present; those items are created directly as `in_stock`.
 6. References are generated for each item.
 7. `in_stock` items are prepared for the event.
@@ -48,8 +48,9 @@ Before the first checkout is processed:
 2. Preregistered items exist in `registered` status.
 3. When toys are physically delivered, the operator reviews the list line by line.
 4. Delivered items become `in_stock`.
-5. Preregistered items that were not physically brought become `not_provided`.
-6. A `Check all` helper may be used first and then corrected item by item.
+5. Preregistered items that were not physically brought are deleted while still `registered`.
+6. If an item was mistakenly entered as physically present, it may also be deleted while still `in_stock`.
+7. V1 does not use a `not_provided` status.
 
 ## Seller Sheet Workflow
 

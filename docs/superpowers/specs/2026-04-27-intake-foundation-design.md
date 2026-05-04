@@ -23,7 +23,7 @@ This slice does not yet include preregistered-delivery confirmation, checkout, o
 
 ## Non-Goals
 
-- `registered -> in_stock` / `not_provided` confirmation workflow
+- `registered -> in_stock` confirmation workflow and deletion of undelivered preregistered items
 - bulk import
 - sale-start freeze controls
 - checkout lookup, cart, or sales save

@@ -1,5 +1,6 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssociationSaleTool.Web.Tests.Data;
@@ -70,5 +71,25 @@ public class AppDbContextModelTests
         Assert.Contains(saleEntityType!.GetProperties(), property => property.GetColumnName() == "subtotal_seller_price_cents");
         Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "checkout_fee_cents");
         Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "total_paid_cents");
+    }
+
+    [Fact]
+    public void ItemStatusCheckConstraintExcludesNotProvided()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'item'";
+        var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
+        Assert.DoesNotContain("not_provided", createTableSql);
+        Assert.Contains("CHECK (status IN ('registered', 'in_stock', 'sold', 'missing'))", createTableSql);
     }
 }

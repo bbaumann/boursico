@@ -112,8 +112,9 @@ V1 receipt handling is intentionally simple:
 - Items start in `registered` state.
 - When the seller physically delivers toys, the operator reviews the preregistered list line by line.
 - Delivered items become `in_stock`.
-- Items declared but not actually delivered become `not_provided`.
-- A `Check all` helper may be provided to speed up confirmation, with manual correction for exceptions.
+- Items declared but not actually delivered are deleted while still `registered`.
+- If an item was mistakenly entered as physically present, it may also be deleted while still `in_stock`.
+- V1 does not use a `not_provided` status.
 
 #### In-Person Registration
 
@@ -206,7 +207,6 @@ In V1, `missing` is an operationally restricted action:
 The following item states are excluded from seller-sheet payable/returned outputs:
 
 - `registered`
-- `not_provided`
 
 Sellers whose items are only in excluded states do not get seller sheets.
 

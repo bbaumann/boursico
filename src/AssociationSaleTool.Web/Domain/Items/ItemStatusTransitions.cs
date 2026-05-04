@@ -7,7 +7,6 @@ public static class ItemStatusTransitions
         return (from, to) switch
         {
             (ItemStatus.Registered, ItemStatus.InStock) => true,
-            (ItemStatus.Registered, ItemStatus.NotProvided) => true,
             (ItemStatus.InStock, ItemStatus.Sold) => true,
             (ItemStatus.InStock, ItemStatus.Missing) => true,
             _ => false

@@ -74,19 +74,23 @@ This file captures the main project decisions in a lightweight ADR format.
 - Consequence:
   - lookup, sale, and reconciliation stay deterministic
 
-## D-007 Item Status Is A Single Field With Five Values
+## D-007 Item Status Is A Single Field With Four Values
 
 - Status: accepted
 - Key drivers:
   - the workflow needs to distinguish preregistered items from physically delivered stock
-  - preregistered-but-not-delivered items should not be deleted silently
+  - preregistered-but-not-delivered items do not need to remain in the operational dataset in V1
+  - item deletion is already restricted to entries that are still `registered` or `in_stock`
   - separate lifecycle dimensions would still be over-engineering for V1
 - Decision:
-  - use a single status field with values: `registered`, `in_stock`, `not_provided`, `sold`, `missing`
+  - use a single status field with values: `registered`, `in_stock`, `sold`, `missing`
+  - do not use a `not_provided` status in V1
+  - delete preregistered items that were not physically delivered while they are still `registered`
 - Consequence:
   - payable items are derived as `sold + missing`
   - returned items are derived as `in_stock`
   - preregistration and physical stock confirmation can be modeled without extra lifecycle tables
+  - deletion remains impossible for `sold` or `missing` items in normal operations
 
 ## D-008 Checkout Uses A Live-Filtered Reference And Title Lookup Table
 
@@ -215,7 +219,9 @@ This file captures the main project decisions in a lightweight ADR format.
   - some sellers still register in person with toys already present
   - seller self-service remains out of scope for V1
 - Decision:
-  - support preregistration entered by operators, with later physical confirmation and a simple `Check all` helper for delivery review
+  - support preregistration entered by operators, with later physical confirmation
+  - delivered preregistered items are marked `in_stock`
+  - undelivered preregistered items are deleted while still `registered`
 - Consequence:
   - V1 supports both email preregistration and in-person registration without adding a seller portal
 
