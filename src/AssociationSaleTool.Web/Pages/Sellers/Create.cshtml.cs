@@ -1,3 +1,4 @@
+using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -34,8 +35,14 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
             return Page();
         }
 
+        var feePaidCents = ParseFeePaid();
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
         var result = await intakeService.CreateSellerAsync(
-            new CreateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.PostalAddress, Input.Notes),
+            new CreateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.PostalAddress, Input.Notes, feePaidCents),
             cancellationToken);
 
         if (result.Outcome == CreateSellerOutcome.DuplicateFound)
@@ -51,6 +58,28 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
     private static string BuildDuplicateMessage(IReadOnlyList<SellerDuplicateMatch> matches)
     {
         return "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
+    }
+
+    private int ParseFeePaid()
+    {
+        if (string.IsNullOrWhiteSpace(Input.FeePaid))
+        {
+            return 0;
+        }
+
+        if (!EuroPriceInput.TryParseToCents(Input.FeePaid, out var feePaidCents))
+        {
+            ModelState.AddModelError("Input.FeePaid", "Les frais payés doivent être un montant entier en euros.");
+            return 0;
+        }
+
+        if (feePaidCents < 0)
+        {
+            ModelState.AddModelError("Input.FeePaid", "Les frais payés doivent être supérieurs ou égaux à zéro.");
+            return 0;
+        }
+
+        return feePaidCents;
     }
 
     public sealed class InputModel
@@ -69,6 +98,8 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
 
         [Required(ErrorMessage = "L'adresse postale est obligatoire.")]
         public string PostalAddress { get; set; } = string.Empty;
+
+        public string? FeePaid { get; set; } = "0";
 
         public string? Notes { get; set; }
     }

@@ -55,6 +55,11 @@
                 <input asp-for="Input.Phone" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.Phone" class="validation"></span>
             </label>
+            <label>
+                <span>Frais payés (EUR entier)</span>
+                <input asp-for="Input.FeePaid" type="number" min="0" step="1" inputmode="numeric" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span asp-validation-for="Input.FeePaid" class="validation"></span>
+            </label>
         </div>
 
         <label>

@@ -1,4 +1,6 @@
+using System.Globalization;
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
@@ -22,6 +24,8 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
     public bool CanEditSellerMasterData { get; private set; }
 
+    public SellerFeeStatus FeeStatus { get; private set; } = SellerFeeStatus.Empty;
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
@@ -30,8 +34,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
             return NotFound();
         }
 
-        Seller = loaded;
-        Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        PopulateSellerState(loaded);
         CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
         CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
         Input = CreateDefaultInput();
@@ -46,8 +49,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
             return NotFound();
         }
 
-        Seller = loaded;
-        Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        PopulateSellerState(loaded);
         CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
         CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
 
@@ -81,8 +83,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
             return NotFound();
         }
 
-        Seller = loaded;
-        Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        PopulateSellerState(loaded);
         Input = CreateDefaultInput();
         CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
         CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
@@ -111,8 +112,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
             return NotFound();
         }
 
-        Seller = loaded;
-        Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        PopulateSellerState(loaded);
         Input = CreateDefaultInput();
         CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
         CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
@@ -131,6 +131,24 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         }
 
         return RedirectToPage("/Sellers/Details", new { id });
+    }
+
+    public static string FormatPrice(int priceCents)
+    {
+        return $"{(priceCents / 100m).ToString("0.00", CultureInfo.InvariantCulture)} EUR";
+    }
+
+    private void PopulateSellerState(SellerEntity seller)
+    {
+        Seller = seller;
+        Items = seller.Items.OrderBy(x => x.ItemNumber).ToList();
+        var expectedFeeCents = SellerFeeCalculator.CalculateExpectedFeeCents(seller.Items.Count);
+        var remainingFeeCents = SellerFeeCalculator.CalculateRemainingFeeCents(expectedFeeCents, seller.FeePaidCents);
+        FeeStatus = new SellerFeeStatus(
+            expectedFeeCents,
+            seller.FeePaidCents,
+            remainingFeeCents,
+            remainingFeeCents == 0);
     }
 
     private List<CreateItemRowRequest> ValidateRows()
@@ -214,5 +232,14 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         public string? Title { get; set; }
 
         public string? SellerPrice { get; set; }
+    }
+
+    public sealed record SellerFeeStatus(
+        int ExpectedFeeCents,
+        int PaidFeeCents,
+        int RemainingFeeCents,
+        bool IsFullyPaid)
+    {
+        public static SellerFeeStatus Empty { get; } = new(0, 0, 0, true);
     }
 }

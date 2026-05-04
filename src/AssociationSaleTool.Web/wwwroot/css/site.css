@@ -346,6 +346,27 @@ textarea {
   margin: 0.25rem 0 0;
 }
 
+.seller-fee-status {
+  display: inline-flex;
+  margin: 1rem 0 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.seller-fee-status-paid {
+  border-color: rgba(31, 107, 58, 0.35);
+  color: #1f6b3a;
+  background: rgba(31, 107, 58, 0.08);
+}
+
+.seller-fee-status-due {
+  border-color: rgba(138, 31, 17, 0.35);
+  color: #8a1f11;
+  background: rgba(138, 31, 17, 0.08);
+}
+
 .form-card {
   max-width: 760px;
 }

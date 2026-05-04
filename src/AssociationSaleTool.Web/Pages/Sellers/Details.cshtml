@@ -41,6 +41,10 @@
         </div>
     </dl>
 
+    <p class="seller-fee-status @(Model.FeeStatus.IsFullyPaid ? "seller-fee-status-paid" : "seller-fee-status-due")">
+        Frais : @DetailsModel.FormatPrice(Model.FeeStatus.ExpectedFeeCents) (payés @DetailsModel.FormatPrice(Model.FeeStatus.PaidFeeCents))
+    </p>
+
     <section class="subsection">
         <h2>Articles</h2>
         @if (Model.Items.Count == 0)

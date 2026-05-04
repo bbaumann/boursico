@@ -1428,6 +1428,56 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellerDetailsDisplaysSellerFeeStatus()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-FEE",
+                FirstName = "Claire",
+                LastName = "Martin",
+                Email = "claire@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                FeePaidCents = 200
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            for (var itemNumber = 1; itemNumber <= 16; itemNumber++)
+            {
+                dbContext.Items.Add(new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = $"BK-FEE-{itemNumber:000}",
+                    ItemNumber = itemNumber,
+                    Title = $"Jouet {itemNumber}",
+                    SellerPriceCents = 100,
+                    Status = "registered"
+                });
+            }
+
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Frais", content);
+        Assert.Contains("4.00 EUR", content);
+        Assert.Contains("payés 2.00 EUR", content);
+    }
+
+    [Fact]
     public async Task SellerDetailsDisplaysFrenchIntakeModeLabels()
     {
         var client = _factory.CreateClient();
