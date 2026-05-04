@@ -46,6 +46,7 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.CheckoutFeeCents,
             sale.TotalPaidCents,
             !string.IsNullOrWhiteSpace(sale.ReceiptDetails),
+            SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
             BuildSearchText(sale));
     }
 
@@ -68,6 +69,9 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.CheckoutFeeCents,
             sale.TotalPaidCents,
             sale.ReceiptDetails,
+            SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
+            sale.ChequeNumber,
+            sale.ChequeBankName,
             lines);
     }
 
@@ -76,7 +80,10 @@ public sealed class SalesViewService(AppDbContext dbContext)
         var terms = new List<string>
         {
             sale.Id.ToString(FrenchCulture),
-            sale.ReceiptDetails ?? string.Empty
+            sale.ReceiptDetails ?? string.Empty,
+            SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
+            sale.ChequeNumber ?? string.Empty,
+            sale.ChequeBankName ?? string.Empty
         };
 
         terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference, x.Item.Title }));

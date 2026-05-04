@@ -141,6 +141,53 @@
                     <dd data-checkout-modal-total>0.00 EUR</dd>
                 </div>
             </dl>
+            <fieldset class="checkout-payment">
+                <legend>Mode de paiement</legend>
+                <div class="checkout-payment-options">
+                    <label>
+                        <input type="radio"
+                               name="checkout-payment-method"
+                               value="card"
+                               data-checkout-payment-method
+                               checked />
+                        CB
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="checkout-payment-method"
+                               value="cash"
+                               data-checkout-payment-method />
+                        Espèces
+                    </label>
+                    <label>
+                        <input type="radio"
+                               name="checkout-payment-method"
+                               value="cheque"
+                               data-checkout-payment-method />
+                        Chèque
+                    </label>
+                </div>
+                <div class="checkout-cheque-details" data-checkout-cheque-details hidden>
+                    <label for="checkout-cheque-number">
+                        Numéro de chèque
+                        <input id="checkout-cheque-number"
+                               type="text"
+                               autocomplete="off"
+                               data-checkout-cheque-number />
+                    </label>
+                    <label for="checkout-cheque-bank-name">
+                        Nom de la banque
+                        <input id="checkout-cheque-bank-name"
+                               type="text"
+                               autocomplete="off"
+                               data-checkout-cheque-bank-name />
+                    </label>
+                </div>
+                <p class="validation checkout-payment-message"
+                   data-checkout-payment-message
+                   role="status"
+                   aria-live="polite"></p>
+            </fieldset>
             <div class="form-actions checkout-modal-actions">
                 <button type="button" class="button-link" data-checkout-modal-back>Retour</button>
                 <button type="button" class="button-link button-link-solid" data-checkout-save-sale>Enregistrer la vente</button>

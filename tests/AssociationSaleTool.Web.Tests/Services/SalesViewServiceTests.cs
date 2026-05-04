@@ -1,6 +1,7 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Services;
+using AssociationSaleTool.Web.Services.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,10 +18,16 @@ public sealed class SalesViewServiceTests
             context,
             new DateTime(2026, 5, 4, 8, 30, 0, DateTimeKind.Utc),
             "Association sportive",
+            SalePaymentMethods.Cheque,
+            "987654",
+            "Crédit Mutuel",
             ("SV-001-001", "Puzzle historique", 800, null));
         var newerSale = await SeedSaleAsync(
             context,
             new DateTime(2026, 5, 4, 9, 45, 0, DateTimeKind.Utc),
+            null,
+            SalePaymentMethods.Cash,
+            null,
             null,
             ("SV-002-001", "Camion rouge", 1200, null),
             ("SV-002-002", "Train bleu", 500, null));
@@ -38,7 +45,9 @@ public sealed class SalesViewServiceTests
                 Assert.Equal(170, first.CheckoutFeeCents);
                 Assert.Equal(1870, first.TotalPaidCents);
                 Assert.False(first.HasReceiptDetails);
+                Assert.Equal("Espèces", first.PaymentMethodLabel);
                 Assert.Contains(newerSale.Id.ToString(), first.SearchText);
+                Assert.Contains("espèces", first.SearchText);
                 Assert.Contains("sv-002-001", first.SearchText);
                 Assert.Contains("camion rouge", first.SearchText);
                 Assert.Contains("train bleu", first.SearchText);
@@ -48,7 +57,10 @@ public sealed class SalesViewServiceTests
                 Assert.Equal(olderSale.Id, second.SaleId);
                 Assert.Equal(1, second.ItemCount);
                 Assert.True(second.HasReceiptDetails);
+                Assert.Equal("Chèque", second.PaymentMethodLabel);
                 Assert.Contains("association sportive", second.SearchText);
+                Assert.Contains("987654", second.SearchText);
+                Assert.Contains("crédit mutuel", second.SearchText);
             });
     }
 
@@ -62,6 +74,9 @@ public sealed class SalesViewServiceTests
             context,
             new DateTime(2026, 5, 4, 10, 0, 0, DateTimeKind.Utc),
             "Client recu",
+            SalePaymentMethods.Cheque,
+            "CH-42",
+            "Banque Postale",
             ("SV-003-001", "Jeu corrige", 900, correctedAt),
             ("SV-003-002", "Jeu conserve", 600, null));
         var service = new SalesViewService(context);
@@ -74,6 +89,9 @@ public sealed class SalesViewServiceTests
         Assert.Equal(1500, detail.SubtotalSellerPriceCents);
         Assert.Equal(150, detail.CheckoutFeeCents);
         Assert.Equal(1650, detail.TotalPaidCents);
+        Assert.Equal("Chèque", detail.PaymentMethodLabel);
+        Assert.Equal("CH-42", detail.ChequeNumber);
+        Assert.Equal("Banque Postale", detail.ChequeBankName);
         Assert.Collection(
             detail.Lines,
             first =>
@@ -110,6 +128,9 @@ public sealed class SalesViewServiceTests
         AppDbContext context,
         DateTime soldAt,
         string? receiptDetails,
+        string? paymentMethod = SalePaymentMethods.Card,
+        string? chequeNumber = null,
+        string? chequeBankName = null,
         params (string Reference, string Title, int PriceCents, DateTime? CorrectedAt)[] lines)
     {
         var seller = new SellerEntity
@@ -128,7 +149,10 @@ public sealed class SalesViewServiceTests
             SubtotalSellerPriceCents = lines.Sum(x => x.PriceCents),
             CheckoutFeeCents = lines.Sum(x => x.PriceCents) / 10,
             TotalPaidCents = lines.Sum(x => x.PriceCents) + lines.Sum(x => x.PriceCents) / 10,
-            ReceiptDetails = receiptDetails
+            ReceiptDetails = receiptDetails,
+            PaymentMethod = paymentMethod,
+            ChequeNumber = chequeNumber,
+            ChequeBankName = chequeBankName
         };
 
         for (var index = 0; index < lines.Length; index++)

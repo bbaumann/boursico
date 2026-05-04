@@ -84,6 +84,9 @@ Represents one completed checkout.
 - `checkout_fee_cents`
 - `total_paid_cents`
 - `receipt_details`
+- `payment_method`
+- `cheque_number`
+- `cheque_bank_name`
 
 ### Notes
 
@@ -92,6 +95,9 @@ Represents one completed checkout.
 - `subtotal_seller_price_cents`, `checkout_fee_cents`, and `total_paid_cents` are stored as integer cents.
 - `receipt_details` is an optional free-text field used only in the rare reimbursement case.
 - If `receipt_details` is null, no receipt was requested in V1.
+- `payment_method` is set for new sales and uses `card`, `cash`, or `cheque`.
+- `cheque_number` and `cheque_bank_name` are required by the application only when `payment_method` is `cheque`.
+- Existing rows created before this feature may have null payment traceability fields.
 
 ## `sale_line`
 

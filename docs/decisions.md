@@ -474,3 +474,21 @@ This file captures the main project decisions in a lightweight ADR format.
   - sale browsing stays visually and conceptually attached to checkout
   - the admin sale-status page remains focused on phase changes and exceptional corrections
   - historical sale totals remain immutable and visible even when a sale line was later corrected
+
+## D-033 Persist Sale Payment Method And Cheque Traceability
+
+- Status: accepted
+- Key drivers:
+  - post-sale association banking work needs to match physical cheques with saved sales
+  - checkout operators need a simple sale-finalization choice that does not slow down card or cash sales
+  - payment traceability belongs to the whole sale, not individual sale lines
+- Decision:
+  - add the payment method choice to the `/caisse` finalization modal
+  - store payment method on `sale` as `card`, `cash`, or `cheque`
+  - require cheque number and bank name when the operator selects `Chèque`
+  - keep cheque details nullable for non-cheque sales and for historical rows created before this feature
+  - expose payment method and cheque details in `/caisse/ventes` and `/caisse/ventes/{id}`
+- Consequence:
+  - the sale creation API accepts `paymentMethod`, `chequeNumber`, and `chequeBankName`
+  - `CheckoutService` remains the authoritative validator for cheque traceability
+  - read-only sales search can find cheque sales by method, number, or bank name

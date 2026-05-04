@@ -72,6 +72,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.CheckoutFeeCents).HasColumnName("checkout_fee_cents").IsRequired();
             entity.Property(x => x.TotalPaidCents).HasColumnName("total_paid_cents").IsRequired();
             entity.Property(x => x.ReceiptDetails).HasColumnName("receipt_details");
+            entity.Property(x => x.PaymentMethod).HasColumnName("payment_method");
+            entity.Property(x => x.ChequeNumber).HasColumnName("cheque_number");
+            entity.Property(x => x.ChequeBankName).HasColumnName("cheque_bank_name");
             entity.HasIndex(x => x.SoldAt);
 
             entity.ToTable(table =>

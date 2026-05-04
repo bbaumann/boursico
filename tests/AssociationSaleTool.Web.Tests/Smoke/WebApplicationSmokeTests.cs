@@ -1525,6 +1525,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("/api/ventes", content);
         Assert.Contains("checkout-conflict-row", content);
         Assert.Contains("receiptDetails", content);
+        Assert.Contains("paymentMethod", content);
+        Assert.Contains("chequeNumber", content);
+        Assert.Contains("chequeBankName", content);
+        Assert.Contains("data-checkout-payment-method", content);
         Assert.Contains("data-checkout-save-print", content);
         Assert.Contains("data-checkout-receipt-lines", content);
         Assert.Contains("window.print()", content);
@@ -1780,6 +1784,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Détails du reçu", content);
         Assert.Contains("data-checkout-save-print", content);
         Assert.Contains("Enregistrer et imprimer", content);
+        Assert.Contains("Mode de paiement", content);
+        Assert.Contains("CB", content);
+        Assert.Contains("Espèces", content);
+        Assert.Contains("Chèque", content);
+        Assert.Contains("data-checkout-payment-method", content);
+        Assert.Contains("data-checkout-cheque-number", content);
+        Assert.Contains("data-checkout-cheque-bank-name", content);
         Assert.Contains("data-checkout-receipt", content);
         Assert.Contains("data-checkout-receipt-header", content);
         Assert.Contains("Association Toy Sale", content);
@@ -1962,7 +1973,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             itemId = item.Id;
         }
 
-        var response = await client.PostAsJsonAsync("/api/ventes", new { itemIds = new[] { itemId } });
+        var response = await client.PostAsJsonAsync("/api/ventes", new { itemIds = new[] { itemId }, paymentMethod = "cash" });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -1973,6 +1984,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Equal(1500, sale.SubtotalSellerPriceCents);
             Assert.Equal(150, sale.CheckoutFeeCents);
             Assert.Equal(1650, sale.TotalPaidCents);
+            Assert.Equal("cash", sale.PaymentMethod);
+            Assert.Null(sale.ChequeNumber);
+            Assert.Null(sale.ChequeBankName);
             Assert.Equal("sold", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
         }
     }
@@ -2303,6 +2317,123 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var sale = await dbContext.Sales.Include(x => x.SaleLines).SingleAsync(x => x.SaleLines.Any(line => line.ItemId == itemId));
             Assert.Equal("Association sportive", sale.ReceiptDetails);
+        }
+    }
+
+    [Fact]
+    public async Task SalesApiPersistsChequeTraceability()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-004",
+                FirstName = "Sonia",
+                LastName = "Cheque",
+                Email = "sonia.cheque@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-004-001",
+                ItemNumber = 1,
+                Title = "Jeu cheque",
+                SellerPriceCents = 1500,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync(
+            "/api/ventes",
+            new
+            {
+                itemIds = new[] { itemId },
+                paymentMethod = "cheque",
+                chequeNumber = "  CH-2026  ",
+                chequeBankName = "  Crédit Agricole  "
+            });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var sale = await dbContext.Sales.Include(x => x.SaleLines).SingleAsync(x => x.SaleLines.Any(line => line.ItemId == itemId));
+            Assert.Equal("cheque", sale.PaymentMethod);
+            Assert.Equal("CH-2026", sale.ChequeNumber);
+            Assert.Equal("Crédit Agricole", sale.ChequeBankName);
+        }
+    }
+
+    [Fact]
+    public async Task SalesApiRejectsChequeWithoutTraceability()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-005",
+                FirstName = "Sonia",
+                LastName = "ChequeIncomplet",
+                Email = "sonia.cheque.incomplet@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-005-001",
+                ItemNumber = 1,
+                Title = "Jeu cheque incomplet",
+                SellerPriceCents = 1500,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync(
+            "/api/ventes",
+            new
+            {
+                itemIds = new[] { itemId },
+                paymentMethod = "cheque",
+                chequeNumber = "CH-2026",
+                chequeBankName = " "
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.False(document.RootElement.GetProperty("saved").GetBoolean());
+        Assert.True(document.RootElement.GetProperty("isValidationError").GetBoolean());
+        Assert.Contains("numéro de chèque", document.RootElement.GetProperty("message").GetString());
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Empty(await dbContext.Sales.Where(x => x.SaleLines.Any(line => line.ItemId == itemId)).ToListAsync());
+            Assert.Equal("in_stock", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
         }
     }
 

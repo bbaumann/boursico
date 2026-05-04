@@ -73,13 +73,25 @@ function createCheckoutEmptyRow(message, columnCount) {
   return row;
 }
 
-async function postCheckoutCart(url, cart, receiptDetails) {
+async function postCheckoutCart(url, cart, options = {}) {
   const body = {
     itemIds: cart.map(item => item.id)
   };
 
-  if (receiptDetails !== undefined) {
-    body.receiptDetails = receiptDetails;
+  if (options.receiptDetails !== undefined) {
+    body.receiptDetails = options.receiptDetails;
+  }
+
+  if (options.paymentMethod !== undefined) {
+    body.paymentMethod = options.paymentMethod;
+  }
+
+  if (options.chequeNumber !== undefined) {
+    body.chequeNumber = options.chequeNumber;
+  }
+
+  if (options.chequeBankName !== undefined) {
+    body.chequeBankName = options.chequeBankName;
   }
 
   const response = await fetch(url, {
@@ -110,6 +122,11 @@ function initializeCheckout(root) {
   const modalBackButton = root.querySelector("[data-checkout-modal-back]");
   const saveSaleButton = root.querySelector("[data-checkout-save-sale]");
   const savePrintButton = root.querySelector("[data-checkout-save-print]");
+  const paymentMethodInputs = root.querySelectorAll("[data-checkout-payment-method]");
+  const chequeDetails = root.querySelector("[data-checkout-cheque-details]");
+  const chequeNumberInput = root.querySelector("[data-checkout-cheque-number]");
+  const chequeBankNameInput = root.querySelector("[data-checkout-cheque-bank-name]");
+  const paymentMessage = root.querySelector("[data-checkout-payment-message]");
   const modalCount = root.querySelector("[data-checkout-modal-count]");
   const modalSubtotal = root.querySelector("[data-checkout-modal-subtotal]");
   const modalFee = root.querySelector("[data-checkout-modal-fee]");
@@ -148,6 +165,70 @@ function initializeCheckout(root) {
 
   function getReceiptDetails() {
     return receiptDetailsInput?.value.trim() || "";
+  }
+
+  function getPaymentDetails() {
+    const selectedMethod = root.querySelector("[data-checkout-payment-method]:checked")?.value || "card";
+    return {
+      paymentMethod: selectedMethod,
+      chequeNumber: chequeNumberInput?.value.trim() || "",
+      chequeBankName: chequeBankNameInput?.value.trim() || ""
+    };
+  }
+
+  function setPaymentMessage(text) {
+    if (paymentMessage) {
+      paymentMessage.textContent = text;
+    }
+  }
+
+  function updateChequeDetailsVisibility() {
+    const paymentDetails = getPaymentDetails();
+    const isCheque = paymentDetails.paymentMethod === "cheque";
+
+    if (chequeDetails) {
+      chequeDetails.hidden = !isCheque;
+    }
+
+    if (chequeNumberInput) {
+      chequeNumberInput.required = isCheque;
+    }
+
+    if (chequeBankNameInput) {
+      chequeBankNameInput.required = isCheque;
+    }
+
+    if (!isCheque) {
+      setPaymentMessage("");
+    }
+  }
+
+  function validatePaymentDetails() {
+    const paymentDetails = getPaymentDetails();
+    if (paymentDetails.paymentMethod !== "cheque") {
+      setPaymentMessage("");
+      return true;
+    }
+
+    if (paymentDetails.chequeNumber.length > 0 && paymentDetails.chequeBankName.length > 0) {
+      setPaymentMessage("");
+      return true;
+    }
+
+    setPaymentMessage("Le numéro de chèque et le nom de la banque sont obligatoires pour un paiement par chèque.");
+    if (paymentDetails.chequeNumber.length === 0) {
+      chequeNumberInput?.focus();
+    } else {
+      chequeBankNameInput?.focus();
+    }
+    return false;
+  }
+
+  function buildSaleRequestOptions(receiptDetails) {
+    return {
+      receiptDetails,
+      ...getPaymentDetails()
+    };
   }
 
   function updateSavePrintButtonState() {
@@ -315,6 +396,9 @@ function initializeCheckout(root) {
 
   searchInput.addEventListener("input", renderResults);
   receiptDetailsInput?.addEventListener("input", updateSavePrintButtonState);
+  paymentMethodInputs.forEach(input => input.addEventListener("change", updateChequeDetailsVisibility));
+  chequeNumberInput?.addEventListener("input", validatePaymentDetails);
+  chequeBankNameInput?.addEventListener("input", validatePaymentDetails);
 
   resultsBody.addEventListener("click", event => {
     const row = event.target.closest("[data-checkout-item-id]");
@@ -385,7 +469,14 @@ function initializeCheckout(root) {
   modalBackButton?.addEventListener("click", hideModal);
 
   saveSaleButton?.addEventListener("click", async () => {
-    const { response, payload } = await postCheckoutCart("/api/ventes", cart, getReceiptDetails());
+    if (!validatePaymentDetails()) {
+      return;
+    }
+
+    const { response, payload } = await postCheckoutCart(
+      "/api/ventes",
+      cart,
+      buildSaleRequestOptions(getReceiptDetails()));
     if (response.status === 201 && payload.saved) {
       cart.splice(0, cart.length);
       setConflictItems([]);
@@ -403,6 +494,11 @@ function initializeCheckout(root) {
       return;
     }
 
+    if (response.status === 400) {
+      setPaymentMessage(payload.message || "Les informations de paiement sont incomplètes.");
+      return;
+    }
+
     setMessage("La vente n'a pas pu être enregistrée. Réessayez.");
     hideModal();
   });
@@ -413,10 +509,22 @@ function initializeCheckout(root) {
       return;
     }
 
-    const { response, payload } = await postCheckoutCart("/api/ventes", cart, receiptDetails);
+    if (!validatePaymentDetails()) {
+      return;
+    }
+
+    const { response, payload } = await postCheckoutCart(
+      "/api/ventes",
+      cart,
+      buildSaleRequestOptions(receiptDetails));
     if (response.status === 201 && payload.saved) {
       renderReceipt(payload, receiptDetails);
       printReceiptAndReload();
+      return;
+    }
+
+    if (response.status === 400) {
+      setPaymentMessage(payload.message || "Les informations de paiement sont incomplètes.");
       return;
     }
 
@@ -434,6 +542,7 @@ function initializeCheckout(root) {
 
   renderResults();
   renderCart();
+  updateChequeDetailsVisibility();
   updateSavePrintButtonState();
 }
 

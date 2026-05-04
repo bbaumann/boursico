@@ -1,6 +1,7 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Services;
+using AssociationSaleTool.Web.Services.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -139,6 +140,9 @@ public sealed class CheckoutServiceTests
         Assert.Equal(1500, sale.SubtotalSellerPriceCents);
         Assert.Equal(150, sale.CheckoutFeeCents);
         Assert.Equal(1650, sale.TotalPaidCents);
+        Assert.Equal(SalePaymentMethods.Card, sale.PaymentMethod);
+        Assert.Null(sale.ChequeNumber);
+        Assert.Null(sale.ChequeBankName);
         Assert.Null(sale.ReceiptDetails);
         Assert.Equal(DateTimeKind.Utc, sale.SoldAt.Kind);
 
@@ -177,6 +181,84 @@ public sealed class CheckoutServiceTests
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
         Assert.Equal("Association sportive\n12 rue des Lilas", sale.ReceiptDetails);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_StoresCashPaymentMethod()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cash));
+
+        Assert.True(result.Saved);
+        var sale = await context.Sales.SingleAsync();
+        Assert.Equal(SalePaymentMethods.Cash, sale.PaymentMethod);
+        Assert.Null(sale.ChequeNumber);
+        Assert.Null(sale.ChequeBankName);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_StoresTrimmedChequeTraceability()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            paymentDetails: new CheckoutPaymentDetails(
+                SalePaymentMethods.Cheque,
+                "  1234567  ",
+                "  Banque Populaire  "));
+
+        Assert.True(result.Saved);
+        var sale = await context.Sales.SingleAsync();
+        Assert.Equal(SalePaymentMethods.Cheque, sale.PaymentMethod);
+        Assert.Equal("1234567", sale.ChequeNumber);
+        Assert.Equal("Banque Populaire", sale.ChequeBankName);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_RejectsChequeWithoutNumberAndBank()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cheque, "1234567", " "));
+
+        Assert.False(result.Saved);
+        Assert.True(result.IsValidationError);
+        Assert.Equal("Le numéro de chèque et le nom de la banque sont obligatoires pour un paiement par chèque.", result.Message);
+        Assert.Empty(await context.Sales.ToListAsync());
+        Assert.Equal("in_stock", (await context.Items.SingleAsync(x => x.Id == firstItem.Id)).Status);
     }
 
     [Fact]

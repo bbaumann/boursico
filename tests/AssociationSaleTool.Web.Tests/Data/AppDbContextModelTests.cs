@@ -74,6 +74,22 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SaleStoresPaymentTraceabilityColumns()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var saleEntityType = context.Model.FindEntityType(typeof(SaleEntity));
+        Assert.NotNull(saleEntityType);
+        Assert.Contains(saleEntityType!.GetProperties(), property => property.GetColumnName() == "payment_method");
+        Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "cheque_number");
+        Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "cheque_bank_name");
+    }
+
+    [Fact]
     public void EventStateStoresSalePhase()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

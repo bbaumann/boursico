@@ -14,5 +14,11 @@ public sealed class SaleEntity
 
     public string? ReceiptDetails { get; set; }
 
+    public string? PaymentMethod { get; set; }
+
+    public string? ChequeNumber { get; set; }
+
+    public string? ChequeBankName { get; set; }
+
     public List<SaleLineEntity> SaleLines { get; set; } = [];
 }
