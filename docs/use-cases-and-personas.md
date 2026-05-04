@@ -247,7 +247,8 @@ Description:
 
 Expected outcome:
 
-- Each sheet shows payable items, returned items, and final amount to pay.
+- Each sheet shows returned items first, payable items second, and final amount to pay.
+- Returned item rows include printed checkboxes for physical gathering.
 
 ### UC-08 Mark Missing Item
 

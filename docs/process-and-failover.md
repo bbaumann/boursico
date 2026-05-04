@@ -50,7 +50,7 @@ The correction keeps the original sale stored, marks the sale line corrected, re
 2. New sale validation and sale save are rejected server-side.
 3. Admin opens the reconciliation dashboard at `/rapprochement` after entering the shared admin password.
 4. Admin prints all seller sheets from `/rapprochement/feuilles`; sheets are generated only for sellers with at least one `sold`, `missing`, or `in_stock` item.
-5. An operator physically gathers all returned items from the stock using the sheet.
+5. An operator physically gathers all returned items from the first sheet section, ticking the printed checkboxes as items are found.
 6. If a returned item cannot be found, admin marks it as `missing`.
 7. Seller sheet is regenerated from the dashboard.
 8. If the `missing` status change was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.

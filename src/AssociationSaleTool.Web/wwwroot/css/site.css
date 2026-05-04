@@ -713,6 +713,34 @@ textarea {
   margin: 0;
 }
 
+.seller-sheet-section-return {
+  padding-left: 1rem;
+  border-left: 0.35rem solid var(--accent);
+}
+
+.seller-sheet-section-payable {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-left: 0.35rem solid #74685b;
+  background: rgba(90, 100, 88, 0.08);
+}
+
+.seller-sheet-return-table th:first-child,
+.seller-sheet-return-table td:first-child {
+  width: 4.5rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.seller-sheet-checkbox {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--ink);
+  background: #fff;
+  vertical-align: middle;
+}
+
 @media print {
   @page {
     size: A4;
@@ -783,6 +811,18 @@ textarea {
     margin-top: 2mm;
   }
 
+  .seller-sheet-print-page .seller-sheet-section-return {
+    padding-left: 1.5mm;
+    border-left: 1.2mm solid #000;
+  }
+
+  .seller-sheet-print-page .seller-sheet-section-payable {
+    padding: 1mm 1.5mm;
+    border: 0.25mm solid #999;
+    border-left: 1mm solid #777;
+    background: #f2f2f2;
+  }
+
   .seller-sheet-print-page .subsection h2 {
     margin: 0 0 1mm;
     font-size: 9pt;
@@ -801,12 +841,28 @@ textarea {
     letter-spacing: 0.04em;
   }
 
+  .seller-sheet-print-page .seller-sheet-return-table th:first-child,
+  .seller-sheet-print-page .seller-sheet-return-table td:first-child {
+    width: 8mm;
+    padding-right: 0.6mm;
+    padding-left: 0.6mm;
+    text-align: center;
+  }
+
+  .seller-sheet-print-page .seller-sheet-checkbox {
+    width: 3.2mm;
+    height: 3.2mm;
+    border: 0.3mm solid #000;
+  }
+
   .seller-sheet-print-page .data-table th:first-child,
   .seller-sheet-print-page .data-table td:first-child,
-  .seller-sheet-print-page .data-table th:nth-child(3),
-  .seller-sheet-print-page .data-table td:nth-child(3),
   .seller-sheet-print-page .data-table th:last-child,
-  .seller-sheet-print-page .data-table td:last-child {
+  .seller-sheet-print-page .data-table td:last-child,
+  .seller-sheet-print-page .seller-sheet-return-table th:nth-child(2),
+  .seller-sheet-print-page .seller-sheet-return-table td:nth-child(2),
+  .seller-sheet-print-page .seller-sheet-payable-table th:nth-child(3),
+  .seller-sheet-print-page .seller-sheet-payable-table td:nth-child(3) {
     white-space: nowrap;
   }
 

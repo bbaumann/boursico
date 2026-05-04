@@ -207,9 +207,13 @@ The seller sheet must be human-readable and printable.
 It must contain:
 
 - seller identity
-- payable items list
 - returned items list
+- payable items list
 - final amount to pay the seller
+
+The returned items list appears first because operators use the sheet to gather physical returns before preparing seller payout.
+Returned rows include a printed checkbox column so operators can mark each item as found.
+The payable items list appears second, visually separated from the return checklist and adjacent to the final amount.
 
 ### Payable Items List
 
@@ -231,6 +235,7 @@ The returned list contains all items still marked `in_stock`.
 
 For each returned item, show:
 
+- checkbox
 - reference
 - item title when useful
 

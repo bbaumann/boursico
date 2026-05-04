@@ -1220,6 +1220,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("MANQUANT", content);
         Assert.Contains("Articles à rendre", content);
         Assert.Contains("Puzzle a rendre", content);
+        Assert.True(
+            content.IndexOf("Articles à rendre", StringComparison.Ordinal) < content.IndexOf("Articles à payer", StringComparison.Ordinal),
+            "Les articles à rendre doivent être imprimés avant les articles à payer.");
+        Assert.Contains("seller-sheet-section-return", content);
+        Assert.Contains("seller-sheet-section-payable", content);
+        Assert.Contains("<th>Trouvé</th>", content);
+        Assert.Contains("seller-sheet-checkbox", content);
         Assert.Contains("Total à payer", content);
         Assert.Contains("RS-102", content);
         Assert.Contains("Bruno Feuille", content);
@@ -1358,6 +1365,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("size: A4;", content);
         Assert.Contains("margin: 8mm;", content);
         Assert.Contains(".seller-sheet-print-page .data-table th", content);
+        Assert.Contains(".seller-sheet-section-return", content);
+        Assert.Contains(".seller-sheet-section-payable", content);
+        Assert.Contains(".seller-sheet-checkbox", content);
+        Assert.Contains("background: #f2f2f2;", content);
         Assert.Contains("padding: 0.6mm 1.2mm;", content);
         Assert.Contains("font-size: 8pt;", content);
         Assert.Contains("font-size: 7.5pt;", content);

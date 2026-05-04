@@ -68,7 +68,42 @@ else
                 </dl>
             </header>
 
-            <section class="subsection">
+            <section class="subsection seller-sheet-section-return">
+                <h2>Articles à rendre</h2>
+                @if (sheet.ReturnedItems.Count == 0)
+                {
+                    <p class="empty-state">Aucun article à rendre.</p>
+                }
+                else
+                {
+                    <table class="data-table seller-sheet-return-table">
+                        <thead>
+                            <tr>
+                                <th>Trouvé</th>
+                                <th>REF</th>
+                                <th>Titre</th>
+                                <th>Prix</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in sheet.ReturnedItems)
+                        {
+                            <tr>
+                                <td class="seller-sheet-check-cell">
+                                    <span class="seller-sheet-checkbox" aria-hidden="true"></span>
+                                    <span class="screen-reader-label">Article retrouvé</span>
+                                </td>
+                                <td>@item.Reference</td>
+                                <td>@item.Title</td>
+                                <td>@SheetsModel.FormatPrice(item.PriceCents)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </section>
+
+            <section class="subsection seller-sheet-section-payable">
                 <h2>Articles à payer</h2>
                 @if (sheet.PayableItems.Count == 0)
                 {
@@ -76,7 +111,7 @@ else
                 }
                 else
                 {
-                    <table class="data-table">
+                    <table class="data-table seller-sheet-payable-table">
                         <thead>
                             <tr>
                                 <th>REF</th>
@@ -101,36 +136,6 @@ else
                                         @ItemStatusDisplay.ToFrenchLabel(item.Status)
                                     }
                                 </td>
-                                <td>@SheetsModel.FormatPrice(item.PriceCents)</td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                }
-            </section>
-
-            <section class="subsection">
-                <h2>Articles à rendre</h2>
-                @if (sheet.ReturnedItems.Count == 0)
-                {
-                    <p class="empty-state">Aucun article à rendre.</p>
-                }
-                else
-                {
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>REF</th>
-                                <th>Titre</th>
-                                <th>Prix</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @foreach (var item in sheet.ReturnedItems)
-                        {
-                            <tr>
-                                <td>@item.Reference</td>
-                                <td>@item.Title</td>
                                 <td>@SheetsModel.FormatPrice(item.PriceCents)</td>
                             </tr>
                         }
