@@ -2,9 +2,10 @@ namespace AssociationSaleTool.Web.Domain.Sellers;
 
 public static class SellerCodeGenerator
 {
+    //A is reserved for Association Familiale, F,I,O,Q,V are removed because similar to other letters.numbers
     private static readonly char[] SafeAlphabet =
     [
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L',
+        'B', 'C', 'D', 'E', 'G', 'H', 'J', 'K', 'L',
         'M', 'N', 'P', 'R', 'S', 'T', 'U', 'W', 'X', 'Y', 'Z'
     ];
 
