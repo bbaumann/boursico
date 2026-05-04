@@ -53,6 +53,65 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellerPriceInputsUseWholeEuroBrowserConstraints()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+        long sellerId;
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "WE-001",
+                FirstName = "Whole",
+                LastName = "Euro"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "WE-001",
+                ItemNumber = 1,
+                Title = "Whole euro toy",
+                SellerPriceCents = 1200,
+                Status = "registered"
+            };
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+            itemId = item.Id;
+        }
+
+        var sellerResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        sellerResponse.EnsureSuccessStatusCode();
+        var sellerContent = WebUtility.HtmlDecode(await sellerResponse.Content.ReadAsStringAsync());
+        AssertInputIncludesAttributes(
+            sellerContent,
+            "Input.Rows[0].SellerPrice",
+            ("type", "number"),
+            ("min", "0"),
+            ("step", "1"),
+            ("inputmode", "numeric"));
+
+        var editResponse = await client.GetAsync($"/articles/{itemId}/modifier");
+        editResponse.EnsureSuccessStatusCode();
+        var editContent = WebUtility.HtmlDecode(await editResponse.Content.ReadAsStringAsync());
+        AssertInputIncludesAttributes(
+            editContent,
+            "Input.SellerPrice",
+            ("type", "number"),
+            ("min", "0"),
+            ("step", "1"),
+            ("inputmode", "numeric"));
+    }
+
+    [Fact]
     public async Task CreateSellerPostShowsDuplicateMatchesInFrench()
     {
         var client = _factory.CreateClient();
@@ -2258,6 +2317,24 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         }
 
         return WebUtility.HtmlDecode(valueMatch.Groups["value"].Value);
+    }
+
+    private static void AssertInputIncludesAttributes(
+        string html,
+        string inputName,
+        params (string Name, string Value)[] attributes)
+    {
+        var inputMatch = Regex.Match(
+            html,
+            $"<input[^>]*name=\"{Regex.Escape(inputName)}\"[^>]*>",
+            RegexOptions.IgnoreCase);
+
+        Assert.True(inputMatch.Success, $"Input {inputName} was not rendered.");
+
+        foreach (var (name, value) in attributes)
+        {
+            Assert.Contains($"{name}=\"{value}\"", inputMatch.Value);
+        }
     }
 
     [Fact]

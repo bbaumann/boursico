@@ -95,6 +95,11 @@ public sealed class IntakeService
             throw new InvalidOperationException("Item master data is locked outside presale.");
         }
 
+        foreach (var row in request.Rows)
+        {
+            EnsureSellerPriceIsWholeEuro(row.SellerPriceCents);
+        }
+
         var seller = await _dbContext.Sellers.SingleAsync(x => x.Id == request.SellerId, cancellationToken);
         var nextItemNumber = await _dbContext.Items
             .Where(x => x.SellerId == request.SellerId)
@@ -174,6 +179,7 @@ public sealed class IntakeService
             return UpdateItemResult.NotAllowed;
         }
 
+        EnsureSellerPriceIsWholeEuro(request.SellerPriceCents);
         item.Title = request.Title.Trim();
         item.SellerPriceCents = request.SellerPriceCents;
 
@@ -257,5 +263,13 @@ public sealed class IntakeService
         }
 
         return value.Trim();
+    }
+
+    private static void EnsureSellerPriceIsWholeEuro(int sellerPriceCents)
+    {
+        if (sellerPriceCents % 100 != 0)
+        {
+            throw new ArgumentException("Seller price must be a whole euro amount.", nameof(sellerPriceCents));
+        }
     }
 }

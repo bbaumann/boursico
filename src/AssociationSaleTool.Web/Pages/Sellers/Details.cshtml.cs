@@ -162,7 +162,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
             if (!EuroPriceInput.TryParseToCents(row.SellerPrice, out var sellerPriceCents))
             {
-                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur doit être un montant décimal en euros.");
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur doit être un montant entier en euros.");
                 continue;
             }
 

@@ -140,7 +140,7 @@
                 <thead>
                     <tr>
                         <th>Titre</th>
-                        <th>Prix vendeur (EUR)</th>
+                        <th>Prix vendeur (EUR entier)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -152,7 +152,7 @@
                             <span asp-validation-for="Input.Rows[i].Title" class="validation"></span>
                         </td>
                         <td>
-                            <input asp-for="Input.Rows[i].SellerPrice" inputmode="decimal" />
+                            <input asp-for="Input.Rows[i].SellerPrice" type="number" min="0" step="1" inputmode="numeric" />
                             <span asp-validation-for="Input.Rows[i].SellerPrice" class="validation"></span>
                         </td>
                     </tr>

@@ -112,6 +112,8 @@ V1 seller settlement uses seller price only.
 Persistence rule:
 
 - money values are stored as integer cents in the database
+- seller prices entered by operators are whole euros in V1, so newly created seller prices are stored as cent values divisible by `100`
+- the cents-based column remains intentional to preserve future cents support without changing the persisted model
 
 ## Receipt Model
 
