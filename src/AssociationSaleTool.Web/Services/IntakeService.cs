@@ -63,6 +63,7 @@ public sealed class IntakeService
 
         var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
         var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        EnsureSellerFeePaidIsValid(request.FeePaidCents);
 
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
             new SellerDuplicateCheckRequest(request.FirstName, request.LastName, normalizedPhone),
@@ -80,6 +81,7 @@ public sealed class IntakeService
             Email = NormalizeOptional(request.Email),
             Phone = normalizedPhone,
             PostalAddress = normalizedPostalAddress,
+            FeePaidCents = request.FeePaidCents,
             Notes = NormalizeOptional(request.Notes)
         };
 
@@ -145,6 +147,7 @@ public sealed class IntakeService
 
         var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
         var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        EnsureSellerFeePaidIsValid(request.FeePaidCents);
 
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
             new SellerDuplicateCheckRequest(request.FirstName, request.LastName, normalizedPhone, sellerId),
@@ -159,6 +162,7 @@ public sealed class IntakeService
         seller.Email = NormalizeOptional(request.Email);
         seller.Phone = normalizedPhone;
         seller.PostalAddress = normalizedPostalAddress;
+        seller.FeePaidCents = request.FeePaidCents;
         seller.Notes = NormalizeOptional(request.Notes);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -270,6 +274,19 @@ public sealed class IntakeService
         if (sellerPriceCents % 100 != 0)
         {
             throw new ArgumentException("Seller price must be a whole euro amount.", nameof(sellerPriceCents));
+        }
+    }
+
+    private static void EnsureSellerFeePaidIsValid(int feePaidCents)
+    {
+        if (feePaidCents < 0)
+        {
+            throw new ArgumentException("Seller fee paid must be greater than or equal to zero.", nameof(feePaidCents));
+        }
+
+        if (feePaidCents % 100 != 0)
+        {
+            throw new ArgumentException("Seller fee paid must be a whole euro amount.", nameof(feePaidCents));
         }
     }
 }

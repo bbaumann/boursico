@@ -29,7 +29,6 @@ V1 is deliberately narrow.
 - barcode scanner dependency
 - payment method tracking
 - accounting integration
-- seller fee automation for the EUR 2 per 15 items rule
 - offline client logs and replay
 - multi-station sync conflicts
 - generic inventory or ERP breadth

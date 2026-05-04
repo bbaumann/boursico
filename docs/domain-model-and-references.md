@@ -247,4 +247,7 @@ Contains:
 
 Computed as:
 
-- sum of seller prices for all items in the payable list
+- item subtotal = sum of seller prices for all items in the payable list
+- expected seller fee = EUR 2 per started block of 15 seller items
+- remaining seller fee = max(expected seller fee - paid seller fee, 0)
+- final payout = max(item subtotal - remaining seller fee, 0)

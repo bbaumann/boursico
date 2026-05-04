@@ -80,6 +80,37 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
+    public async Task CreateSellerPage_Post_StoresSellerFeePaid()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+
+        var pageModel = new CreateModel(service)
+        {
+            Input = new CreateModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                FeePaid = "2"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(200, (await context.Sellers.SingleAsync()).FeePaidCents);
+    }
+
+    [Fact]
     public async Task CreateSellerPage_Post_ReturnsPageWithDuplicateMatches()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -175,6 +206,34 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
+    public async Task SellerDetailsPage_Get_ComputesSellerFeeStatusFromTotalItemCount()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, 200))).Seller!;
+        var rows = Enumerable.Range(1, 16)
+            .Select(index => new CreateItemRowRequest($"Toy {index}", 100))
+            .ToList();
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(seller.Id, IntakeMode.EmailPreregistration, rows));
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(400, pageModel.FeeStatus.ExpectedFeeCents);
+        Assert.Equal(200, pageModel.FeeStatus.PaidFeeCents);
+        Assert.Equal(200, pageModel.FeeStatus.RemainingFeeCents);
+        Assert.False(pageModel.FeeStatus.IsFullyPaid);
+    }
+
+    [Fact]
     public async Task SellerEditPage_Post_UpdatesSellerAndRedirectsToDetails()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -206,6 +265,72 @@ public sealed class SellersPageModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal("Augusta", (await context.Sellers.SingleAsync()).FirstName);
+    }
+
+    [Fact]
+    public async Task SellerEditPage_Post_UpdatesSellerFeePaid()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+
+        var pageModel = new SellerEditModel(service)
+        {
+            Input = new SellerEditModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                FeePaid = "4"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(400, (await context.Sellers.SingleAsync()).FeePaidCents);
+    }
+
+    [Fact]
+    public async Task SellerEditPage_Post_ReturnsPageForNegativeSellerFeePaid()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+
+        var pageModel = new SellerEditModel(service)
+        {
+            Input = new SellerEditModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                FeePaid = "-1"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.Contains("supérieurs ou égaux à zéro", pageModel.ModelState["Input.FeePaid"]!.Errors.Single().ErrorMessage);
+        Assert.Equal(0, (await context.Sellers.SingleAsync()).FeePaidCents);
     }
 
     [Fact]

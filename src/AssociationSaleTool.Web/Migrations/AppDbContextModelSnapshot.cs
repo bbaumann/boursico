@@ -214,6 +214,12 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("email");
 
+                    b.Property<int>("FeePaidCents")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnName("fee_paid_cents");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("TEXT")
@@ -248,7 +254,10 @@ namespace AssociationSaleTool.Web.Migrations
                     b.HasIndex("SellerCode")
                         .IsUnique();
 
-                    b.ToTable("seller", (string)null);
+                    b.ToTable("seller", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_seller_fee_paid_cents", "fee_paid_cents >= 0");
+                        });
                 });
 
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.ItemEntity", b =>

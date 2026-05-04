@@ -84,12 +84,18 @@ Implemented behavior:
 
 ### Implement Seller Fee Management And Tracking
 
-Track seller-facing fees inside the application instead of handling them outside the system.
+Status: implemented.
 
-The future design should define:
+Relevant design/docs:
 
-- the seller fee rule, including the current EUR 2 per 15 items rule
-- how fees are calculated, rounded, adjusted, and displayed
-- whether fees are collected at intake, deducted from payout, or only reported
-- audit expectations for fee payment or waiver tracking
-- how seller sheets and reconciliation outputs include fee information
+- [Seller Fees Design](./plans/2026-05-04-seller-fees-design.md)
+- [Seller Fees Implementation Plan](./plans/2026-05-04-seller-fees.md)
+- [D-037 Track Seller Registration Fees In-App](./decisions.md#d-037-track-seller-registration-fees-in-app)
+
+Implemented behavior:
+
+- expected fees are EUR 2 per started block of 15 seller items
+- sellers store the manually paid amount as `fee_paid_cents`
+- seller details display expected and paid fee status
+- seller create/edit screens accept the paid fee amount in whole euros
+- seller sheets deduct unpaid fees from final payout

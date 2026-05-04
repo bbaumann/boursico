@@ -27,10 +27,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Email).HasColumnName("email");
             entity.Property(x => x.Phone).HasColumnName("phone").IsRequired();
             entity.Property(x => x.PostalAddress).HasColumnName("postal_address").IsRequired();
+            entity.Property(x => x.FeePaidCents).HasColumnName("fee_paid_cents").HasDefaultValue(0).IsRequired();
             entity.Property(x => x.Notes).HasColumnName("notes");
 
             entity.HasIndex(x => x.SellerCode)
                 .IsUnique();
+
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("ck_seller_fee_paid_cents", "fee_paid_cents >= 0");
+            });
         });
 
         modelBuilder.Entity<ItemEntity>(entity =>

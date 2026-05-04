@@ -1,6 +1,7 @@
 using System.Globalization;
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -111,6 +112,10 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                     .OrderBy(item => item.ItemNumber)
                     .Select(BuildReturnedItem)
                     .ToList();
+                var itemSubtotalCents = payableItems.Sum(item => item.PriceCents);
+                var expectedFeeCents = SellerFeeCalculator.CalculateExpectedFeeCents(seller.Items.Count);
+                var remainingFeeCents = SellerFeeCalculator.CalculateRemainingFeeCents(expectedFeeCents, seller.FeePaidCents);
+                var totalPayableCents = Math.Max(itemSubtotalCents - remainingFeeCents, 0);
 
                 return new SellerSheet(
                     seller.Id,
@@ -121,7 +126,11 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                     seller.PostalAddress,
                     payableItems,
                     returnedItems,
-                    payableItems.Sum(item => item.PriceCents));
+                    itemSubtotalCents,
+                    expectedFeeCents,
+                    seller.FeePaidCents,
+                    remainingFeeCents,
+                    totalPayableCents);
             })
             .ToList();
     }

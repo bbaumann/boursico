@@ -6,4 +6,5 @@ public sealed record UpdateSellerRequest(
     string? Email,
     string? Phone,
     string? PostalAddress,
-    string? Notes);
+    string? Notes,
+    int FeePaidCents = 0);
