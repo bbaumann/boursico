@@ -17,6 +17,21 @@ using SellerEditModel = AssociationSaleTool.Web.Pages.Sellers.EditModel;
 public sealed class SellersPageModelTests
 {
     [Fact]
+    public void SellerIndexPage_BuildSellerFilterText_IncludesCodeAndName()
+    {
+        var seller = new AssociationSaleTool.Web.Data.Entities.SellerEntity
+        {
+            SellerCode = "SL-101",
+            FirstName = "Ariane",
+            LastName = "Martin"
+        };
+
+        var filterText = IndexModel.BuildSellerFilterText(seller);
+
+        Assert.Equal("sl-101 ariane martin", filterText);
+    }
+
+    [Fact]
     public void SellerCreateAndEditInputsRequirePhoneAndPostalAddress()
     {
         AssertRequiredContactMessages(new CreateModel.InputModel

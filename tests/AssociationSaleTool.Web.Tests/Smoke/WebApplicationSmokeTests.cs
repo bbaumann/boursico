@@ -53,6 +53,46 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellersIndexRendersLiveSearchHooksForCodeAndName()
+    {
+        var client = _factory.CreateClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Sellers.AddRange(
+                new SellerEntity
+                {
+                    SellerCode = "SL-101",
+                    FirstName = "Ariane",
+                    LastName = "Martin",
+                    Phone = "0101010101",
+                    PostalAddress = "1 rue du Filtre"
+                },
+                new SellerEntity
+                {
+                    SellerCode = "SL-202",
+                    FirstName = "Bruno",
+                    LastName = "Durand",
+                    Phone = "0202020202",
+                    PostalAddress = "2 rue du Filtre"
+                });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/vendeurs");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("data-seller-search-root", content);
+        Assert.Contains("data-seller-search", content);
+        Assert.Contains("placeholder=\"Code ou nom\"", content);
+        Assert.Contains("Aucun vendeur ne correspond à cette recherche.", content);
+        Assert.Contains("data-seller-row", content);
+        Assert.Contains("data-seller-filter-text=\"sl-101 ariane martin\"", content);
+        Assert.Contains("data-seller-filter-text=\"sl-202 bruno durand\"", content);
+    }
+
+    [Fact]
     public async Task SellerPriceInputsUseWholeEuroBrowserConstraints()
     {
         var client = _factory.CreateClient();
