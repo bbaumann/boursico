@@ -47,6 +47,9 @@ Suggested fields:
 - subtotal seller price
 - checkout fee
 - total paid
+- optional buyer name or organization
+- optional buyer postal code
+- optional buyer city
 - optional `receipt_details` text
 
 ### SaleLine
@@ -114,6 +117,20 @@ Persistence rule:
 - money values are stored as integer cents in the database
 - seller prices entered by operators are whole euros in V1, so newly created seller prices are stored as cent values divisible by `100`
 - the cents-based column remains intentional to preserve future cents support without changing the persisted model
+
+## Receipt Model
+
+## Buyer Model
+
+A sale may store optional structured buyer details:
+
+- `buyer_name`
+- `buyer_postal_code`
+- `buyer_city`
+
+These fields identify the person or structure associated with the checkout. They are stored separately from receipt text so sale history can search and display the buyer without parsing `receipt_details`.
+
+The checkout UI offers local city suggestions only for Isère postal codes (`38xxx`). Other French departments use free-text city entry.
 
 ## Receipt Model
 

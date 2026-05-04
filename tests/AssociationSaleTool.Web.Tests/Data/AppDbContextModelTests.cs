@@ -127,6 +127,22 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SaleStoresBuyerIdentityColumns()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var saleEntityType = context.Model.FindEntityType(typeof(SaleEntity));
+        Assert.NotNull(saleEntityType);
+        Assert.Contains(saleEntityType!.GetProperties(), property => property.GetColumnName() == "buyer_name");
+        Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "buyer_postal_code");
+        Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "buyer_city");
+    }
+
+    [Fact]
     public void EventStateStoresSalePhase()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

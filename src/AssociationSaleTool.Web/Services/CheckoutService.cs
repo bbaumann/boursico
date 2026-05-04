@@ -48,6 +48,9 @@ public sealed class CheckoutService
     public async Task<CheckoutSaleResult> SaveSaleAsync(
         IReadOnlyList<long> itemIds,
         string? receiptDetails = null,
+        string? buyerName = null,
+        string? buyerPostalCode = null,
+        string? buyerCity = null,
         CancellationToken cancellationToken = default,
         CheckoutPaymentDetails? paymentDetails = null)
     {
@@ -90,6 +93,9 @@ public sealed class CheckoutService
             CheckoutFeeCents = validation.Totals.CheckoutFeeCents,
             TotalPaidCents = validation.Totals.TotalPaidCents,
             ReceiptDetails = NormalizeOptionalText(receiptDetails),
+            BuyerName = NormalizeOptionalText(buyerName),
+            BuyerPostalCode = NormalizeOptionalText(buyerPostalCode),
+            BuyerCity = NormalizeOptionalText(buyerCity),
             PaymentMethod = normalizedPayment.PaymentMethod,
             ChequeNumber = normalizedPayment.ChequeNumber,
             ChequeBankName = normalizedPayment.ChequeBankName
@@ -145,9 +151,9 @@ public sealed class CheckoutService
         return PaymentNormalizationResult.Valid(paymentMethod, chequeNumber, chequeBankName);
     }
 
-    private static string? NormalizeOptionalText(string? receiptDetails)
+    private static string? NormalizeOptionalText(string? value)
     {
-        var normalized = receiptDetails?.Trim();
+        var normalized = value?.Trim();
         return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 

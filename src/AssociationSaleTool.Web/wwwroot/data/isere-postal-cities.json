@@ -1,0 +1,716 @@
+{
+    "38000":  [
+                  "Grenoble"
+              ],
+    "38070":  [
+                  "Saint-Quentin-Fallavier"
+              ],
+    "38080":  [
+                  "Four",
+                  "L\u0027Isle-d\u0027Abeau",
+                  "Saint-Alban-de-Roche",
+                  "Saint-Marcel-Bel-Accueil"
+              ],
+    "38090":  [
+                  "Bonnefamille",
+                  "Roche",
+                  "Vaulx-Milieu",
+                  "Villefontaine"
+              ],
+    "38100":  [
+                  "Grenoble"
+              ],
+    "38110":  [
+                  "Cessieu",
+                  "Dolomieu",
+                  "Faverges-de-la-Tour",
+                  "La Bâtie-Montgascon",
+                  "La Chapelle-de-la-Tour",
+                  "La Tour-du-Pin",
+                  "Montagnieu",
+                  "Rochetoirin",
+                  "Saint-Clair-de-la-Tour",
+                  "Saint-Didier-de-la-Tour",
+                  "Sainte-Blandine",
+                  "Saint-Jean-de-Soudain",
+                  "Saint-Victor-de-Cessieu"
+              ],
+    "38112":  [
+                  "Autrans-Méaudre en Vercors"
+              ],
+    "38113":  [
+                  "Veurey-Voroize"
+              ],
+    "38114":  [
+                  "Allemond",
+                  "Oz",
+                  "Vaujany",
+                  "Villard-Reculas"
+              ],
+    "38118":  [
+                  "Hières-sur-Amby",
+                  "Saint-Baudille-de-la-Tour"
+              ],
+    "38119":  [
+                  "Pierre-Châtel",
+                  "Saint-Théoffrey",
+                  "Villard-Saint-Christophe"
+              ],
+    "38120":  [
+                  "Fontanil-Cornillon",
+                  "Mont-Saint-Martin",
+                  "Proveysieux",
+                  "Saint-Égrève"
+              ],
+    "38121":  [
+                  "Chonas-l\u0027Amballan",
+                  "Reventin-Vaugris"
+              ],
+    "38122":  [
+                  "Chalon",
+                  "Cour-et-Buis",
+                  "Monsteroux-Milieu",
+                  "Montseveroux",
+                  "Saint-Julien-de-l\u0027Herms"
+              ],
+    "38130":  [
+                  "Échirolles"
+              ],
+    "38134":  [
+                  "La Sure en Chartreuse",
+                  "Saint-Joseph-de-Rivière"
+              ],
+    "38138":  [
+                  "Les Côtes-d\u0027Arey"
+              ],
+    "38140":  [
+                  "Apprieu",
+                  "Beaucroissant",
+                  "Charnècles",
+                  "Izeaux",
+                  "La Murette",
+                  "Réaumont",
+                  "Renage",
+                  "Rives",
+                  "Saint-Blaise-du-Buis",
+                  "Saint-Paul-d\u0027Izeaux"
+              ],
+    "38142":  [
+                  "Auris",
+                  "Besse",
+                  "Clavans-en-Haut-Oisans",
+                  "Le Freney-d\u0027Oisans",
+                  "Mizoën"
+              ],
+    "38144":  [
+                  "Notre-Dame-de-Vaulx"
+              ],
+    "38150":  [
+                  "Agnin",
+                  "Anjou",
+                  "Assieu",
+                  "Bougé-Chambalud",
+                  "Chanas",
+                  "La Chapelle-de-Surieu",
+                  "Roussillon",
+                  "Saint-Romain-de-Surieu",
+                  "Salaise-sur-Sanne",
+                  "Sonnay",
+                  "Vernioz",
+                  "Ville-sous-Anjou"
+              ],
+    "38160":  [
+                  "Beauvoir-en-Royans",
+                  "Bessins",
+                  "Chatte",
+                  "Chevrières",
+                  "Izeron",
+                  "Montagne",
+                  "Murinais",
+                  "Saint Antoine l\u0027Abbaye",
+                  "Saint-Appolinard",
+                  "Saint-Marcellin",
+                  "Saint-Pierre-de-Chérennes",
+                  "Saint-Romans",
+                  "Saint-Sauveur",
+                  "Saint-Vérand"
+              ],
+    "38170":  [
+                  "Seyssinet-Pariset"
+              ],
+    "38180":  [
+                  "Seyssins"
+              ],
+    "38190":  [
+                  "Bernin",
+                  "Froges",
+                  "La Combe-de-Lancey",
+                  "Laval-en-Belledonne",
+                  "Le Champ-près-Froges",
+                  "Les Adrets",
+                  "Sainte-Agnès",
+                  "Saint-Mury-Monteymond",
+                  "Villard-Bonnot"
+              ],
+    "38200":  [
+                  "Chuzelles",
+                  "Jardin",
+                  "Luzinay",
+                  "Saint-Sorlin-de-Vienne",
+                  "Serpaize",
+                  "Seyssuel",
+                  "Vienne",
+                  "Villette-de-Vienne"
+              ],
+    "38210":  [
+                  "Cras",
+                  "La Rivière",
+                  "Montaud",
+                  "Morette",
+                  "Poliénas",
+                  "Saint-Quentin-sur-Isère",
+                  "Tullins",
+                  "Vourey"
+              ],
+    "38220":  [
+                  "Cholonge",
+                  "Laffrey",
+                  "Livet-et-Gavet",
+                  "Montchaboud",
+                  "Notre-Dame-de-Mésage",
+                  "Saint-Barthélemy-de-Séchilienne",
+                  "Saint-Jean-de-Vaulx",
+                  "Saint-Pierre-de-Mésage",
+                  "Séchilienne",
+                  "Vizille"
+              ],
+    "38230":  [
+                  "Charvieu-Chavagneux",
+                  "Chavanoz",
+                  "Pont-de-Chéruy",
+                  "Tignieu-Jameyzieu"
+              ],
+    "38240":  [
+                  "Meylan"
+              ],
+    "38250":  [
+                  "Corrençon-en-Vercors",
+                  "Lans-en-Vercors",
+                  "Saint-Nizier-du-Moucherotte",
+                  "Villard-de-Lans"
+              ],
+    "38260":  [
+                  "Bossieu",
+                  "Champier",
+                  "Faramans",
+                  "Gillonnay",
+                  "La Côte-Saint-André",
+                  "La Frette",
+                  "Marcilloles",
+                  "Mottier",
+                  "Ornacieux-Balbins",
+                  "Pajay",
+                  "Penol",
+                  "Pommier-de-Beaurepaire",
+                  "Porte-des-Bonnevaux",
+                  "Saint-Hilaire-de-la-Côte",
+                  "Sardieu",
+                  "Thodure"
+              ],
+    "38270":  [
+                  "Beaufort",
+                  "Beaurepaire",
+                  "Bellegarde-Poussieu",
+                  "Jarcieu",
+                  "Lentiol",
+                  "Marcollin",
+                  "Moissieu-sur-Dolon",
+                  "Pact",
+                  "Pisieu",
+                  "Primarette",
+                  "Revel-Tourdan",
+                  "Saint-Barthélemy"
+              ],
+    "38280":  [
+                  "Anthon",
+                  "Janneyrias",
+                  "Villette-d\u0027Anthon"
+              ],
+    "38290":  [
+                  "Frontonas",
+                  "La Verpillière",
+                  "Satolas-et-Bonce"
+              ],
+    "38300":  [
+                  "Bourgoin-Jallieu",
+                  "Châteauvilain",
+                  "Chèzeneuve",
+                  "Crachier",
+                  "Culin",
+                  "Domarin",
+                  "Eclose-Badinières",
+                  "Les Éparres",
+                  "Maubec",
+                  "Meyrié",
+                  "Nivolas-Vermelle",
+                  "Ruy-Montceau",
+                  "Saint-Agnin-sur-Bion",
+                  "Saint-Savin",
+                  "Sérézin-de-la-Tour",
+                  "Succieu",
+                  "Tramolé"
+              ],
+    "38320":  [
+                  "Bresson",
+                  "Brié-et-Angonnes",
+                  "Eybens",
+                  "Herbeys",
+                  "Poisat"
+              ],
+    "38330":  [
+                  "Biviers",
+                  "Montbonnot-Saint-Martin",
+                  "Saint-Ismier",
+                  "Saint-Nazaire-les-Eymes"
+              ],
+    "38340":  [
+                  "La Sure en Chartreuse",
+                  "Voreppe"
+              ],
+    "38350":  [
+                  "Cognet",
+                  "La Morte",
+                  "La Mure",
+                  "La Salle-en-Beaumont",
+                  "La Valette",
+                  "Lavaldens",
+                  "Marcieu",
+                  "Mayres-Savel",
+                  "Nantes-en-Ratier",
+                  "Oris-en-Rattier",
+                  "Ponsonnas",
+                  "Prunières",
+                  "Saint-Arey",
+                  "Saint-Honoré",
+                  "Saint-Laurent-en-Beaumont",
+                  "Saint-Michel-en-Beaumont",
+                  "Saint-Pierre-de-Méaroz",
+                  "Siévoz",
+                  "Sousville",
+                  "Susville"
+              ],
+    "38360":  [
+                  "Engins",
+                  "Noyarey",
+                  "Sassenage"
+              ],
+    "38370":  [
+                  "Les Roches-de-Condrieu",
+                  "Saint-Alban-du-Rhône",
+                  "Saint-Clair-du-Rhône",
+                  "Saint-Prim"
+              ],
+    "38380":  [
+                  "Entre-deux-Guiers",
+                  "Miribel-les-Échelles",
+                  "Saint-Christophe-sur-Guiers",
+                  "Saint-Laurent-du-Pont",
+                  "Saint-Pierre-de-Chartreuse",
+                  "Saint-Pierre-d\u0027Entremont"
+              ],
+    "38390":  [
+                  "Bouvesse-Quirieu",
+                  "Charette",
+                  "La Balme-les-Grottes",
+                  "Montalieu-Vercieu",
+                  "Parmilieu",
+                  "Porcieu-Amblagnieu",
+                  "Vertrieu"
+              ],
+    "38400":  [
+                  "Saint-Martin-d\u0027Hères"
+              ],
+    "38410":  [
+                  "Chamrousse",
+                  "Saint-Martin-d\u0027Uriage",
+                  "Vaulnaveys-le-Bas",
+                  "Vaulnaveys-le-Haut"
+              ],
+    "38420":  [
+                  "Domène",
+                  "Le Versoud",
+                  "Murianette",
+                  "Revel",
+                  "Saint-Jean-le-Vieux"
+              ],
+    "38430":  [
+                  "Moirans",
+                  "Saint-Jean-de-Moirans"
+              ],
+    "38440":  [
+                  "Artas",
+                  "Beauvoir-de-Marc",
+                  "Châtonnay",
+                  "Lieudieu",
+                  "Meyrieu-les-Étangs",
+                  "Meyssiez",
+                  "Moidieu-Détourbe",
+                  "Royas",
+                  "Sainte-Anne-sur-Gervonde",
+                  "Saint-Jean-de-Bournay",
+                  "Savas-Mépin",
+                  "Villeneuve-de-Marc"
+              ],
+    "38450":  [
+                  "Le Gua",
+                  "Miribel-Lanchâtre",
+                  "Notre-Dame-de-Commiers",
+                  "Saint-Georges-de-Commiers",
+                  "Vif"
+              ],
+    "38460":  [
+                  "Annoisin-Chatelans",
+                  "Chamagnieu",
+                  "Chozeau",
+                  "Crémieu",
+                  "Dizimieu",
+                  "Leyrieu",
+                  "Moras",
+                  "Optevoz",
+                  "Panossas",
+                  "Saint-Hilaire-de-Brens",
+                  "Saint-Romain-de-Jalionas",
+                  "Siccieu-Saint-Julien-et-Carisieu",
+                  "Soleymieu",
+                  "Trept",
+                  "Vénérieu",
+                  "Vernas",
+                  "Veyssilieu",
+                  "Villemoirieu"
+              ],
+    "38470":  [
+                  "Beaulieu",
+                  "Chantesse",
+                  "Chasselay",
+                  "Cognin-les-Gorges",
+                  "L\u0027Albenc",
+                  "Malleval-en-Vercors",
+                  "Notre-Dame-de-l\u0027Osier",
+                  "Quincieu",
+                  "Rovon",
+                  "Saint-Gervais",
+                  "Serre-Nerpol",
+                  "Têche",
+                  "Varacieux",
+                  "Vatilieu",
+                  "Vinay"
+              ],
+    "38480":  [
+                  "Le Pont-de-Beauvoisin",
+                  "Pressins",
+                  "Romagnieu",
+                  "Saint-Albin-de-Vaulserre",
+                  "Saint-Jean-d\u0027Avelanne",
+                  "Saint-Martin-de-Vaulserre"
+              ],
+    "38490":  [
+                  "Aoste",
+                  "Charancieu",
+                  "Chimilin",
+                  "Granieu",
+                  "Le Passage",
+                  "Les Abrets en Dauphiné",
+                  "Saint-André-le-Gaz",
+                  "Saint-Ondras"
+              ],
+    "38500":  [
+                  "Coublevie",
+                  "La Buisse",
+                  "Saint-Cassien",
+                  "Saint-Nicolas-de-Macherin",
+                  "Voiron"
+              ],
+    "38510":  [
+                  "Arandon-Passins",
+                  "Brangues",
+                  "Courtenay",
+                  "Creys-Mépieu",
+                  "Le Bouchage",
+                  "Morestel",
+                  "Saint-Sorlin-de-Morestel",
+                  "Saint-Victor-de-Morestel",
+                  "Sermérieu",
+                  "Vézeronce-Curtin"
+              ],
+    "38520":  [
+                  "La Garde",
+                  "Le Bourg-d\u0027Oisans",
+                  "Les Deux Alpes",
+                  "Ornon",
+                  "Oulles",
+                  "Saint-Christophe-en-Oisans",
+                  "Villard-Notre-Dame",
+                  "Villard-Reymond"
+              ],
+    "38530":  [
+                  "Barraux",
+                  "Chapareillan",
+                  "La Buissière",
+                  "La Flachère",
+                  "Pontcharra",
+                  "Saint-Maximin"
+              ],
+    "38540":  [
+                  "Grenay",
+                  "Heyrieux",
+                  "Saint-Just-Chaleyssin",
+                  "Valencin"
+              ],
+    "38550":  [
+                  "Auberives-sur-Varèze",
+                  "Cheyssieu",
+                  "Clonas-sur-Varèze",
+                  "Le Péage-de-Roussillon",
+                  "Sablons",
+                  "Saint-Maurice-l\u0027Exil"
+              ],
+    "38560":  [
+                  "Champ-sur-Drac",
+                  "Jarrie"
+              ],
+    "38570":  [
+                  "Crêts en Belledonne",
+                  "Goncelin",
+                  "Hurtières",
+                  "La Pierre",
+                  "Le Cheylas",
+                  "Tencin",
+                  "Theys"
+              ],
+    "38580":  [
+                  "Allevard",
+                  "La Chapelle-du-Bard",
+                  "Le Haut-Bréda",
+                  "Le Moutaret"
+              ],
+    "38590":  [
+                  "Brézins",
+                  "Brion",
+                  "La Forteresse",
+                  "Plan",
+                  "Saint-Étienne-de-Saint-Geoirs",
+                  "Saint-Geoirs",
+                  "Saint-Michel-de-Saint-Geoirs",
+                  "Sillans"
+              ],
+    "38600":  [
+                  "Fontaine"
+              ],
+    "38610":  [
+                  "Gières",
+                  "Venon"
+              ],
+    "38620":  [
+                  "Massieu",
+                  "Merlas",
+                  "Montferrat",
+                  "Saint-Bueil",
+                  "Saint-Geoire-en-Valdaine",
+                  "Saint-Sulpice-des-Rivoires",
+                  "Velanne",
+                  "Voissant"
+              ],
+    "38630":  [
+                  "Corbelin",
+                  "Les Avenières Veyrins-Thuellin"
+              ],
+    "38640":  [
+                  "Claix"
+              ],
+    "38650":  [
+                  "Avignonet",
+                  "Château-Bernard",
+                  "Gresse-en-Vercors",
+                  "Monestier-de-Clermont",
+                  "Roissard",
+                  "Saint-Andéol",
+                  "Saint-Guillaume",
+                  "Saint-Martin-de-la-Cluze",
+                  "Saint-Michel-les-Portes",
+                  "Saint-Paul-lès-Monestier",
+                  "Sinard",
+                  "Treffort"
+              ],
+    "38660":  [
+                  "La Terrasse",
+                  "Le Touvet",
+                  "Lumbin",
+                  "Plateau-des-Petites-Roches",
+                  "Sainte-Marie-d\u0027Alloix",
+                  "Sainte-Marie-du-Mont",
+                  "Saint-Vincent-de-Mercuze"
+              ],
+    "38670":  [
+                  "Chasse-sur-Rhône"
+              ],
+    "38680":  [
+                  "Auberives-en-Royans",
+                  "Châtelus",
+                  "Choranche",
+                  "Pont-en-Royans",
+                  "Presles",
+                  "Rencurel",
+                  "Saint-André-en-Royans",
+                  "Saint-Just-de-Claix"
+              ],
+    "38690":  [
+                  "Belmont",
+                  "Bévenais",
+                  "Biol",
+                  "Bizonnes",
+                  "Burcin",
+                  "Châbons",
+                  "Colombe",
+                  "Eydoche",
+                  "Flachères",
+                  "Le Grand-Lemps",
+                  "Longechenal",
+                  "Montrevel",
+                  "Oyeu",
+                  "Saint-Didier-de-Bizonnes",
+                  "Torchefelon"
+              ],
+    "38700":  [
+                  "Corenc",
+                  "La Tronche",
+                  "Le Sappey-en-Chartreuse",
+                  "Sarcenas"
+              ],
+    "38710":  [
+                  "Châtel-en-Trièves",
+                  "Cornillon-en-Trièves",
+                  "Lavars",
+                  "Mens",
+                  "Prébois",
+                  "Saint-Baudille-et-Pipet",
+                  "Saint-Jean-d\u0027Hérans",
+                  "Tréminis"
+              ],
+    "38730":  [
+                  "Blandin",
+                  "Chassignieu",
+                  "Chélieu",
+                  "Doissin",
+                  "Val-de-Virieu",
+                  "Valencogne",
+                  "Villages du Lac de Paladru"
+              ],
+    "38740":  [
+                  "Chantepérier",
+                  "Entraigues",
+                  "Valbonnais",
+                  "Valjouffrey"
+              ],
+    "38750":  [
+                  "Huez"
+              ],
+    "38760":  [
+                  "Saint-Paul-de-Varces",
+                  "Varces-Allières-et-Risset"
+              ],
+    "38770":  [
+                  "La Motte-d\u0027Aveillans",
+                  "La Motte-Saint-Martin",
+                  "Monteynard"
+              ],
+    "38780":  [
+                  "Estrablin",
+                  "Eyzin-Pinet",
+                  "Oytier-Saint-Oblas",
+                  "Pont-Évêque",
+                  "Septème"
+              ],
+    "38790":  [
+                  "Charantonnay",
+                  "Diémoz",
+                  "Saint-Georges-d\u0027Espéranche"
+              ],
+    "38800":  [
+                  "Champagnier",
+                  "Le Pont-de-Claix"
+              ],
+    "38830":  [
+                  "Crêts en Belledonne"
+              ],
+    "38840":  [
+                  "La Sône",
+                  "Saint-Bonnet-de-Chavagne",
+                  "Saint-Hilaire-du-Rosier",
+                  "Saint-Lattier"
+              ],
+    "38850":  [
+                  "Bilieu",
+                  "Charavines",
+                  "Chirens",
+                  "Villages du Lac de Paladru"
+              ],
+    "38860":  [
+                  "Les Deux Alpes"
+              ],
+    "38870":  [
+                  "Bressieux",
+                  "Saint-Pierre-de-Bressieux",
+                  "Saint-Siméon-de-Bressieux"
+              ],
+    "38880":  [
+                  "Autrans-Méaudre en Vercors"
+              ],
+    "38890":  [
+                  "Montcarra",
+                  "Saint-Chef",
+                  "Salagnon",
+                  "Vasselin",
+                  "Vignieu"
+              ],
+    "38920":  [
+                  "Crolles"
+              ],
+    "38930":  [
+                  "Chichilianne",
+                  "Clelles",
+                  "Lalley",
+                  "Le Percy",
+                  "Monestier-du-Percy",
+                  "Saint-Martin-de-Clelles",
+                  "Saint-Maurice-en-Trièves"
+              ],
+    "38940":  [
+                  "Montfalcon",
+                  "Roybon",
+                  "Saint-Clair-sur-Galaure"
+              ],
+    "38950":  [
+                  "Quaix-en-Chartreuse",
+                  "Saint-Martin-le-Vinoux"
+              ],
+    "38960":  [
+                  "Saint-Aupre",
+                  "Saint-Étienne-de-Crossey"
+              ],
+    "38970":  [
+                  "Ambel",
+                  "Beaufin",
+                  "Corps",
+                  "La Salette-Fallavaux",
+                  "Les Côtes-de-Corps",
+                  "Monestier-d\u0027Ambel",
+                  "Pellafol",
+                  "Quet-en-Beaumont",
+                  "Sainte-Luce"
+              ],
+    "38980":  [
+                  "Châtenay",
+                  "Marnans",
+                  "Viriville"
+              ]
+}

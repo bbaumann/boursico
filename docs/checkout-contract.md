@@ -34,6 +34,18 @@ The server also checks the event sale phase. Checkout validation and sale persis
 
 ## Lookup Interaction
 
+## Buyer Details
+
+The top of the checkout content includes optional buyer information fields before the item lookup:
+
+- buyer name or organization
+- postal code
+- city
+
+The postal code input is numeric. When the postal code is an Isère code (`38xxx`), the city input offers a dropdown of matching cities from local static data generated from the official French Geo API commune dataset for department 38. For other French departments, the city input remains free text.
+
+Buyer details are persisted on the sale when the operator saves. Blank buyer fields are stored as null. Buyer details are separate from `receipt_details`; filling buyer details alone does not mean a receipt was requested.
+
 The checkout lookup is not an autocomplete widget.
 
 It is a live-filtered table driven by a text field.

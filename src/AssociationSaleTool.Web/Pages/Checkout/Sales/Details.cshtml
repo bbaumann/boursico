@@ -17,6 +17,14 @@
         </div>
     </div>
 
+    @if (Model.Sale.HasBuyerDetails)
+    {
+        <section class="subsection">
+            <h2>Acheteur</h2>
+            <p>@Model.Sale.BuyerDisplay</p>
+        </section>
+    }
+
     <section class="subsection">
         <h2>Paiement</h2>
         <dl class="checkout-totals sales-view-totals">

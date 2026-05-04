@@ -113,6 +113,38 @@ public sealed class SalesViewServiceTests
     }
 
     [Fact]
+    public async Task SalesViewsIncludeBuyerDetails()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var sale = await SeedSaleAsync(
+            context,
+            new DateTime(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc),
+            null,
+            SalePaymentMethods.Card,
+            null,
+            null,
+            ("SV-004-001", "Jeu acheteur", 900, null));
+        sale.BuyerName = "Ecole du centre";
+        sale.BuyerPostalCode = "38100";
+        sale.BuyerCity = "Grenoble";
+        await context.SaveChangesAsync();
+        var service = new SalesViewService(context);
+
+        var listItem = Assert.Single(await service.ListSalesAsync());
+        var detail = await service.GetSaleAsync(sale.Id);
+
+        Assert.True(listItem.HasBuyerDetails);
+        Assert.Equal("Ecole du centre - 38100 Grenoble", listItem.BuyerDisplay);
+        Assert.Contains("ecole du centre", listItem.SearchText);
+        Assert.Contains("38100", listItem.SearchText);
+        Assert.Contains("grenoble", listItem.SearchText);
+        Assert.NotNull(detail);
+        Assert.True(detail!.HasBuyerDetails);
+        Assert.Equal("Ecole du centre - 38100 Grenoble", detail.BuyerDisplay);
+    }
+
+    [Fact]
     public async Task GetSaleAsync_ReturnsNullWhenSaleDoesNotExist()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

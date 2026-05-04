@@ -283,6 +283,33 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task SaveSaleAsync_StoresTrimmedBuyerDetails()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            buyerName: "  Association sportive  ",
+            buyerPostalCode: "  38000 ",
+            buyerCity: " Grenoble  ");
+
+        Assert.True(result.Saved);
+        var sale = await context.Sales.SingleAsync();
+        Assert.Equal("Association sportive", sale.BuyerName);
+        Assert.Equal("38000", sale.BuyerPostalCode);
+        Assert.Equal("Grenoble", sale.BuyerCity);
+    }
+
+    [Fact]
     public async Task SaveSaleAsync_RejectsUnavailableItemsWithoutPersistingPartialSale()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

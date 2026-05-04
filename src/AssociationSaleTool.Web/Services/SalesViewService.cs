@@ -45,6 +45,9 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.SubtotalSellerPriceCents,
             sale.CheckoutFeeCents,
             sale.TotalPaidCents,
+            sale.BuyerName,
+            sale.BuyerPostalCode,
+            sale.BuyerCity,
             !string.IsNullOrWhiteSpace(sale.ReceiptDetails),
             SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
             BuildSearchText(sale));
@@ -68,6 +71,9 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.SubtotalSellerPriceCents,
             sale.CheckoutFeeCents,
             sale.TotalPaidCents,
+            sale.BuyerName,
+            sale.BuyerPostalCode,
+            sale.BuyerCity,
             sale.ReceiptDetails,
             SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
             sale.ChequeNumber,
@@ -80,6 +86,9 @@ public sealed class SalesViewService(AppDbContext dbContext)
         var terms = new List<string>
         {
             sale.Id.ToString(FrenchCulture),
+            sale.BuyerName ?? string.Empty,
+            sale.BuyerPostalCode ?? string.Empty,
+            sale.BuyerCity ?? string.Empty,
             sale.ReceiptDetails ?? string.Empty,
             SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
             sale.ChequeNumber ?? string.Empty,
