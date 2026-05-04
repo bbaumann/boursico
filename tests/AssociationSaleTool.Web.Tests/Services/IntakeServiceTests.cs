@@ -120,7 +120,7 @@ public sealed class IntakeServiceTests
             IntakeMode.InPerson,
             [
                 new CreateItemRowRequest("Wooden train", 500),
-                new CreateItemRowRequest("Puzzle box", 650)
+                new CreateItemRowRequest("Puzzle box", 600)
             ]));
 
         Assert.Collection(
@@ -136,9 +136,34 @@ public sealed class IntakeServiceTests
             {
                 Assert.Equal(2, second.ItemNumber);
                 Assert.Equal("AA-002", second.Reference);
-                Assert.Equal(650, second.SellerPriceCents);
+                Assert.Equal(600, second.SellerPriceCents);
                 Assert.Equal("in_stock", second.Status);
             });
+    }
+
+    [Fact]
+    public async Task CreateItemBatchAsync_RejectsSellerPricesWithCents()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.CreateItemBatchAsync(new CreateItemBatchRequest(
+                seller.Id,
+                IntakeMode.InPerson,
+                [new CreateItemRowRequest("Toy piano", 450)])));
+
+        Assert.Contains("whole euro", exception.Message);
+        Assert.Empty(await context.Items.ToListAsync());
     }
 
     [Fact]
@@ -325,6 +350,34 @@ public sealed class IntakeServiceTests
         Assert.Equal(1200, updatedItem.SellerPriceCents);
         Assert.Equal("AA-001", updatedItem.Reference);
         Assert.Equal("in_stock", updatedItem.Status);
+    }
+
+    [Fact]
+    public async Task UpdateItemAsync_RejectsSellerPricesWithCents()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.UpdateItemAsync(item.Id, new UpdateItemRequest("Large toy piano", 1250)));
+
+        Assert.Contains("whole euro", exception.Message);
+        var unchangedItem = await context.Items.SingleAsync();
+        Assert.Equal("Toy piano", unchangedItem.Title);
+        Assert.Equal(1000, unchangedItem.SellerPriceCents);
     }
 
     [Theory]

@@ -56,7 +56,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
         if (!EuroPriceInput.TryParseToCents(Input.SellerPrice, out var sellerPriceCents))
         {
-            ModelState.AddModelError($"{nameof(Input)}.{nameof(Input.SellerPrice)}", "Le prix vendeur doit être un montant décimal en euros.");
+            ModelState.AddModelError($"{nameof(Input)}.{nameof(Input.SellerPrice)}", "Le prix vendeur doit être un montant entier en euros.");
             return Page();
         }
 

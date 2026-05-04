@@ -131,8 +131,8 @@ public sealed class SellersPageModelTests
                 IntakeMode = IntakeMode.InPerson,
                 Rows =
                 [
-                    new DetailsModel.ItemRowInput { Title = "Toy train", SellerPrice = "4,50" },
-                    new DetailsModel.ItemRowInput { Title = "Toy piano", SellerPrice = "10.00" }
+                    new DetailsModel.ItemRowInput { Title = "Toy train", SellerPrice = "4" },
+                    new DetailsModel.ItemRowInput { Title = "Toy piano", SellerPrice = "10" }
                 ]
             }
         };
@@ -144,7 +144,7 @@ public sealed class SellersPageModelTests
         Assert.Equal(2, await context.Items.CountAsync());
         Assert.Collection(
             await context.Items.OrderBy(x => x.ItemNumber).ToListAsync(),
-            first => Assert.Equal(450, first.SellerPriceCents),
+            first => Assert.Equal(400, first.SellerPriceCents),
             second => Assert.Equal(1000, second.SellerPriceCents));
     }
 
@@ -297,7 +297,7 @@ public sealed class SellersPageModelTests
             Input = new ItemEditModel.InputModel
             {
                 Title = "Concert toy piano",
-                SellerPrice = "12,00"
+                SellerPrice = "12"
             }
         };
 
@@ -310,7 +310,7 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
-    public async Task SellerDetailsPage_Post_RoundsEuroInputToTwoDecimals()
+    public async Task SellerDetailsPage_Post_ReturnsPageForSellerPriceWithCents()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -328,14 +328,16 @@ public sealed class SellersPageModelTests
             Input = new DetailsModel.ItemBatchInput
             {
                 IntakeMode = IntakeMode.InPerson,
-                Rows = [new DetailsModel.ItemRowInput { Title = "Rounded toy", SellerPrice = "4.555" }]
+                Rows = [new DetailsModel.ItemRowInput { Title = "Rounded toy", SellerPrice = "4,50" }]
             }
         };
 
         var result = await pageModel.OnPostAsync(seller.Id, CancellationToken.None);
 
-        Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(456, (await context.Items.SingleAsync()).SellerPriceCents);
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.Contains("entier", pageModel.ModelState["Input.Rows[0].SellerPrice"]!.Errors.Single().ErrorMessage);
+        Assert.Empty(await context.Items.ToListAsync());
     }
 
     [Fact]
@@ -369,6 +371,41 @@ public sealed class SellersPageModelTests
 
         Assert.IsType<PageResult>(result);
         Assert.False(pageModel.ModelState.IsValid);
+    }
+
+    [Fact]
+    public async Task ItemEditPage_Post_ReturnsPageForSellerPriceWithCents()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var pageModel = new ItemEditModel(service)
+        {
+            Input = new ItemEditModel.InputModel
+            {
+                Title = "Concert toy piano",
+                SellerPrice = "12.50"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(item.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.Contains("entier", pageModel.ModelState["Input.SellerPrice"]!.Errors.Single().ErrorMessage);
+        Assert.Equal(1000, (await context.Items.SingleAsync()).SellerPriceCents);
     }
 
     [Fact]

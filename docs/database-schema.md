@@ -70,6 +70,8 @@ Represents one physical toy.
 - `title` is the item label shown in search results, carts, and sheets.
 - `seller_price_cents` is both the seller payout price and the printed per-item customer price in V1.
 - money values are stored as integer cents, e.g. `250` for `2.50 EUR`.
+- V1 operator entry accepts seller prices as whole euros only; new application-created `seller_price_cents` values should be multiples of `100`.
+- The cents column is intentionally kept so the model can support cents later without a column rename.
 - `status` uses the V1 status model: `registered`, `in_stock`, `sold`, `missing`.
 
 ## `sale`

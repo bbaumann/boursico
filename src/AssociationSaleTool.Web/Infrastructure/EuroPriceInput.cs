@@ -24,20 +24,29 @@ public static class EuroPriceInput
             return false;
         }
 
-        var roundedEuros = Math.Round(euros, 2, MidpointRounding.AwayFromZero);
-        var roundedCents = decimal.Round(roundedEuros * 100m, 0, MidpointRounding.AwayFromZero);
-
-        if (roundedCents is < int.MinValue or > int.MaxValue)
+        if (euros != decimal.Truncate(euros))
         {
             return false;
         }
 
-        cents = (int)roundedCents;
+        var centsValue = euros * 100m;
+
+        if (centsValue is < int.MinValue or > int.MaxValue)
+        {
+            return false;
+        }
+
+        cents = (int)centsValue;
         return true;
     }
 
     public static string FormatFromCents(int cents)
     {
+        if (cents % 100 == 0)
+        {
+            return (cents / 100).ToString("0", CultureInfo.InvariantCulture);
+        }
+
         return (cents / 100m).ToString("0.00", CultureInfo.InvariantCulture);
     }
 }

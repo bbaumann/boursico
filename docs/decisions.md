@@ -474,3 +474,20 @@ This file captures the main project decisions in a lightweight ADR format.
   - sale browsing stays visually and conceptually attached to checkout
   - the admin sale-status page remains focused on phase changes and exceptional corrections
   - historical sale totals remain immutable and visible even when a sale line was later corrected
+
+## D-033 Restrict Seller Price Entry To Whole Euros
+
+- Status: accepted
+- Key drivers:
+  - owner feedback after the first user showcase was that seller prices should not be entered with cents
+  - the event workflow is simpler when volunteers type whole-euro seller prices only
+  - the database should keep cent precision available in case the rule changes later
+- Decision:
+  - keep `item.seller_price_cents` as the persisted column
+  - require application-created seller prices to be whole euros, stored as cent values divisible by `100`
+  - reject seller item creation and item price edits when the submitted seller price contains cents
+  - render seller price inputs as whole-euro numeric fields in the intake and item edit UI
+- Consequence:
+  - checkout and reconciliation can continue reading existing cent values if they exist
+  - future cents support would mainly relax application validation rather than rename price columns
+  - operator-facing price entry now matches the whole-euro event rule

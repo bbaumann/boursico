@@ -24,8 +24,8 @@
         </label>
 
         <label>
-            <span>Prix vendeur (EUR)</span>
-            <input asp-for="Input.SellerPrice" inputmode="decimal" />
+            <span>Prix vendeur (EUR entier)</span>
+            <input asp-for="Input.SellerPrice" type="number" min="0" step="1" inputmode="numeric" />
             <span asp-validation-for="Input.SellerPrice" class="validation"></span>
         </label>
 
