@@ -19,6 +19,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 
 - Create sellers
 - Prevent accidental duplicate sellers during seller creation and seller editing
+- Search sellers by code or name using a live-filtered sellers table
 - Create items manually from seller-provided lists
 - Record seller preregistration received by email
 - Register sellers and items in person when toys are physically brought in

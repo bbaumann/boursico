@@ -4,7 +4,7 @@
     ViewData["Title"] = "Vendeurs";
 }
 
-<section class="page-card">
+<section class="page-card" data-seller-search-root>
     <div class="page-header">
         <div>
             <p class="eyebrow">Saisie</p>
@@ -27,6 +27,16 @@
     }
     else
     {
+        <section class="subsection">
+            <label for="seller-search">Filtrer les vendeurs</label>
+            <input id="seller-search"
+                   type="search"
+                   autocomplete="off"
+                   data-seller-search
+                   placeholder="Code ou nom" />
+            <p class="empty-state" data-seller-empty-message hidden>Aucun vendeur ne correspond à cette recherche.</p>
+        </section>
+
         <table class="data-table">
             <thead>
                 <tr>
@@ -42,7 +52,7 @@
             <tbody>
             @foreach (var seller in Model.Sellers)
             {
-                <tr>
+                <tr data-seller-row data-seller-filter-text="@IndexModel.BuildSellerFilterText(seller)">
                     <td>@seller.SellerCode</td>
                     <td>@seller.FirstName @seller.LastName</td>
                     <td>@(seller.Email ?? "—")</td>

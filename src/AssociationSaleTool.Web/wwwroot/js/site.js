@@ -540,3 +540,37 @@ function initializeSalesView(root) {
 }
 
 document.querySelectorAll("[data-sales-view-root]").forEach(initializeSalesView);
+
+function initializeSellerSearch(root) {
+  const searchInput = root.querySelector("[data-seller-search]");
+  const rows = Array.from(root.querySelectorAll("[data-seller-row]"));
+  const emptyMessage = root.querySelector("[data-seller-empty-message]");
+
+  if (!searchInput || rows.length === 0) {
+    return;
+  }
+
+  function renderRows() {
+    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    let visibleRows = 0;
+
+    for (const row of rows) {
+      const filterText = row.dataset.sellerFilterText || "";
+      const isVisible = !query || filterText.includes(query);
+      row.hidden = !isVisible;
+
+      if (isVisible) {
+        visibleRows++;
+      }
+    }
+
+    if (emptyMessage) {
+      emptyMessage.hidden = visibleRows > 0 || !query;
+    }
+  }
+
+  searchInput.addEventListener("input", renderRows);
+  renderRows();
+}
+
+document.querySelectorAll("[data-seller-search-root]").forEach(initializeSellerSearch);
