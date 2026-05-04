@@ -15,6 +15,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
     public bool CanEditSellerMasterData { get; private set; }
 
+    public IReadOnlyList<SellerDuplicateMatch> DuplicateMatches { get; private set; } = [];
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var seller = await intakeService.GetSellerAsync(id, cancellationToken);
@@ -69,7 +71,21 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             return Page();
         }
 
+        if (result.Outcome == UpdateSellerOutcome.DuplicateFound)
+        {
+            DuplicateMatches = result.DuplicateMatches;
+            ModelState.AddModelError(string.Empty, BuildDuplicateMessage(DuplicateMatches));
+            return Page();
+        }
+
         return RedirectToPage("/Sellers/Details", new { id });
+    }
+
+    private static string BuildDuplicateMessage(IReadOnlyList<SellerDuplicateMatch> matches)
+    {
+        return matches.Any(x => x.Reason == SellerDuplicateMatchReason.NameOnlySubmittedPhoneMissing)
+            ? "Un vendeur existe déjà avec les mêmes nom et prénom. Aucun téléphone n'a été saisi, vérifiez manuellement le vendeur existant ou ajoutez un téléphone distinct."
+            : "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
     }
 
     private void PopulateInput(AssociationSaleTool.Web.Data.Entities.SellerEntity seller)

@@ -13,6 +13,8 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
 
     public bool CanEditSellerMasterData { get; private set; }
 
+    public IReadOnlyList<SellerDuplicateMatch> DuplicateMatches { get; private set; } = [];
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
@@ -32,11 +34,25 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
             return Page();
         }
 
-        var seller = await intakeService.CreateSellerAsync(
+        var result = await intakeService.CreateSellerAsync(
             new CreateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.Notes),
             cancellationToken);
 
-        return RedirectToPage("/Sellers/Details", new { id = seller.Id });
+        if (result.Outcome == CreateSellerOutcome.DuplicateFound)
+        {
+            DuplicateMatches = result.DuplicateMatches;
+            ModelState.AddModelError(string.Empty, BuildDuplicateMessage(DuplicateMatches));
+            return Page();
+        }
+
+        return RedirectToPage("/Sellers/Details", new { id = result.Seller!.Id });
+    }
+
+    private static string BuildDuplicateMessage(IReadOnlyList<SellerDuplicateMatch> matches)
+    {
+        return matches.Any(x => x.Reason == SellerDuplicateMatchReason.NameOnlySubmittedPhoneMissing)
+            ? "Un vendeur existe déjà avec les mêmes nom et prénom. Aucun téléphone n'a été saisi, vérifiez manuellement le vendeur existant ou ajoutez un téléphone distinct."
+            : "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
     }
 
     public sealed class InputModel

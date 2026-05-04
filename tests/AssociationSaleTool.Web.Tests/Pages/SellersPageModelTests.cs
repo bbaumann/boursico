@@ -46,6 +46,71 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
+    public async Task CreateSellerPage_Post_ReturnsPageWithDuplicateMatches()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", null))).Seller!;
+
+        var pageModel = new CreateModel(service)
+        {
+            Input = new CreateModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Phone = "0123"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        var match = Assert.Single(pageModel.DuplicateMatches);
+        Assert.Equal(existing.Id, match.SellerId);
+        Assert.Equal("ada@example.com", match.Email);
+        Assert.Equal(1, await context.Sellers.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateSellerPage_Post_UsesNameOnlyDuplicateMessageWhenSubmittedPhoneIsBlank()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", null));
+
+        var pageModel = new CreateModel(service)
+        {
+            Input = new CreateModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Contains(
+            "Aucun téléphone n'a été saisi",
+            pageModel.ModelState[string.Empty]!.Errors.Single().ErrorMessage);
+    }
+
+    [Fact]
     public async Task SellerDetailsPage_Post_CreatesMultipleItemsAndRedirectsToSelf()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -136,6 +201,39 @@ public sealed class SellersPageModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal("Augusta", (await context.Sellers.SingleAsync()).FirstName);
+    }
+
+    [Fact]
+    public async Task SellerEditPage_Post_ReturnsPageWithDuplicateMatches()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", null))).Seller!;
+        var edited = (await service.CreateSellerAsync(new CreateSellerRequest("Grace", "Hopper", null, "9999", null))).Seller!;
+
+        var pageModel = new SellerEditModel(service)
+        {
+            Input = new SellerEditModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Phone = "0123"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(edited.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        var match = Assert.Single(pageModel.DuplicateMatches);
+        Assert.Equal(existing.Id, match.SellerId);
     }
 
     [Fact]

@@ -15,6 +15,25 @@
 
     <form method="post" class="stack-form">
         <div asp-validation-summary="ModelOnly" class="validation"></div>
+        @if (Model.DuplicateMatches.Count > 0)
+        {
+            <section class="duplicate-match-list" aria-label="Vendeurs existants">
+                <h2>Vendeurs existants</h2>
+                <ul>
+                @foreach (var match in Model.DuplicateMatches)
+                {
+                    <li>
+                        <strong>@match.SellerCode - @match.FirstName @match.LastName</strong>
+                        <span>@(match.Phone ?? "Sans téléphone")</span>
+                        <span>@(match.Email ?? "Sans e-mail")</span>
+                        <span>@match.ItemCount article@(match.ItemCount > 1 ? "s" : "")</span>
+                        <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@match.SellerId">Ouvrir ce vendeur</a>
+                    </li>
+                }
+                </ul>
+            </section>
+        }
+
         <div class="field-grid">
             <label>
                 <span>Prénom</span>
