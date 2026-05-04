@@ -1,5 +1,6 @@
 using AssociationSaleTool.Web.Controllers.Models;
 using AssociationSaleTool.Web.Services;
+using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssociationSaleTool.Web.Controllers;
@@ -18,9 +19,19 @@ public sealed class SalesController(CheckoutService checkoutService) : Controlle
             return BadRequest(new { message = "Le panier est vide." });
         }
 
-        var result = await checkoutService.SaveSaleAsync(request.ItemIds, request.ReceiptDetails, cancellationToken);
-        return result.Saved
-            ? Created($"/api/ventes/{result.SaleId}", result)
+        var result = await checkoutService.SaveSaleAsync(
+            request.ItemIds,
+            request.ReceiptDetails,
+            cancellationToken,
+            new CheckoutPaymentDetails(request.PaymentMethod, request.ChequeNumber, request.ChequeBankName));
+
+        if (result.Saved)
+        {
+            return Created($"/api/ventes/{result.SaleId}", result);
+        }
+
+        return result.IsValidationError
+            ? BadRequest(result)
             : Conflict(result);
     }
 }

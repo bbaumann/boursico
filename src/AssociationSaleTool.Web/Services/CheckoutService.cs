@@ -48,8 +48,22 @@ public sealed class CheckoutService
     public async Task<CheckoutSaleResult> SaveSaleAsync(
         IReadOnlyList<long> itemIds,
         string? receiptDetails = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        CheckoutPaymentDetails? paymentDetails = null)
     {
+        var normalizedPayment = NormalizePaymentDetails(paymentDetails);
+        if (!normalizedPayment.IsValid)
+        {
+            return new CheckoutSaleResult(
+                false,
+                null,
+                [],
+                null,
+                0,
+                normalizedPayment.Message,
+                IsValidationError: true);
+        }
+
         if (!await _salePhaseService.CanCreateSalesAsync(cancellationToken))
         {
             return new CheckoutSaleResult(false, null, [], null, 0, PostSaleMessage);
@@ -75,7 +89,10 @@ public sealed class CheckoutService
             SubtotalSellerPriceCents = validation.Totals.SubtotalSellerPriceCents,
             CheckoutFeeCents = validation.Totals.CheckoutFeeCents,
             TotalPaidCents = validation.Totals.TotalPaidCents,
-            ReceiptDetails = NormalizeReceiptDetails(receiptDetails)
+            ReceiptDetails = NormalizeOptionalText(receiptDetails),
+            PaymentMethod = normalizedPayment.PaymentMethod,
+            ChequeNumber = normalizedPayment.ChequeNumber,
+            ChequeBankName = normalizedPayment.ChequeBankName
         };
 
         foreach (var item in items)
@@ -100,7 +117,35 @@ public sealed class CheckoutService
             validation.ItemCount);
     }
 
-    private static string? NormalizeReceiptDetails(string? receiptDetails)
+    private static PaymentNormalizationResult NormalizePaymentDetails(CheckoutPaymentDetails? paymentDetails)
+    {
+        if (paymentDetails is null)
+        {
+            return PaymentNormalizationResult.Valid(SalePaymentMethods.Card, null, null);
+        }
+
+        var paymentMethod = SalePaymentMethods.Normalize(paymentDetails.PaymentMethod);
+        if (paymentMethod is null)
+        {
+            return PaymentNormalizationResult.Invalid("Le mode de paiement est invalide.");
+        }
+
+        if (paymentMethod != SalePaymentMethods.Cheque)
+        {
+            return PaymentNormalizationResult.Valid(paymentMethod, null, null);
+        }
+
+        var chequeNumber = NormalizeOptionalText(paymentDetails.ChequeNumber);
+        var chequeBankName = NormalizeOptionalText(paymentDetails.ChequeBankName);
+        if (chequeNumber is null || chequeBankName is null)
+        {
+            return PaymentNormalizationResult.Invalid("Le numéro de chèque et le nom de la banque sont obligatoires pour un paiement par chèque.");
+        }
+
+        return PaymentNormalizationResult.Valid(paymentMethod, chequeNumber, chequeBankName);
+    }
+
+    private static string? NormalizeOptionalText(string? receiptDetails)
     {
         var normalized = receiptDetails?.Trim();
         return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
@@ -147,5 +192,26 @@ public sealed class CheckoutService
             totals.TotalPaidCents);
 
         return new CheckoutValidationResult(true, [], cartTotals, loadedItems.Count);
+    }
+
+    private sealed record PaymentNormalizationResult(
+        bool IsValid,
+        string? PaymentMethod,
+        string? ChequeNumber,
+        string? ChequeBankName,
+        string? Message = null)
+    {
+        public static PaymentNormalizationResult Valid(
+            string paymentMethod,
+            string? chequeNumber,
+            string? chequeBankName)
+        {
+            return new PaymentNormalizationResult(true, paymentMethod, chequeNumber, chequeBankName);
+        }
+
+        public static PaymentNormalizationResult Invalid(string message)
+        {
+            return new PaymentNormalizationResult(false, null, null, null, message);
+        }
     }
 }

@@ -8,6 +8,7 @@ public sealed record SalesListItem(
     int CheckoutFeeCents,
     int TotalPaidCents,
     bool HasReceiptDetails,
+    string PaymentMethodLabel,
     string SearchText);
 
 public sealed record SaleDetail(
@@ -17,6 +18,9 @@ public sealed record SaleDetail(
     int CheckoutFeeCents,
     int TotalPaidCents,
     string? ReceiptDetails,
+    string PaymentMethodLabel,
+    string? ChequeNumber,
+    string? ChequeBankName,
     IReadOnlyList<SaleDetailLine> Lines);
 
 public sealed record SaleDetailLine(

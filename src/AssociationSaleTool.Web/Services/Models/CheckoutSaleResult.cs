@@ -6,4 +6,5 @@ public sealed record CheckoutSaleResult(
     IReadOnlyList<long> ConflictItemIds,
     CheckoutCartTotals? Totals,
     int ItemCount,
-    string? Message = null);
+    string? Message = null,
+    bool IsValidationError = false);

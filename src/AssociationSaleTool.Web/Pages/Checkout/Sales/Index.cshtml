@@ -36,6 +36,7 @@
                         <th>Sous-total</th>
                         <th>Frais</th>
                         <th>Total</th>
+                        <th>Paiement</th>
                         <th>Reçu</th>
                     </tr>
                 </thead>
@@ -49,6 +50,7 @@
                         <td>@IndexModel.FormatPrice(sale.SubtotalSellerPriceCents)</td>
                         <td>@IndexModel.FormatPrice(sale.CheckoutFeeCents)</td>
                         <td>@IndexModel.FormatPrice(sale.TotalPaidCents)</td>
+                        <td>@sale.PaymentMethodLabel</td>
                         <td>@(sale.HasReceiptDetails ? "Oui" : "Non")</td>
                     </tr>
                 }

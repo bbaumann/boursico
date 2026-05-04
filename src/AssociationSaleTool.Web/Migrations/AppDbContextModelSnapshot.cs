@@ -114,6 +114,18 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("checkout_fee_cents");
 
+                    b.Property<string>("ChequeBankName")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("cheque_bank_name");
+
+                    b.Property<string>("ChequeNumber")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("cheque_number");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("payment_method");
+
                     b.Property<string>("ReceiptDetails")
                         .HasColumnType("TEXT")
                         .HasColumnName("receipt_details");

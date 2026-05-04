@@ -17,6 +17,30 @@
         </div>
     </div>
 
+    <section class="subsection">
+        <h2>Paiement</h2>
+        <dl class="checkout-totals sales-view-totals">
+            <div>
+                <dt>Mode</dt>
+                <dd>@Model.Sale.PaymentMethodLabel</dd>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.Sale.ChequeNumber))
+            {
+                <div>
+                    <dt>Numéro de chèque</dt>
+                    <dd>@Model.Sale.ChequeNumber</dd>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Sale.ChequeBankName))
+            {
+                <div>
+                    <dt>Banque</dt>
+                    <dd>@Model.Sale.ChequeBankName</dd>
+                </div>
+            }
+        </dl>
+    </section>
+
     @if (!string.IsNullOrWhiteSpace(Model.Sale.ReceiptDetails))
     {
         <section class="subsection">
