@@ -1,5 +1,6 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -65,6 +66,330 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task LayoutShowsCurrentSalePhaseNearEventName()
+    {
+        var client = _factory.CreateClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Presale);
+        }
+
+        var response = await client.GetAsync("/vendeurs");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Association Toy Sale Tests", content);
+        Assert.Contains("Prévente", content);
+        Assert.Contains("class=\"app-status-display\"", content);
+        Assert.DoesNotContain("class=\"app-status-link\"", content);
+    }
+
+    [Fact]
+    public async Task SaleStatusPageShowsMainNavigationWithAdminActive()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/vente/statut");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        AssertMainNavigationContainsExpectedLinks(content);
+        AssertMainNavigationActive("/vente/statut", content);
+    }
+
+    [Fact]
+    public async Task SaleStatusPageShowsAdminGateWhenLocked()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/vente/statut");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Statut de la vente", content);
+        Assert.Contains("Mot de passe administrateur", content);
+        Assert.Contains("Déverrouiller", content);
+        Assert.DoesNotContain("Changer le statut", content);
+        Assert.DoesNotContain("Correction des ventes", content);
+    }
+
+    [Fact]
+    public async Task SaleStatusUnlockRejectsInvalidAdminPasswordInFrench()
+    {
+        var client = _factory.CreateClient();
+        var gateContent = await GetSaleStatusGateAsync(client);
+
+        var response = await client.PostAsync(
+            "/vente/statut?handler=Unlock",
+            BuildFormContent(gateContent, ("PasswordInput.Password", "wrong-password")));
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Mot de passe administrateur", content);
+        Assert.Contains("Mot de passe administrateur incorrect.", content);
+        Assert.DoesNotContain("Correction des ventes", content);
+    }
+
+    [Fact]
+    public async Task SaleStatusUnlockShowsPhaseAndCorrectionControls()
+    {
+        var client = _factory.CreateClient();
+
+        var content = await UnlockSaleStatusPageAsync(client);
+
+        Assert.Contains("Changer le statut", content);
+        Assert.Contains("Correction des ventes", content);
+        Assert.Contains("Passer en prévente", content);
+        Assert.Contains("Passer en vente", content);
+        Assert.Contains("Passer en après-vente", content);
+        Assert.DoesNotContain("name=\"Input.Password\"", content);
+        Assert.DoesNotContain("name=\"CorrectionPassword\"", content);
+        Assert.Contains("href=\"/vente/statut\"", content);
+    }
+
+    [Theory]
+    [InlineData(
+        SalePhase.Presale,
+        "Statut actuel : Prévente",
+        "Dans ce statut, les informations des vendeurs et des jouets sont modifiables. Les ventes restent possibles.")]
+    [InlineData(
+        SalePhase.Sale,
+        "Statut actuel : Vente",
+        "Dans ce statut, les informations des vendeurs et des jouets ne sont pas modifiables. Les ventes restent possibles.")]
+    [InlineData(
+        SalePhase.PostSale,
+        "Statut actuel : Après-vente",
+        "Dans ce statut, les ventes sont fermées. Les informations des vendeurs et des jouets ne sont pas modifiables, sauf pour marquer un jouet manquant pendant le rapprochement.")]
+    public async Task SaleStatusPageExplainsCurrentPhaseWhenUnlocked(
+        SalePhase phase,
+        string expectedCurrentStatus,
+        string expectedDescription)
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(phase);
+
+        try
+        {
+            var content = await UnlockSaleStatusPageAsync(client);
+
+            Assert.Contains(expectedCurrentStatus, content);
+            Assert.Contains(expectedDescription, content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Theory]
+    [InlineData(SalePhase.Presale, "Passer en prévente", "Passer en vente", "Passer en après-vente")]
+    [InlineData(SalePhase.Sale, "Passer en vente", "Passer en prévente", "Passer en après-vente")]
+    [InlineData(SalePhase.PostSale, "Passer en après-vente", "Passer en prévente", "Passer en vente")]
+    public async Task SaleStatusPageDisablesCurrentPhaseButtonWhenUnlocked(
+        SalePhase phase,
+        string disabledButtonLabel,
+        string enabledButtonLabel1,
+        string enabledButtonLabel2)
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(phase);
+
+        try
+        {
+            var content = await UnlockSaleStatusPageAsync(client);
+
+            AssertPhaseButtonDisabled(content, disabledButtonLabel);
+            AssertPhaseButtonEnabled(content, enabledButtonLabel1);
+            AssertPhaseButtonEnabled(content, enabledButtonLabel2);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Fact]
+    public async Task SaleStatusPageChangesPhaseWhenUnlocked()
+    {
+        var client = _factory.CreateClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Presale);
+        }
+
+        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        var response = await client.PostAsync(
+            "/vente/statut?handler=ChangePhase",
+            BuildFormContent(
+                dashboardContent,
+                ("Input.Phase", "sale")));
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Statut de la vente", content);
+        Assert.Contains("Vente", content);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(SalePhase.Sale, await new SalePhaseService(dbContext).GetCurrentPhaseAsync());
+            await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Fact]
+    public async Task SaleStatusPageCorrectsMistakenSaleLineWhenUnlocked()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+        long saleLineId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SC-001",
+                FirstName = "Sabine",
+                LastName = "Correction"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SC-001-001",
+                ItemNumber = 1,
+                Title = "Article mal vendu",
+                SellerPriceCents = 900,
+                Status = "sold"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+
+            var sale = new SaleEntity
+            {
+                SoldAt = DateTime.UtcNow,
+                SubtotalSellerPriceCents = 900,
+                CheckoutFeeCents = 90,
+                TotalPaidCents = 990,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = item.Id,
+                        SellerPriceAtSaleCents = 900
+                    }
+                ]
+            };
+
+            dbContext.Sales.Add(sale);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+            saleLineId = sale.SaleLines.Single().Id;
+        }
+
+        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        var response = await client.PostAsync(
+            $"/vente/statut?handler=CorrectSaleLine&saleLineId={saleLineId}",
+            BuildFormContent(dashboardContent));
+
+        response.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal("in_stock", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+            Assert.NotNull((await dbContext.SaleLines.SingleAsync(x => x.Id == saleLineId)).CorrectedAt);
+        }
+    }
+
+    [Fact]
+    public async Task SaleStatusLockedPostHandlersShowAdminGateAndDoNotChangeData()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+        long saleLineId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Presale);
+
+            var seller = new SellerEntity
+            {
+                SellerCode = "SG-001",
+                FirstName = "Sarah",
+                LastName = "Garde"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SG-001-001",
+                ItemNumber = 1,
+                Title = "Article garde",
+                SellerPriceCents = 700,
+                Status = "sold"
+            };
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+
+            var sale = new SaleEntity
+            {
+                SoldAt = DateTime.UtcNow,
+                SubtotalSellerPriceCents = 700,
+                CheckoutFeeCents = 70,
+                TotalPaidCents = 770,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = item.Id,
+                        SellerPriceAtSaleCents = 700
+                    }
+                ]
+            };
+            dbContext.Sales.Add(sale);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+            saleLineId = sale.SaleLines.Single().Id;
+        }
+
+        var gateContent = await GetSaleStatusGateAsync(client);
+        var phaseResponse = await client.PostAsync(
+            "/vente/statut?handler=ChangePhase",
+            BuildFormContent(gateContent, ("Input.Phase", "sale")));
+        var correctionResponse = await client.PostAsync(
+            $"/vente/statut?handler=CorrectSaleLine&saleLineId={saleLineId}",
+            BuildFormContent(gateContent));
+
+        foreach (var response in new[] { phaseResponse, correctionResponse })
+        {
+            response.EnsureSuccessStatusCode();
+            var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+            Assert.Contains("Mot de passe administrateur", content);
+            Assert.Contains("Déverrouiller", content);
+            Assert.DoesNotContain("Correction des ventes", content);
+        }
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(SalePhase.Presale, await new SalePhaseService(dbContext).GetCurrentPhaseAsync());
+            Assert.Equal("sold", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+            Assert.Null((await dbContext.SaleLines.SingleAsync(x => x.Id == saleLineId)).CorrectedAt);
+        }
+    }
+
+    [Fact]
     public async Task CheckoutPageShowsMainNavigationWithCheckoutActive()
     {
         var client = _factory.CreateClient();
@@ -93,14 +418,22 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     [Fact]
     public async Task ReconciliationSheetsPageShowsMainNavigationWithReconciliationActive()
     {
-        var (client, _) = await UnlockReconciliationDashboardAsync();
-        var response = await client.GetAsync("/rapprochement/feuilles");
+        await SetSalePhaseAsync(SalePhase.PostSale);
+        try
+        {
+            var (client, _) = await UnlockReconciliationDashboardAsync();
+            var response = await client.GetAsync("/rapprochement/feuilles");
 
-        response.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
 
-        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        AssertMainNavigationContainsExpectedLinks(content);
-        AssertMainNavigationActive("/rapprochement", content);
+            var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+            AssertMainNavigationContainsExpectedLinks(content);
+            AssertMainNavigationActive("/rapprochement", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
@@ -142,76 +475,221 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     [Fact]
     public async Task ReconciliationUnlockShowsDashboardWithSellerSheetAndCorrectionSections()
     {
-        var (client, content) = await UnlockReconciliationDashboardAsync();
+        await SetSalePhaseAsync(SalePhase.PostSale);
+        try
+        {
+            var (client, content) = await UnlockReconciliationDashboardAsync();
 
-        Assert.Contains("Feuilles vendeurs", content);
-        Assert.Contains("Correction des articles", content);
-        Assert.Contains("href=\"/rapprochement/feuilles\"", content);
-        Assert.Contains("Imprimer toutes les feuilles", content);
-        Assert.Contains("Code ou nom du vendeur", content);
-        Assert.Contains("list=\"seller-sheet-options\"", content);
-        Assert.Contains("Imprimer une feuille", content);
-        Assert.Contains("data-reconciliation-root", content);
-        Assert.Contains("data-reconciliation-search", content);
-        Assert.Contains("data-reconciliation-results", content);
-        Assert.Contains("Filtrer les articles", content);
+            Assert.Contains("Feuilles vendeurs", content);
+            Assert.Contains("Correction des articles", content);
+            Assert.Contains("href=\"/rapprochement/feuilles\"", content);
+            Assert.Contains("Imprimer toutes les feuilles", content);
+            Assert.Contains("Code ou nom du vendeur", content);
+            Assert.Contains("list=\"seller-sheet-options\"", content);
+            Assert.Contains("Imprimer une feuille", content);
+            Assert.Contains("data-reconciliation-root", content);
+            Assert.Contains("data-reconciliation-search", content);
+            Assert.Contains("data-reconciliation-results", content);
+            Assert.Contains("Filtrer les articles", content);
 
-        await EnsureSoldItemsHaveSaleLinesAsync();
+            await EnsureSoldItemsHaveSaleLinesAsync();
 
-        var sheetsResponse = await client.GetAsync("/rapprochement/feuilles");
-        sheetsResponse.EnsureSuccessStatusCode();
+            var sheetsResponse = await client.GetAsync("/rapprochement/feuilles");
+            sheetsResponse.EnsureSuccessStatusCode();
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Fact]
+    public async Task ReconciliationDashboardIsReadOnlyWhenEventIsNotPostSale()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Sale);
+
+        try
+        {
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var seller = new SellerEntity
+                {
+                    SellerCode = "RO-001",
+                    FirstName = "Remi",
+                    LastName = "Lecture",
+                    Email = "remi.lecture@example.test"
+                };
+
+                dbContext.Sellers.Add(seller);
+                await dbContext.SaveChangesAsync();
+
+                dbContext.Items.Add(new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RO-001-001",
+                    ItemNumber = 1,
+                    Title = "Puzzle lecture seule",
+                    SellerPriceCents = 500,
+                    Status = "in_stock"
+                });
+
+                await dbContext.SaveChangesAsync();
+            }
+
+            var content = await UnlockReconciliationDashboardAsync(client);
+
+            Assert.Contains("Le rapprochement est en lecture seule tant que la vente n'est pas en après-vente.", content);
+            Assert.Contains("RO-001-001", content);
+            Assert.Contains("Puzzle lecture seule", content);
+            Assert.DoesNotContain("Imprimer toutes les feuilles", content);
+            Assert.DoesNotContain("Imprimer une feuille", content);
+            Assert.DoesNotContain("Marquer manquant", content);
+            Assert.DoesNotContain("Remettre en stock", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Fact]
+    public async Task ReconciliationReadOnlyPostHandlersDoNotChangeItemStatusWhenEventIsNotPostSale()
+    {
+        var client = _factory.CreateClient();
+        long inStockItemId;
+        long missingItemId;
+        await SetSalePhaseAsync(SalePhase.Sale);
+
+        try
+        {
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var seller = new SellerEntity
+                {
+                    SellerCode = "RO-002",
+                    FirstName = "Lea",
+                    LastName = "Operation"
+                };
+
+                dbContext.Sellers.Add(seller);
+                await dbContext.SaveChangesAsync();
+
+                var inStockItem = new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RO-002-001",
+                    ItemNumber = 1,
+                    Title = "Article en stock",
+                    SellerPriceCents = 500,
+                    Status = "in_stock"
+                };
+                var missingItem = new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RO-002-002",
+                    ItemNumber = 2,
+                    Title = "Article manquant",
+                    SellerPriceCents = 600,
+                    Status = "missing"
+                };
+
+                dbContext.Items.AddRange(inStockItem, missingItem);
+                await dbContext.SaveChangesAsync();
+
+                inStockItemId = inStockItem.Id;
+                missingItemId = missingItem.Id;
+            }
+
+            var gateContent = await GetReconciliationGateAsync(client);
+            _ = await UnlockReconciliationDashboardAsync(client);
+            var markMissingResponse = await client.PostAsync(
+                $"/rapprochement?handler=MarkMissing&itemId={inStockItemId}&sellerCode=RO-002",
+                BuildFormContent(gateContent));
+            var markInStockResponse = await client.PostAsync(
+                $"/rapprochement?handler=MarkInStock&itemId={missingItemId}&sellerCode=RO-002",
+                BuildFormContent(gateContent));
+
+            foreach (var response in new[] { markMissingResponse, markInStockResponse })
+            {
+                response.EnsureSuccessStatusCode();
+                var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+                Assert.Contains("Le rapprochement est en lecture seule tant que la vente n'est pas en après-vente.", content);
+            }
+
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                Assert.Equal("in_stock", (await dbContext.Items.SingleAsync(x => x.Id == inStockItemId)).Status);
+                Assert.Equal("missing", (await dbContext.Items.SingleAsync(x => x.Id == missingItemId)).Status);
+            }
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
     public async Task ReconciliationDashboardRendersSellerAutocompleteAndLiveCorrectionRows()
     {
         var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.PostSale);
 
-        using (var scope = _factory.Services.CreateScope())
+        try
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var seller = new SellerEntity
+            using (var scope = _factory.Services.CreateScope())
             {
-                SellerCode = "RA-010",
-                FirstName = "Alice",
-                LastName = "Autocomplete",
-                Email = "alice.autocomplete@example.test"
-            };
-
-            dbContext.Sellers.Add(seller);
-            await dbContext.SaveChangesAsync();
-
-            dbContext.Items.AddRange(
-                new ItemEntity
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var seller = new SellerEntity
                 {
-                    SellerId = seller.Id,
-                    Reference = "RA-010-001",
-                    ItemNumber = 1,
-                    Title = "Camion filtrable",
-                    SellerPriceCents = 700,
-                    Status = "in_stock"
-                },
-                new ItemEntity
-                {
-                    SellerId = seller.Id,
-                    Reference = "RA-010-002",
-                    ItemNumber = 2,
-                    Title = "Puzzle deja manquant",
-                    SellerPriceCents = 800,
-                    Status = "missing"
-                });
+                    SellerCode = "RA-010",
+                    FirstName = "Alice",
+                    LastName = "Autocomplete",
+                    Email = "alice.autocomplete@example.test"
+                };
 
-            await dbContext.SaveChangesAsync();
+                dbContext.Sellers.Add(seller);
+                await dbContext.SaveChangesAsync();
+
+                dbContext.Items.AddRange(
+                    new ItemEntity
+                    {
+                        SellerId = seller.Id,
+                        Reference = "RA-010-001",
+                        ItemNumber = 1,
+                        Title = "Camion filtrable",
+                        SellerPriceCents = 700,
+                        Status = "in_stock"
+                    },
+                    new ItemEntity
+                    {
+                        SellerId = seller.Id,
+                        Reference = "RA-010-002",
+                        ItemNumber = 2,
+                        Title = "Puzzle deja manquant",
+                        SellerPriceCents = 800,
+                        Status = "missing"
+                    });
+
+                await dbContext.SaveChangesAsync();
+            }
+
+            var content = await UnlockReconciliationDashboardAsync(client);
+
+            Assert.Contains("<datalist id=\"seller-sheet-options\">", content);
+            Assert.Contains("value=\"RA-010 - Alice Autocomplete\"", content);
+            Assert.Contains("data-reconciliation-filter-text=\"ra-010-001 camion filtrable ra-010 alice autocomplete\"", content);
+            Assert.Contains("data-reconciliation-filter-text=\"ra-010-002 puzzle deja manquant ra-010 alice autocomplete\"", content);
+            Assert.Contains("Marquer manquant", content);
+            Assert.Contains("Remettre en stock", content);
         }
-
-        var content = await UnlockReconciliationDashboardAsync(client);
-
-        Assert.Contains("<datalist id=\"seller-sheet-options\">", content);
-        Assert.Contains("value=\"RA-010 - Alice Autocomplete\"", content);
-        Assert.Contains("data-reconciliation-filter-text=\"ra-010-001 camion filtrable ra-010 alice autocomplete\"", content);
-        Assert.Contains("data-reconciliation-filter-text=\"ra-010-002 puzzle deja manquant ra-010 alice autocomplete\"", content);
-        Assert.Contains("Marquer manquant", content);
-        Assert.Contains("Remettre en stock", content);
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
@@ -226,6 +704,35 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/rapprochement", response.Headers.Location?.OriginalString);
+    }
+
+    [Fact]
+    public async Task ReconciliationSheetsRedirectsToDashboardWhenEventIsNotPostSale()
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+        await SetSalePhaseAsync(SalePhase.Sale);
+
+        try
+        {
+            var gateContent = await GetReconciliationGateAsync(client);
+            var unlockResponse = await client.PostAsync(
+                "/rapprochement?handler=Unlock",
+                BuildFormContent(gateContent, ("PasswordInput.Password", "test-password")));
+
+            Assert.Equal(HttpStatusCode.Redirect, unlockResponse.StatusCode);
+
+            var response = await client.GetAsync("/rapprochement/feuilles");
+
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+            Assert.Equal("/rapprochement", response.Headers.Location?.OriginalString);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
@@ -306,60 +813,68 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     public async Task ReconciliationDashboardSearchShowsFrenchStatusesAndCorrectionActions()
     {
         var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.PostSale);
 
-        using (var scope = _factory.Services.CreateScope())
+        try
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var seller = new SellerEntity
+            using (var scope = _factory.Services.CreateScope())
             {
-                SellerCode = "RC-001",
-                FirstName = "Renee",
-                LastName = "Controle",
-                Email = "renee.controle@example.test"
-            };
-
-            dbContext.Sellers.Add(seller);
-            await dbContext.SaveChangesAsync();
-
-            dbContext.Items.AddRange(
-                new ItemEntity
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var seller = new SellerEntity
                 {
-                    SellerId = seller.Id,
-                    Reference = "RC-001-001",
-                    ItemNumber = 1,
-                    Title = "Puzzle rapprochement",
-                    SellerPriceCents = 450,
-                    Status = "in_stock"
-                },
-                new ItemEntity
-                {
-                    SellerId = seller.Id,
-                    Reference = "RC-001-002",
-                    ItemNumber = 2,
-                    Title = "Train rapprochement",
-                    SellerPriceCents = 800,
-                    Status = "missing"
-                });
+                    SellerCode = "RC-001",
+                    FirstName = "Renee",
+                    LastName = "Controle",
+                    Email = "renee.controle@example.test"
+                };
 
-            await dbContext.SaveChangesAsync();
+                dbContext.Sellers.Add(seller);
+                await dbContext.SaveChangesAsync();
+
+                dbContext.Items.AddRange(
+                    new ItemEntity
+                    {
+                        SellerId = seller.Id,
+                        Reference = "RC-001-001",
+                        ItemNumber = 1,
+                        Title = "Puzzle rapprochement",
+                        SellerPriceCents = 450,
+                        Status = "in_stock"
+                    },
+                    new ItemEntity
+                    {
+                        SellerId = seller.Id,
+                        Reference = "RC-001-002",
+                        ItemNumber = 2,
+                        Title = "Train rapprochement",
+                        SellerPriceCents = 800,
+                        Status = "missing"
+                    });
+
+                await dbContext.SaveChangesAsync();
+            }
+
+            var dashboardContent = await UnlockReconciliationDashboardAsync(client);
+            var response = await client.PostAsync(
+                "/rapprochement?handler=Search",
+                BuildFormContent(dashboardContent, ("SearchInput.Query", "RC-001")));
+
+            response.EnsureSuccessStatusCode();
+
+            var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+            Assert.Contains("RC-001-001", content);
+            Assert.Contains("Puzzle rapprochement", content);
+            Assert.Contains("en stock", content);
+            Assert.Contains("RC-001-002", content);
+            Assert.Contains("Train rapprochement", content);
+            Assert.Contains("manquant", content);
+            Assert.Contains("Marquer manquant", content);
+            Assert.Contains("Remettre en stock", content);
         }
-
-        var dashboardContent = await UnlockReconciliationDashboardAsync(client);
-        var response = await client.PostAsync(
-            "/rapprochement?handler=Search",
-            BuildFormContent(dashboardContent, ("SearchInput.Query", "RC-001")));
-
-        response.EnsureSuccessStatusCode();
-
-        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("RC-001-001", content);
-        Assert.Contains("Puzzle rapprochement", content);
-        Assert.Contains("en stock", content);
-        Assert.Contains("RC-001-002", content);
-        Assert.Contains("Train rapprochement", content);
-        Assert.Contains("manquant", content);
-        Assert.Contains("Marquer manquant", content);
-        Assert.Contains("Remettre en stock", content);
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
@@ -367,53 +882,61 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        await SetSalePhaseAsync(SalePhase.PostSale);
 
-        using (var scope = _factory.Services.CreateScope())
+        try
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var seller = new SellerEntity
+            using (var scope = _factory.Services.CreateScope())
             {
-                SellerCode = "RC-002",
-                FirstName = "Marc",
-                LastName = "Manquant",
-                Email = "marc.manquant@example.test"
-            };
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var seller = new SellerEntity
+                {
+                    SellerCode = "RC-002",
+                    FirstName = "Marc",
+                    LastName = "Manquant",
+                    Email = "marc.manquant@example.test"
+                };
 
-            dbContext.Sellers.Add(seller);
-            await dbContext.SaveChangesAsync();
+                dbContext.Sellers.Add(seller);
+                await dbContext.SaveChangesAsync();
 
-            var item = new ItemEntity
+                var item = new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RC-002-001",
+                    ItemNumber = 1,
+                    Title = "Camion rapprochement",
+                    SellerPriceCents = 700,
+                    Status = "in_stock"
+                };
+
+                dbContext.Items.Add(item);
+                await dbContext.SaveChangesAsync();
+                itemId = item.Id;
+            }
+
+            var dashboardContent = await UnlockReconciliationDashboardAsync(client);
+            var response = await client.PostAsync(
+                "/rapprochement?handler=MarkMissing&sellerCode=RC-002",
+                BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal("/rapprochement", response.RequestMessage?.RequestUri?.PathAndQuery);
+
+            var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+            Assert.Contains("Article marqué manquant.", content);
+            Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-002\"", content);
+
+            using (var scope = _factory.Services.CreateScope())
             {
-                SellerId = seller.Id,
-                Reference = "RC-002-001",
-                ItemNumber = 1,
-                Title = "Camion rapprochement",
-                SellerPriceCents = 700,
-                Status = "in_stock"
-            };
-
-            dbContext.Items.Add(item);
-            await dbContext.SaveChangesAsync();
-            itemId = item.Id;
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var item = await dbContext.Items.SingleAsync(x => x.Id == itemId);
+                Assert.Equal("missing", item.Status);
+            }
         }
-
-        var dashboardContent = await UnlockReconciliationDashboardAsync(client);
-        var response = await client.PostAsync(
-            "/rapprochement?handler=MarkMissing&sellerCode=RC-002",
-            BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
-
-        response.EnsureSuccessStatusCode();
-        Assert.Equal("/rapprochement", response.RequestMessage?.RequestUri?.PathAndQuery);
-
-        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Article marqué manquant.", content);
-        Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-002\"", content);
-
-        using (var scope = _factory.Services.CreateScope())
+        finally
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var item = await dbContext.Items.SingleAsync(x => x.Id == itemId);
-            Assert.Equal("missing", item.Status);
+            await SetSalePhaseAsync(SalePhase.Presale);
         }
     }
 
@@ -422,59 +945,70 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        await SetSalePhaseAsync(SalePhase.PostSale);
 
-        using (var scope = _factory.Services.CreateScope())
+        try
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var seller = new SellerEntity
+            using (var scope = _factory.Services.CreateScope())
             {
-                SellerCode = "RC-003",
-                FirstName = "Ines",
-                LastName = "Stock",
-                Email = "ines.stock@example.test"
-            };
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var seller = new SellerEntity
+                {
+                    SellerCode = "RC-003",
+                    FirstName = "Ines",
+                    LastName = "Stock",
+                    Email = "ines.stock@example.test"
+                };
 
-            dbContext.Sellers.Add(seller);
-            await dbContext.SaveChangesAsync();
+                dbContext.Sellers.Add(seller);
+                await dbContext.SaveChangesAsync();
 
-            var item = new ItemEntity
+                var item = new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RC-003-001",
+                    ItemNumber = 1,
+                    Title = "Jeu retrouve",
+                    SellerPriceCents = 900,
+                    Status = "missing"
+                };
+
+                dbContext.Items.Add(item);
+                await dbContext.SaveChangesAsync();
+                itemId = item.Id;
+            }
+
+            var dashboardContent = await UnlockReconciliationDashboardAsync(client);
+            var response = await client.PostAsync(
+                "/rapprochement?handler=MarkInStock&sellerCode=RC-003",
+                BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal("/rapprochement", response.RequestMessage?.RequestUri?.PathAndQuery);
+
+            var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+            Assert.Contains("Article remis en stock.", content);
+            Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-003\"", content);
+
+            using (var scope = _factory.Services.CreateScope())
             {
-                SellerId = seller.Id,
-                Reference = "RC-003-001",
-                ItemNumber = 1,
-                Title = "Jeu retrouve",
-                SellerPriceCents = 900,
-                Status = "missing"
-            };
-
-            dbContext.Items.Add(item);
-            await dbContext.SaveChangesAsync();
-            itemId = item.Id;
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var item = await dbContext.Items.SingleAsync(x => x.Id == itemId);
+                Assert.Equal("in_stock", item.Status);
+            }
         }
-
-        var dashboardContent = await UnlockReconciliationDashboardAsync(client);
-        var response = await client.PostAsync(
-            "/rapprochement?handler=MarkInStock&sellerCode=RC-003",
-            BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
-
-        response.EnsureSuccessStatusCode();
-        Assert.Equal("/rapprochement", response.RequestMessage?.RequestUri?.PathAndQuery);
-
-        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Article remis en stock.", content);
-        Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-003\"", content);
-
-        using (var scope = _factory.Services.CreateScope())
+        finally
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var item = await dbContext.Items.SingleAsync(x => x.Id == itemId);
-            Assert.Equal("in_stock", item.Status);
+            await SetSalePhaseAsync(SalePhase.Presale);
         }
     }
 
     [Fact]
     public async Task ReconciliationSheetsPageRendersAllActiveSellerSheetsWhenUnlocked()
     {
+        await SetSalePhaseAsync(SalePhase.PostSale);
+        try
+        {
         var (client, _) = await UnlockReconciliationDashboardAsync();
         await SeedReconciliationSheetAsync(
             "RS-101",
@@ -511,11 +1045,19 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Total à payer", content);
         Assert.Contains("RS-102", content);
         Assert.Contains("Bruno Feuille", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
     public async Task ReconciliationSheetsPageFiltersBySellerCodeWhenUnlocked()
     {
+        await SetSalePhaseAsync(SalePhase.PostSale);
+        try
+        {
         var (client, _) = await UnlockReconciliationDashboardAsync();
         await SeedReconciliationSheetAsync(
             "RS-201",
@@ -541,11 +1083,19 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Article cible", content);
         Assert.DoesNotContain("RS-202", content);
         Assert.DoesNotContain("Article autre vendeur", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
     public async Task ReconciliationSheetsPageShowsFrenchMessageForUnknownSellerCode()
     {
+        await SetSalePhaseAsync(SalePhase.PostSale);
+        try
+        {
         var (client, _) = await UnlockReconciliationDashboardAsync();
 
         var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-404");
@@ -554,11 +1104,19 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Aucune feuille vendeur pour le code RS-404.", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
     public async Task ReconciliationSheetsPageShowsFrenchErrorForSoldItemWithoutSaleLine()
     {
+        await SetSalePhaseAsync(SalePhase.PostSale);
+        try
+        {
         var (client, _) = await UnlockReconciliationDashboardAsync();
 
         using (var scope = _factory.Services.CreateScope())
@@ -596,6 +1154,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Données de vente incohérentes pour l'article RS-500-001.", content);
         Assert.Contains("La feuille vendeur ne peut pas être imprimée.", content);
         Assert.DoesNotContain("Total à payer", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
@@ -707,6 +1270,44 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(">Enregistrement<", content);
         Assert.DoesNotContain(">InPerson<", content);
         Assert.DoesNotContain(">EmailPreregistration<", content);
+    }
+
+    [Fact]
+    public async Task SellerDetailsHidesSellerEditingWhenCatalogIsLocked()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Sale);
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-030",
+                FirstName = "Claire",
+                LastName = "Verrou",
+                Email = "claire.verrou@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        try
+        {
+            var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+            response.EnsureSuccessStatusCode();
+            var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+            Assert.Contains("Les informations du vendeur et les articles sont en lecture seule dans le statut actuel de la vente.", content);
+            Assert.DoesNotContain("Modifier le vendeur", content);
+            Assert.DoesNotContain("Ajouter des articles", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
     }
 
     [Fact]
@@ -1330,14 +1931,39 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         return gateContent;
     }
 
+    private static async Task<string> UnlockSaleStatusPageAsync(HttpClient client)
+    {
+        var gateContent = await GetSaleStatusGateAsync(client);
+
+        var response = await client.PostAsync(
+            "/vente/statut?handler=Unlock",
+            BuildFormContent(gateContent, ("PasswordInput.Password", "test-password")));
+
+        response.EnsureSuccessStatusCode();
+
+        return WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<string> GetSaleStatusGateAsync(HttpClient client)
+    {
+        var gate = await client.GetAsync("/vente/statut");
+        var gateContent = await gate.Content.ReadAsStringAsync();
+
+        gate.EnsureSuccessStatusCode();
+
+        return gateContent;
+    }
+
     private static void AssertMainNavigationContainsExpectedLinks(string content)
     {
         Assert.Contains("main-navigation", content);
         Assert.Contains("href=\"/vendeurs\"", content);
         Assert.Contains("href=\"/caisse\"", content);
         Assert.Contains("href=\"/rapprochement\"", content);
+        Assert.Contains("href=\"/vente/statut\"", content);
         Assert.Contains("VENDEURS", content);
         Assert.Contains("CAISSE", content);
+        Assert.Contains("ADMIN", content);
         Assert.True(
             content.Contains("Rapprochement", StringComparison.OrdinalIgnoreCase),
             "La navigation principale doit contenir le lien Rapprochement.");
@@ -1348,6 +1974,35 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Matches(
             $"class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"{Regex.Escape(href)}\"\\s+aria-current=\"page\"",
             content);
+    }
+
+    private static void AssertPhaseButtonDisabled(string content, string label)
+    {
+        var button = MatchPhaseButton(content, label);
+
+        Assert.Contains("disabled", button.Groups["attributes"].Value);
+    }
+
+    private static void AssertPhaseButtonEnabled(string content, string label)
+    {
+        var button = MatchPhaseButton(content, label);
+
+        Assert.DoesNotContain("disabled", button.Groups["attributes"].Value);
+    }
+
+    private static Match MatchPhaseButton(string content, string label)
+    {
+        var button = Regex.Match(
+            content,
+            $"""<button\b(?<attributes>[^>]*)>\s*{Regex.Escape(label)}\s*</button>""",
+            RegexOptions.Singleline);
+
+        if (!button.Success)
+        {
+            throw new InvalidOperationException($"Could not find the phase button '{label}'.");
+        }
+
+        return button;
     }
 
     private async Task SeedReconciliationSheetAsync(
@@ -1389,13 +2044,20 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         await dbContext.SaveChangesAsync();
     }
 
+    private async Task SetSalePhaseAsync(SalePhase phase)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await new SalePhaseService(dbContext).SetPhaseAsync(phase);
+    }
+
     private async Task EnsureSoldItemsHaveSaleLinesAsync()
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var soldItemsWithoutSaleLines = await dbContext.Items
-            .Include(x => x.SaleLine)
-            .Where(x => x.Status == "sold" && x.SaleLine == null)
+            .Include(x => x.SaleLines)
+            .Where(x => x.Status == "sold" && !x.SaleLines.Any(line => line.CorrectedAt == null))
             .ToListAsync();
 
         foreach (var item in soldItemsWithoutSaleLines)

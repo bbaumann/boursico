@@ -8,13 +8,40 @@ This backlog captures known feature requests that are intentionally outside the 
 
 Prevent operators from updating item master data after the item has been sold.
 
+Status: covered by the sale phase and sale correction work that is currently under verification.
+
+Relevant design/docs:
+
+- [Sale Phases And Sale Corrections](./sale-phases-and-corrections.md)
+- [D-031 Use Event-Level Sale Phases And Explicit Sale-Line Corrections](./decisions.md#d-031-use-event-level-sale-phases-and-explicit-sale-line-corrections)
+
+The sale phase design covers the original backlog questions:
+
+- item master data is read-only in `sale` and `post_sale`
+- sold items are not editable through normal intake operations, even if the event is still in `presale`
+- the item edit page and seller detail page communicate the read-only state in French
+- server-side intake operations reject item master-data updates when the item is sold or the event phase locks item editing
+- mistaken sold-item corrections use an explicit admin sale-line correction instead of an ad hoc `sold -> in_stock` item status edit
+- seller sheets ignore corrected sale lines and use current item status for the returned item, preserving seller payout consistency
+
+Once the sale phase work is verified and committed, this item can be treated as implemented rather than a separate VNext feature.
+
+### View Existing Sales
+
+Allow admins to find and inspect an already-saved sale in read-only mode.
+
+The first lookup path should support searching by item reference/code, because an operator or admin will often start from a physical label or a disputed item.
+
 The future design should define:
 
-- which item fields become read-only after sale persistence
-- how the item edit page communicates that a sold item cannot be changed
-- whether admins need an exceptional correction workflow
-- how attempted updates are rejected server-side
-- how this rule interacts with reconciliation and seller payout auditability
+- which admin page exposes sale lookup, for example `/vente/statut` or a dedicated French route such as `/ventes`
+- whether lookup searches only active sale lines or also corrected sale lines
+- what happens when an item appears in multiple historical sale lines because one line was corrected
+- how the read-only sale view reuses the existing checkout/cart layout without allowing edits, removals, or save actions
+- which sale fields are shown: sale id, sold timestamp, item references, item titles, seller prices at sale time, subtotal, checkout fee, total paid, and receipt details
+- whether the page should show correction metadata such as `corrected_at`
+- whether access is limited to admins through the existing shared admin password/session gate
+- whether the view includes a direct action to start a sale-line correction when the admin discovers that the sale contains the wrong item
 
 ## Item Intake
 
@@ -36,6 +63,28 @@ Implementation should cover:
 - how imported rows map to seller, title, price, and intake mode
 - whether duplicate detection is required
 - whether import is only an operator helper or a required workflow
+
+## Seller Management
+
+### Prevent Duplicate Sellers
+
+Prevent operators from accidentally creating a second seller when another seller already exists with the same identifying information.
+
+The first matching rule to design should use exact normalized:
+
+- last name
+- first name
+- phone number
+
+The future design should define:
+
+- how seller names and phone numbers are normalized before comparison
+- whether the duplicate check runs only on create, or also when editing seller details
+- how the create-seller form communicates that a matching seller already exists
+- whether the operator is redirected to the existing seller page with pending item rows
+- whether new items should be appended to the existing seller after operator confirmation
+- whether any seller fields may be amended on the existing seller, or whether existing seller details remain unchanged by default
+- how this interacts with Excel prefill, where a parsed workbook may identify an already-known seller before the operator saves
 
 ## Seller Fee Management
 

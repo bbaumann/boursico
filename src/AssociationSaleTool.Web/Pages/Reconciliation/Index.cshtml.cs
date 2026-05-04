@@ -11,11 +11,15 @@ namespace AssociationSaleTool.Web.Pages.Reconciliation;
 
 public sealed class IndexModel(
     ReconciliationService reconciliationService,
+    SalePhaseService salePhaseService,
     IOptions<AdminOptions> adminOptions) : PageModel
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+    private const string ReadOnlyMessage = "Le rapprochement est en lecture seule tant que la vente n'est pas en après-vente.";
 
     public bool IsUnlocked { get; private set; }
+
+    public bool CanOperate { get; private set; }
 
     [BindProperty]
     public PasswordInputModel PasswordInput { get; set; } = new();
@@ -44,6 +48,7 @@ public sealed class IndexModel(
 
         if (IsUnlocked)
         {
+            await LoadPhaseAsync(cancellationToken);
             await LoadDashboardAsync(cancellationToken);
         }
     }
@@ -69,6 +74,7 @@ public sealed class IndexModel(
             return Page();
         }
 
+        await LoadPhaseAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(SearchInput.Query))
         {
             ModelState.AddModelError("SearchInput.Query", "Saisissez une référence ou un titre.");
@@ -93,6 +99,14 @@ public sealed class IndexModel(
             return Page();
         }
 
+        await LoadPhaseAsync(cancellationToken);
+        if (!CanOperate)
+        {
+            ModelState.AddModelError(string.Empty, ReadOnlyMessage);
+            await LoadDashboardAsync(cancellationToken);
+            return Page();
+        }
+
         var result = await reconciliationService.MarkItemMissingAsync(itemId, cancellationToken);
         return await ApplyStatusChangeResultAsync(
             result,
@@ -110,6 +124,14 @@ public sealed class IndexModel(
     {
         if (!UnlockPageIfSessionAllows())
         {
+            return Page();
+        }
+
+        await LoadPhaseAsync(cancellationToken);
+        if (!CanOperate)
+        {
+            ModelState.AddModelError(string.Empty, ReadOnlyMessage);
+            await LoadDashboardAsync(cancellationToken);
             return Page();
         }
 
@@ -135,8 +157,14 @@ public sealed class IndexModel(
 
     private async Task LoadDashboardAsync(CancellationToken cancellationToken)
     {
+        await LoadPhaseAsync(cancellationToken);
         SellerSheetOptions = await reconciliationService.ListSellerSheetOptionsAsync(cancellationToken);
         CorrectionItems = await reconciliationService.ListCorrectionItemsAsync(cancellationToken);
+    }
+
+    private async Task LoadPhaseAsync(CancellationToken cancellationToken)
+    {
+        CanOperate = await salePhaseService.GetCurrentPhaseAsync(cancellationToken) == SalePhase.PostSale;
     }
 
     private bool UnlockPageIfSessionAllows()

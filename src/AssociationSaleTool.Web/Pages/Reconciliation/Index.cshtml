@@ -37,11 +37,16 @@ else
             </div>
         </div>
 
+        @if (!Model.CanOperate)
+        {
+            <p class="validation">Le rapprochement est en lecture seule tant que la vente n'est pas en après-vente.</p>
+        }
+
         @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
         {
             <p class="success-message" role="status">@Model.SuccessMessage</p>
 
-            @if (!string.IsNullOrWhiteSpace(Model.CorrectedSellerCode))
+            @if (Model.CanOperate && !string.IsNullOrWhiteSpace(Model.CorrectedSellerCode))
             {
                 <p>
                     <a href="/rapprochement/feuilles?codeVendeur=@Model.CorrectedSellerCode">
@@ -58,27 +63,37 @@ else
                 <div>
                     <h2>Feuilles vendeurs</h2>
                 </div>
-                <a class="button-link button-link-solid" href="/rapprochement/feuilles">Imprimer toutes les feuilles</a>
+                @if (Model.CanOperate)
+                {
+                    <a class="button-link button-link-solid" href="/rapprochement/feuilles">Imprimer toutes les feuilles</a>
+                }
             </div>
 
-            <form method="get" action="/rapprochement/feuilles">
-                <label asp-for="SheetInput.SellerCode">Code ou nom du vendeur</label>
-                <input name="codeVendeur"
-                       id="SheetInput_SellerCode"
-                       value="@Model.SheetInput.SellerCode"
-                       list="seller-sheet-options"
-                       autocomplete="off" />
-                <datalist id="seller-sheet-options">
-                    @foreach (var seller in Model.SellerSheetOptions)
-                    {
-                        <option value="@($"{seller.SellerCode} - {seller.SellerName}")"></option>
-                    }
-                </datalist>
+            @if (Model.CanOperate)
+            {
+                <form method="get" action="/rapprochement/feuilles">
+                    <label asp-for="SheetInput.SellerCode">Code ou nom du vendeur</label>
+                    <input name="codeVendeur"
+                           id="SheetInput_SellerCode"
+                           value="@Model.SheetInput.SellerCode"
+                           list="seller-sheet-options"
+                           autocomplete="off" />
+                    <datalist id="seller-sheet-options">
+                        @foreach (var seller in Model.SellerSheetOptions)
+                        {
+                            <option value="@($"{seller.SellerCode} - {seller.SellerName}")"></option>
+                        }
+                    </datalist>
 
-                <div class="form-actions">
-                    <button type="submit" class="button-link">Imprimer une feuille</button>
-                </div>
-            </form>
+                    <div class="form-actions">
+                        <button type="submit" class="button-link">Imprimer une feuille</button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <p class="empty-state">Les feuilles vendeurs seront disponibles en après-vente.</p>
+            }
         </section>
 
         <section class="subsection" data-reconciliation-root>
@@ -115,7 +130,7 @@ else
                             <td>@ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
                             <td>@IndexModel.FormatPrice(item.SellerPriceCents)</td>
                             <td>
-                                @if (item.Status == "in_stock")
+                                @if (Model.CanOperate && item.Status == "in_stock")
                                 {
                                     <form method="post"
                                           asp-page-handler="MarkMissing"
@@ -125,7 +140,7 @@ else
                                     </form>
                                 }
 
-                                @if (item.Status == "missing")
+                                @if (Model.CanOperate && item.Status == "missing")
                                 {
                                     <form method="post"
                                           asp-page-handler="MarkInStock"

@@ -17,6 +17,38 @@ namespace AssociationSaleTool.Web.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.10");
 
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.EventStateEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SalePhase")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("sale_phase");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("event_state", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_event_state_sale_phase", "sale_phase IN ('presale', 'sale', 'post_sale')");
+
+                            t.HasCheckConstraint("ck_event_state_singleton", "Id = 1");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            SalePhase = "presale",
+                            UpdatedAt = new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.ItemEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -122,6 +154,10 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("item_id");
 
+                    b.Property<DateTime?>("CorrectedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("corrected_at");
+
                     b.Property<long>("SaleId")
                         .HasColumnType("INTEGER")
                         .HasColumnName("sale_id");
@@ -133,7 +169,8 @@ namespace AssociationSaleTool.Web.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ItemId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("corrected_at IS NULL");
 
                     b.HasIndex("SaleId");
 
@@ -198,7 +235,7 @@ namespace AssociationSaleTool.Web.Migrations
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.SaleLineEntity", b =>
                 {
                     b.HasOne("AssociationSaleTool.Web.Data.Entities.ItemEntity", "Item")
-                        .WithOne("SaleLine")
+                        .WithMany("SaleLines")
                         .HasForeignKey("AssociationSaleTool.Web.Data.Entities.SaleLineEntity", "ItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -216,7 +253,7 @@ namespace AssociationSaleTool.Web.Migrations
 
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.ItemEntity", b =>
                 {
-                    b.Navigation("SaleLine");
+                    b.Navigation("SaleLines");
                 });
 
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.SaleEntity", b =>

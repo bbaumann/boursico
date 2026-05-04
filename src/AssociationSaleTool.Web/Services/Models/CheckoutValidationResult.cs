@@ -4,4 +4,5 @@ public sealed record CheckoutValidationResult(
     bool IsValid,
     IReadOnlyList<long> ConflictItemIds,
     CheckoutCartTotals? Totals,
-    int ItemCount);
+    int ItemCount,
+    string? Message = null);

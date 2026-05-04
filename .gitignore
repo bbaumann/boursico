@@ -4,3 +4,6 @@ obj/
 .dotnet-cli/
 .nuget/
 .worktrees/
+.artifacts/
+*.db-shm
+*.db-wal

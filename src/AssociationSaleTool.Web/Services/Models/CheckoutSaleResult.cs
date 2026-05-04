@@ -5,4 +5,5 @@ public sealed record CheckoutSaleResult(
     long? SaleId,
     IReadOnlyList<long> ConflictItemIds,
     CheckoutCartTotals? Totals,
-    int ItemCount);
+    int ItemCount,
+    string? Message = null);

@@ -18,5 +18,5 @@ public sealed class ItemEntity
 
     public SellerEntity Seller { get; set; } = null!;
 
-    public SaleLineEntity? SaleLine { get; set; }
+    public List<SaleLineEntity> SaleLines { get; set; } = [];
 }

@@ -1,0 +1,140 @@
+@page "/vente/statut"
+@using AssociationSaleTool.Web.Infrastructure
+@using AssociationSaleTool.Web.Services
+@model AssociationSaleTool.Web.Pages.SaleStatus.IndexModel
+@{
+    ViewData["Title"] = "Statut de la vente";
+}
+
+@if (!Model.IsUnlocked)
+{
+    <section class="page-card">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Administration</p>
+                <h1 class="page-title">Statut de la vente</h1>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="Unlock">
+            <div asp-validation-summary="ModelOnly" class="validation"></div>
+            <label asp-for="PasswordInput.Password">Mot de passe administrateur</label>
+            <input asp-for="PasswordInput.Password" type="password" autocomplete="current-password" />
+            <span asp-validation-for="PasswordInput.Password" class="validation"></span>
+
+            <div class="form-actions">
+                <button type="submit" class="button-link button-link-solid">Déverrouiller</button>
+            </div>
+        </form>
+    </section>
+}
+else
+{
+    <section class="page-card">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Administration</p>
+                <h1 class="page-title">Statut de la vente</h1>
+                <p class="seller-meta">Statut actuel : @Model.CurrentPhaseLabel</p>
+                <p class="seller-meta">@Model.CurrentPhaseDescription</p>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+        {
+            <p class="success-message" role="status">@Model.SuccessMessage</p>
+        }
+
+        <div asp-validation-summary="All" class="validation"></div>
+
+        <section class="subsection">
+            <h2>Changer le statut</h2>
+
+            <div class="phase-action-grid">
+                <form method="post" asp-page-handler="ChangePhase" class="phase-action">
+                    <input type="hidden" name="Input.Phase" value="presale" />
+                    <button type="submit"
+                            class="button-link @(Model.CurrentPhase == SalePhase.Presale ? null : "button-link-solid")"
+                            disabled="@(Model.CurrentPhase == SalePhase.Presale)">
+                        Passer en prévente
+                    </button>
+                </form>
+
+                <form method="post" asp-page-handler="ChangePhase" class="phase-action">
+                    <input type="hidden" name="Input.Phase" value="sale" />
+                    <button type="submit"
+                            class="button-link @(Model.CurrentPhase == SalePhase.Sale ? null : "button-link-solid")"
+                            disabled="@(Model.CurrentPhase == SalePhase.Sale)">
+                        Passer en vente
+                    </button>
+                </form>
+
+                <form method="post" asp-page-handler="ChangePhase" class="phase-action">
+                    <input type="hidden" name="Input.Phase" value="post_sale" />
+                    <button type="submit"
+                            class="button-link @(Model.CurrentPhase == SalePhase.PostSale ? null : "button-link-solid")"
+                            disabled="@(Model.CurrentPhase == SalePhase.PostSale)">
+                        Passer en après-vente
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section class="subsection" data-sale-correction-root>
+            <h2>Correction des ventes</h2>
+            <p class="seller-meta">Utiliser uniquement si un article a été ajouté à une vente par erreur.</p>
+
+            <label for="sale-correction-search">Filtrer les ventes</label>
+            <input id="sale-correction-search"
+                   type="search"
+                   autocomplete="off"
+                   data-sale-correction-search />
+            <p class="empty-state" data-sale-correction-empty-message hidden>Aucune ligne de vente ne correspond à cette recherche.</p>
+
+            @if (Model.ActiveSoldItems.Count > 0)
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>REF</th>
+                            <th>Titre</th>
+                            <th>Vendeur</th>
+                            <th>Vente</th>
+                            <th>Prix</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-sale-correction-results>
+                    @foreach (var item in Model.ActiveSoldItems)
+                    {
+                        <tr data-sale-correction-item-row
+                            data-sale-correction-filter-text="@IndexModel.BuildCorrectionFilterText(item)">
+                            <td>@item.Reference</td>
+                            <td>@item.Title</td>
+                            <td>@item.SellerCode - @item.SellerName</td>
+                            <td>#@item.SaleId - @IndexModel.FormatSoldAt(item.SoldAt)</td>
+                            <td>@IndexModel.FormatPrice(item.SellerPriceAtSaleCents)</td>
+                            <td>
+                                <form method="post"
+                                      asp-page-handler="CorrectSaleLine"
+                                      asp-route-saleLineId="@item.SaleLineId"
+                                      class="inline-form">
+                                    <button type="submit"
+                                            class="table-action-button table-action-button-primary"
+                                            onclick="return confirm('Voulez-vous corriger cette ligne de vente et remettre l'article en stock ?');">
+                                        Remettre en stock
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="empty-state">Aucune ligne de vente active à corriger.</p>
+            }
+        </section>
+    </section>
+}

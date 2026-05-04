@@ -18,6 +18,10 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
     public IReadOnlyList<ItemEntity> Items { get; private set; } = [];
 
+    public bool CanEditItemMasterData { get; private set; }
+
+    public bool CanEditSellerMasterData { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
@@ -28,6 +32,8 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
         Seller = loaded;
         Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
         Input = CreateDefaultInput();
         return Page();
     }
@@ -42,6 +48,15 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
         Seller = loaded;
         Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
+        CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
+
+        if (!CanEditItemMasterData)
+        {
+            EnsureDefaultRows();
+            ModelState.AddModelError(string.Empty, "Les articles ne peuvent pas être ajoutés dans le statut actuel de la vente.");
+            return Page();
+        }
 
         var rowsToCreate = ValidateRows();
         EnsureDefaultRows();
@@ -69,6 +84,14 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         Seller = loaded;
         Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
         Input = CreateDefaultInput();
+        CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
+
+        if (!CanEditItemMasterData)
+        {
+            ModelState.AddModelError(string.Empty, "Les articles ne peuvent pas être supprimés dans le statut actuel de la vente.");
+            return Page();
+        }
 
         var result = await intakeService.DeleteSellerItemAsync(id, itemId, cancellationToken);
         if (result is DeleteItemResult.NotAllowed)
@@ -91,6 +114,14 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         Seller = loaded;
         Items = loaded.Items.OrderBy(x => x.ItemNumber).ToList();
         Input = CreateDefaultInput();
+        CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
+
+        if (!CanEditItemMasterData)
+        {
+            ModelState.AddModelError(string.Empty, "Les articles ne peuvent pas changer de statut dans le statut actuel de la vente.");
+            return Page();
+        }
 
         var result = await intakeService.MarkSellerItemInStockAsync(id, itemId, cancellationToken);
         if (result is ItemStatusChangeResult.NotAllowed)

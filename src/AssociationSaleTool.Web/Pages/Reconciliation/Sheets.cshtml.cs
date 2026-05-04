@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AssociationSaleTool.Web.Pages.Reconciliation;
 
-public sealed class SheetsModel(ReconciliationService reconciliationService) : PageModel
+public sealed class SheetsModel(
+    ReconciliationService reconciliationService,
+    SalePhaseService salePhaseService) : PageModel
 {
     public IReadOnlyList<SellerSheet> Sheets { get; private set; } = [];
 
@@ -17,6 +19,11 @@ public sealed class SheetsModel(ReconciliationService reconciliationService) : P
     public async Task<IActionResult> OnGetAsync(string? codeVendeur, CancellationToken cancellationToken)
     {
         if (!ReconciliationAdminSession.IsUnlocked(HttpContext))
+        {
+            return Redirect("/rapprochement");
+        }
+
+        if (await salePhaseService.GetCurrentPhaseAsync(cancellationToken) != SalePhase.PostSale)
         {
             return Redirect("/rapprochement");
         }

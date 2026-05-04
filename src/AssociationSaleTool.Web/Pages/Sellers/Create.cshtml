@@ -8,36 +8,45 @@
     <p class="eyebrow">Saisie</p>
     <h1 class="page-title">Créer un vendeur</h1>
 
+    @if (!Model.CanEditSellerMasterData)
+    {
+        <p class="validation">Les vendeurs ne peuvent pas être créés dans le statut actuel de la vente.</p>
+    }
+
     <form method="post" class="stack-form">
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
         <div class="field-grid">
             <label>
                 <span>Prénom</span>
-                <input asp-for="Input.FirstName" />
+                <input asp-for="Input.FirstName" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.FirstName" class="validation"></span>
             </label>
             <label>
                 <span>Nom</span>
-                <input asp-for="Input.LastName" />
+                <input asp-for="Input.LastName" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.LastName" class="validation"></span>
             </label>
             <label>
                 <span>E-mail</span>
-                <input asp-for="Input.Email" />
+                <input asp-for="Input.Email" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.Email" class="validation"></span>
             </label>
             <label>
                 <span>Téléphone</span>
-                <input asp-for="Input.Phone" />
+                <input asp-for="Input.Phone" disabled="@(!Model.CanEditSellerMasterData)" />
             </label>
         </div>
 
         <label>
             <span>Notes</span>
-            <textarea asp-for="Input.Notes" rows="3"></textarea>
+            <textarea asp-for="Input.Notes" rows="3" disabled="@(!Model.CanEditSellerMasterData)"></textarea>
         </label>
 
         <div class="form-actions">
-            <button type="submit" class="button-link button-link-solid">Créer le vendeur</button>
+            @if (Model.CanEditSellerMasterData)
+            {
+                <button type="submit" class="button-link button-link-solid">Créer le vendeur</button>
+            }
             <a class="button-link" asp-page="/Sellers/Index">Annuler</a>
         </div>
     </form>

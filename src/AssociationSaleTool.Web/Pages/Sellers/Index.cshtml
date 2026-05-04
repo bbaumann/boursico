@@ -10,8 +10,16 @@
             <p class="eyebrow">Saisie</p>
             <h1 class="page-title">Vendeurs</h1>
         </div>
-        <a class="button-link" asp-page="/Sellers/Create">Créer un vendeur</a>
+        @if (Model.CanEditSellerMasterData)
+        {
+            <a class="button-link" asp-page="/Sellers/Create">Créer un vendeur</a>
+        }
     </div>
+
+    @if (!Model.CanEditSellerMasterData)
+    {
+        <p class="validation">Les informations des vendeurs sont en lecture seule dans le statut actuel de la vente.</p>
+    }
 
     @if (Model.Sellers.Count == 0)
     {

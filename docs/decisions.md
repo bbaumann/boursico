@@ -421,6 +421,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - protect the whole reconciliation area with the shared `Admin:SharedPassword`
   - include seller sheets only for sellers with at least one `sold`, `missing`, or `in_stock` item
   - allow admin corrections between `in_stock` and `missing`
+  - keep seller-sheet printing and `missing` corrections read-only until the event phase is `post_sale`
   - keep seller fee calculation outside the system in V1
 - Consequence:
   - V1 does not need a separate reconciliation executable, script, or deployment path
@@ -428,3 +429,26 @@ This file captures the main project decisions in a lightweight ADR format.
   - checkout remains focused on sales while reconciliation has its own page and print workflow
   - production configuration must set a real admin password; blank or placeholder values are invalid
   - older documentation that described reconciliation as living outside the app is superseded by this decision
+
+## D-031 Use Event-Level Sale Phases And Explicit Sale-Line Corrections
+
+- Status: accepted
+- Key drivers:
+  - organizers need to close checkout before reconciliation without relying on convention
+  - the sale day must not be blocked if admins have not formally moved from preparation to sale mode
+    - sale mode should prevent unexpected seller and item master-data changes
+  - a mistakenly sold item cannot safely be fixed by changing only `item.status`
+- Decision:
+  - persist one event-level phase in the database: `presale`, `sale`, or `post_sale`
+  - default new databases to `presale`
+  - allow new sale creation in `presale` and `sale`
+  - block new sale validation and sale creation in `post_sale`
+    - lock seller and item master data in `sale` and `post_sale`
+  - expose admin phase changes through `/vente/statut`, guarded by a session-backed `Admin:SharedPassword` unlock
+  - correct a mistaken sale by marking the active `sale_line` with `corrected_at` and returning the item to `in_stock`
+- Consequence:
+  - `presale` is a preparation mode, not a hard "sales disabled" mode
+  - `sale` is primarily a catalog lock
+  - `post_sale` is the only phase that blocks new checkout persistence
+  - old sale totals remain immutable after sale-line correction
+  - seller sheets ignore corrected sale lines and can show the returned item from current item status

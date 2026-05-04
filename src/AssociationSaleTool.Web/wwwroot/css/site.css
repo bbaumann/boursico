@@ -30,6 +30,36 @@ body {
   pointer-events: none;
 }
 
+.app-status-header {
+  width: min(960px, calc(100% - 3rem));
+  margin: 1.25rem auto 0;
+}
+
+.app-status-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--ink);
+}
+
+.app-status-name {
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.app-status-phase {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(13, 92, 99, 0.24);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(255, 252, 245, 0.92);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
 .main-navigation {
   position: sticky;
   top: 1rem;
@@ -37,7 +67,7 @@ body {
   display: flex;
   gap: 1rem;
   width: min(960px, calc(100% - 3rem));
-  margin: 1.5rem auto 0;
+  margin: 1rem auto 0;
   padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -75,6 +105,15 @@ body {
 .main-navigation-link-active:hover {
   border-color: transparent;
   background: var(--accent);
+}
+
+.screen-reader-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .page-shell {
@@ -139,6 +178,18 @@ h1 {
   border: 1px solid var(--border);
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 238, 228, 0.95));
+}
+
+.phase-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.phase-action {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
 }
 
 .status-grid dt {

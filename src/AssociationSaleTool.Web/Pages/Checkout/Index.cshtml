@@ -13,10 +13,19 @@
         </div>
     </div>
 
+    @if (!Model.SaleAllowed)
+    {
+        <p class="validation" role="status">
+            La vente est en @Model.SalePhaseLabel.ToLowerInvariant(). Le passage en caisse est fermé.
+        </p>
+    }
+
     <script type="application/json" id="checkout-catalog-data">
         @Html.Raw(Model.CatalogJson)
     </script>
 
+    @if (Model.SaleAllowed)
+    {
     <div class="checkout-grid">
         <section class="subsection checkout-lookup">
             <label for="checkout-search">Rechercher un article</label>
@@ -141,8 +150,11 @@
             </div>
         </div>
     </div>
+    }
 </section>
 
+@if (Model.SaleAllowed)
+{
 <section class="checkout-print-receipt" data-checkout-receipt aria-hidden="true">
     <header>
         <h1 data-checkout-receipt-header>@Model.ReceiptHeaderText</h1>
@@ -182,3 +194,4 @@
         </div>
     </dl>
 </section>
+}

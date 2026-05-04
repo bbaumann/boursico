@@ -7,6 +7,7 @@ The recommended V1 architecture is a small custom local-network system:
 - one local server machine on the event network
 - one central authoritative database
 - one browser-based operations UI for intake and sale-day use
+- one admin-gated sale status page for event phase changes and sale corrections
 - one admin-gated in-app reconciliation dashboard for post-sale processing
 
 This is intentionally not an offline-first distributed architecture.
@@ -33,6 +34,8 @@ Properties:
 Responsibilities:
 
 - store sellers, items, sales, and statuses
+- store the current event sale phase
+- preserve corrected sale lines as historical facts
 - store the only authoritative event data
 - support deterministic post-sale reconciliation
 
@@ -50,6 +53,9 @@ Responsibilities:
 - sale-day lookup and cart creation
 - sale saving
 - optional receipt printing
+- visible current sale phase on every page
+- admin-gated sale status workflow from `/vente/statut`
+- correction of mistaken sale lines from the unlocked sale status workflow
 
 Properties:
 
@@ -59,7 +65,26 @@ Properties:
 - optimized for elderly volunteers
 - very narrow workflow
 
-### 4. Reconciliation Dashboard
+### 4. Sale Status Administration
+
+Responsibilities:
+
+- expose event phase controls at `/vente/statut`
+- move the event between `presale`, `sale`, and `post_sale`
+- require `Admin:SharedPassword` to unlock the page
+- list active sold sale lines that can be corrected
+- return a mistakenly sold item to `in_stock` while marking the original sale line as corrected
+
+Properties:
+
+- admin-gated by the shared admin password
+- password entry unlocks the page for the current browser session; individual phase and correction actions do not re-prompt
+- operational rather than accounting-focused
+- phase is persisted in the database and enforced server-side
+- corrected sale lines remain in the historical sale record
+- the original sale totals are not recalculated by correction
+
+### 5. Reconciliation Dashboard
 
 Responsibilities:
 
@@ -75,40 +100,50 @@ Properties:
 
 - admin-gated by the shared admin password
 - uses `Admin:SharedPassword`; production configuration must provide a non-blank value other than `change-me`
-- does not need to run during sales
-- can be used by administrators after sales are over
+- can be opened by administrators before `post_sale` as a read-only view
+- seller-sheet printing and correction actions are enabled only in `post_sale`
+- can be used by administrators for operations after sales are over
 
 ## Data Flow
 
-### Intake Phase
+### Presale Phase
 
 1. Seller list is received outside the system.
 2. An organizer manually creates the seller and item records.
 3. The system generates references.
 4. Items are ready for sale-day lookup.
+5. Checkout remains available so operations are not blocked if the phase was not changed before opening.
 
-### Sale-Day Phase
+### Sale Phase
 
-1. Operator types part of a reference.
-2. UI shows matching items.
-3. Operator selects an item.
-4. Item is added to the current cart.
-5. Sale is saved.
-6. Item status becomes unavailable for further sale.
+1. Admin moves the event to `sale` from `/vente/statut`.
+2. Seller and item master data become read-only in normal operations.
+3. `/` opens `/caisse`.
+4. Operator types part of a reference.
+5. UI shows matching items.
+6. Operator selects an item.
+7. Item is added to the current cart.
+8. Sale is saved.
+9. Item status becomes unavailable for further sale.
+10. Admin can correct a mistaken sale line from `/vente/statut` if an item was sold by mistake.
 
 ### Post-Sale Phase
 
-1. Reconciliation dashboard reads database facts.
-2. Admin prints seller sheets from `/rapprochement/feuilles`.
-3. Physical stock is checked against returned item lists.
-4. Admin marks missing items where needed or restores mistaken missing marks as corrections.
-5. Corrected sheets are regenerated from the dashboard.
-6. Final seller payout workflow is executed.
+1. Admin moves the event to `post_sale` from `/vente/statut`.
+2. Checkout validation and sale persistence are rejected server-side.
+3. `/` opens `/rapprochement`.
+4. Reconciliation dashboard reads database facts.
+5. Admin prints seller sheets from `/rapprochement/feuilles`.
+6. Physical stock is checked against returned item lists.
+7. Admin marks missing items where needed or restores mistaken missing marks as corrections.
+8. Corrected sheets are regenerated from the dashboard.
+9. Final seller payout workflow is executed.
 
 ## Architectural Principles
 
 - Keep the system centralized during the event.
 - Keep the sale-day UI separate from reconciliation concerns.
+- Persist the sale phase centrally and enforce it in services, not only in page navigation.
 - Prefer explicit manual fallback over hidden partial offline behavior.
 - Optimize for operational clarity rather than technical sophistication.
 

@@ -13,6 +13,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<SaleLineEntity> SaleLines => Set<SaleLineEntity>();
 
+    public DbSet<EventStateEntity> EventState => Set<EventStateEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SellerEntity>(entity =>
@@ -87,23 +89,47 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.SaleId).HasColumnName("sale_id").IsRequired();
             entity.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
             entity.Property(x => x.SellerPriceAtSaleCents).HasColumnName("seller_price_at_sale_cents").IsRequired();
+            entity.Property(x => x.CorrectedAt).HasColumnName("corrected_at");
 
             entity.HasOne(x => x.Sale)
                 .WithMany(x => x.SaleLines)
                 .HasForeignKey(x => x.SaleId)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Item)
-                .WithOne(x => x.SaleLine)
-                .HasForeignKey<SaleLineEntity>(x => x.ItemId)
+                .WithMany(x => x.SaleLines)
+                .HasForeignKey(x => x.ItemId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(x => x.ItemId)
-                .IsUnique();
+                .IsUnique()
+                .HasFilter("corrected_at IS NULL");
             entity.HasIndex(x => x.SaleId);
 
             entity.ToTable(table =>
             {
                 table.HasCheckConstraint("ck_sale_line_seller_price_cents", "seller_price_at_sale_cents >= 0");
+            });
+        });
+
+        modelBuilder.Entity<EventStateEntity>(entity =>
+        {
+            entity.ToTable("event_state");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
+            entity.Property(x => x.SalePhase).HasColumnName("sale_phase").IsRequired();
+            entity.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+            entity.HasData(new EventStateEntity
+            {
+                Id = 1,
+                SalePhase = "presale",
+                UpdatedAt = new DateTime(2026, 5, 4, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("ck_event_state_singleton", "Id = 1");
+                table.HasCheckConstraint("ck_event_state_sale_phase", "sale_phase IN ('presale', 'sale', 'post_sale')");
             });
         });
     }

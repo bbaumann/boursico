@@ -8,7 +8,9 @@ V1 will run on SQLite on the central server.
 
 V1 uses one database file per event.
 
-Event metadata such as the event name or year code lives in application configuration rather than in relational tables.
+Static event metadata such as the event name or year code lives in application configuration rather than in relational tables.
+
+Mutable operational event state, such as the current sale phase, lives in the database so every station follows the same server-side rules.
 
 The schema is designed for a minimal normalized relational model.
 
@@ -21,7 +23,8 @@ Concrete DDL drafts are available in:
 
 - One physical toy equals one item record.
 - One completed checkout equals one sale.
-- One sold toy appears in exactly one sale line.
+- One active sold toy appears in exactly one uncorrected sale line.
+- Corrected sale lines remain as historical correction evidence.
 - Seller sheets are derived from current data, not stored as their own primary business objects in V1.
 - One database file represents one event operationally in V1.
 
@@ -100,19 +103,41 @@ Represents one sold item inside one sale.
 - `sale_id`
 - `item_id`
 - `seller_price_at_sale_cents`
+- `corrected_at`
 
 ### Notes
 
 - `seller_price_at_sale_cents` is the per-item snapshot stored to protect reconciliation if item data is later edited by mistake.
 - In V1, this snapshot is also the printed item price seen by the customer.
 - Snapshot prices are stored as integer cents.
-- An item can appear in at most one sale line.
+- `corrected_at` is null for an active sale line.
+- If `corrected_at` is filled, the line was corrected by an admin and the linked item can return to `in_stock`.
+- Original sale totals are not recalculated when a sale line is corrected.
+
+## `event_state`
+
+Represents mutable event-level operational state.
+
+V1 uses a single row with `id = 1`.
+
+### Columns
+
+- `id`
+- `sale_phase`
+- `updated_at`
+
+### Notes
+
+- `sale_phase` values are `presale`, `sale`, and `post_sale`.
+- a new database starts in `presale`.
+- phase changes are made through `/vente/statut` and require `Admin:SharedPassword`.
 
 ## Relationships
 
 - one `seller` has many `item`
 - one `sale` has many `sale_line`
-- one `item` has at most one `sale_line`
+- one `item` may have many historical `sale_line` rows
+- one `item` may have at most one active `sale_line` where `corrected_at IS NULL`
 
 ## Keys And Constraints
 
@@ -122,6 +147,7 @@ Represents one sold item inside one sale.
 - `item.id`
 - `sale.id`
 - `sale_line.id`
+- `event_state.id`
 
 ## Foreign Keys
 
@@ -134,7 +160,7 @@ Represents one sold item inside one sale.
 - `seller.seller_code` unique
 - `item.reference` unique
 - `(item.seller_id, item.item_number)` unique
-- `sale_line.item_id` unique
+- `sale_line.item_id` unique only for active rows where `corrected_at IS NULL`
 
 ## Nullability
 
@@ -169,6 +195,12 @@ Represents one sold item inside one sale.
 - `sale_id`: required
 - `item_id`: required
 - `seller_price_at_sale_cents`: required
+- `corrected_at`: optional
+
+## `event_state`
+
+- `sale_phase`: required
+- `updated_at`: required
 
 ## Enumerations
 
@@ -190,6 +222,14 @@ Business meaning:
 
 V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, the item is deleted while still `registered`.
 
+## Sale Phase
+
+Allowed values:
+
+- `presale`
+- `sale`
+- `post_sale`
+
 ## Delete And Update Rules
 
 V1 should be conservative and prefer restriction over cascading deletion.
@@ -200,26 +240,28 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - allow deleting an `item` only while its status is `registered` or `in_stock`
 - do not delete an `item` if it is linked to a sale line
 - do not delete a `sale` in normal operations once created
-- do not delete `sale_line` in normal operations
+- do not delete `sale_line` in normal operations; sale correction fills `corrected_at`
 
 ## Update Rules
 
 - `seller.seller_code` should not change once items exist for the seller
-- before sale start, intake staff may still correct item master data if needed
-- once sale-day checkout opens, item master data becomes read-only in normal operations
-- after sale start, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
-- after sale start, only workflow-driven status transitions remain allowed in V1
+- in `presale`, intake staff may still correct unsold item master data if needed
+- in `sale` and `post_sale`, item master data becomes read-only in normal operations
+- when item master data is locked, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
+- when item master data is locked, only workflow-driven status transitions remain allowed in V1
 - `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
-- `sale_line` snapshots are immutable
+- `sale_line` price snapshots are immutable; correction status is represented only by `corrected_at`
 
 ## Business Invariants
 
 These are important invariants even if they are enforced first in application logic rather than as hard database constraints.
 
 - adding an item to a cart does not reserve it in V1
+- a sale may only be persisted while `event_state.sale_phase` is `presale` or `sale`
 - a sale may only be persisted if every item in the cart is still `in_stock` at transaction time
-- if an item appears in `sale_line`, its status must be `sold`
-- one item can only be sold once
+- if an item has an active sale line where `corrected_at IS NULL`, its status must be `sold`
+- one item can only have one active sale line
+- corrected sale lines do not make an item unavailable for sale
 - `sale.subtotal_seller_price_cents` must equal the sum of its sale lines' `seller_price_at_sale_cents`
 - `sale.checkout_fee_cents` must equal 10 percent of `sale.subtotal_seller_price_cents`, rounded to the nearest cent with midpoint values rounded away from zero
 - `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
@@ -267,7 +309,7 @@ Recommended indexes:
 - unique index on `seller.seller_code`
 - unique index on `item.reference`
 - unique index on `(item.seller_id, item.item_number)`
-- unique index on `sale_line.item_id`
+- unique partial index on `sale_line.item_id` where `corrected_at IS NULL`
 - index on `item.reference`
 - index on `item.title`
 - index on `item.seller_id`

@@ -43,12 +43,16 @@ Profile:
 
 Primary goals:
 
+- move the event between sale phases
+- correct a sale line when the wrong reference was sold
 - generate seller sheets
 - mark items as `missing` when discovered
 - regenerate final sheets
 
 Access model in V1:
 
+- sale status administration requires the shared admin password to unlock `/vente/statut`
+- phase changes and sale-line corrections are available after that page is unlocked
 - `missing` changes require the shared admin password
 - this is a lightweight misuse-prevention control, not a full user/role system
 
@@ -180,6 +184,41 @@ Expected outcome:
 
 - Sale is persisted with subtotal, checkout fee, and total paid; affected items are no longer in stock; and the screen resets for the next customer.
 
+### UC-05A Change Sale Phase
+
+Actor:
+
+- Reconciliation admin
+
+Description:
+
+- Move the event between `presale`, `sale`, and `post_sale` from `/vente/statut`.
+- The admin page must be unlocked with the shared admin password in V1.
+
+Expected outcome:
+
+- The current phase is visible on every page.
+- `/` opens the workflow that matches the phase: `/vendeurs`, `/caisse`, or `/rapprochement`.
+- The server applies the corresponding edit and checkout rules.
+
+### UC-05B Correct Mistaken Sale Line
+
+Actor:
+
+- Reconciliation admin
+
+Description:
+
+- Find a sold item that was added to a sale by mistake.
+- Confirm correction from the already-unlocked `/vente/statut` admin page.
+
+Expected outcome:
+
+- The item returns to `in_stock` and can be sold again.
+- The original sale line is marked corrected and remains as historical evidence.
+- Seller-sheet payout output ignores the corrected sale line.
+- The original sale totals are not recalculated.
+
 ### UC-06 Print Receipt
 
 Actor:
@@ -204,6 +243,7 @@ Actor:
 Description:
 
 - Generate one printable seller sheet after the sale is over.
+- This action is available only when the event phase is `post_sale`.
 
 Expected outcome:
 
@@ -219,6 +259,7 @@ Description:
 
 - Change an item from `in_stock` to `missing` when it cannot be found physically during post-sale gathering.
 - This action requires the shared admin password in V1.
+- This action is available only when the event phase is `post_sale`.
 
 Expected outcome:
 

@@ -6,11 +6,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AssociationSaleTool.Web.Services;
 
-public sealed class CheckoutService(AppDbContext dbContext)
+public sealed class CheckoutService
 {
+    private const string PostSaleMessage = "La vente est en après-vente. Aucune nouvelle vente ne peut être enregistrée.";
+    private readonly AppDbContext _dbContext;
+    private readonly SalePhaseService _salePhaseService;
+
+    public CheckoutService(AppDbContext dbContext, SalePhaseService? salePhaseService = null)
+    {
+        _dbContext = dbContext;
+        _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
+    }
+
     public async Task<List<CheckoutCatalogItem>> ListCatalogItemsAsync(CancellationToken cancellationToken = default)
     {
-        return await dbContext.Items
+        return await _dbContext.Items
             .AsNoTracking()
             .Where(x => x.Status == "in_stock")
             .OrderBy(x => x.Reference)
@@ -26,6 +36,11 @@ public sealed class CheckoutService(AppDbContext dbContext)
         IReadOnlyList<long> itemIds,
         CancellationToken cancellationToken = default)
     {
+        if (!await _salePhaseService.CanCreateSalesAsync(cancellationToken))
+        {
+            return new CheckoutValidationResult(false, [], null, 0, PostSaleMessage);
+        }
+
         var items = await LoadCartItemsAsync(itemIds, asTracking: false, cancellationToken);
         return BuildValidationResult(itemIds, items);
     }
@@ -35,7 +50,12 @@ public sealed class CheckoutService(AppDbContext dbContext)
         string? receiptDetails = null,
         CancellationToken cancellationToken = default)
     {
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        if (!await _salePhaseService.CanCreateSalesAsync(cancellationToken))
+        {
+            return new CheckoutSaleResult(false, null, [], null, 0, PostSaleMessage);
+        }
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         var items = await LoadCartItemsAsync(itemIds, asTracking: true, cancellationToken);
         var validation = BuildValidationResult(itemIds, items);
 
@@ -68,8 +88,8 @@ public sealed class CheckoutService(AppDbContext dbContext)
             });
         }
 
-        dbContext.Sales.Add(sale);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        _dbContext.Sales.Add(sale);
+        await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         return new CheckoutSaleResult(
@@ -92,7 +112,7 @@ public sealed class CheckoutService(AppDbContext dbContext)
         CancellationToken cancellationToken)
     {
         var distinctIds = itemIds.Distinct().ToList();
-        var query = dbContext.Items.Where(x => distinctIds.Contains(x.Id));
+        var query = _dbContext.Items.Where(x => distinctIds.Contains(x.Id));
 
         if (!asTracking)
         {

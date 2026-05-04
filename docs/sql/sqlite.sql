@@ -55,6 +55,7 @@ CREATE TABLE sale_line (
     sale_id INTEGER NOT NULL,
     item_id INTEGER NOT NULL,
     seller_price_at_sale_cents INTEGER NOT NULL,
+    corrected_at TEXT,
     CONSTRAINT fk_sale_line_sale
         FOREIGN KEY (sale_id)
         REFERENCES sale(id)
@@ -66,8 +67,17 @@ CREATE TABLE sale_line (
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
     CONSTRAINT ck_sale_line_seller_price_cents
-        CHECK (seller_price_at_sale_cents >= 0),
-    CONSTRAINT uq_sale_line_item UNIQUE (item_id)
+        CHECK (seller_price_at_sale_cents >= 0)
+);
+
+CREATE TABLE event_state (
+    id INTEGER PRIMARY KEY,
+    sale_phase TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    CONSTRAINT ck_event_state_singleton
+        CHECK (id = 1),
+    CONSTRAINT ck_event_state_sale_phase
+        CHECK (sale_phase IN ('presale', 'sale', 'post_sale'))
 );
 
 CREATE INDEX idx_item_title ON item(title);
@@ -75,5 +85,9 @@ CREATE INDEX idx_item_seller_id ON item(seller_id);
 CREATE INDEX idx_item_status ON item(status);
 CREATE INDEX idx_sale_sold_at ON sale(sold_at);
 CREATE INDEX idx_sale_line_sale_id ON sale_line(sale_id);
+CREATE UNIQUE INDEX idx_sale_line_active_item_id ON sale_line(item_id) WHERE corrected_at IS NULL;
+
+INSERT INTO event_state (id, sale_phase, updated_at)
+VALUES (1, 'presale', '2026-05-04T00:00:00Z');
 
 COMMIT;

@@ -14,9 +14,15 @@
 
 ### During The Sale
 
-Before the first checkout is processed:
+The system starts in `presale`.
 
-- item master data is frozen for the event
+Admins may leave the system in `presale` while selling if organizers are still doing final item corrections. Sales are still allowed in `presale`.
+
+When organizers want to freeze seller and item master data, an admin unlocks `/vente/statut` with the shared admin password and moves the event to `sale`. This makes `/` open `/caisse` and prevents normal seller and item edits.
+
+During checkout:
+
+- seller and item master data are frozen for the event
 - only allowed status changes remain possible after this point
 
 1. Sale-day volunteer types part or all of a reference.
@@ -27,20 +33,29 @@ Before the first checkout is processed:
 6. The cart is validated against the live database before the finalization modal is shown.
 7. If validation passes, the finalization modal shows the item count, total amount, and the actions `Go back`, `Save`, and `Save and print receipt`.
 8. If the volunteer chooses `Save` or `Save and print receipt`, the server re-validates that all cart items are still `in_stock` inside the save transaction.
-9. If validation passes, the sale is saved and those items become `sold`.
-10. If any item is no longer `in_stock`, the save is rejected, the conflicting item is highlighted prominently in red, and the operator must remove it and retry.
-11. After a successful save, checkout resets to a fresh state and reloads the in-memory catalog.
+9. The server rejects the save if the event is already in `post_sale`.
+10. If validation passes, the sale is saved and those items become `sold`.
+11. If any item is no longer `in_stock`, the save is rejected, the conflicting item is highlighted prominently in red, and the operator must remove it and retry.
+12. After a successful save, checkout resets to a fresh state and reloads the in-memory catalog.
+
+### Mistaken Sale Correction
+
+If a volunteer saved a sale with the wrong reference and the real item later needs to be sold, an admin corrects the mistaken sale line from the unlocked `/vente/statut` page.
+
+The correction keeps the original sale stored, marks the sale line corrected, returns the item to `in_stock`, and lets the item be sold again. It does not recalculate the original sale total because the cash/receipt consequence happened at checkout.
 
 ### After The Sale
 
-1. Admin opens the reconciliation dashboard at `/rapprochement` after entering the shared admin password.
-2. Admin prints all seller sheets from `/rapprochement/feuilles`; sheets are generated only for sellers with at least one `sold`, `missing`, or `in_stock` item.
-3. An operator physically gathers all returned items from the stock using the sheet.
-4. If a returned item cannot be found, admin marks it as `missing`.
-5. Seller sheet is regenerated from the dashboard.
-6. If the `missing` status change was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
-7. Another operator writes the check based on the final amount to pay.
-8. Check, final seller sheet, and returned items are physically grouped for seller pickup.
+1. Admin unlocks `/vente/statut` with the shared admin password and moves the event to `post_sale`.
+2. New sale validation and sale save are rejected server-side.
+3. Admin opens the reconciliation dashboard at `/rapprochement` after entering the shared admin password.
+4. Admin prints all seller sheets from `/rapprochement/feuilles`; sheets are generated only for sellers with at least one `sold`, `missing`, or `in_stock` item.
+5. An operator physically gathers all returned items from the stock using the sheet.
+6. If a returned item cannot be found, admin marks it as `missing`.
+7. Seller sheet is regenerated from the dashboard.
+8. If the `missing` status change was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
+9. Another operator writes the check based on the final amount to pay.
+10. Check, final seller sheet, and returned items are physically grouped for seller pickup.
 
 ## Preregistration Confirmation Workflow
 
@@ -140,12 +155,15 @@ Operationally, anything not present in physical stock and not returned can be tr
 
 - every sale must be persisted immediately
 - item selection in a cart must not create a hidden reservation state
+- sale save must reject new sales in `post_sale`
 - sale save must re-check current item availability before persisting
 - item availability must prevent double sale after confirmation
+- mistaken sale correction must mark the sale line corrected instead of deleting or rewriting the original sale
 - seller sheets must always be reproducible from current database facts
 - marking an item as `missing` must require the shared admin password
 - restoring a mistakenly marked `missing` item to `in_stock` must require the shared admin password
 - the reconciliation dashboard at `/rapprochement` must be admin-gated
+- seller-sheet printing and missing-item reconciliation corrections must require the event phase to be `post_sale`
 - all seller sheets must be printed from `/rapprochement/feuilles`
 - `Admin:SharedPassword` must be configured for production; blank values and `change-me` are invalid
 - V1 does not implement per-user identity or a full authorization model

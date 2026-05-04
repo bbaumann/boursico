@@ -60,6 +60,8 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 builder.Services.AddScoped<IntakeService>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<ReconciliationService>();
+builder.Services.AddScoped<SalePhaseService>();
+builder.Services.AddScoped<SaleCorrectionService>();
 
 var app = builder.Build();
 

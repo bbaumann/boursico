@@ -74,6 +74,52 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void EventStateStoresSalePhase()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var eventStateEntityType = context.Model.FindEntityType(typeof(EventStateEntity));
+        Assert.NotNull(eventStateEntityType);
+        Assert.Contains(eventStateEntityType!.GetProperties(), property => property.GetColumnName() == "sale_phase");
+    }
+
+    [Fact]
+    public void SaleLineStoresCorrectionTimestamp()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var saleLineEntityType = context.Model.FindEntityType(typeof(SaleLineEntity));
+        Assert.NotNull(saleLineEntityType);
+        Assert.Contains(saleLineEntityType!.GetProperties(), property => property.GetColumnName() == "corrected_at");
+    }
+
+    [Fact]
+    public void SaleLineAllowsOnlyOneActiveSaleLinePerItem()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var saleLineEntityType = context.Model.FindEntityType(typeof(SaleLineEntity));
+        Assert.NotNull(saleLineEntityType);
+        Assert.Contains(
+            saleLineEntityType!.GetIndexes(),
+            index => index.IsUnique
+                && index.GetFilter() == "corrected_at IS NULL"
+                && index.Properties.Select(property => property.Name).SequenceEqual([nameof(SaleLineEntity.ItemId)]));
+    }
+
+    [Fact]
     public void ItemStatusCheckConstraintExcludesNotProvided()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");

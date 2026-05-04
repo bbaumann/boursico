@@ -8,8 +8,11 @@ public sealed class IndexModel(IntakeService intakeService) : PageModel
 {
     public IReadOnlyList<SellerEntity> Sellers { get; private set; } = [];
 
+    public bool CanEditSellerMasterData { get; private set; }
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         Sellers = await intakeService.ListSellersAsync(cancellationToken);
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
     }
 }

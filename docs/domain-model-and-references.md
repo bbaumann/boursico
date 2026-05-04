@@ -57,6 +57,9 @@ Suggested fields:
 - sale id
 - item id
 - seller price at time of sale
+- corrected at timestamp, when an admin corrected a mistaken sale line
+
+If a sale line is corrected, the original sale and sale totals remain stored. The corrected line no longer makes the item unavailable for sale and is ignored by seller-sheet payable output.
 
 ## Item Status Model
 
@@ -81,6 +84,14 @@ Lifecycle meaning:
 - `missing`: expected to be returned after the event, but not found physically
 
 V1 does not use a `not_provided` status. Preregistered items that are not physically delivered are deleted while still `registered`; items mistakenly entered as present may be deleted while still `in_stock`.
+
+## Sale Phase
+
+One event-level phase controls normal operations:
+
+- `presale`: preparation mode; sales are allowed and unsold item master data is editable
+- `sale`: catalog-lock mode; sales are allowed and item master data is read-only
+- `post_sale`: reconciliation mode; new sales are blocked and item master data is read-only
 
 ## Price Model
 

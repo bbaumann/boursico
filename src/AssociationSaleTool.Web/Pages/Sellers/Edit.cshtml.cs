@@ -13,6 +13,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
     public long SellerId { get; private set; }
 
+    public bool CanEditSellerMasterData { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var seller = await intakeService.GetSellerAsync(id, cancellationToken);
@@ -21,7 +23,57 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             return NotFound();
         }
 
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
         SellerId = seller.Id;
+        PopulateInput(seller);
+
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostAsync(long id, CancellationToken cancellationToken)
+    {
+        SellerId = id;
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
+        if (!CanEditSellerMasterData)
+        {
+            var seller = await intakeService.GetSellerAsync(id, cancellationToken);
+            if (seller is null)
+            {
+                return NotFound();
+            }
+
+            ModelState.Clear();
+            PopulateInput(seller);
+            ModelState.AddModelError(string.Empty, "Les informations du vendeur ne peuvent pas être modifiées dans le statut actuel de la vente.");
+            return Page();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        var result = await intakeService.UpdateSellerAsync(
+            id,
+            new UpdateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.Notes),
+            cancellationToken);
+
+        if (result == UpdateSellerResult.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (result == UpdateSellerResult.NotAllowed)
+        {
+            ModelState.AddModelError(string.Empty, "Les informations du vendeur ne peuvent pas être modifiées dans le statut actuel de la vente.");
+            return Page();
+        }
+
+        return RedirectToPage("/Sellers/Details", new { id });
+    }
+
+    private void PopulateInput(AssociationSaleTool.Web.Data.Entities.SellerEntity seller)
+    {
         Input = new InputModel
         {
             FirstName = seller.FirstName,
@@ -30,25 +82,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             Phone = seller.Phone,
             Notes = seller.Notes
         };
-
-        return Page();
-    }
-
-    public async Task<IActionResult> OnPostAsync(long id, CancellationToken cancellationToken)
-    {
-        SellerId = id;
-
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
-
-        await intakeService.UpdateSellerAsync(
-            id,
-            new UpdateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.Notes),
-            cancellationToken);
-
-        return RedirectToPage("/Sellers/Details", new { id });
     }
 
     public sealed class InputModel

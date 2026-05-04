@@ -226,6 +226,32 @@ public sealed class CheckoutServiceTests
         Assert.Equal("sold", (await context.Items.SingleAsync(x => x.Id == secondItem.Id)).Status);
     }
 
+    [Fact]
+    public async Task SaveSaleAsync_RejectsNewSalesAfterPostSaleTransition()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var phaseService = new SalePhaseService(context);
+        await phaseService.SetPhaseAsync(SalePhase.PostSale);
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync([firstItem.Id]);
+
+        Assert.False(result.Saved);
+        Assert.Null(result.SaleId);
+        Assert.Empty(result.ConflictItemIds);
+        Assert.Equal("La vente est en après-vente. Aucune nouvelle vente ne peut être enregistrée.", result.Message);
+        Assert.Empty(await context.Sales.ToListAsync());
+        Assert.Equal("in_stock", (await context.Items.SingleAsync(x => x.Id == firstItem.Id)).Status);
+    }
+
     private static async Task<(ItemEntity FirstItem, ItemEntity SecondItem)> SeedTwoItemsAsync(
         AppDbContext context,
         string firstStatus,

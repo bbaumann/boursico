@@ -15,6 +15,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
     public ItemEntity? Item { get; private set; }
 
+    public bool CanEditItem { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var item = await intakeService.GetItemAsync(id, cancellationToken);
@@ -24,6 +26,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         }
 
         Item = item;
+        CanEditItem = await intakeService.CanEditItemMasterDataAsync(cancellationToken)
+            && item.Status is "registered" or "in_stock";
         Input = new InputModel
         {
             Title = item.Title,
@@ -42,6 +46,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         }
 
         Item = item;
+        CanEditItem = await intakeService.CanEditItemMasterDataAsync(cancellationToken)
+            && item.Status is "registered" or "in_stock";
 
         if (!ModelState.IsValid)
         {
@@ -60,7 +66,14 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             return Page();
         }
 
-        await intakeService.UpdateItemAsync(id, new UpdateItemRequest(Input.Title, sellerPriceCents), cancellationToken);
+        var result = await intakeService.UpdateItemAsync(id, new UpdateItemRequest(Input.Title, sellerPriceCents), cancellationToken);
+        if (result == UpdateItemResult.NotAllowed)
+        {
+            ModelState.AddModelError(string.Empty, "Cet article ne peut pas être modifié dans le statut actuel de la vente.");
+            CanEditItem = false;
+            return Page();
+        }
+
         return RedirectToPage("/Sellers/Details", new { id = item.SellerId });
     }
 

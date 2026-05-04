@@ -30,6 +30,8 @@ The catalog exists to make lookup fast and local.
 
 It is not the final authority on whether an item can still be sold.
 
+The server also checks the event sale phase. Checkout validation and sale persistence are allowed in `presale` and `sale`, and rejected in `post_sale`.
+
 ## Lookup Interaction
 
 The checkout lookup is not an autocomplete widget.
@@ -145,6 +147,8 @@ If save-time validation fails:
 - the rest of the cart remains intact
 
 This error should look visually strong and difficult to miss.
+
+If save-time validation fails because the event is in `post_sale`, no cart line is highlighted. The message should explain that the sale is closed and an admin must move the event back to another phase before new sales can be saved.
 
 ## Receipt Handling
 

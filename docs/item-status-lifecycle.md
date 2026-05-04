@@ -4,15 +4,24 @@
 
 This document summarizes the V1 item status model and the allowed status changes across event phases.
 
-It also defines the operational mutability rule introduced for sale start:
+It also defines the operational mutability rule introduced by sale phases:
 
-- before sale start, intake staff may still correct item master data
-- once checkout opens, item master data becomes read-only in normal operations
-- after sale start, only the allowed status transitions below remain editable
+- in `presale`, intake staff may still correct seller master data and unsold item master data
+- in `sale`, checkout remains open but seller and item master data become read-only in normal operations
+- in `post_sale`, checkout is closed and seller and item master data remain read-only
+- after seller and item master data are locked, only the allowed status transitions below remain editable
 
 ## Item Master Data Frozen At Sale Start
 
-When checkout opens for the event, the following item fields become read-only in normal operations:
+When the event phase is `sale` or `post_sale`, the following seller fields become read-only in normal operations:
+
+- `first_name`
+- `last_name`
+- `email`
+- `phone`
+- `notes`
+
+The following item fields also become read-only in normal operations:
 
 - `reference`
 - `item_number`
@@ -76,21 +85,21 @@ No reservation status exists in V1:
 
 The following are final in normal V1 operations:
 
-- `sold`
+- `sold`, except for an explicit admin sale-line correction when the item was added to a sale by mistake
 - `missing`, except for an explicit admin reconciliation correction when the item was marked `missing` by mistake
 
-No transition back out of `sold` is defined in V1.
+No plain item-status transition back out of `sold` is defined in V1.
 
 ## Forbidden Transitions In V1
 
 - `registered -> sold`
 - `registered -> missing`
-- `sold -> in_stock`
+- ad hoc `sold -> in_stock`
 - `sold -> missing`
 
 V1 does not use a `not_provided` status. If a preregistered item was not physically delivered, the item is removed while it is still `registered`. If an item was mistakenly recorded as present, it may be removed while it is still `in_stock`.
 
-If an operator mistake is discovered after an item has become `sold` or `missing`, correction should be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow.
+If an operator mistake is discovered after an item has become `sold` or `missing`, correction must be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow. Restoring a mistakenly sold item to `in_stock` is allowed only by correcting the active sale line, which leaves the original sale stored and marks the sale line corrected.
 
 ## Role Summary
 
@@ -103,14 +112,14 @@ Before sale start:
 - confirm preregistered delivery by marking delivered items `in_stock`
 - delete preregistered items that were not physically delivered
 - delete `registered` or `in_stock` items that were entered by mistake
-- correct item master data if needed
+- correct seller and item master data if needed
 
 ### Sale-Day Volunteer
 
 During the sale:
 
 - move `in_stock` items to `sold` only by saving a sale
-- cannot edit item master data
+- cannot edit seller or item master data
 
 ### Reconciliation Admin
 
@@ -119,7 +128,7 @@ After the sale:
 - move `in_stock` items to `missing` when a physically expected return cannot be found
 - restore a mistakenly marked `missing` item to `in_stock` only as a correction
 - must enter the shared admin password before confirming that action
-- cannot reopen or rewrite item master data as part of normal reconciliation
+- cannot reopen or rewrite seller or item master data as part of normal reconciliation
 
 V1 does not include:
 

@@ -36,6 +36,7 @@ Archived or translated variants may exist elsewhere in the repository, but agent
 - [Process And Failover](./process-and-failover.md)
 - [Domain Model And References](./domain-model-and-references.md)
 - [Item Status Lifecycle](./item-status-lifecycle.md)
+- [Sale Phases And Sale Corrections](./sale-phases-and-corrections.md)
 - [Scope And Phasing](./scope-and-phasing.md)
 - [VNext Backlog](./vnext-backlog.md)
 
@@ -48,13 +49,14 @@ The tool contains two independent in-app features over one shared database:
 
 Event operations are optimized for elderly, non-technical volunteers during the sale day.
 
-Post-sale reconciliation is optimized for correctness and auditability. It is an admin-gated in-app dashboard at `/rapprochement`, with printable seller sheets at `/rapprochement/feuilles`.
+Post-sale reconciliation is optimized for correctness and auditability. It is an admin-gated in-app dashboard at `/rapprochement`, with printable seller sheets at `/rapprochement/feuilles`. Before the event phase is `post_sale`, the dashboard can be viewed but reconciliation operations remain read-only.
 
 ## Key Principles
 
 - One physical toy maps to one item record.
 - One central database is the only digital source of truth.
 - Sale-day UX must feel like an appliance, not like an admin application.
+- The sale phase is visible globally and enforced server-side.
 - Reconciliation happens after sales are over and is treated as a separate in-app feature.
 - Simplicity is preferred over cleverness in V1.
 
@@ -81,5 +83,6 @@ If someone is new to the project, the best reading order is:
 8. [Architecture](./architecture.md)
 9. [Process And Failover](./process-and-failover.md)
 10. [Item Status Lifecycle](./item-status-lifecycle.md)
-11. [Decisions](./decisions.md)
-12. [VNext Backlog](./vnext-backlog.md)
+11. [Sale Phases And Sale Corrections](./sale-phases-and-corrections.md)
+12. [Decisions](./decisions.md)
+13. [VNext Backlog](./vnext-backlog.md)

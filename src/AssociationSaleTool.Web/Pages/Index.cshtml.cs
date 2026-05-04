@@ -1,19 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using AssociationSaleTool.Web.Services;
 
 namespace AssociationSaleTool.Web.Pages;
 
-public class IndexModel : PageModel
+public class IndexModel(SalePhaseService salePhaseService) : PageModel
 {
-    private readonly ILogger<IndexModel> _logger;
-
-    public IndexModel(ILogger<IndexModel> logger)
+    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
-        _logger = logger;
-    }
+        var phase = await salePhaseService.GetCurrentPhaseAsync(cancellationToken);
+        var target = phase switch
+        {
+            SalePhase.Presale => "/vendeurs",
+            SalePhase.Sale => "/caisse",
+            SalePhase.PostSale => "/rapprochement",
+            _ => "/vendeurs"
+        };
 
-    public void OnGet()
-    {
-
+        return Redirect(target);
     }
 }

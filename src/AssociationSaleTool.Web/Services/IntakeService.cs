@@ -7,11 +7,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AssociationSaleTool.Web.Services;
 
-public sealed class IntakeService(AppDbContext dbContext)
+public sealed class IntakeService
 {
+    private readonly AppDbContext _dbContext;
+    private readonly SalePhaseService _salePhaseService;
+
+    public IntakeService(AppDbContext dbContext, SalePhaseService? salePhaseService = null)
+    {
+        _dbContext = dbContext;
+        _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
+    }
+
     public async Task<List<SellerEntity>> ListSellersAsync(CancellationToken cancellationToken = default)
     {
-        return await dbContext.Sellers
+        return await _dbContext.Sellers
             .AsNoTracking()
             .Include(x => x.Items)
             .OrderBy(x => x.SellerCode)
@@ -20,14 +29,14 @@ public sealed class IntakeService(AppDbContext dbContext)
 
     public async Task<SellerEntity?> GetSellerAsync(long sellerId, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Sellers
+        return await _dbContext.Sellers
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
     }
 
     public async Task<SellerEntity?> GetSellerWithItemsAsync(long sellerId, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Sellers
+        return await _dbContext.Sellers
             .AsNoTracking()
             .Include(x => x.Items.OrderBy(item => item.ItemNumber))
             .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
@@ -35,16 +44,21 @@ public sealed class IntakeService(AppDbContext dbContext)
 
     public async Task<ItemEntity?> GetItemAsync(long itemId, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Items
+        return await _dbContext.Items
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == itemId, cancellationToken);
     }
 
     public async Task<SellerEntity> CreateSellerAsync(CreateSellerRequest request, CancellationToken cancellationToken = default)
     {
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
+        {
+            throw new InvalidOperationException("Seller master data is locked outside presale.");
+        }
+
         var seller = new SellerEntity
         {
-            SellerCode = SellerCodeGenerator.GetCodeAt(await dbContext.Sellers.CountAsync(cancellationToken)),
+            SellerCode = SellerCodeGenerator.GetCodeAt(await _dbContext.Sellers.CountAsync(cancellationToken)),
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             Email = NormalizeOptional(request.Email),
@@ -52,15 +66,20 @@ public sealed class IntakeService(AppDbContext dbContext)
             Notes = NormalizeOptional(request.Notes)
         };
 
-        dbContext.Sellers.Add(seller);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        _dbContext.Sellers.Add(seller);
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return seller;
     }
 
     public async Task<List<ItemEntity>> CreateItemBatchAsync(CreateItemBatchRequest request, CancellationToken cancellationToken = default)
     {
-        var seller = await dbContext.Sellers.SingleAsync(x => x.Id == request.SellerId, cancellationToken);
-        var nextItemNumber = await dbContext.Items
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
+        {
+            throw new InvalidOperationException("Item master data is locked outside presale.");
+        }
+
+        var seller = await _dbContext.Sellers.SingleAsync(x => x.Id == request.SellerId, cancellationToken);
+        var nextItemNumber = await _dbContext.Items
             .Where(x => x.SellerId == request.SellerId)
             .Select(x => (int?)x.ItemNumber)
             .MaxAsync(cancellationToken) ?? 0;
@@ -81,33 +100,56 @@ public sealed class IntakeService(AppDbContext dbContext)
                 Status = status
             };
 
-            dbContext.Items.Add(item);
+            _dbContext.Items.Add(item);
             createdItems.Add(item);
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return createdItems;
     }
 
-    public async Task UpdateSellerAsync(long sellerId, UpdateSellerRequest request, CancellationToken cancellationToken = default)
+    public async Task<UpdateSellerResult> UpdateSellerAsync(long sellerId, UpdateSellerRequest request, CancellationToken cancellationToken = default)
     {
-        var seller = await dbContext.Sellers.SingleAsync(x => x.Id == sellerId, cancellationToken);
+        var seller = await _dbContext.Sellers.SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
+        if (seller is null)
+        {
+            return UpdateSellerResult.NotFound;
+        }
+
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
+        {
+            return UpdateSellerResult.NotAllowed;
+        }
+
         seller.FirstName = request.FirstName.Trim();
         seller.LastName = request.LastName.Trim();
         seller.Email = NormalizeOptional(request.Email);
         seller.Phone = NormalizeOptional(request.Phone);
         seller.Notes = NormalizeOptional(request.Notes);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return UpdateSellerResult.Updated;
     }
 
-    public async Task UpdateItemAsync(long itemId, UpdateItemRequest request, CancellationToken cancellationToken = default)
+    public async Task<UpdateItemResult> UpdateItemAsync(long itemId, UpdateItemRequest request, CancellationToken cancellationToken = default)
     {
-        var item = await dbContext.Items.SingleAsync(x => x.Id == itemId, cancellationToken);
+        var item = await _dbContext.Items.SingleOrDefaultAsync(x => x.Id == itemId, cancellationToken);
+        if (item is null)
+        {
+            return UpdateItemResult.NotFound;
+        }
+
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
+            || item.Status is not ("registered" or "in_stock"))
+        {
+            return UpdateItemResult.NotAllowed;
+        }
+
         item.Title = request.Title.Trim();
         item.SellerPriceCents = request.SellerPriceCents;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return UpdateItemResult.Updated;
     }
 
     public async Task<DeleteItemResult> DeleteSellerItemAsync(
@@ -115,7 +157,7 @@ public sealed class IntakeService(AppDbContext dbContext)
         long itemId,
         CancellationToken cancellationToken = default)
     {
-        var item = await dbContext.Items
+        var item = await _dbContext.Items
             .SingleOrDefaultAsync(x => x.Id == itemId && x.SellerId == sellerId, cancellationToken);
 
         if (item is null)
@@ -123,13 +165,20 @@ public sealed class IntakeService(AppDbContext dbContext)
             return DeleteItemResult.NotFound;
         }
 
-        if (!ItemDeletionPolicy.CanDelete(item.Status))
+        if (!ItemDeletionPolicy.CanDelete(item.Status) || !await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
         {
             return DeleteItemResult.NotAllowed;
         }
 
-        dbContext.Items.Remove(item);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        var hasHistoricalSaleLine = await _dbContext.SaleLines
+            .AnyAsync(x => x.ItemId == itemId, cancellationToken);
+        if (hasHistoricalSaleLine)
+        {
+            return DeleteItemResult.NotAllowed;
+        }
+
+        _dbContext.Items.Remove(item);
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return DeleteItemResult.Deleted;
     }
 
@@ -138,7 +187,7 @@ public sealed class IntakeService(AppDbContext dbContext)
         long itemId,
         CancellationToken cancellationToken = default)
     {
-        var item = await dbContext.Items
+        var item = await _dbContext.Items
             .SingleOrDefaultAsync(x => x.Id == itemId && x.SellerId == sellerId, cancellationToken);
 
         if (item is null)
@@ -146,14 +195,24 @@ public sealed class IntakeService(AppDbContext dbContext)
             return ItemStatusChangeResult.NotFound;
         }
 
-        if (item.Status != "registered")
+        if (item.Status != "registered" || !await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
         {
             return ItemStatusChangeResult.NotAllowed;
         }
 
         item.Status = "in_stock";
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return ItemStatusChangeResult.Changed;
+    }
+
+    public async Task<bool> CanEditItemMasterDataAsync(CancellationToken cancellationToken = default)
+    {
+        return await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken);
+    }
+
+    public async Task<bool> CanEditSellerMasterDataAsync(CancellationToken cancellationToken = default)
+    {
+        return await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken);
     }
 
     private static string? NormalizeOptional(string? value)

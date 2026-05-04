@@ -48,11 +48,31 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - final amount paid = subtotal + checkout fee
 - seller payout never includes the checkout fee
 
-### Item Data Freeze At Sale Start
+### Sale Phases
 
-Once checkout opens for the event, item master data becomes read-only.
+The event has one persisted sale phase:
 
-The following fields must no longer be editable in normal operations:
+- `presale` / `Prévente`
+- `sale` / `Vente`
+- `post_sale` / `Après-vente`
+
+`presale` is the default. Sales are allowed in `presale` and `sale` so the sale day is not blocked if organizers are still doing final corrections. `sale` locks seller and item master data. `post_sale` blocks new sale validation and sale save server-side.
+
+The phase appears near the event/software name on every page as information only. The admin page is available as a fourth main navigation item. Admins unlock `/vente/statut` with the shared admin password, then change the phase from that page without re-entering the password for every action.
+
+### Seller And Item Data Freeze At Sale Start
+
+Once the event is in `sale` or `post_sale`, seller and item master data become read-only in normal operations.
+
+The following seller fields must no longer be editable in normal operations:
+
+- `first_name`
+- `last_name`
+- `email`
+- `phone`
+- `notes`
+
+The following item fields must no longer be editable in normal operations:
 
 - `reference`
 - `item_number`
@@ -60,11 +80,12 @@ The following fields must no longer be editable in normal operations:
 - `title`
 - `seller_price`
 
-After sale start, only workflow-driven status changes remain allowed in V1:
+When seller and item master data are locked, only workflow-driven status changes remain allowed in V1:
 
 - `in_stock -> sold` when saving a sale
 - `in_stock -> missing` during post-sale reconciliation
 - restoring a mistakenly marked `missing` item to `in_stock` as an admin reconciliation correction
+- correcting a mistaken sale line as an admin sale correction, which marks the sale line corrected and returns the item to `in_stock`
 
 ### Expected Checkout Flow
 
@@ -79,9 +100,10 @@ After sale start, only workflow-driven status changes remain allowed in V1:
 9. If validation succeeds, a finalization modal shows the subtotal, checkout fee, final total, and item count.
 10. Operator chooses `Go back`, `Save`, or `Save and print receipt`.
 11. The server re-validates that every cart item is still `in_stock` at save time inside the save transaction.
-12. If validation succeeds, the sale is persisted and the items become `sold`.
-13. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
-14. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
+12. The server rejects the sale if the phase is `post_sale`.
+13. If validation succeeds, the sale is persisted and the items become `sold`.
+14. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
+15. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
 
 ### Concurrent Checkout Rule
 
@@ -91,7 +113,21 @@ V1 does not use cart-level reservation.
 - an item remains `in_stock` until a sale is successfully saved
 - the app may validate the cart before showing the finalization modal for UX reasons
 - the server must re-check all cart items at save time inside the sale transaction
+- the server must reject cart validation and sale persistence when the event phase is `post_sale`
 - if any cart item is no longer available, the save must fail clearly rather than partially succeed
+
+### Sale Correction
+
+If a volunteer saved a sale with the wrong item reference, an admin may correct the active sale line from `/vente/statut`.
+
+The correction:
+
+- requires the sale status admin page to be unlocked with the shared admin password
+- records a correction timestamp on the sale line
+- returns the item to `in_stock`
+- keeps the original sale and original sale totals unchanged
+- excludes the corrected sale line from seller-sheet payable output
+- lets the item be sold again normally
 
 ### Receipt UX Rule
 
@@ -127,6 +163,8 @@ V1 receipt handling is intentionally simple:
 
 Produce per-seller outputs for physical item gathering and seller payout after the sale is finished.
 
+Admins may open the reconciliation dashboard before the event is in `post_sale`, but the dashboard remains read-only until then.
+
 ### V1 Capabilities
 
 - Provide an admin-gated reconciliation dashboard at `/rapprochement`
@@ -138,6 +176,8 @@ Produce per-seller outputs for physical item gathering and seller payout after t
 - Allow marking an unsold item as `missing` through an admin-only action
 - Allow restoring a mistakenly marked `missing` item to `in_stock` only as an admin reconciliation correction
 - Regenerate the seller sheet after a `missing` status correction
+
+Seller-sheet printing and missing-item reconciliation corrections are enabled only when the event phase is `post_sale`.
 
 ### Seller Sheet Content
 

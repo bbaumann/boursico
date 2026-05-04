@@ -139,6 +139,44 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
+    public async Task SellerEditPage_Post_ReturnsPageWhenSellerMasterDataIsLocked()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var phaseService = new SalePhaseService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        await phaseService.SetPhaseAsync(SalePhase.Sale);
+
+        var pageModel = new SellerEditModel(service)
+        {
+            Input = new SellerEditModel.InputModel
+            {
+                FirstName = "Augusta",
+                LastName = "King",
+                Email = "augusta@example.com",
+                Phone = "1234",
+                Notes = "Updated"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.False(pageModel.CanEditSellerMasterData);
+        var unchangedSeller = await context.Sellers.SingleAsync();
+        Assert.Equal("Ada", unchangedSeller.FirstName);
+        Assert.Equal("Lovelace", unchangedSeller.LastName);
+    }
+
+    [Fact]
     public async Task ItemEditPage_Post_UpdatesItemAndRedirectsToSellerDetails()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

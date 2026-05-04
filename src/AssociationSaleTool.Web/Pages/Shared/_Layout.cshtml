@@ -1,20 +1,31 @@
+@inject Microsoft.Extensions.Options.IOptions<AssociationSaleTool.Web.Configuration.EventOptions> EventOptions
+@inject AssociationSaleTool.Web.Services.SalePhaseService SalePhaseService
 @{
     var requestPath = Context.Request.Path;
     var sellersActive = requestPath.StartsWithSegments("/vendeurs")
         || requestPath.StartsWithSegments("/articles");
     var checkoutActive = requestPath.StartsWithSegments("/caisse");
     var reconciliationActive = requestPath.StartsWithSegments("/rapprochement");
+    var saleStatusActive = requestPath.StartsWithSegments("/vente/statut");
+    var salePhase = await SalePhaseService.GetCurrentPhaseAsync();
+    var salePhaseLabel = AssociationSaleTool.Web.Infrastructure.SalePhaseDisplay.ToFrenchLabel(salePhase);
 }
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Association Sale Tool</title>
+    <title>@ViewData["Title"] - @EventOptions.Value.Name - @salePhaseLabel</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
     <div class="page-frame"></div>
+    <header class="app-status-header">
+        <div class="app-status-display" aria-label="Statut actuel de la vente">
+            <span class="app-status-name">@EventOptions.Value.Name</span>
+            <span class="app-status-phase">@salePhaseLabel</span>
+        </div>
+    </header>
     <nav class="main-navigation" aria-label="Navigation principale">
         <a class="main-navigation-link @(sellersActive ? "main-navigation-link-active" : null)"
            href="/vendeurs"
@@ -25,6 +36,9 @@
         <a class="main-navigation-link @(reconciliationActive ? "main-navigation-link-active" : null)"
            href="/rapprochement"
            aria-current="@(reconciliationActive ? "page" : null)">RAPPROCHEMENT</a>
+        <a class="main-navigation-link @(saleStatusActive ? "main-navigation-link-active" : null)"
+           href="/vente/statut"
+           aria-current="@(saleStatusActive ? "page" : null)">ADMIN</a>
     </nav>
     <main class="page-shell">
         @RenderBody()

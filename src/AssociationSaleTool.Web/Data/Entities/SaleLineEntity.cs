@@ -10,6 +10,8 @@ public sealed class SaleLineEntity
 
     public int SellerPriceAtSaleCents { get; set; }
 
+    public DateTime? CorrectedAt { get; set; }
+
     public SaleEntity Sale { get; set; } = null!;
 
     public ItemEntity Item { get; set; } = null!;

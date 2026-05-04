@@ -9,7 +9,14 @@
     <h1 class="page-title">Modifier l'article</h1>
     <p class="seller-meta">@Model.Item!.Reference</p>
 
+    @if (!Model.CanEditItem)
+    {
+        <p class="validation">Cet article ne peut pas être modifié dans le statut actuel de la vente.</p>
+    }
+    else
+    {
     <form method="post" class="stack-form">
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
         <label>
             <span>Titre</span>
             <input asp-for="Input.Title" />
@@ -27,4 +34,5 @@
             <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.Item.SellerId">Annuler</a>
         </div>
     </form>
+    }
 </section>

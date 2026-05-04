@@ -11,12 +11,22 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
-    public void OnGet()
+    public bool CanEditSellerMasterData { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken cancellationToken)
     {
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
+        if (!CanEditSellerMasterData)
+        {
+            ModelState.AddModelError(string.Empty, "Les vendeurs ne peuvent pas être créés dans le statut actuel de la vente.");
+            return Page();
+        }
+
         if (!ModelState.IsValid)
         {
             return Page();

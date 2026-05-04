@@ -13,10 +13,18 @@
             <p class="seller-meta">@Model.Seller.SellerCode · @(Model.Seller.Email ?? "Sans e-mail")</p>
         </div>
         <div class="header-actions">
-            <a class="button-link" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Modifier le vendeur</a>
+            @if (Model.CanEditSellerMasterData)
+            {
+                <a class="button-link" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Modifier le vendeur</a>
+            }
             <a class="button-link" asp-page="/Sellers/Index">Retour aux vendeurs</a>
         </div>
     </div>
+
+    @if (!Model.CanEditSellerMasterData || !Model.CanEditItemMasterData)
+    {
+        <p class="validation">Les informations du vendeur et les articles sont en lecture seule dans le statut actuel de la vente.</p>
+    }
 
     <section class="subsection">
         <h2>Articles</h2>
@@ -53,8 +61,11 @@
                         <td>@AssociationSaleTool.Web.Infrastructure.ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
                         <td>
                             <div class="table-actions">
-                                <a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a>
-                                @if (item.Status == "registered")
+                                @if (Model.CanEditItemMasterData && item.Status is "registered" or "in_stock")
+                                {
+                                    <a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a>
+                                }
+                                @if (Model.CanEditItemMasterData && item.Status == "registered")
                                 {
                                     <form method="post"
                                           class="inline-form"
@@ -64,7 +75,7 @@
                                         <button type="submit" class="table-action-button table-action-button-primary">Marquer en stock</button>
                                     </form>
                                 }
-                                @if (ItemDeletionPolicy.CanDelete(item.Status))
+                                @if (Model.CanEditItemMasterData && ItemDeletionPolicy.CanDelete(item.Status))
                                 {
                                     <form method="post"
                                           class="inline-form"
@@ -84,6 +95,8 @@
         }
     </section>
 
+    @if (Model.CanEditItemMasterData)
+    {
     <section class="subsection">
         <h2>Ajouter des articles</h2>
 
@@ -141,4 +154,5 @@
             </div>
         </form>
     </section>
+    }
 </section>

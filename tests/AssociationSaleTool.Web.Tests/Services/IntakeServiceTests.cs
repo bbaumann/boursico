@@ -31,6 +31,29 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task CreateSellerAsync_RejectsNewSellersWhenCatalogIsLocked()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var phaseService = new SalePhaseService(context);
+        await phaseService.SetPhaseAsync(SalePhase.Sale);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null)));
+
+        Assert.Equal("Seller master data is locked outside presale.", exception.Message);
+        Assert.Empty(await context.Sellers.ToListAsync());
+    }
+
+    [Fact]
     public async Task CreateItemBatchAsync_CreatesMultipleItemsForSellerWithSequentialReferences()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -96,6 +119,33 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task CreateItemBatchAsync_RejectsNewItemsWhenCatalogIsLocked()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var phaseService = new SalePhaseService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        await phaseService.SetPhaseAsync(SalePhase.Sale);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateItemBatchAsync(new CreateItemBatchRequest(
+                seller.Id,
+                IntakeMode.InPerson,
+                [new CreateItemRowRequest("Toy piano", 1000)])));
+
+        Assert.Equal("Item master data is locked outside presale.", exception.Message);
+        Assert.Empty(await context.Items.ToListAsync());
+    }
+
+    [Fact]
     public async Task UpdateSellerAsync_ChangesEditableFields()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -110,8 +160,9 @@ public sealed class IntakeServiceTests
         var service = new IntakeService(context);
         var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
 
-        await service.UpdateSellerAsync(seller.Id, new UpdateSellerRequest("Augusta", "King", "augusta@example.com", "1234", "Preferred contact by mail"));
+        var result = await service.UpdateSellerAsync(seller.Id, new UpdateSellerRequest("Augusta", "King", "augusta@example.com", "1234", "Preferred contact by mail"));
 
+        Assert.Equal(UpdateSellerResult.Updated, result);
         var updatedSeller = await context.Sellers.SingleAsync();
         Assert.Equal("Augusta", updatedSeller.FirstName);
         Assert.Equal("King", updatedSeller.LastName);
@@ -119,6 +170,38 @@ public sealed class IntakeServiceTests
         Assert.Equal("1234", updatedSeller.Phone);
         Assert.Equal("Preferred contact by mail", updatedSeller.Notes);
         Assert.Equal("AA", updatedSeller.SellerCode);
+    }
+
+    [Theory]
+    [InlineData(SalePhase.Sale)]
+    [InlineData(SalePhase.PostSale)]
+    public async Task UpdateSellerAsync_RejectsSellerMasterDataChangesWhenCatalogIsLocked(SalePhase phase)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var phaseService = new SalePhaseService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        await phaseService.SetPhaseAsync(phase);
+
+        var result = await service.UpdateSellerAsync(
+            seller.Id,
+            new UpdateSellerRequest("Augusta", "King", "augusta@example.com", "1234", "Preferred contact by mail"));
+
+        Assert.Equal(UpdateSellerResult.NotAllowed, result);
+        var unchangedSeller = await context.Sellers.SingleAsync();
+        Assert.Equal("Ada", unchangedSeller.FirstName);
+        Assert.Equal("Lovelace", unchangedSeller.LastName);
+        Assert.Null(unchangedSeller.Email);
+        Assert.Null(unchangedSeller.Phone);
+        Assert.Null(unchangedSeller.Notes);
     }
 
     [Fact]
@@ -147,6 +230,71 @@ public sealed class IntakeServiceTests
         Assert.Equal(1200, updatedItem.SellerPriceCents);
         Assert.Equal("AA-001", updatedItem.Reference);
         Assert.Equal("in_stock", updatedItem.Status);
+    }
+
+    [Theory]
+    [InlineData(SalePhase.Sale)]
+    [InlineData(SalePhase.PostSale)]
+    public async Task UpdateItemAsync_RejectsItemMasterDataChangesWhenCatalogIsLocked(SalePhase phase)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var phaseService = new SalePhaseService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+        await phaseService.SetPhaseAsync(phase);
+
+        var result = await service.UpdateItemAsync(item.Id, new UpdateItemRequest("Large toy piano", 1200));
+
+        Assert.Equal(UpdateItemResult.NotAllowed, result);
+        var unchangedItem = await context.Items.SingleAsync();
+        Assert.Equal("Toy piano", unchangedItem.Title);
+        Assert.Equal(1000, unchangedItem.SellerPriceCents);
+    }
+
+    [Fact]
+    public async Task UpdateItemAsync_RejectsSoldItemsEvenInPresale()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            ItemNumber = 1,
+            Title = "Toy piano",
+            SellerPriceCents = 1000,
+            Status = "sold"
+        };
+        context.Items.Add(item);
+        await context.SaveChangesAsync();
+
+        var result = await service.UpdateItemAsync(item.Id, new UpdateItemRequest("Large toy piano", 1200));
+
+        Assert.Equal(UpdateItemResult.NotAllowed, result);
+        var unchangedItem = await context.Items.SingleAsync();
+        Assert.Equal("Toy piano", unchangedItem.Title);
+        Assert.Equal(1000, unchangedItem.SellerPriceCents);
     }
 
     [Theory]
@@ -217,6 +365,81 @@ public sealed class IntakeServiceTests
 
         Assert.Equal(DeleteItemResult.NotAllowed, result);
         Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task DeleteSellerItemAsync_RejectsDeletableStatusWhenCatalogIsLocked()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var phaseService = new SalePhaseService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+        await phaseService.SetPhaseAsync(SalePhase.Sale);
+
+        var result = await service.DeleteSellerItemAsync(seller.Id, item.Id);
+
+        Assert.Equal(DeleteItemResult.NotAllowed, result);
+        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task DeleteSellerItemAsync_RejectsItemsWithHistoricalSaleLines()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var item = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            ItemNumber = 1,
+            Title = "Toy piano",
+            SellerPriceCents = 1000,
+            Status = "in_stock"
+        };
+        var sale = new SaleEntity
+        {
+            SubtotalSellerPriceCents = 1000,
+            CheckoutFeeCents = 100,
+            TotalPaidCents = 1100,
+            SoldAt = DateTime.UtcNow,
+            SaleLines =
+            [
+                new SaleLineEntity
+                {
+                    Item = item,
+                    SellerPriceAtSaleCents = 1000,
+                    CorrectedAt = DateTime.UtcNow
+                }
+            ]
+        };
+        context.Sales.Add(sale);
+        await context.SaveChangesAsync();
+
+        var result = await service.DeleteSellerItemAsync(seller.Id, item.Id);
+
+        Assert.Equal(DeleteItemResult.NotAllowed, result);
+        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
     }
 
     [Fact]

@@ -373,7 +373,7 @@ function initializeCheckout(root) {
 
     if (response.status === 409) {
       setConflictItems(payload.conflictItemIds || []);
-      setMessage("Un article du panier n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
+      setMessage(payload.message || "Un article du panier n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
       hideModal();
       renderCart();
       return;
@@ -397,7 +397,7 @@ function initializeCheckout(root) {
 
     if (response.status === 409) {
       setConflictItems(payload.conflictItemIds || []);
-      setMessage("La vente n'a pas été enregistrée : un article n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
+      setMessage(payload.message || "La vente n'a pas été enregistrée : un article n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
       hideModal();
       renderCart();
       return;
@@ -422,7 +422,7 @@ function initializeCheckout(root) {
 
     if (response.status === 409) {
       setConflictItems(payload.conflictItemIds || []);
-      setMessage("La vente n'a pas été enregistrée : un article n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
+      setMessage(payload.message || "La vente n'a pas été enregistrée : un article n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
       hideModal();
       renderCart();
       return;
@@ -472,3 +472,37 @@ function initializeReconciliation(root) {
 }
 
 document.querySelectorAll("[data-reconciliation-root]").forEach(initializeReconciliation);
+
+function initializeSaleCorrection(root) {
+  const searchInput = root.querySelector("[data-sale-correction-search]");
+  const rows = Array.from(root.querySelectorAll("[data-sale-correction-item-row]"));
+  const emptyMessage = root.querySelector("[data-sale-correction-empty-message]");
+
+  if (!searchInput || rows.length === 0) {
+    return;
+  }
+
+  function renderRows() {
+    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    let visibleRows = 0;
+
+    for (const row of rows) {
+      const filterText = row.dataset.saleCorrectionFilterText || "";
+      const isVisible = !query || filterText.includes(query);
+      row.hidden = !isVisible;
+
+      if (isVisible) {
+        visibleRows++;
+      }
+    }
+
+    if (emptyMessage) {
+      emptyMessage.hidden = visibleRows > 0 || !query;
+    }
+  }
+
+  searchInput.addEventListener("input", renderRows);
+  renderRows();
+}
+
+document.querySelectorAll("[data-sale-correction-root]").forEach(initializeSaleCorrection);

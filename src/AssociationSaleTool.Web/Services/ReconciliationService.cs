@@ -92,7 +92,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         var sellers = await dbContext.Sellers
             .AsNoTracking()
             .Include(x => x.Items)
-            .ThenInclude(x => x.SaleLine)
+            .ThenInclude(x => x.SaleLines)
             .Where(x => normalizedSellerCode == null || x.SellerCode == normalizedSellerCode)
             .Where(x => x.Items.Any(item => SellerSheetStatuses.Contains(item.Status)))
             .OrderBy(x => x.SellerCode)
@@ -165,13 +165,15 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         {
             priceCents = item.SellerPriceCents;
         }
-        else if (item.SaleLine is null)
-        {
-            throw new ReconciliationSellerSheetDataException(item.Reference);
-        }
         else
         {
-            priceCents = item.SaleLine.SellerPriceAtSaleCents;
+            var activeSaleLine = item.SaleLines.SingleOrDefault(line => line.CorrectedAt is null);
+            if (activeSaleLine is null)
+            {
+                throw new ReconciliationSellerSheetDataException(item.Reference);
+            }
+
+            priceCents = activeSaleLine.SellerPriceAtSaleCents;
         }
 
         return new SellerSheetItem(
