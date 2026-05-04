@@ -1,0 +1,63 @@
+@page "/caisse/ventes"
+@model AssociationSaleTool.Web.Pages.Checkout.Sales.IndexModel
+@{
+    ViewData["Title"] = "Liste des ventes";
+}
+
+<section class="page-card checkout-page sales-view-page" data-sales-view-root>
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Vente</p>
+            <h1 class="page-title">Liste des ventes</h1>
+            <p class="seller-meta">Consultation en lecture seule des ventes enregistrées.</p>
+        </div>
+        <div class="header-actions">
+            <a class="button-link" href="/caisse">NOUVELLE VENTE</a>
+        </div>
+    </div>
+
+    <section class="subsection">
+        <label for="sales-view-search">Rechercher une vente</label>
+        <input id="sales-view-search"
+               type="search"
+               autocomplete="off"
+               data-sales-view-search
+               placeholder="Numéro, référence, titre ou reçu" />
+        <p class="empty-state" data-sales-view-empty-message hidden>Aucune vente ne correspond à cette recherche.</p>
+
+        @if (Model.Sales.Count > 0)
+        {
+            <table class="data-table sales-view-table">
+                <thead>
+                    <tr>
+                        <th>Vente</th>
+                        <th>Date</th>
+                        <th>Articles</th>
+                        <th>Sous-total</th>
+                        <th>Frais</th>
+                        <th>Total</th>
+                        <th>Reçu</th>
+                    </tr>
+                </thead>
+                <tbody data-sales-view-results>
+                @foreach (var sale in Model.Sales)
+                {
+                    <tr data-sales-view-row data-sales-view-filter-text="@sale.SearchText">
+                        <td><a href="/caisse/ventes/@sale.SaleId">#@sale.SaleId</a></td>
+                        <td>@IndexModel.FormatSoldAt(sale.SoldAt)</td>
+                        <td>@sale.ItemCount</td>
+                        <td>@IndexModel.FormatPrice(sale.SubtotalSellerPriceCents)</td>
+                        <td>@IndexModel.FormatPrice(sale.CheckoutFeeCents)</td>
+                        <td>@IndexModel.FormatPrice(sale.TotalPaidCents)</td>
+                        <td>@(sale.HasReceiptDetails ? "Oui" : "Non")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="empty-state">Aucune vente enregistrée.</p>
+        }
+    </section>
+</section>

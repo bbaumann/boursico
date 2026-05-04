@@ -452,3 +452,25 @@ This file captures the main project decisions in a lightweight ADR format.
   - `post_sale` is the only phase that blocks new checkout persistence
   - old sale totals remain immutable after sale-line correction
   - seller sheets ignore corrected sale lines and can show the returned item from current item status
+
+## D-032 Expose Read-Only Sales History From Checkout
+
+- Status: accepted
+- Key drivers:
+  - checkout operators may need to inspect a saved sale during normal sale-day work
+  - sale lookup should be reachable from the checkout area without turning the admin page into a general sales browser
+  - saved sales are historical facts and should not be edited from a browse view
+  - receipt details may be useful for lookup, but V1 already treats checkout operators as trusted event staff
+- Decision:
+  - keep `/caisse` as the default sale-creation page
+  - expose a prominent `LISTE DES VENTES` action from `/caisse`
+  - add `/caisse/ventes` for read-only sales history, visible to all operators without the shared admin password
+  - add `/caisse/ventes/{id}` for read-only sale detail
+  - search the list by sale id, item reference, item title, and receipt details
+  - show corrected sale lines as historical sale facts labeled `Corrigée`
+  - keep sale-line correction actions only on `/vente/statut`
+- Consequence:
+  - operators can resolve checkout questions without admin unlock
+  - sale browsing stays visually and conceptually attached to checkout
+  - the admin sale-status page remains focused on phase changes and exceptional corrections
+  - historical sale totals remain immutable and visible even when a sale line was later corrected

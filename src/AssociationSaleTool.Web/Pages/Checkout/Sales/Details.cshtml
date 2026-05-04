@@ -1,0 +1,81 @@
+@page "/caisse/ventes/{id:long}"
+@model AssociationSaleTool.Web.Pages.Checkout.Sales.DetailsModel
+@{
+    ViewData["Title"] = $"Vente #{Model.Sale.SaleId}";
+}
+
+<section class="page-card checkout-page sales-view-page">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Vente</p>
+            <h1 class="page-title">Vente #@Model.Sale.SaleId</h1>
+            <p class="seller-meta">Enregistrée le @DetailsModel.FormatSoldAt(Model.Sale.SoldAt).</p>
+        </div>
+        <div class="header-actions">
+            <a class="button-link" href="/caisse/ventes">Retour à la liste</a>
+            <a class="button-link button-link-solid" href="/caisse">NOUVELLE VENTE</a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Sale.ReceiptDetails))
+    {
+        <section class="subsection">
+            <h2>Détails du reçu</h2>
+            <p>@Model.Sale.ReceiptDetails</p>
+        </section>
+    }
+
+    <section class="subsection">
+        <h2>Articles</h2>
+        <table class="data-table sales-view-table">
+            <thead>
+                <tr>
+                    <th>REF</th>
+                    <th>Titre</th>
+                    <th>Prix</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var line in Model.Sale.Lines)
+            {
+                <tr class="@(line.IsCorrected ? "sales-view-corrected-row" : null)">
+                    <td>@line.Reference</td>
+                    <td>@line.Title</td>
+                    <td>@DetailsModel.FormatPrice(line.SellerPriceAtSaleCents)</td>
+                    <td>
+                        @if (line.CorrectedAt is { } correctedAt)
+                        {
+                            <span class="sales-view-status sales-view-status-corrected">
+                                Corrigée le @DetailsModel.FormatCorrectedAt(correctedAt)
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="sales-view-status">Vente active</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </section>
+
+    <section class="subsection">
+        <h2>Totaux</h2>
+        <dl class="checkout-totals sales-view-totals">
+            <div>
+                <dt>Sous-total</dt>
+                <dd>@DetailsModel.FormatPrice(Model.Sale.SubtotalSellerPriceCents)</dd>
+            </div>
+            <div>
+                <dt>Frais association familiale</dt>
+                <dd>@DetailsModel.FormatPrice(Model.Sale.CheckoutFeeCents)</dd>
+            </div>
+            <div class="checkout-total-row">
+                <dt>Total</dt>
+                <dd>@DetailsModel.FormatPrice(Model.Sale.TotalPaidCents)</dd>
+            </div>
+        </dl>
+    </section>
+</section>

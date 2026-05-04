@@ -585,6 +585,47 @@ textarea {
   margin: 0 0 0.75rem;
 }
 
+.sales-view-table {
+  margin-top: 1rem;
+  table-layout: fixed;
+}
+
+.sales-view-table th:first-child,
+.sales-view-table td:first-child,
+.sales-view-table th:nth-child(3),
+.sales-view-table td:nth-child(3),
+.sales-view-table th:nth-child(n + 4),
+.sales-view-table td:nth-child(n + 4) {
+  white-space: nowrap;
+}
+
+.sales-view-corrected-row {
+  background: rgba(138, 31, 17, 0.08);
+}
+
+.sales-view-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  background: #fffdf8;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.sales-view-status-corrected {
+  border-color: rgba(138, 31, 17, 0.35);
+  color: #8a1f11;
+  background: rgba(138, 31, 17, 0.08);
+}
+
+.sales-view-totals {
+  max-width: 32rem;
+}
+
 .seller-sheet-header {
   display: flex;
   justify-content: space-between;

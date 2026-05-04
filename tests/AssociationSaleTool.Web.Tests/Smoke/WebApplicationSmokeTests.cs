@@ -442,6 +442,44 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SalesViewListPageLoadsWithoutAdminGate()
+    {
+        var client = _factory.CreateClient();
+        var sale = await SeedSalesViewSaleAsync("Association lecture");
+
+        var response = await client.GetAsync("/caisse/ventes");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Liste des ventes", content);
+        Assert.Contains("Rechercher une vente", content);
+        Assert.Contains($"#{sale.SaleId}", content);
+        Assert.Contains(sale.FirstReference.ToLowerInvariant(), content);
+        Assert.Contains("data-sales-view-search", content);
+        Assert.DoesNotContain("Mot de passe administrateur", content);
+    }
+
+    [Fact]
+    public async Task SalesViewDetailPageShowsReadonlyCorrectedSale()
+    {
+        var client = _factory.CreateClient();
+        var sale = await SeedSalesViewSaleAsync("Client reçu", new DateTime(2026, 5, 4, 11, 15, 0, DateTimeKind.Utc));
+
+        var response = await client.GetAsync($"/caisse/ventes/{sale.SaleId}");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains($"Vente #{sale.SaleId}", content);
+        Assert.Contains(sale.FirstReference, content);
+        Assert.Contains("Jeu corrigé", content);
+        Assert.Contains("Corrigée", content);
+        Assert.Contains("Client reçu", content);
+        Assert.Contains("Retour à la liste", content);
+        Assert.DoesNotContain("Remettre en stock", content);
+        Assert.DoesNotContain("Enregistrer la vente", content);
+    }
+
+    [Fact]
     public async Task ReconciliationPageShowsMainNavigationWithReconciliationActive()
     {
         var client = _factory.CreateClient();
@@ -2081,6 +2119,75 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         }
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<(long SaleId, string FirstReference, string SecondReference)> SeedSalesViewSaleAsync(
+        string? receiptDetails,
+        DateTime? firstLineCorrectedAt = null)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var sellerCode = $"RV-{suffix}";
+        var seller = new SellerEntity
+        {
+            SellerCode = sellerCode,
+            FirstName = "Renee",
+            LastName = "Ventes"
+        };
+
+        dbContext.Sellers.Add(seller);
+        await dbContext.SaveChangesAsync();
+
+        var firstItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = $"{sellerCode}-001",
+            ItemNumber = 1,
+            Title = "Jeu corrigé",
+            SellerPriceCents = 900,
+            Status = firstLineCorrectedAt is null ? "sold" : "in_stock"
+        };
+        var secondItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = $"{sellerCode}-002",
+            ItemNumber = 2,
+            Title = "Jeu conserve",
+            SellerPriceCents = 600,
+            Status = "sold"
+        };
+
+        dbContext.Items.AddRange(firstItem, secondItem);
+        await dbContext.SaveChangesAsync();
+
+        var sale = new SaleEntity
+        {
+            SoldAt = new DateTime(2026, 5, 4, 10, 0, 0, DateTimeKind.Utc),
+            SubtotalSellerPriceCents = 1500,
+            CheckoutFeeCents = 150,
+            TotalPaidCents = 1650,
+            ReceiptDetails = receiptDetails,
+            SaleLines =
+            [
+                new SaleLineEntity
+                {
+                    ItemId = firstItem.Id,
+                    SellerPriceAtSaleCents = 900,
+                    CorrectedAt = firstLineCorrectedAt
+                },
+                new SaleLineEntity
+                {
+                    ItemId = secondItem.Id,
+                    SellerPriceAtSaleCents = 600
+                }
+            ]
+        };
+
+        dbContext.Sales.Add(sale);
+        await dbContext.SaveChangesAsync();
+
+        return (sale.Id, firstItem.Reference, secondItem.Reference);
     }
 
     private async Task SetSalePhaseAsync(SalePhase phase)

@@ -28,20 +28,15 @@ Once the sale phase work is verified and committed, this item can be treated as 
 
 ### View Existing Sales
 
-Allow admins to find and inspect an already-saved sale in read-only mode.
+Status: implemented.
 
-The first lookup path should support searching by item reference/code, because an operator or admin will often start from a physical label or a disputed item.
+Relevant design/docs:
 
-The future design should define:
+- [Read-Only Sales View Design](./plans/2026-05-04-sales-readonly-view-design.md)
+- [Read-Only Sales View Implementation Plan](./plans/2026-05-04-sales-readonly-view.md)
+- [D-032 Expose Read-Only Sales History From Checkout](./decisions.md#d-032-expose-read-only-sales-history-from-checkout)
 
-- which admin page exposes sale lookup, for example `/vente/statut` or a dedicated French route such as `/ventes`
-- whether lookup searches only active sale lines or also corrected sale lines
-- what happens when an item appears in multiple historical sale lines because one line was corrected
-- how the read-only sale view reuses the existing checkout/cart layout without allowing edits, removals, or save actions
-- which sale fields are shown: sale id, sold timestamp, item references, item titles, seller prices at sale time, subtotal, checkout fee, total paid, and receipt details
-- whether the page should show correction metadata such as `corrected_at`
-- whether access is limited to admins through the existing shared admin password/session gate
-- whether the view includes a direct action to start a sale-line correction when the admin discovers that the sale contains the wrong item
+Saved sales are visible to all operators from `/caisse/ventes`, linked from the checkout page. The view is read-only, searchable by sale id, item reference, item title, and receipt details, and includes corrected sale lines as labeled historical facts. Sale-line correction stays on `/vente/statut`.
 
 ## Item Intake
 

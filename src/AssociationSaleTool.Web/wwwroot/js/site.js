@@ -506,3 +506,37 @@ function initializeSaleCorrection(root) {
 }
 
 document.querySelectorAll("[data-sale-correction-root]").forEach(initializeSaleCorrection);
+
+function initializeSalesView(root) {
+  const searchInput = root.querySelector("[data-sales-view-search]");
+  const rows = Array.from(root.querySelectorAll("[data-sales-view-row]"));
+  const emptyMessage = root.querySelector("[data-sales-view-empty-message]");
+
+  if (!searchInput || rows.length === 0) {
+    return;
+  }
+
+  function renderRows() {
+    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    let visibleRows = 0;
+
+    for (const row of rows) {
+      const filterText = row.dataset.salesViewFilterText || "";
+      const isVisible = !query || filterText.includes(query);
+      row.hidden = !isVisible;
+
+      if (isVisible) {
+        visibleRows++;
+      }
+    }
+
+    if (emptyMessage) {
+      emptyMessage.hidden = visibleRows > 0 || !query;
+    }
+  }
+
+  searchInput.addEventListener("input", renderRows);
+  renderRows();
+}
+
+document.querySelectorAll("[data-sales-view-root]").forEach(initializeSalesView);
