@@ -22,7 +22,14 @@ The future design should define:
 
 Allow operators to import item rows from an Excel workbook instead of entering every row manually.
 
-The future design should define:
+Accepted VNext design:
+
+- [Excel Seller And Item Prefill Design](./plans/2026-05-04-excel-seller-item-prefill-design.md)
+- [Excel Seller And Item Prefill Implementation Plan](./plans/2026-05-04-excel-seller-item-prefill.md)
+
+The design treats Excel parsing as a form-prefill helper, not as a direct import workflow. Operators review the prefilled seller and item rows, then save through the normal intake form.
+
+Implementation should cover:
 
 - the accepted workbook format
 - validation and error reporting before import
