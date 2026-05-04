@@ -1238,6 +1238,74 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task ReconciliationSheetsPageRendersSellerFeeDeductionRows()
+    {
+        await SetSalePhaseAsync(SalePhase.PostSale);
+        try
+        {
+        var (client, _) = await UnlockReconciliationDashboardAsync();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RS-FEE",
+                FirstName = "Fee",
+                LastName = "Vendeur",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                FeePaidCents = 200
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "RS-FEE-001",
+                ItemNumber = 1,
+                Title = "Article manquant",
+                SellerPriceCents = 1000,
+                Status = "missing"
+            });
+
+            for (var itemNumber = 2; itemNumber <= 16; itemNumber++)
+            {
+                dbContext.Items.Add(new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = $"RS-FEE-{itemNumber:000}",
+                    ItemNumber = itemNumber,
+                    Title = $"Article enregistre {itemNumber}",
+                    SellerPriceCents = 100,
+                    Status = "registered"
+                });
+            }
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-FEE");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Sous-total articles", content);
+        Assert.Contains("Frais attendus", content);
+        Assert.Contains("Frais payés", content);
+        Assert.Contains("Frais restant dus", content);
+        Assert.Contains("Total à payer", content);
+        Assert.Contains("8.00 EUR", content);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Fact]
     public async Task ReconciliationSheetsPageFiltersBySellerCodeWhenUnlocked()
     {
         await SetSalePhaseAsync(SalePhase.PostSale);

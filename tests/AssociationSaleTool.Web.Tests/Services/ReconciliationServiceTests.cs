@@ -61,7 +61,11 @@ public sealed class ReconciliationServiceTests
 
         var sheet = Assert.Single(await service.ListSellerSheetsAsync());
 
-        Assert.Equal(1200, sheet.TotalPayableCents);
+        Assert.Equal(1200, sheet.ItemSubtotalCents);
+        Assert.Equal(200, sheet.ExpectedFeeCents);
+        Assert.Equal(0, sheet.PaidFeeCents);
+        Assert.Equal(200, sheet.RemainingFeeCents);
+        Assert.Equal(1000, sheet.TotalPayableCents);
         Assert.Collection(
             sheet.PayableItems,
             soldItem =>
@@ -78,6 +82,103 @@ public sealed class ReconciliationServiceTests
                 Assert.Equal(700, missingItem.PriceCents);
                 Assert.True(missingItem.IsMissing);
             });
+    }
+
+    [Fact]
+    public async Task ListSellerSheetsAsync_DeductsUnpaidSellerFeesFromPayout()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var seller = new SellerEntity
+        {
+            SellerCode = "AA",
+            FirstName = "Ada",
+            LastName = "Lovelace",
+            FeePaidCents = 200
+        };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var sold = AddItem(context, seller, "AA-001", 1, "Train", 1000, "sold");
+        for (var itemNumber = 2; itemNumber <= 16; itemNumber++)
+        {
+            AddItem(context, seller, $"AA-{itemNumber:000}", itemNumber, $"Registered {itemNumber}", 100, "registered");
+        }
+
+        await context.SaveChangesAsync();
+
+        context.Sales.Add(new SaleEntity
+        {
+            SoldAt = DateTime.UtcNow,
+            SubtotalSellerPriceCents = 1000,
+            CheckoutFeeCents = 100,
+            TotalPaidCents = 1100,
+            SaleLines = [new SaleLineEntity { ItemId = sold.Id, SellerPriceAtSaleCents = 1000 }]
+        });
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var sheet = Assert.Single(await service.ListSellerSheetsAsync());
+
+        Assert.Equal(1000, sheet.ItemSubtotalCents);
+        Assert.Equal(400, sheet.ExpectedFeeCents);
+        Assert.Equal(200, sheet.PaidFeeCents);
+        Assert.Equal(200, sheet.RemainingFeeCents);
+        Assert.Equal(800, sheet.TotalPayableCents);
+    }
+
+    [Fact]
+    public async Task ListSellerSheetsAsync_DoesNotIncreasePayoutForOverpaidSellerFees()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var seller = new SellerEntity
+        {
+            SellerCode = "AA",
+            FirstName = "Ada",
+            LastName = "Lovelace",
+            FeePaidCents = 600
+        };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var sold = AddItem(context, seller, "AA-001", 1, "Train", 1000, "sold");
+        await context.SaveChangesAsync();
+
+        context.Sales.Add(new SaleEntity
+        {
+            SoldAt = DateTime.UtcNow,
+            SubtotalSellerPriceCents = 1000,
+            CheckoutFeeCents = 100,
+            TotalPaidCents = 1100,
+            SaleLines = [new SaleLineEntity { ItemId = sold.Id, SellerPriceAtSaleCents = 1000 }]
+        });
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var sheet = Assert.Single(await service.ListSellerSheetsAsync());
+
+        Assert.Equal(1000, sheet.ItemSubtotalCents);
+        Assert.Equal(200, sheet.ExpectedFeeCents);
+        Assert.Equal(600, sheet.PaidFeeCents);
+        Assert.Equal(0, sheet.RemainingFeeCents);
+        Assert.Equal(1000, sheet.TotalPayableCents);
     }
 
     [Fact]

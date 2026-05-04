@@ -146,6 +146,22 @@ else
 
             <dl class="checkout-totals">
                 <div class="checkout-total-row">
+                    <dt>Sous-total articles</dt>
+                    <dd>@SheetsModel.FormatPrice(sheet.ItemSubtotalCents)</dd>
+                </div>
+                <div class="checkout-total-row">
+                    <dt>Frais attendus</dt>
+                    <dd>@SheetsModel.FormatPrice(sheet.ExpectedFeeCents)</dd>
+                </div>
+                <div class="checkout-total-row">
+                    <dt>Frais payés</dt>
+                    <dd>@SheetsModel.FormatPrice(sheet.PaidFeeCents)</dd>
+                </div>
+                <div class="checkout-total-row">
+                    <dt>Frais restant dus</dt>
+                    <dd>@SheetsModel.FormatPrice(sheet.RemainingFeeCents)</dd>
+                </div>
+                <div class="checkout-total-row">
                     <dt>Total à payer</dt>
                     <dd>@SheetsModel.FormatPrice(sheet.TotalPayableCents)</dd>
                 </div>

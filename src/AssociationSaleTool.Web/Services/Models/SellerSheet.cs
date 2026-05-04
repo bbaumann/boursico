@@ -9,4 +9,8 @@ public sealed record SellerSheet(
     string PostalAddress,
     IReadOnlyList<SellerSheetItem> PayableItems,
     IReadOnlyList<SellerSheetItem> ReturnedItems,
+    int ItemSubtotalCents,
+    int ExpectedFeeCents,
+    int PaidFeeCents,
+    int RemainingFeeCents,
     int TotalPayableCents);
