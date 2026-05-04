@@ -61,7 +61,7 @@ public sealed class SellersPageModelTests
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Sellers/Details", redirect.PageName);
-        Assert.Equal("AA", (await context.Sellers.SingleAsync()).SellerCode);
+        Assert.Equal("BB", (await context.Sellers.SingleAsync()).SellerCode);
     }
 
     [Fact]

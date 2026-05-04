@@ -102,9 +102,9 @@ public async Task CreateSellerWithItemsAsync_CreatesSellerAndRegisteredItems()
 
     Assert.Equal(CreateSellerWithItemsOutcome.Created, result.Outcome);
     var seller = Assert.Single(context.Sellers.Include(x => x.Items));
-    Assert.Equal("AA", seller.SellerCode);
+    Assert.Equal("BB", seller.SellerCode);
     var item = Assert.Single(seller.Items);
-    Assert.Equal("AA-001", item.Reference);
+    Assert.Equal("BB001", item.Reference);
     Assert.Equal("registered", item.Status);
 }
 ```

@@ -132,7 +132,7 @@ public async Task ListSellerSheetsAsync_UsesSoldSnapshotAndMissingCurrentPrice()
     var sold = new ItemEntity
     {
         SellerId = seller.Id,
-        Reference = "AA-001",
+        Reference = "AA001",
         ItemNumber = 1,
         Title = "Train",
         SellerPriceCents = 9999,
@@ -141,7 +141,7 @@ public async Task ListSellerSheetsAsync_UsesSoldSnapshotAndMissingCurrentPrice()
     var missing = new ItemEntity
     {
         SellerId = seller.Id,
-        Reference = "AA-002",
+        Reference = "AA002",
         ItemNumber = 2,
         Title = "Puzzle",
         SellerPriceCents = 700,

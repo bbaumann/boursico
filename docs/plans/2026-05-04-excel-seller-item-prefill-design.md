@@ -173,8 +173,8 @@ The client never generates seller codes, item numbers, or references.
 
 For a new seller, the server allocates the seller code before creating item references. Item references use the existing format:
 
-- `SELLERCODE-ITEMNO`
-- example: `AA-001`
+- `SELLERCODEITEMNO`
+- example: `BB001`
 
 For existing sellers, appended item numbers continue after the current maximum item number for that seller.
 

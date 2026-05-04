@@ -139,11 +139,11 @@ V1 does not track a separate:
 
 References use this format:
 
-- `SELLERCODE-ITEMNO`
+- `SELLERCODEITEMNO`
 
 Example:
 
-- `BK-014`
+- `BK014`
 
 ## Seller Code
 
@@ -153,6 +153,8 @@ Seller codes are two-letter codes assigned once per seller for the event.
 
 Use uppercase letters excluding:
 
+- `A`
+- `F`
 - `I`
 - `O`
 - `Q`
@@ -160,9 +162,9 @@ Use uppercase letters excluding:
 
 Safe alphabet:
 
-- `A B C D E F G H J K L M N P R S T U W X Y Z`
+- `B C D E G H J K L M N P R S T U W X Y Z`
 
-This gives 22 letters and 484 possible two-letter seller codes.
+This gives 20 letters and 400 possible two-letter seller codes.
 
 ### Seller Code Assignment Order
 
@@ -170,15 +172,15 @@ Assign seller codes in a spread order by first letter first.
 
 Example prefix sequence:
 
-- `AA`
-- `BA`
-- `CA`
-- `DA`
-- ...
-- `ZA`
-- `AB`
 - `BB`
 - `CB`
+- `DB`
+- `EB`
+- ...
+- `ZB`
+- `BC`
+- `CC`
+- `DC`
 
 This is done to spread sellers across first letters for post-sale physical sorting.
 
@@ -194,9 +196,9 @@ Later-added items simply continue the sequence.
 
 Example:
 
-- `BK-001`
-- `BK-002`
-- `BK-003`
+- `BK001`
+- `BK002`
+- `BK003`
 
 ## Why This Reference Scheme Was Chosen
 

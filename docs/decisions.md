@@ -173,7 +173,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - 26 single-letter buckets are insufficient for 100 to 200 sellers
   - the old reserved-number trick is unnecessary with per-seller numbering
 - Decision:
-  - use references in the form `SELLERCODE-ITEMNO`, e.g. `BK-014`
+  - use references in the form `SELLERCODEITEMNO`, e.g. `BK014`
 - Consequence:
   - references naturally group items by seller
   - late-added items simply take the next number within the seller
@@ -185,7 +185,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - references must be easy to read and write by hand
   - ambiguous letters increase operational error risk
 - Decision:
-  - exclude `I`, `O`, `Q`, and `V` from seller code generation
+  - exclude `A`, `F`, `I`, `O`, `Q`, and `V` from seller code generation
 - Consequence:
   - seller code space remains large enough for the event
   - operator confusion is reduced
@@ -196,7 +196,7 @@ This file captures the main project decisions in a lightweight ADR format.
 - Key drivers:
   - sellers should be spread across first letters for easier post-sale physical sorting
 - Decision:
-  - assign seller codes in a column-first order, e.g. `AA`, `BA`, `CA`, ..., then `AB`, `BB`, `CB`, ...
+  - assign seller codes in a column-first order, e.g. `BB`, `CB`, `DB`, ..., then `BC`, `CC`, `DC`, ...
 - Consequence:
   - code distribution is visually and operationally balanced
 

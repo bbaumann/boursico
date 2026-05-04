@@ -66,7 +66,7 @@ Represents one physical toy.
 
 ### Notes
 
-- `reference` is the human-facing code, e.g. `BK-014`.
+- `reference` is the human-facing code, e.g. `BK014`.
 - `item_number` is the seller-local internal sequence used to build the reference.
 - `title` is the item label shown in search results, carts, and sheets.
 - `seller_price_cents` is both the seller payout price and the printed per-item customer price in V1.
@@ -337,11 +337,11 @@ The schema assumes references are generated from:
 
 Final operator-facing format:
 
-- `SELLERCODE-NNN`
+- `SELLERCODENNN`
 
 Example:
 
-- `BK-014`
+- `BK014`
 
 Generation rule:
 

@@ -7,6 +7,6 @@ public class ItemReferenceTests
     [Fact]
     public void FormatsReferenceWithThreeDigitItemNumber()
     {
-        Assert.Equal("BK-014", ItemReference.Format("BK", 14));
+        Assert.Equal("BK014", ItemReference.Format("BK", 14));
     }
 }

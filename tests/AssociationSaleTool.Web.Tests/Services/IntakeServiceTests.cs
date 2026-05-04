@@ -26,8 +26,8 @@ public sealed class IntakeServiceTests
         var firstSeller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", "1 rue des Tests", null));
         var secondSeller = await service.CreateSellerAsync(new CreateSellerRequest("Grace", "Hopper", null, "0456", "2 rue des Tests", null));
 
-        Assert.Equal("AA", firstSeller.SellerCode);
-        Assert.Equal("BA", secondSeller.SellerCode);
+        Assert.Equal("BB", firstSeller.SellerCode);
+        Assert.Equal("CB", secondSeller.SellerCode);
     }
 
     [Fact]
@@ -177,14 +177,14 @@ public sealed class IntakeServiceTests
             first =>
             {
                 Assert.Equal(1, first.ItemNumber);
-                Assert.Equal("AA-001", first.Reference);
+                Assert.Equal("BB001", first.Reference);
                 Assert.Equal(500, first.SellerPriceCents);
                 Assert.Equal("in_stock", first.Status);
             },
             second =>
             {
                 Assert.Equal(2, second.ItemNumber);
-                Assert.Equal("AA-002", second.Reference);
+                Assert.Equal("BB002", second.Reference);
                 Assert.Equal(600, second.SellerPriceCents);
                 Assert.Equal("in_stock", second.Status);
             });
@@ -291,7 +291,7 @@ public sealed class IntakeServiceTests
         Assert.Equal("1234", updatedSeller.Phone);
         Assert.Equal("10 avenue des Jouets", updatedSeller.PostalAddress);
         Assert.Equal("Preferred contact by mail", updatedSeller.Notes);
-        Assert.Equal("AA", updatedSeller.SellerCode);
+        Assert.Equal("BB", updatedSeller.SellerCode);
     }
 
     [Fact]
@@ -450,7 +450,7 @@ public sealed class IntakeServiceTests
         var updatedItem = await context.Items.SingleAsync();
         Assert.Equal("Large toy piano", updatedItem.Title);
         Assert.Equal(1200, updatedItem.SellerPriceCents);
-        Assert.Equal("AA-001", updatedItem.Reference);
+        Assert.Equal("BB001", updatedItem.Reference);
         Assert.Equal("in_stock", updatedItem.Status);
     }
 

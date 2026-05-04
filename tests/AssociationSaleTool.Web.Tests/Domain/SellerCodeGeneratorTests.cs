@@ -7,9 +7,9 @@ public class SellerCodeGeneratorTests
     [Fact]
     public void GeneratesSellerCodesInSpreadOrder()
     {
-        Assert.Equal("AA", SellerCodeGenerator.GetCodeAt(0));
-        Assert.Equal("BA", SellerCodeGenerator.GetCodeAt(1));
-        Assert.Equal("ZA", SellerCodeGenerator.GetCodeAt(21));
-        Assert.Equal("AB", SellerCodeGenerator.GetCodeAt(22));
+        Assert.Equal("BB", SellerCodeGenerator.GetCodeAt(0));
+        Assert.Equal("CB", SellerCodeGenerator.GetCodeAt(1));
+        Assert.Equal("ZB", SellerCodeGenerator.GetCodeAt(19));
+        Assert.Equal("BC", SellerCodeGenerator.GetCodeAt(20));
     }
 }
