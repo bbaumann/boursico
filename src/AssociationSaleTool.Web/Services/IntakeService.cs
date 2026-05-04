@@ -61,8 +61,11 @@ public sealed class IntakeService
             throw new InvalidOperationException("Seller master data is locked outside presale.");
         }
 
+        var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
+        var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
-            new SellerDuplicateCheckRequest(request.FirstName, request.LastName, request.Phone),
+            new SellerDuplicateCheckRequest(request.FirstName, request.LastName, normalizedPhone),
             cancellationToken);
         if (duplicateMatches.Count > 0)
         {
@@ -75,7 +78,8 @@ public sealed class IntakeService
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             Email = NormalizeOptional(request.Email),
-            Phone = NormalizeOptional(request.Phone),
+            Phone = normalizedPhone,
+            PostalAddress = normalizedPostalAddress,
             Notes = NormalizeOptional(request.Notes)
         };
 
@@ -134,8 +138,11 @@ public sealed class IntakeService
             return UpdateSellerResult.NotAllowed;
         }
 
+        var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
+        var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
-            new SellerDuplicateCheckRequest(request.FirstName, request.LastName, request.Phone, sellerId),
+            new SellerDuplicateCheckRequest(request.FirstName, request.LastName, normalizedPhone, sellerId),
             cancellationToken);
         if (duplicateMatches.Count > 0)
         {
@@ -145,7 +152,8 @@ public sealed class IntakeService
         seller.FirstName = request.FirstName.Trim();
         seller.LastName = request.LastName.Trim();
         seller.Email = NormalizeOptional(request.Email);
-        seller.Phone = NormalizeOptional(request.Phone);
+        seller.Phone = normalizedPhone;
+        seller.PostalAddress = normalizedPostalAddress;
         seller.Notes = NormalizeOptional(request.Notes);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -239,5 +247,15 @@ public sealed class IntakeService
     private static string? NormalizeOptional(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string NormalizeRequired(string? value, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("Required seller contact information is missing.", paramName);
+        }
+
+        return value.Trim();
     }
 }

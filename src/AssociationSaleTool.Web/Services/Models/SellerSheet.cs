@@ -5,7 +5,8 @@ public sealed record SellerSheet(
     string SellerCode,
     string SellerName,
     string? Email,
-    string? Phone,
+    string Phone,
+    string PostalAddress,
     IReadOnlyList<SellerSheetItem> PayableItems,
     IReadOnlyList<SellerSheetItem> ReturnedItems,
     int TotalPayableCents);

@@ -5,4 +5,5 @@ public sealed record UpdateSellerRequest(
     string LastName,
     string? Email,
     string? Phone,
+    string? PostalAddress,
     string? Notes);

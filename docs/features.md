@@ -72,6 +72,7 @@ The following seller fields must no longer be editable in normal operations:
 - `last_name`
 - `email`
 - `phone`
+- `postal_address`
 - `notes`
 
 The following item fields must no longer be editable in normal operations:

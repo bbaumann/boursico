@@ -118,6 +118,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                     $"{seller.FirstName} {seller.LastName}",
                     seller.Email,
                     seller.Phone,
+                    seller.PostalAddress,
                     payableItems,
                     returnedItems,
                     payableItems.Sum(item => item.PriceCents));

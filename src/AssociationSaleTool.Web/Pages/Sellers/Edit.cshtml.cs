@@ -57,7 +57,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
         var result = await intakeService.UpdateSellerAsync(
             id,
-            new UpdateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.Notes),
+            new UpdateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.PostalAddress, Input.Notes),
             cancellationToken);
 
         if (result == UpdateSellerResult.NotFound)
@@ -83,9 +83,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
     private static string BuildDuplicateMessage(IReadOnlyList<SellerDuplicateMatch> matches)
     {
-        return matches.Any(x => x.Reason == SellerDuplicateMatchReason.NameOnlySubmittedPhoneMissing)
-            ? "Un vendeur existe déjà avec les mêmes nom et prénom. Aucun téléphone n'a été saisi, vérifiez manuellement le vendeur existant ou ajoutez un téléphone distinct."
-            : "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
+        return "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
     }
 
     private void PopulateInput(AssociationSaleTool.Web.Data.Entities.SellerEntity seller)
@@ -96,6 +94,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             LastName = seller.LastName,
             Email = seller.Email,
             Phone = seller.Phone,
+            PostalAddress = seller.PostalAddress,
             Notes = seller.Notes
         };
     }
@@ -111,7 +110,11 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         [EmailAddress(ErrorMessage = "L'adresse e-mail doit être valide.")]
         public string? Email { get; set; }
 
-        public string? Phone { get; set; }
+        [Required(ErrorMessage = "Le téléphone est obligatoire.")]
+        public string Phone { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "L'adresse postale est obligatoire.")]
+        public string PostalAddress { get; set; } = string.Empty;
 
         public string? Notes { get; set; }
     }

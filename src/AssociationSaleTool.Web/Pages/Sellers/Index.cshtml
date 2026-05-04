@@ -33,6 +33,8 @@
                     <th>Code</th>
                     <th>Nom</th>
                     <th>E-mail</th>
+                    <th>Téléphone</th>
+                    <th>Adresse postale</th>
                     <th>Articles</th>
                     <th></th>
                 </tr>
@@ -44,6 +46,8 @@
                     <td>@seller.SellerCode</td>
                     <td>@seller.FirstName @seller.LastName</td>
                     <td>@(seller.Email ?? "—")</td>
+                    <td>@seller.Phone</td>
+                    <td>@seller.PostalAddress</td>
                     <td>@seller.Items.Count</td>
                     <td><a asp-page="/Sellers/Details" asp-route-id="@seller.Id">Ouvrir</a></td>
                 </tr>

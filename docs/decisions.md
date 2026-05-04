@@ -474,3 +474,20 @@ This file captures the main project decisions in a lightweight ADR format.
   - sale browsing stays visually and conceptually attached to checkout
   - the admin sale-status page remains focused on phase changes and exceptional corrections
   - historical sale totals remain immutable and visible even when a sale line was later corrected
+
+## D-033 Require Seller Phone And Postal Address
+
+- Status: accepted
+- Key drivers:
+  - event owners need reliable seller contact details before accepting items
+  - phone-only contact is not enough for seller settlement and post-event follow-up
+  - missing contact information should be blocked at entry instead of discovered during reconciliation
+- Decision:
+  - make `seller.phone` required
+  - add required `seller.postal_address`
+  - enforce both fields in the seller create/edit UI and in backend intake validation
+  - keep `email` optional
+- Consequence:
+  - existing databases receive empty default values during migration and should be completed by organizers
+  - new seller records cannot be created or edited through intake without phone and postal address
+  - seller detail and printable seller sheets show the required contact information

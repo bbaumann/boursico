@@ -35,7 +35,7 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
         }
 
         var result = await intakeService.CreateSellerAsync(
-            new CreateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.Notes),
+            new CreateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.PostalAddress, Input.Notes),
             cancellationToken);
 
         if (result.Outcome == CreateSellerOutcome.DuplicateFound)
@@ -50,9 +50,7 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
 
     private static string BuildDuplicateMessage(IReadOnlyList<SellerDuplicateMatch> matches)
     {
-        return matches.Any(x => x.Reason == SellerDuplicateMatchReason.NameOnlySubmittedPhoneMissing)
-            ? "Un vendeur existe déjà avec les mêmes nom et prénom. Aucun téléphone n'a été saisi, vérifiez manuellement le vendeur existant ou ajoutez un téléphone distinct."
-            : "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
+        return "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
     }
 
     public sealed class InputModel
@@ -66,7 +64,11 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
         [EmailAddress(ErrorMessage = "L'adresse e-mail doit être valide.")]
         public string? Email { get; set; }
 
-        public string? Phone { get; set; }
+        [Required(ErrorMessage = "Le téléphone est obligatoire.")]
+        public string Phone { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "L'adresse postale est obligatoire.")]
+        public string PostalAddress { get; set; } = string.Empty;
 
         public string? Notes { get; set; }
     }

@@ -9,7 +9,8 @@ CREATE TABLE seller (
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     email TEXT,
-    phone TEXT,
+    phone TEXT NOT NULL,
+    postal_address TEXT NOT NULL,
     notes TEXT,
     CONSTRAINT uq_seller_code UNIQUE (seller_code)
 );

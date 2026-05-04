@@ -25,7 +25,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.FirstName).HasColumnName("first_name").IsRequired();
             entity.Property(x => x.LastName).HasColumnName("last_name").IsRequired();
             entity.Property(x => x.Email).HasColumnName("email");
-            entity.Property(x => x.Phone).HasColumnName("phone");
+            entity.Property(x => x.Phone).HasColumnName("phone").IsRequired();
+            entity.Property(x => x.PostalAddress).HasColumnName("postal_address").IsRequired();
             entity.Property(x => x.Notes).HasColumnName("notes");
 
             entity.HasIndex(x => x.SellerCode)

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace AssociationSaleTool.Web.Tests.Pages;
 
@@ -15,6 +16,22 @@ using SellerEditModel = AssociationSaleTool.Web.Pages.Sellers.EditModel;
 
 public sealed class SellersPageModelTests
 {
+    [Fact]
+    public void SellerCreateAndEditInputsRequirePhoneAndPostalAddress()
+    {
+        AssertRequiredContactMessages(new CreateModel.InputModel
+        {
+            FirstName = "Ada",
+            LastName = "Lovelace"
+        });
+
+        AssertRequiredContactMessages(new SellerEditModel.InputModel
+        {
+            FirstName = "Ada",
+            LastName = "Lovelace"
+        });
+    }
+
     [Fact]
     public async Task CreateSellerPage_Post_CreatesSellerAndRedirectsToDetails()
     {
@@ -34,7 +51,9 @@ public sealed class SellersPageModelTests
             {
                 FirstName = "Ada",
                 LastName = "Lovelace",
-                Email = "ada@example.com"
+                Email = "ada@example.com",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests"
             }
         };
 
@@ -57,7 +76,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", null))).Seller!;
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", "1 rue des Tests", null))).Seller!;
 
         var pageModel = new CreateModel(service)
         {
@@ -65,7 +84,8 @@ public sealed class SellersPageModelTests
             {
                 FirstName = "Ada",
                 LastName = "Lovelace",
-                Phone = "0123"
+                Phone = "0123",
+                PostalAddress = "2 rue des Tests"
             }
         };
 
@@ -80,37 +100,6 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
-    public async Task CreateSellerPage_Post_UsesNameOnlyDuplicateMessageWhenSubmittedPhoneIsBlank()
-    {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        await using var context = new AppDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-        var service = new IntakeService(context);
-        await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", null));
-
-        var pageModel = new CreateModel(service)
-        {
-            Input = new CreateModel.InputModel
-            {
-                FirstName = "Ada",
-                LastName = "Lovelace"
-            }
-        };
-
-        var result = await pageModel.OnPostAsync(CancellationToken.None);
-
-        Assert.IsType<PageResult>(result);
-        Assert.Contains(
-            "Aucun téléphone n'a été saisi",
-            pageModel.ModelState[string.Empty]!.Errors.Single().ErrorMessage);
-    }
-
-    [Fact]
     public async Task SellerDetailsPage_Post_CreatesMultipleItemsAndRedirectsToSelf()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -122,7 +111,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
 
         var pageModel = new DetailsModel(service)
         {
@@ -160,7 +149,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         var pageModel = new DetailsModel(service);
 
         var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
@@ -182,7 +171,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
 
         var pageModel = new SellerEditModel(service)
         {
@@ -192,6 +181,7 @@ public sealed class SellersPageModelTests
                 LastName = "King",
                 Email = "augusta@example.com",
                 Phone = "1234",
+                PostalAddress = "10 avenue des Jouets",
                 Notes = "Updated"
             }
         };
@@ -215,8 +205,8 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", null))).Seller!;
-        var edited = (await service.CreateSellerAsync(new CreateSellerRequest("Grace", "Hopper", null, "9999", null))).Seller!;
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", "1 rue des Tests", null))).Seller!;
+        var edited = (await service.CreateSellerAsync(new CreateSellerRequest("Grace", "Hopper", null, "9999", "2 rue des Tests", null))).Seller!;
 
         var pageModel = new SellerEditModel(service)
         {
@@ -224,7 +214,8 @@ public sealed class SellersPageModelTests
             {
                 FirstName = "Ada",
                 LastName = "Lovelace",
-                Phone = "0123"
+                Phone = "0123",
+                PostalAddress = "3 rue des Tests"
             }
         };
 
@@ -249,7 +240,7 @@ public sealed class SellersPageModelTests
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
         var phaseService = new SalePhaseService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         await phaseService.SetPhaseAsync(SalePhase.Sale);
 
         var pageModel = new SellerEditModel(service)
@@ -260,6 +251,7 @@ public sealed class SellersPageModelTests
                 LastName = "King",
                 Email = "augusta@example.com",
                 Phone = "1234",
+                PostalAddress = "10 avenue des Jouets",
                 Notes = "Updated"
             }
         };
@@ -286,7 +278,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
@@ -321,7 +313,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
 
         var pageModel = new DetailsModel(service)
         {
@@ -350,7 +342,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
@@ -383,7 +375,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
@@ -410,7 +402,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         var item = new AssociationSaleTool.Web.Data.Entities.ItemEntity
         {
             SellerId = seller.Id,
@@ -445,7 +437,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -472,7 +464,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
@@ -485,5 +477,19 @@ public sealed class SellersPageModelTests
         Assert.IsType<PageResult>(result);
         Assert.False(pageModel.ModelState.IsValid);
         Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+    }
+
+    private static void AssertRequiredContactMessages(object input)
+    {
+        var validationResults = new List<ValidationResult>();
+
+        Validator.TryValidateObject(
+            input,
+            new ValidationContext(input),
+            validationResults,
+            validateAllProperties: true);
+
+        Assert.Contains(validationResults, result => result.ErrorMessage == "Le téléphone est obligatoire.");
+        Assert.Contains(validationResults, result => result.ErrorMessage == "L'adresse postale est obligatoire.");
     }
 }

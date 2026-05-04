@@ -10,7 +10,7 @@
         <div>
             <p class="eyebrow">Saisie</p>
             <h1 class="page-title">@Model.Seller!.FirstName @Model.Seller.LastName</h1>
-            <p class="seller-meta">@Model.Seller.SellerCode · @(Model.Seller.Email ?? "Sans e-mail")</p>
+            <p class="seller-meta">@Model.Seller.SellerCode</p>
         </div>
         <div class="header-actions">
             @if (Model.CanEditSellerMasterData)
@@ -25,6 +25,21 @@
     {
         <p class="validation">Les informations du vendeur et les articles sont en lecture seule dans le statut actuel de la vente.</p>
     }
+
+    <dl class="seller-contact-list">
+        <div>
+            <dt>E-mail</dt>
+            <dd>@(Model.Seller.Email ?? "Sans e-mail")</dd>
+        </div>
+        <div>
+            <dt>Téléphone</dt>
+            <dd>@Model.Seller.Phone</dd>
+        </div>
+        <div>
+            <dt>Adresse postale</dt>
+            <dd>@Model.Seller.PostalAddress</dd>
+        </div>
+    </dl>
 
     <section class="subsection">
         <h2>Articles</h2>

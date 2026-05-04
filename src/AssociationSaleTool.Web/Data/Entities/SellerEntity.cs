@@ -12,7 +12,9 @@ public sealed class SellerEntity
 
     public string? Email { get; set; }
 
-    public string? Phone { get; set; }
+    public string Phone { get; set; } = string.Empty;
+
+    public string PostalAddress { get; set; } = string.Empty;
 
     public string? Notes { get; set; }
 

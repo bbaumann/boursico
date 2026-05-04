@@ -19,6 +19,7 @@ When the event phase is `sale` or `post_sale`, the following seller fields becom
 - `last_name`
 - `email`
 - `phone`
+- `postal_address`
 - `notes`
 
 The following item fields also become read-only in normal operations:

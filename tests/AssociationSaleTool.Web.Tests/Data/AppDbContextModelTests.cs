@@ -8,6 +8,43 @@ namespace AssociationSaleTool.Web.Tests.Data;
 public class AppDbContextModelTests
 {
     [Fact]
+    public void SellerStoresRequiredPhoneAndPostalAddressColumns()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var entityType = context.Model.FindEntityType(typeof(SellerEntity));
+        Assert.NotNull(entityType);
+        var phone = Assert.Single(entityType!.GetProperties(), property => property.GetColumnName() == "phone");
+        var postalAddress = Assert.Single(entityType.GetProperties(), property => property.GetColumnName() == "postal_address");
+        Assert.False(phone.IsNullable);
+        Assert.False(postalAddress.IsNullable);
+    }
+
+    [Fact]
+    public void SellerTableRequiresPhoneAndPostalAddress()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'seller'";
+        var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
+        Assert.Contains("\"phone\" TEXT NOT NULL", createTableSql);
+        Assert.Contains("\"postal_address\" TEXT NOT NULL", createTableSql);
+    }
+
+    [Fact]
     public void ItemReferenceHasUniqueIndex()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

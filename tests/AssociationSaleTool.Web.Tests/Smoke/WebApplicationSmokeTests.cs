@@ -66,7 +66,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 FirstName = "Ariane",
                 LastName = "Doublon",
                 Email = "ariane.doublon@example.test",
-                Phone = "0123"
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests"
             });
             await dbContext.SaveChangesAsync();
         }
@@ -80,7 +81,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 formContent,
                 ("Input.FirstName", "Ariane"),
                 ("Input.LastName", "Doublon"),
-                ("Input.Phone", "0123")));
+                ("Input.Phone", "0123"),
+                ("Input.PostalAddress", "2 rue des Tests")));
 
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
@@ -2098,7 +2100,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             FirstName = firstName,
             LastName = lastName,
             Email = email,
-            Phone = phone
+            Phone = phone ?? "0123",
+            PostalAddress = "1 rue des Tests"
         };
 
         dbContext.Sellers.Add(seller);

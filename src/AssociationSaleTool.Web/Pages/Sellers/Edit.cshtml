@@ -24,7 +24,7 @@
                 {
                     <li>
                         <strong>@match.SellerCode - @match.FirstName @match.LastName</strong>
-                        <span>@(match.Phone ?? "Sans téléphone")</span>
+                        <span>@(string.IsNullOrWhiteSpace(match.Phone) ? "Téléphone à compléter" : match.Phone)</span>
                         <span>@(match.Email ?? "Sans e-mail")</span>
                         <span>@match.ItemCount article@(match.ItemCount > 1 ? "s" : "")</span>
                         <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@match.SellerId">Ouvrir ce vendeur</a>
@@ -53,8 +53,15 @@
             <label>
                 <span>Téléphone</span>
                 <input asp-for="Input.Phone" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span asp-validation-for="Input.Phone" class="validation"></span>
             </label>
         </div>
+
+        <label>
+            <span>Adresse postale</span>
+            <textarea asp-for="Input.PostalAddress" rows="2" disabled="@(!Model.CanEditSellerMasterData)"></textarea>
+            <span asp-validation-for="Input.PostalAddress" class="validation"></span>
+        </label>
 
         <label>
             <span>Notes</span>

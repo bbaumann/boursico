@@ -42,6 +42,7 @@ Represents one seller.
 - `last_name`
 - `email`
 - `phone`
+- `postal_address`
 - `notes`
 
 ### Notes
@@ -170,7 +171,8 @@ V1 uses a single row with `id = 1`.
 - `first_name`: required
 - `last_name`: required
 - `email`: optional
-- `phone`: optional
+- `phone`: required
+- `postal_address`: required
 - `notes`: optional
 
 ## `item`

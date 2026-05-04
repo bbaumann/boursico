@@ -57,13 +57,14 @@ else
                             <dd>@sheet.Email</dd>
                         </div>
                     }
-                    @if (!string.IsNullOrWhiteSpace(sheet.Phone))
-                    {
-                        <div>
-                            <dt>Téléphone</dt>
-                            <dd>@sheet.Phone</dd>
-                        </div>
-                    }
+                    <div>
+                        <dt>Téléphone</dt>
+                        <dd>@sheet.Phone</dd>
+                    </div>
+                    <div>
+                        <dt>Adresse postale</dt>
+                        <dd>@sheet.PostalAddress</dd>
+                    </div>
                 </dl>
             </header>
 

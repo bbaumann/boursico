@@ -18,7 +18,9 @@ Suggested fields:
 - first name
 - last name
 - seller code
-- contact information as needed
+- optional email
+- required phone number
+- required postal address
 
 ### Item
 
