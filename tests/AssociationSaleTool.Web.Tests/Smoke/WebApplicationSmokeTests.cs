@@ -2061,6 +2061,26 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task CheckoutPageRendersItemSearchInsideCartPanel()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/caisse");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        var cartPanelIndex = content.IndexOf("class=\"subsection checkout-cart-panel\"", StringComparison.Ordinal);
+        var cartHeadingIndex = content.IndexOf("<h2>Panier</h2>", StringComparison.Ordinal);
+        var searchIndex = content.IndexOf("data-checkout-search", StringComparison.Ordinal);
+        var cartBodyIndex = content.IndexOf("data-checkout-cart", StringComparison.Ordinal);
+
+        Assert.True(cartPanelIndex >= 0, "The checkout page should render the cart panel.");
+        Assert.True(cartHeadingIndex > cartPanelIndex, "The Panier heading should be inside the cart panel.");
+        Assert.True(searchIndex > cartHeadingIndex, "The item search should be rendered inside the Panier section.");
+        Assert.True(searchIndex < cartBodyIndex, "The item search should appear before the cart rows.");
+    }
+
+    [Fact]
     public async Task CheckoutPageHidesSellerInformationAndUnavailableActions()
     {
         var client = _factory.CreateClient();
