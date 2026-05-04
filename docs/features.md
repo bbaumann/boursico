@@ -15,7 +15,7 @@ The split is important because the users, UI needs, and operational risks are di
 
 Allow organizers to register toys before the event and allow sale-day volunteers to create sales reliably with the smallest possible cognitive load.
 
-### V1 Capabilities
+### Current Capabilities
 
 - Create sellers
 - Prevent accidental duplicate sellers during seller creation and seller editing
@@ -197,6 +197,7 @@ Admins may open the reconciliation dashboard before the event is in `post_sale`,
 - Allow marking an unsold item as `missing` through an admin-only action
 - Allow restoring a mistakenly marked `missing` item to `in_stock` only as an admin reconciliation correction
 - Regenerate the seller sheet after a `missing` status correction
+- Track seller registration fees and deduct unpaid fees from reconciliation payout
 
 Seller-sheet printing and missing-item reconciliation corrections are enabled only when the event phase is `post_sale`.
 
@@ -209,7 +210,8 @@ It must contain:
 - seller identity
 - returned items list
 - payable items list
-- final amount to pay the seller
+- fee breakdown
+- final amount to pay the seller after unpaid fee deduction
 
 The returned items list appears first because operators use the sheet to gather physical returns before preparing seller payout.
 Returned rows include a printed checkbox column so operators can mark each item as found.
@@ -239,16 +241,26 @@ For each returned item, show:
 - reference
 - item title when useful
 
-### Final Amount To Pay
+### Seller Fees And Final Amount To Pay
 
-In V1, the final amount to pay the seller is:
+The expected seller fee is:
 
-- the sum of seller prices for all items in the payable list
+- EUR 0 when the seller has no items
+- EUR 2 for each started block of 15 seller items in the system
 
-The following stay outside the system in V1:
+The operator records the amount already paid by the seller on the seller form.
 
-- the EUR 2 fee per 15 items
-- any seller-facing fee computation
+The seller sheet shows:
+
+- item subtotal for payable items
+- expected seller fee
+- already-paid seller fee
+- remaining fee due
+- final amount to pay the seller
+
+The final amount to pay the seller is:
+
+- item subtotal minus remaining fee due, floored at zero
 
 ### Physical Workflow Supported By The Sheet
 
@@ -283,4 +295,3 @@ Sellers whose items are only in excluded states do not get seller sheets.
 - Integrated card-payment device flows
 - Complex ERP/accounting features
 - Multi-station offline sync
-- In-app fee management for the EUR 2 per 15 items seller fee

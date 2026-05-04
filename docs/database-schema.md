@@ -43,12 +43,15 @@ Represents one seller.
 - `email`
 - `phone`
 - `postal_address`
+- `fee_paid_cents`
 - `notes`
 
 ### Notes
 
 - `seller_code` is the two-letter safe code used in item references.
 - No stored `display_name` is required; it can be derived when needed.
+- `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
+- The expected seller fee is derived from the seller's item count and is not stored.
 
 ## `item`
 
@@ -306,11 +309,12 @@ These items are not part of post-sale payable or returned outputs.
 
 ## Final Amount To Pay Seller
 
-For V1:
+For VNext:
 
-- sum of `seller_price_cents` for all payable items
-
-The EUR 2 per 15 items seller fee stays outside the system in V1.
+- item subtotal = sum of `seller_price_cents` for all payable items
+- expected seller fee = EUR 2 per started block of 15 seller items
+- remaining seller fee = max(expected seller fee - `seller.fee_paid_cents`, 0)
+- final payout = max(item subtotal - remaining seller fee, 0)
 
 ## Index Plan
 

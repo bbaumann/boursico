@@ -144,14 +144,14 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-012 Seller Fee Logic Stays Outside The System In V1
 
-- Status: accepted
+- Status: superseded by D-036
 - Key drivers:
   - the EUR 2 per 15 items fee can be handled outside the system for now
   - seller statement logic is simpler if it only reflects payable items and returned items
 - Decision:
   - final amount to pay seller in V1 is only the sum of seller prices for payable items
 - Consequence:
-  - seller fee handling is deferred without blocking the core workflow
+  - seller fee handling was deferred without blocking the core workflow
 
 ## D-013 Association Margin Is Stored Per Item But Not Used For Seller Settlement
 
@@ -422,7 +422,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - include seller sheets only for sellers with at least one `sold`, `missing`, or `in_stock` item
   - allow admin corrections between `in_stock` and `missing`
   - keep seller-sheet printing and `missing` corrections read-only until the event phase is `post_sale`
-  - keep seller fee calculation outside the system in V1
+  - seller fee calculation was kept outside the system for V1; this is superseded by D-036 for VNext
 - Consequence:
   - V1 does not need a separate reconciliation executable, script, or deployment path
   - reconciliation uses the same database and status lifecycle as sale-day operations
@@ -526,3 +526,22 @@ This file captures the main project decisions in a lightweight ADR format.
   - the sale creation API accepts `paymentMethod`, `chequeNumber`, and `chequeBankName`
   - `CheckoutService` remains the authoritative validator for cheque traceability
   - read-only sales search can find cheque sales by method, number, or bank name
+
+## D-036 Track Seller Registration Fees In-App
+
+- Status: accepted
+- Key drivers:
+  - VNext seller settlement must account for the EUR 2 registration fee per started block of 15 items
+  - operators need to see whether the seller already paid the expected fee during intake
+  - unpaid seller fees should reduce the reconciliation payout instead of being tracked on paper
+- Decision:
+  - store only the manually collected amount on `seller.fee_paid_cents`
+  - calculate the expected fee from the seller's total item count in the system
+  - charge EUR 2 for every started block of 15 items: 1-15 items costs EUR 2, 16-30 costs EUR 4, and so on
+  - show expected and paid fees on seller details and collect the paid amount on seller create/edit screens
+  - include item subtotal, expected fee, paid fee, remaining fee, and final payout on reconciliation seller sheets
+  - subtract the remaining unpaid fee from the seller payout, floored at zero
+- Consequence:
+  - `D-012` is superseded for VNext
+  - the expected fee remains derived and cannot drift from the item count
+  - overpayment is visible as paid fee but never increases the seller payout

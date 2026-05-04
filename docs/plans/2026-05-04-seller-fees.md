@@ -84,8 +84,8 @@ Expected: fail because seller fee input/display behavior does not exist.
 Parse paid fee as whole euros, store cents, and render the status near seller contact details. Keep the wording French:
 
 - `Frais`
-- `payes`
-- `Frais payes`
+- `payés`
+- `Frais payés`
 
 **Step 4: Run tests to verify GREEN**
 

@@ -20,10 +20,10 @@ Track the seller-facing registration fee inside the application for VNext, show 
 
 The seller detail page shows a compact fee status near the seller contact details:
 
-- `Frais : 4,00 EUR (payes 4,00 EUR)` with a paid/green status when the fee is fully paid.
-- `Frais : 4,00 EUR (payes 2,00 EUR)` with a warning status when the fee is underpaid.
+- `Frais : 4,00 EUR (payés 4,00 EUR)` with a paid/green status when the fee is fully paid.
+- `Frais : 4,00 EUR (payés 2,00 EUR)` with a warning status when the fee is underpaid.
 
-The seller edit page adds a `Frais payes` whole-euro numeric input. The stored value is integer cents on the seller row. The expected fee is not stored because it depends on the current item count.
+The seller edit page adds a `Frais payés` whole-euro numeric input. The stored value is integer cents on the seller row. The expected fee is not stored because it depends on the current item count.
 
 ## Reconciliation Behavior
 
