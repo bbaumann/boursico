@@ -53,6 +53,45 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task CreateSellerPostShowsDuplicateMatchesInFrench()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Sellers.Add(new SellerEntity
+            {
+                SellerCode = "DS-777",
+                FirstName = "Ariane",
+                LastName = "Doublon",
+                Email = "ariane.doublon@example.test",
+                Phone = "0123"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var form = await client.GetAsync("/vendeurs/creer");
+        form.EnsureSuccessStatusCode();
+        var formContent = await form.Content.ReadAsStringAsync();
+        var response = await client.PostAsync(
+            "/vendeurs/creer",
+            BuildFormContent(
+                formContent,
+                ("Input.FirstName", "Ariane"),
+                ("Input.LastName", "Doublon"),
+                ("Input.Phone", "0123")));
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Un vendeur existe déjà avec les mêmes nom, prénom et téléphone", content);
+        Assert.Contains("DS-777 - Ariane Doublon", content);
+        Assert.Contains("ariane.doublon@example.test", content);
+        Assert.Contains("0 article", content);
+        Assert.Contains("Ouvrir ce vendeur", content);
+    }
+
+    [Fact]
     public async Task SellersPageShowsMainNavigationWithSellersActive()
     {
         var client = _factory.CreateClient();
