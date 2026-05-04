@@ -148,15 +148,70 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Correction des articles", content);
         Assert.Contains("href=\"/rapprochement/feuilles\"", content);
         Assert.Contains("Imprimer toutes les feuilles", content);
-        Assert.Contains("Code vendeur", content);
+        Assert.Contains("Code ou nom du vendeur", content);
+        Assert.Contains("list=\"seller-sheet-options\"", content);
         Assert.Contains("Imprimer une feuille", content);
-        Assert.Contains("Référence ou titre", content);
-        Assert.Contains("Rechercher", content);
+        Assert.Contains("data-reconciliation-root", content);
+        Assert.Contains("data-reconciliation-search", content);
+        Assert.Contains("data-reconciliation-results", content);
+        Assert.Contains("Filtrer les articles", content);
 
         await EnsureSoldItemsHaveSaleLinesAsync();
 
         var sheetsResponse = await client.GetAsync("/rapprochement/feuilles");
         sheetsResponse.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task ReconciliationDashboardRendersSellerAutocompleteAndLiveCorrectionRows()
+    {
+        var client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RA-010",
+                FirstName = "Alice",
+                LastName = "Autocomplete",
+                Email = "alice.autocomplete@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.AddRange(
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RA-010-001",
+                    ItemNumber = 1,
+                    Title = "Camion filtrable",
+                    SellerPriceCents = 700,
+                    Status = "in_stock"
+                },
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "RA-010-002",
+                    ItemNumber = 2,
+                    Title = "Puzzle deja manquant",
+                    SellerPriceCents = 800,
+                    Status = "missing"
+                });
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        var content = await UnlockReconciliationDashboardAsync(client);
+
+        Assert.Contains("<datalist id=\"seller-sheet-options\">", content);
+        Assert.Contains("value=\"RA-010 - Alice Autocomplete\"", content);
+        Assert.Contains("data-reconciliation-filter-text=\"ra-010-001 camion filtrable ra-010 alice autocomplete\"", content);
+        Assert.Contains("data-reconciliation-filter-text=\"ra-010-002 puzzle deja manquant ra-010 alice autocomplete\"", content);
+        Assert.Contains("Marquer manquant", content);
+        Assert.Contains("Remettre en stock", content);
     }
 
     [Fact]
@@ -477,7 +532,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             null,
             ("RS-202-001", "Article autre vendeur", "missing", 400));
 
-        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-201");
+        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-201%20-%20Claire%20Filtre");
 
         response.EnsureSuccessStatusCode();
 
@@ -559,6 +614,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(".seller-sheet-print-page", content);
         Assert.Contains("page-break-after: always;", content);
         Assert.Contains(".seller-sheet-print-page:last-child", content);
+        Assert.Contains("size: A4;", content);
+        Assert.Contains("margin: 8mm;", content);
+        Assert.Contains(".seller-sheet-print-page .data-table th", content);
+        Assert.Contains("padding: 0.6mm 1.2mm;", content);
+        Assert.Contains("font-size: 8pt;", content);
+        Assert.Contains("font-size: 7.5pt;", content);
     }
 
     [Fact]

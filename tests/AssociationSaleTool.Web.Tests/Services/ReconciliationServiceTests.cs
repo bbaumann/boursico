@@ -225,6 +225,56 @@ public sealed class ReconciliationServiceTests
     }
 
     [Fact]
+    public async Task ListSellerSheetOptionsAsync_ReturnsActiveSellersOrderedWithNames()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var secondSeller = new SellerEntity { SellerCode = "BB", FirstName = "Grace", LastName = "Hopper" };
+        var firstSeller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        var inactiveSeller = new SellerEntity { SellerCode = "CC", FirstName = "Mary", LastName = "Jackson" };
+        context.Sellers.AddRange(secondSeller, firstSeller, inactiveSeller);
+        await context.SaveChangesAsync();
+
+        AddItem(context, secondSeller, "BB-001", 1, "Puzzle", 600, "missing");
+        AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
+        AddItem(context, inactiveSeller, "CC-001", 1, "Livre", 400, "registered");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var options = await service.ListSellerSheetOptionsAsync();
+
+        Assert.Equal(["AA", "BB"], options.Select(option => option.SellerCode));
+        Assert.Equal(["Ada Lovelace", "Grace Hopper"], options.Select(option => option.SellerName));
+    }
+
+    [Fact]
+    public async Task ListCorrectionItemsAsync_ReturnsOnlyInStockAndMissingItemsOrderedByReference()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var missing = AddItem(context, seller, "AA-002", 2, "Puzzle", 700, "missing");
+        var inStock = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        AddItem(context, seller, "AA-003", 3, "Livre", 400, "registered");
+        AddItem(context, seller, "AA-004", 4, "Piano", 800, "sold");
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var items = await service.ListCorrectionItemsAsync();
+
+        Assert.Equal([inStock.Id, missing.Id], items.Select(item => item.ItemId));
+        Assert.Equal(["AA-001", "AA-002"], items.Select(item => item.Reference));
+        Assert.All(items, item => Assert.Equal("AA", item.SellerCode));
+    }
+
+    [Fact]
     public async Task SearchItemsAsync_FindsItemsByPartialReference()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

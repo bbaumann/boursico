@@ -562,12 +562,20 @@ textarea {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+
   .no-print {
     display: none !important;
   }
 
   body:has(.seller-sheets-print-root) {
     background: #fff;
+    color: #000;
+    font-size: 8pt;
+    line-height: 1.08;
   }
 
   body:has(.seller-sheets-print-root) .main-navigation,
@@ -581,6 +589,11 @@ textarea {
   }
 
   .seller-sheet-print-page {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
     page-break-after: always;
     break-after: page;
   }
@@ -588,6 +601,67 @@ textarea {
   .seller-sheet-print-page:last-child {
     page-break-after: auto;
     break-after: auto;
+  }
+
+  .seller-sheet-print-page .seller-sheet-header {
+    gap: 4mm;
+    margin-bottom: 2mm;
+  }
+
+  .seller-sheet-print-page .eyebrow {
+    margin-bottom: 1mm;
+    font-size: 7pt;
+    letter-spacing: 0.08em;
+  }
+
+  .seller-sheet-print-page .page-title {
+    font-size: 13pt;
+    line-height: 1.05;
+  }
+
+  .seller-sheet-print-page .seller-sheet-contact div {
+    margin-bottom: 1mm;
+  }
+
+  .seller-sheet-print-page .seller-sheet-contact dt {
+    font-size: 7pt;
+  }
+
+  .seller-sheet-print-page .subsection {
+    margin-top: 2mm;
+  }
+
+  .seller-sheet-print-page .subsection h2 {
+    margin: 0 0 1mm;
+    font-size: 9pt;
+  }
+
+  .seller-sheet-print-page .data-table th,
+  .seller-sheet-print-page .data-table td {
+    padding: 0.6mm 1.2mm;
+    border-bottom: 0.2mm solid #bbb;
+    font-size: 7.5pt;
+    line-height: 1.05;
+  }
+
+  .seller-sheet-print-page .data-table th {
+    font-size: 7pt;
+    letter-spacing: 0.04em;
+  }
+
+  .seller-sheet-print-page .data-table th:first-child,
+  .seller-sheet-print-page .data-table td:first-child,
+  .seller-sheet-print-page .data-table th:nth-child(3),
+  .seller-sheet-print-page .data-table td:nth-child(3),
+  .seller-sheet-print-page .data-table th:last-child,
+  .seller-sheet-print-page .data-table td:last-child {
+    white-space: nowrap;
+  }
+
+  .seller-sheet-print-page .checkout-totals {
+    margin-top: 2mm;
+    padding-top: 1.5mm;
+    border-top: 0.3mm solid #000;
   }
 
   body.checkout-printing {

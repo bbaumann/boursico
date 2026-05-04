@@ -21,9 +21,7 @@ public sealed class SheetsModel(ReconciliationService reconciliationService) : P
             return Redirect("/rapprochement");
         }
 
-        RequestedSellerCode = string.IsNullOrWhiteSpace(codeVendeur)
-            ? null
-            : codeVendeur.Trim().ToUpperInvariant();
+        RequestedSellerCode = NormalizeRequestedSellerCode(codeVendeur);
 
         try
         {
@@ -42,5 +40,21 @@ public sealed class SheetsModel(ReconciliationService reconciliationService) : P
     public static string FormatPrice(int priceCents)
     {
         return $"{priceCents / 100m:0.00} EUR";
+    }
+
+    private static string? NormalizeRequestedSellerCode(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmedValue = value.Trim();
+        var codeSeparatorIndex = trimmedValue.IndexOf(" - ", StringComparison.Ordinal);
+        var sellerCode = codeSeparatorIndex < 0
+            ? trimmedValue
+            : trimmedValue[..codeSeparatorIndex];
+
+        return sellerCode.ToUpperInvariant();
     }
 }

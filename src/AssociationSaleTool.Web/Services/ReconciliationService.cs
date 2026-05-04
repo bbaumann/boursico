@@ -9,6 +9,8 @@ namespace AssociationSaleTool.Web.Services;
 public sealed class ReconciliationService(AppDbContext dbContext)
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+    private static readonly string[] SellerSheetStatuses = ["sold", "missing", "in_stock"];
+    private static readonly string[] CorrectionStatuses = ["in_stock", "missing"];
 
     public async Task<List<ReconciliationItemSearchResult>> SearchItemsAsync(
         string query,
@@ -20,8 +22,39 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             return [];
         }
 
-        var candidates = await dbContext.Items
+        var candidates = await ListCorrectionItemsAsync(cancellationToken);
+
+        return candidates
+            .Where(x =>
+                ContainsNormalized(x.Reference, normalizedQuery) ||
+                ContainsNormalized(x.Title, normalizedQuery) ||
+                ContainsNormalized(x.SellerCode, normalizedQuery) ||
+                ContainsNormalized(x.SellerName, normalizedQuery))
+            .OrderBy(x => x.Reference)
+            .Take(25)
+            .ToList();
+    }
+
+    public async Task<List<SellerSheetOption>> ListSellerSheetOptionsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Sellers
             .AsNoTracking()
+            .Where(x => x.Items.Any(item => SellerSheetStatuses.Contains(item.Status)))
+            .OrderBy(x => x.SellerCode)
+            .Select(x => new SellerSheetOption(
+                x.SellerCode,
+                $"{x.FirstName} {x.LastName}"))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<ReconciliationItemSearchResult>> ListCorrectionItemsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Items
+            .AsNoTracking()
+            .Where(x => CorrectionStatuses.Contains(x.Status))
+            .OrderBy(x => x.Reference)
             .Select(x => new ReconciliationItemSearchResult(
                 x.Id,
                 x.SellerId,
@@ -32,12 +65,6 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                 x.Status,
                 x.SellerPriceCents))
             .ToListAsync(cancellationToken);
-
-        return candidates
-            .Where(x => ContainsNormalized(x.Reference, normalizedQuery) || ContainsNormalized(x.Title, normalizedQuery))
-            .OrderBy(x => x.Reference)
-            .Take(25)
-            .ToList();
     }
 
     public async Task<ReconciliationStatusChangeResult> MarkItemMissingAsync(
@@ -58,7 +85,6 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         string? sellerCode = null,
         CancellationToken cancellationToken = default)
     {
-        var activeStatuses = new[] { "sold", "missing", "in_stock" };
         var normalizedSellerCode = string.IsNullOrWhiteSpace(sellerCode)
             ? null
             : sellerCode.Trim().ToUpperInvariant();
@@ -68,7 +94,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             .Include(x => x.Items)
             .ThenInclude(x => x.SaleLine)
             .Where(x => normalizedSellerCode == null || x.SellerCode == normalizedSellerCode)
-            .Where(x => x.Items.Any(item => activeStatuses.Contains(item.Status)))
+            .Where(x => x.Items.Any(item => SellerSheetStatuses.Contains(item.Status)))
             .OrderBy(x => x.SellerCode)
             .ToListAsync(cancellationToken);
 

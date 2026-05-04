@@ -62,11 +62,18 @@ else
             </div>
 
             <form method="get" action="/rapprochement/feuilles">
-                <label asp-for="SheetInput.SellerCode">Code vendeur</label>
+                <label asp-for="SheetInput.SellerCode">Code ou nom du vendeur</label>
                 <input name="codeVendeur"
                        id="SheetInput_SellerCode"
                        value="@Model.SheetInput.SellerCode"
+                       list="seller-sheet-options"
                        autocomplete="off" />
+                <datalist id="seller-sheet-options">
+                    @foreach (var seller in Model.SellerSheetOptions)
+                    {
+                        <option value="@($"{seller.SellerCode} - {seller.SellerName}")"></option>
+                    }
+                </datalist>
 
                 <div class="form-actions">
                     <button type="submit" class="button-link">Imprimer une feuille</button>
@@ -74,20 +81,17 @@ else
             </form>
         </section>
 
-        <section class="subsection">
+        <section class="subsection" data-reconciliation-root>
             <h2>Correction des articles</h2>
 
-            <form method="post" asp-page-handler="Search">
-                <label asp-for="SearchInput.Query">Référence ou titre</label>
-                <input asp-for="SearchInput.Query" type="search" autocomplete="off" />
-                <span asp-validation-for="SearchInput.Query" class="validation"></span>
+            <label for="reconciliation-search">Filtrer les articles</label>
+            <input id="reconciliation-search"
+                   type="search"
+                   autocomplete="off"
+                   data-reconciliation-search />
+            <p class="empty-state" data-reconciliation-empty-message hidden>Aucun article ne correspond à cette recherche.</p>
 
-                <div class="form-actions">
-                    <button type="submit" class="button-link button-link-solid">Rechercher</button>
-                </div>
-            </form>
-
-            @if (Model.SearchResults.Count > 0)
+            @if (Model.CorrectionItems.Count > 0)
             {
                 <table class="data-table">
                     <thead>
@@ -100,10 +104,11 @@ else
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                    @foreach (var item in Model.SearchResults)
+                    <tbody data-reconciliation-results>
+                    @foreach (var item in Model.CorrectionItems)
                     {
-                        <tr>
+                        <tr data-reconciliation-item-row
+                            data-reconciliation-filter-text="@IndexModel.BuildCorrectionFilterText(item)">
                             <td>@item.Reference</td>
                             <td>@item.Title</td>
                             <td>@item.SellerCode - @item.SellerName</td>
@@ -135,9 +140,9 @@ else
                     </tbody>
                 </table>
             }
-            else if (!string.IsNullOrWhiteSpace(Model.SearchInput.Query) && ViewContext.ModelState.IsValid)
+            else
             {
-                <p class="empty-state">Aucun article trouvé.</p>
+                <p class="empty-state">Aucun article à corriger.</p>
             }
         </section>
     </section>

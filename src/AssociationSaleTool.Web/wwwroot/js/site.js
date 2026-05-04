@@ -438,3 +438,37 @@ function initializeCheckout(root) {
 }
 
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);
+
+function initializeReconciliation(root) {
+  const searchInput = root.querySelector("[data-reconciliation-search]");
+  const rows = Array.from(root.querySelectorAll("[data-reconciliation-item-row]"));
+  const emptyMessage = root.querySelector("[data-reconciliation-empty-message]");
+
+  if (!searchInput || rows.length === 0) {
+    return;
+  }
+
+  function renderRows() {
+    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    let visibleRows = 0;
+
+    for (const row of rows) {
+      const filterText = row.dataset.reconciliationFilterText || "";
+      const isVisible = !query || filterText.includes(query);
+      row.hidden = !isVisible;
+
+      if (isVisible) {
+        visibleRows++;
+      }
+    }
+
+    if (emptyMessage) {
+      emptyMessage.hidden = visibleRows > 0 || !query;
+    }
+  }
+
+  searchInput.addEventListener("input", renderRows);
+  renderRows();
+}
+
+document.querySelectorAll("[data-reconciliation-root]").forEach(initializeReconciliation);

@@ -1,3 +1,4 @@
+using System.Globalization;
 using AssociationSaleTool.Web.Configuration;
 using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
@@ -12,6 +13,8 @@ public sealed class IndexModel(
     ReconciliationService reconciliationService,
     IOptions<AdminOptions> adminOptions) : PageModel
 {
+    private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+
     public bool IsUnlocked { get; private set; }
 
     [BindProperty]
@@ -25,17 +28,24 @@ public sealed class IndexModel(
 
     public IReadOnlyList<ReconciliationItemSearchResult> SearchResults { get; private set; } = [];
 
+    public IReadOnlyList<SellerSheetOption> SellerSheetOptions { get; private set; } = [];
+
+    public IReadOnlyList<ReconciliationItemSearchResult> CorrectionItems { get; private set; } = [];
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
     [TempData]
     public string? CorrectedSellerCode { get; set; }
 
-    public Task OnGetAsync()
+    public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         IsUnlocked = ReconciliationAdminSession.IsUnlocked(HttpContext);
 
-        return Task.CompletedTask;
+        if (IsUnlocked)
+        {
+            await LoadDashboardAsync(cancellationToken);
+        }
     }
 
     public Task<IActionResult> OnPostUnlockAsync()
@@ -62,10 +72,13 @@ public sealed class IndexModel(
         if (string.IsNullOrWhiteSpace(SearchInput.Query))
         {
             ModelState.AddModelError("SearchInput.Query", "Saisissez une référence ou un titre.");
+            await LoadDashboardAsync(cancellationToken);
             return Page();
         }
 
         SearchResults = await reconciliationService.SearchItemsAsync(SearchInput.Query, cancellationToken);
+        CorrectionItems = SearchResults;
+        SellerSheetOptions = await reconciliationService.ListSellerSheetOptionsAsync(cancellationToken);
 
         return Page();
     }
@@ -81,11 +94,12 @@ public sealed class IndexModel(
         }
 
         var result = await reconciliationService.MarkItemMissingAsync(itemId, cancellationToken);
-        return ApplyStatusChangeResult(
+        return await ApplyStatusChangeResultAsync(
             result,
             "Article marqué manquant.",
             "L'article ne peut pas être marqué manquant dans son état actuel.",
-            sellerCode);
+            sellerCode,
+            cancellationToken);
 
     }
 
@@ -100,17 +114,29 @@ public sealed class IndexModel(
         }
 
         var result = await reconciliationService.MarkItemInStockAsync(itemId, cancellationToken);
-        return ApplyStatusChangeResult(
+        return await ApplyStatusChangeResultAsync(
             result,
             "Article remis en stock.",
             "L'article ne peut pas être remis en stock dans son état actuel.",
-            sellerCode);
+            sellerCode,
+            cancellationToken);
 
     }
 
     public static string FormatPrice(int priceCents)
     {
         return $"{priceCents / 100m:0.00} EUR";
+    }
+
+    public static string BuildCorrectionFilterText(ReconciliationItemSearchResult item)
+    {
+        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName}".ToLower(FrenchCulture);
+    }
+
+    private async Task LoadDashboardAsync(CancellationToken cancellationToken)
+    {
+        SellerSheetOptions = await reconciliationService.ListSellerSheetOptionsAsync(cancellationToken);
+        CorrectionItems = await reconciliationService.ListCorrectionItemsAsync(cancellationToken);
     }
 
     private bool UnlockPageIfSessionAllows()
@@ -120,11 +146,12 @@ public sealed class IndexModel(
         return IsUnlocked;
     }
 
-    private IActionResult ApplyStatusChangeResult(
+    private async Task<IActionResult> ApplyStatusChangeResultAsync(
         ReconciliationStatusChangeResult result,
         string successMessage,
         string notAllowedMessage,
-        string? sellerCode)
+        string? sellerCode,
+        CancellationToken cancellationToken)
     {
         if (result == ReconciliationStatusChangeResult.Changed)
         {
@@ -138,6 +165,7 @@ public sealed class IndexModel(
             : notAllowedMessage;
 
         ModelState.AddModelError(string.Empty, message);
+        await LoadDashboardAsync(cancellationToken);
         return Page();
     }
 
