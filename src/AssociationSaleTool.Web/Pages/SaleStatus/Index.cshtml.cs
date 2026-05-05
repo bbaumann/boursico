@@ -12,6 +12,7 @@ namespace AssociationSaleTool.Web.Pages.SaleStatus;
 public sealed class IndexModel(
     SalePhaseService salePhaseService,
     SaleCorrectionService saleCorrectionService,
+    DefectiveItemService defectiveItemService,
     IOptions<AdminOptions> adminOptions) : PageModel
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
@@ -34,6 +35,8 @@ public sealed class IndexModel(
     };
 
     public IReadOnlyList<SaleCorrectionItem> ActiveSoldItems { get; private set; } = [];
+
+    public IReadOnlyList<DefectiveItemCandidate> DefectiveItemCandidates { get; private set; } = [];
 
     [BindProperty]
     public PhaseInputModel Input { get; set; } = new();
@@ -112,6 +115,81 @@ public sealed class IndexModel(
         return Page();
     }
 
+    public async Task<IActionResult> OnPostRefundDefectiveSaleLineAsync(
+        long saleLineId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await saleCorrectionService.RefundDefectiveSaleLineAsync(saleLineId, cancellationToken);
+        if (result == SaleCorrectionResult.Refunded)
+        {
+            SuccessMessage = "L'article est marqué défectueux. Remboursez l'acheteur du montant indiqué et rendez l'article au vendeur en fin de vente.";
+            return RedirectToPage();
+        }
+
+        var message = result == SaleCorrectionResult.NotFound
+            ? "Ligne de vente introuvable."
+            : "Cette ligne de vente ne peut pas être remboursée dans son état actuel.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostMarkDefectiveItemAsync(
+        long itemId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await defectiveItemService.MarkDefectiveAsync(itemId, cancellationToken);
+        if (result == DefectiveItemStatusChangeResult.Changed)
+        {
+            SuccessMessage = "L'article est marqué défectueux. Il ne peut plus être vendu et sera rendu au vendeur.";
+            return RedirectToPage();
+        }
+
+        var message = result == DefectiveItemStatusChangeResult.NotFound
+            ? "Article introuvable."
+            : "Cet article ne peut pas être marqué défectueux dans son état actuel.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostRestoreDefectiveItemAsync(
+        long itemId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await defectiveItemService.MarkInStockAsync(itemId, cancellationToken);
+        if (result == DefectiveItemStatusChangeResult.Changed)
+        {
+            SuccessMessage = "L'article est remis en stock.";
+            return RedirectToPage();
+        }
+
+        var message = result == DefectiveItemStatusChangeResult.NotFound
+            ? "Article introuvable."
+            : "Cet article défectueux ne peut pas être remis en stock.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
     public static string FormatPrice(int priceCents)
     {
         return $"{priceCents / 100m:0.00} EUR";
@@ -127,10 +205,16 @@ public sealed class IndexModel(
         return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.SaleId}".ToLower(FrenchCulture);
     }
 
+    public static string BuildDefectiveItemFilterText(DefectiveItemCandidate item)
+    {
+        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.Status}".ToLower(FrenchCulture);
+    }
+
     private async Task LoadPageAsync(CancellationToken cancellationToken)
     {
         CurrentPhase = await salePhaseService.GetCurrentPhaseAsync(cancellationToken);
         ActiveSoldItems = await saleCorrectionService.ListActiveSoldItemsAsync(cancellationToken);
+        DefectiveItemCandidates = await defectiveItemService.ListCandidatesAsync(cancellationToken);
     }
 
     private bool UnlockPageIfSessionAllows()

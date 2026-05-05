@@ -101,7 +101,14 @@ else
                                     <span class="screen-reader-label">Article retrouvé</span>
                                 </td>
                                 <td>@item.Reference</td>
-                                <td>@item.Title</td>
+                                <td>
+                                    @item.Title
+                                    @if (item.IsDefective)
+                                    {
+                                        <br />
+                                        <strong>DÉFECTUEUX</strong>
+                                    }
+                                </td>
                                 <td>@SheetsModel.FormatPrice(item.PriceCents)</td>
                             </tr>
                         }

@@ -1,4 +1,5 @@
 using AssociationSaleTool.Web.Data;
+using AssociationSaleTool.Web.Domain.Pricing;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +11,7 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
     {
         return await dbContext.SaleLines
             .AsNoTracking()
-            .Where(x => x.CorrectedAt == null && x.Item.Status == "sold")
+            .Where(x => x.CorrectedAt == null && x.RefundedAt == null && x.Item.Status == "sold")
             .OrderBy(x => x.Item.Reference)
             .Select(x => new SaleCorrectionItem(
                 x.Id,
@@ -39,7 +40,11 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
             return SaleCorrectionResult.NotFound;
         }
 
-        if (saleLine.CorrectedAt is not null || saleLine.Item.Status != "sold")
+        await dbContext.Entry(saleLine).ReloadAsync(cancellationToken);
+        await dbContext.Entry(saleLine).Reference(x => x.Item).LoadAsync(cancellationToken);
+        await dbContext.Entry(saleLine.Item).ReloadAsync(cancellationToken);
+
+        if (saleLine.CorrectedAt is not null || saleLine.RefundedAt is not null || saleLine.Item.Status != "sold")
         {
             return SaleCorrectionResult.NotAllowed;
         }
@@ -49,5 +54,41 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return SaleCorrectionResult.Corrected;
+    }
+
+    public async Task<SaleCorrectionResult> RefundDefectiveSaleLineAsync(
+        long saleLineId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var saleLine = await dbContext.SaleLines
+            .Include(x => x.Item)
+            .SingleOrDefaultAsync(x => x.Id == saleLineId, cancellationToken);
+
+        if (saleLine is null)
+        {
+            return SaleCorrectionResult.NotFound;
+        }
+
+        await dbContext.Entry(saleLine).ReloadAsync(cancellationToken);
+        await dbContext.Entry(saleLine).Reference(x => x.Item).LoadAsync(cancellationToken);
+        await dbContext.Entry(saleLine.Item).ReloadAsync(cancellationToken);
+
+        if (saleLine.CorrectedAt is not null || saleLine.RefundedAt is not null || saleLine.Item.Status != "sold")
+        {
+            return SaleCorrectionResult.NotAllowed;
+        }
+
+        var refundTotals = CheckoutPricingCalculator.CalculateTotals(saleLine.SellerPriceAtSaleCents);
+        saleLine.RefundedAt = DateTime.UtcNow;
+        saleLine.RefundItemPriceCents = saleLine.SellerPriceAtSaleCents;
+        saleLine.RefundCheckoutFeeCents = refundTotals.CheckoutFeeCents;
+        saleLine.RefundTotalCents = saleLine.SellerPriceAtSaleCents + refundTotals.CheckoutFeeCents;
+        saleLine.RefundReason = "defective";
+        saleLine.Item.Status = "defective";
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return SaleCorrectionResult.Refunded;
     }
 }

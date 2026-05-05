@@ -64,6 +64,7 @@ builder.Services.AddScoped<SalesViewService>();
 builder.Services.AddScoped<ReconciliationService>();
 builder.Services.AddScoped<SalePhaseService>();
 builder.Services.AddScoped<SaleCorrectionService>();
+builder.Services.AddScoped<DefectiveItemService>();
 
 var app = builder.Build();
 

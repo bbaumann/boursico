@@ -71,7 +71,7 @@
             <tbody>
             @foreach (var line in Model.Sale.Lines)
             {
-                <tr class="@(line.IsCorrected ? "sales-view-corrected-row" : null)">
+                <tr class="@(line.IsCorrected || line.IsRefunded ? "sales-view-corrected-row" : null)">
                     <td>@line.Reference</td>
                     <td>@line.Title</td>
                     <td>@DetailsModel.FormatPrice(line.SellerPriceAtSaleCents)</td>
@@ -81,6 +81,26 @@
                             <span class="sales-view-status sales-view-status-corrected">
                                 Corrigée le @DetailsModel.FormatCorrectedAt(correctedAt)
                             </span>
+                        }
+                        else if (line.RefundedAt is { } refundedAt)
+                        {
+                            <span class="sales-view-status sales-view-status-corrected">
+                                @line.RefundReasonLabel le @DetailsModel.FormatCorrectedAt(refundedAt)
+                            </span>
+                            <dl class="sales-view-refund-details">
+                                <div>
+                                    <dt>Prix remboursé</dt>
+                                    <dd>@DetailsModel.FormatPrice(line.RefundItemPriceCents ?? 0)</dd>
+                                </div>
+                                <div>
+                                    <dt>Frais remboursés</dt>
+                                    <dd>@DetailsModel.FormatPrice(line.RefundCheckoutFeeCents ?? 0)</dd>
+                                </div>
+                                <div>
+                                    <dt>Total remboursé</dt>
+                                    <dd>@DetailsModel.FormatPrice(line.RefundTotalCents ?? 0)</dd>
+                                </div>
+                            </dl>
                         }
                         else
                         {

@@ -215,6 +215,24 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SaleLineStoresRefundFields()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var saleLineEntityType = context.Model.FindEntityType(typeof(SaleLineEntity));
+        Assert.NotNull(saleLineEntityType);
+        Assert.Contains(saleLineEntityType!.GetProperties(), property => property.GetColumnName() == "refunded_at");
+        Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_item_price_cents");
+        Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_checkout_fee_cents");
+        Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_total_cents");
+        Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_reason");
+    }
+
+    [Fact]
     public void SaleLineAllowsOnlyOneActiveSaleLinePerItem()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -228,12 +246,12 @@ public class AppDbContextModelTests
         Assert.Contains(
             saleLineEntityType!.GetIndexes(),
             index => index.IsUnique
-                && index.GetFilter() == "corrected_at IS NULL"
+                && index.GetFilter() == "corrected_at IS NULL AND refunded_at IS NULL"
                 && index.Properties.Select(property => property.Name).SequenceEqual([nameof(SaleLineEntity.ItemId)]));
     }
 
     [Fact]
-    public void ItemStatusCheckConstraintExcludesNotProvided()
+    public void ItemStatusCheckConstraintAllowsDefectiveAndExcludesNotProvided()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
@@ -249,6 +267,27 @@ public class AppDbContextModelTests
         command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'item'";
         var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
         Assert.DoesNotContain("not_provided", createTableSql);
-        Assert.Contains("CHECK (status IN ('registered', 'in_stock', 'sold', 'missing'))", createTableSql);
+        Assert.Contains("CHECK (status IN ('registered', 'in_stock', 'sold', 'missing', 'defective'))", createTableSql);
+    }
+
+    [Fact]
+    public void SaleLineRefundAmountsAreNonNegativeWhenPresent()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'sale_line'";
+        var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
+        Assert.Contains("CHECK (refund_item_price_cents IS NULL OR refund_item_price_cents >= 0)", createTableSql);
+        Assert.Contains("CHECK (refund_checkout_fee_cents IS NULL OR refund_checkout_fee_cents >= 0)", createTableSql);
+        Assert.Contains("CHECK (refund_total_cents IS NULL OR refund_total_cents >= 0)", createTableSql);
     }
 }

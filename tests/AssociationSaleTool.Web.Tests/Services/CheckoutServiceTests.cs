@@ -66,6 +66,27 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task ListCatalogItemsAsync_ExcludesDefectiveItems()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (inStockItem, defectiveItem) = await SeedTwoItemsAsync(context, "in_stock", "defective");
+        var service = new CheckoutService(context);
+
+        var catalog = await service.ListCatalogItemsAsync();
+
+        var item = Assert.Single(catalog);
+        Assert.Equal(inStockItem.Id, item.Id);
+        Assert.DoesNotContain(catalog, catalogItem => catalogItem.Id == defectiveItem.Id);
+    }
+
+    [Fact]
     public async Task ValidateCartAsync_ReturnsTotalsForInStockItems()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -102,6 +123,27 @@ public sealed class CheckoutServiceTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "sold");
+        var service = new CheckoutService(context);
+
+        var result = await service.ValidateCartAsync([firstItem.Id, secondItem.Id]);
+
+        Assert.False(result.IsValid);
+        Assert.Equal([secondItem.Id], result.ConflictItemIds);
+        Assert.Null(result.Totals);
+    }
+
+    [Fact]
+    public async Task ValidateCartAsync_ReturnsConflictForDefectiveItem()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "defective");
         var service = new CheckoutService(context);
 
         var result = await service.ValidateCartAsync([firstItem.Id, secondItem.Id]);
@@ -387,6 +429,36 @@ public sealed class CheckoutServiceTests
         Assert.Empty(await context.SaleLines.ToListAsync());
         Assert.Equal("in_stock", (await context.Items.SingleAsync(x => x.Id == firstItem.Id)).Status);
         Assert.Equal("sold", (await context.Items.SingleAsync(x => x.Id == secondItem.Id)).Status);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_RejectsDefectiveItemsWithoutPersistingPartialSale()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "defective");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id, secondItem.Id],
+            buyerName: "Client conflit",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
+
+        Assert.False(result.Saved);
+        Assert.Null(result.SaleId);
+        Assert.Equal([secondItem.Id], result.ConflictItemIds);
+        Assert.Null(result.Totals);
+        Assert.Empty(await context.Sales.ToListAsync());
+        Assert.Empty(await context.SaleLines.ToListAsync());
+        Assert.Equal("in_stock", (await context.Items.SingleAsync(x => x.Id == firstItem.Id)).Status);
+        Assert.Equal("defective", (await context.Items.SingleAsync(x => x.Id == secondItem.Id)).Status);
     }
 
     [Fact]

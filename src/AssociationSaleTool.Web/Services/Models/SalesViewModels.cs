@@ -50,9 +50,23 @@ public sealed record SaleDetailLine(
     string Reference,
     string Title,
     int SellerPriceAtSaleCents,
-    DateTime? CorrectedAt)
+    DateTime? CorrectedAt,
+    DateTime? RefundedAt,
+    int? RefundItemPriceCents,
+    int? RefundCheckoutFeeCents,
+    int? RefundTotalCents,
+    string? RefundReason)
 {
     public bool IsCorrected => CorrectedAt is not null;
+
+    public bool IsRefunded => RefundedAt is not null;
+
+    public string RefundReasonLabel => RefundReason switch
+    {
+        "defective" => "Remboursée - défectueux",
+        null => string.Empty,
+        _ => "Remboursée"
+    };
 }
 
 internal static class SaleBuyerDisplay

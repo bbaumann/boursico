@@ -76,7 +76,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-007 Item Status Is A Single Field With Four Values
 
-- Status: accepted
+- Status: superseded for VNext by D-038
 - Key drivers:
   - the workflow needs to distinguish preregistered items from physically delivered stock
   - preregistered-but-not-delivered items do not need to remain in the operational dataset in V1
@@ -567,3 +567,27 @@ This file captures the main project decisions in a lightweight ADR format.
   - `D-012` is superseded for VNext
   - the expected fee remains derived and cannot drift from the item count
   - overpayment is visible as paid fee but never increases the seller payout
+
+## D-038 Track Defective Items And Refunds
+
+- Status: accepted
+- Key drivers:
+  - defects can be discovered after an item has already been accepted into association stock
+  - defective items must not be sold, must be returned to the seller, and must not be paid to the seller
+  - buyer-return defects require a full buyer refund including the 10 percent association fee
+  - the original sale remains a historical checkout fact and should not be recalculated after a refund
+- Decision:
+  - extend `item.status` with `defective`
+  - keep defects found before physical acceptance outside the database, except that a preregistered `registered` row may be deleted
+  - let admins mark `in_stock -> defective` from `/vente/statut`
+  - let admins restore `defective -> in_stock` only when no buyer refund history exists
+  - handle buyer-return defects from `/vente/statut` with a `Rembourser` action next to mistaken sale-line correction
+  - record defective refunds directly on `sale_line` with `refunded_at`, refunded item price, refunded checkout fee, total refund, and `refund_reason = defective`
+  - treat active payable sale lines as `corrected_at IS NULL AND refunded_at IS NULL`
+  - include `defective` items in seller-sheet returned items with a visible `DÉFECTUEUX` marker
+  - exclude refunded sale lines and defective items from seller payout
+- Consequence:
+  - the admin sale-status page now covers both mistaken sale correction and rare buyer-return refunds
+  - read-only sale history shows refunded defective lines separately from corrected lines
+  - seller settlement remains based on payable sold and missing items only
+  - a future richer accounting model can promote refunds to a separate table if needed, but VNext keeps the lightweight sale-line correction pattern

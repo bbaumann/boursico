@@ -9,6 +9,7 @@ public sealed class ItemStatusDisplayTests
     [InlineData("in_stock", "en stock")]
     [InlineData("sold", "vendu")]
     [InlineData("missing", "manquant")]
+    [InlineData("defective", "défectueux")]
     public void ToFrenchLabel_ReturnsExpectedFrenchStatus(string status, string expectedLabel)
     {
         Assert.Equal(expectedLabel, ItemStatusDisplay.ToFrenchLabel(status));

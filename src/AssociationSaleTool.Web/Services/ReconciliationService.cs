@@ -10,7 +10,7 @@ namespace AssociationSaleTool.Web.Services;
 public sealed class ReconciliationService(AppDbContext dbContext)
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
-    private static readonly string[] SellerSheetStatuses = ["sold", "missing", "in_stock"];
+    private static readonly string[] SellerSheetStatuses = ["sold", "missing", "in_stock", "defective"];
     private static readonly string[] CorrectionStatuses = ["in_stock", "missing"];
 
     public async Task<List<ReconciliationItemSearchResult>> SearchItemsAsync(
@@ -108,7 +108,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                     .Select(BuildPayableItem)
                     .ToList();
                 var returnedItems = seller.Items
-                    .Where(item => item.Status == "in_stock")
+                    .Where(item => item.Status is "in_stock" or "defective")
                     .OrderBy(item => item.ItemNumber)
                     .Select(BuildReturnedItem)
                     .ToList();
@@ -179,7 +179,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         }
         else
         {
-            var activeSaleLine = item.SaleLines.SingleOrDefault(line => line.CorrectedAt is null);
+            var activeSaleLine = item.SaleLines.SingleOrDefault(line => line.CorrectedAt is null && line.RefundedAt is null);
             if (activeSaleLine is null)
             {
                 throw new ReconciliationSellerSheetDataException(item.Reference);

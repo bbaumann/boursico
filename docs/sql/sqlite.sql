@@ -34,7 +34,7 @@ CREATE TABLE item (
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
     CONSTRAINT ck_item_status
-        CHECK (status IN ('registered', 'in_stock', 'sold', 'missing')),
+        CHECK (status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')),
     CONSTRAINT ck_item_seller_price_cents
         CHECK (seller_price_cents >= 0),
     CONSTRAINT uq_item_reference UNIQUE (reference),
@@ -68,6 +68,11 @@ CREATE TABLE sale_line (
     item_id INTEGER NOT NULL,
     seller_price_at_sale_cents INTEGER NOT NULL,
     corrected_at TEXT,
+    refunded_at TEXT,
+    refund_item_price_cents INTEGER,
+    refund_checkout_fee_cents INTEGER,
+    refund_total_cents INTEGER,
+    refund_reason TEXT,
     CONSTRAINT fk_sale_line_sale
         FOREIGN KEY (sale_id)
         REFERENCES sale(id)
@@ -79,7 +84,13 @@ CREATE TABLE sale_line (
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
     CONSTRAINT ck_sale_line_seller_price_cents
-        CHECK (seller_price_at_sale_cents >= 0)
+        CHECK (seller_price_at_sale_cents >= 0),
+    CONSTRAINT ck_sale_line_refund_item_price_cents
+        CHECK (refund_item_price_cents IS NULL OR refund_item_price_cents >= 0),
+    CONSTRAINT ck_sale_line_refund_checkout_fee_cents
+        CHECK (refund_checkout_fee_cents IS NULL OR refund_checkout_fee_cents >= 0),
+    CONSTRAINT ck_sale_line_refund_total_cents
+        CHECK (refund_total_cents IS NULL OR refund_total_cents >= 0)
 );
 
 CREATE TABLE event_state (
@@ -97,7 +108,7 @@ CREATE INDEX idx_item_seller_id ON item(seller_id);
 CREATE INDEX idx_item_status ON item(status);
 CREATE INDEX idx_sale_sold_at ON sale(sold_at);
 CREATE INDEX idx_sale_line_sale_id ON sale_line(sale_id);
-CREATE UNIQUE INDEX idx_sale_line_active_item_id ON sale_line(item_id) WHERE corrected_at IS NULL;
+CREATE UNIQUE INDEX idx_sale_line_active_item_id ON sale_line(item_id) WHERE corrected_at IS NULL AND refunded_at IS NULL;
 
 INSERT INTO event_state (id, sale_phase, updated_at)
 VALUES (1, 'presale', '2026-05-04T00:00:00Z');

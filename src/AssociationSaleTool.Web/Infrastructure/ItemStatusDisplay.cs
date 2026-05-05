@@ -10,6 +10,7 @@ public static class ItemStatusDisplay
             "in_stock" => "en stock",
             "sold" => "vendu",
             "missing" => "manquant",
+            "defective" => "défectueux",
             _ => status
         };
     }

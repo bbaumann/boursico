@@ -787,6 +787,40 @@ function initializeSaleCorrection(root) {
 
 document.querySelectorAll("[data-sale-correction-root]").forEach(initializeSaleCorrection);
 
+function initializeDefectiveItems(root) {
+  const searchInput = root.querySelector("[data-defective-items-search]");
+  const rows = Array.from(root.querySelectorAll("[data-defective-item-row]"));
+  const emptyMessage = root.querySelector("[data-defective-items-empty-message]");
+
+  if (!searchInput || rows.length === 0) {
+    return;
+  }
+
+  function renderRows() {
+    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    let visibleRows = 0;
+
+    for (const row of rows) {
+      const filterText = row.dataset.defectiveItemFilterText || "";
+      const isVisible = !query || filterText.includes(query);
+      row.hidden = !isVisible;
+
+      if (isVisible) {
+        visibleRows++;
+      }
+    }
+
+    if (emptyMessage) {
+      emptyMessage.hidden = visibleRows > 0 || !query;
+    }
+  }
+
+  searchInput.addEventListener("input", renderRows);
+  renderRows();
+}
+
+document.querySelectorAll("[data-defective-items-root]").forEach(initializeDefectiveItems);
+
 function initializeSalesView(root) {
   const searchInput = root.querySelector("[data-sales-view-search]");
   const rows = Array.from(root.querySelectorAll("[data-sales-view-row]"));

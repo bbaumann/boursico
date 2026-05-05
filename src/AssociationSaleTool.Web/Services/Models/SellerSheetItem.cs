@@ -6,4 +6,7 @@ public sealed record SellerSheetItem(
     string Title,
     string Status,
     int PriceCents,
-    bool IsMissing);
+    bool IsMissing)
+{
+    public bool IsDefective => Status == "defective";
+}

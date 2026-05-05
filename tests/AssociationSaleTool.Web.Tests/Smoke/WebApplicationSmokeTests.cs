@@ -494,6 +494,192 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SaleStatusUnlockShowsDefectiveItemControls()
+    {
+        var client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SD-001",
+                FirstName = "Sonia",
+                LastName = "Defaut"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var soldItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SD-001-001",
+                ItemNumber = 1,
+                Title = "Article remboursable",
+                SellerPriceCents = 1000,
+                Status = "sold"
+            };
+            var inStockItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SD-001-002",
+                ItemNumber = 2,
+                Title = "Article \u00e0 contr\u00f4ler",
+                SellerPriceCents = 700,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.AddRange(soldItem, inStockItem);
+            await dbContext.SaveChangesAsync();
+            dbContext.Sales.Add(new SaleEntity
+            {
+                SoldAt = DateTime.UtcNow,
+                SubtotalSellerPriceCents = 1000,
+                CheckoutFeeCents = 100,
+                TotalPaidCents = 1100,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = soldItem.Id,
+                        SellerPriceAtSaleCents = 1000
+                    }
+                ]
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var content = await UnlockSaleStatusPageAsync(client);
+
+        Assert.Contains("Rembourser", content);
+        Assert.Contains("Montant \u00e0 rembourser", content);
+        Assert.Contains("10.00 EUR", content);
+        Assert.Contains("1.00 EUR", content);
+        Assert.Contains("11.00 EUR", content);
+        Assert.Contains("Articles d\u00e9fectueux", content);
+        Assert.Contains("Marquer d\u00e9fectueux", content);
+        Assert.Contains("data-defective-items-root", content);
+    }
+
+    [Fact]
+    public async Task SaleStatusPageRefundsDefectiveSaleLineWhenUnlocked()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+        long saleLineId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SR-001",
+                FirstName = "Solene",
+                LastName = "Retour"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SR-001-001",
+                ItemNumber = 1,
+                Title = "Article retourn\u00e9",
+                SellerPriceCents = 1500,
+                Status = "sold"
+            };
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+
+            var sale = new SaleEntity
+            {
+                SoldAt = DateTime.UtcNow,
+                SubtotalSellerPriceCents = 1500,
+                CheckoutFeeCents = 150,
+                TotalPaidCents = 1650,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = item.Id,
+                        SellerPriceAtSaleCents = 1500
+                    }
+                ]
+            };
+            dbContext.Sales.Add(sale);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+            saleLineId = sale.SaleLines.Single().Id;
+        }
+
+        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        var response = await client.PostAsync(
+            $"/vente/statut?handler=RefundDefectiveSaleLine&saleLineId={saleLineId}",
+            BuildFormContent(dashboardContent));
+
+        response.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal("defective", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+            var saleLine = await dbContext.SaleLines.SingleAsync(x => x.Id == saleLineId);
+            Assert.NotNull(saleLine.RefundedAt);
+            Assert.Equal(1500, saleLine.RefundItemPriceCents);
+            Assert.Equal(150, saleLine.RefundCheckoutFeeCents);
+            Assert.Equal(1650, saleLine.RefundTotalCents);
+            Assert.Equal("defective", saleLine.RefundReason);
+        }
+    }
+
+    [Fact]
+    public async Task SaleStatusPageMarksInStockItemDefectiveWhenUnlocked()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SM-001",
+                FirstName = "Samia",
+                LastName = "Marque"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SM-001-001",
+                ItemNumber = 1,
+                Title = "Article ab\u00eem\u00e9",
+                SellerPriceCents = 800,
+                Status = "in_stock"
+            };
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        var response = await client.PostAsync(
+            $"/vente/statut?handler=MarkDefectiveItem&itemId={itemId}",
+            BuildFormContent(dashboardContent));
+
+        response.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal("defective", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+        }
+    }
+
+    [Fact]
     public async Task SaleStatusLockedPostHandlersShowAdminGateAndDoNotChangeData()
     {
         var client = _factory.CreateClient();
@@ -621,6 +807,74 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Retour à la liste", content);
         Assert.DoesNotContain("Remettre en stock", content);
         Assert.DoesNotContain("Enregistrer la vente", content);
+    }
+
+    [Fact]
+    public async Task SalesViewDetailPageShowsReadonlyRefundedDefectiveSale()
+    {
+        var client = _factory.CreateClient();
+        long saleId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-REF",
+                FirstName = "Renee",
+                LastName = "Refund"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-REF-001",
+                ItemNumber = 1,
+                Title = "Jeu defectueux",
+                SellerPriceCents = 1000,
+                Status = "defective"
+            };
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+
+            var sale = new SaleEntity
+            {
+                SoldAt = DateTime.UtcNow,
+                SubtotalSellerPriceCents = 1000,
+                CheckoutFeeCents = 100,
+                TotalPaidCents = 1100,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = item.Id,
+                        SellerPriceAtSaleCents = 1000,
+                        RefundedAt = DateTime.UtcNow,
+                        RefundItemPriceCents = 1000,
+                        RefundCheckoutFeeCents = 100,
+                        RefundTotalCents = 1100,
+                        RefundReason = "defective"
+                    }
+                ]
+            };
+            dbContext.Sales.Add(sale);
+            await dbContext.SaveChangesAsync();
+            saleId = sale.Id;
+        }
+
+        var response = await client.GetAsync($"/caisse/ventes/{saleId}");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Rembours\u00e9e - d\u00e9fectueux", content);
+        Assert.Contains("Prix rembours\u00e9", content);
+        Assert.Contains("Frais rembours\u00e9s", content);
+        Assert.Contains("Total rembours\u00e9", content);
+        Assert.Contains("10.00 EUR", content);
+        Assert.Contains("1.00 EUR", content);
+        Assert.Contains("11.00 EUR", content);
     }
 
     [Fact]
@@ -1238,7 +1492,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             "alice.feuille@example.test",
             "0600000001",
             ("RS-101-001", "Jeu manquant", "missing", 900),
-            ("RS-101-002", "Puzzle a rendre", "in_stock", 450));
+            ("RS-101-002", "Puzzle a rendre", "in_stock", 450),
+            ("RS-101-003", "Livre defectueux", "defective", 300));
         await SeedReconciliationSheetAsync(
             "RS-102",
             "Bruno",
@@ -1263,6 +1518,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("MANQUANT", content);
         Assert.Contains("Articles à rendre", content);
         Assert.Contains("Puzzle a rendre", content);
+        Assert.Contains("Livre defectueux", content);
+        Assert.Contains("D\u00c9FECTUEUX", content);
         Assert.True(
             content.IndexOf("Articles à rendre", StringComparison.Ordinal) < content.IndexOf("Articles à payer", StringComparison.Ordinal),
             "Les articles à rendre doivent être imprimés avant les articles à payer.");

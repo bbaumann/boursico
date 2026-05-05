@@ -26,6 +26,26 @@ The sale phase design covers the original backlog questions:
 
 This item is implemented rather than a separate open VNext feature.
 
+### Track Defective Items And Buyer Refunds
+
+Status: implemented in the defective-items slice.
+
+Relevant design/docs:
+
+- [Defective Items Design](./plans/2026-05-05-defective-items-design.md)
+- [Defective Items Implementation Plan](./superpowers/plans/2026-05-05-defective-items.md)
+- [D-038 Track Defective Items And Refunds](./decisions.md#d-038-track-defective-items-and-refunds)
+
+Implemented behavior:
+
+- accepted defective items use status `defective`
+- checkout excludes defective items
+- admins can mark `in_stock -> defective` from `/vente/statut`
+- admins can restore `defective -> in_stock` only before any buyer refund exists
+- buyer-return defects record refund fields on `sale_line`
+- buyer refund amount includes item price plus the 10 percent association fee
+- refunded defective items are returned to the seller and excluded from seller payout
+
 ### View Existing Sales
 
 Status: implemented.

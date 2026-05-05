@@ -9,8 +9,9 @@
 3. For emailed preregistration, items are entered as `registered`.
 4. When preregistered sellers physically deliver toys, operator reviews the preregistered list and marks delivered items as `in_stock`. Items not brought yet may remain `registered`; deletion is only cleanup for mistakes or records the team wants to remove.
 5. Other sellers may register in person with toys physically present; those items are created directly as `in_stock`.
-6. References are generated for each item.
-7. `in_stock` items are prepared for the event.
+6. If a defect is spotted before the association accepts the physical item, the item is not accepted. A preregistered `registered` item may be deleted; a `Dépôt` row should simply not be created.
+7. References are generated for each item.
+8. `in_stock` items are prepared for the event.
 
 ### During The Sale
 
@@ -44,18 +45,21 @@ If a volunteer saved a sale with the wrong reference and the real item later nee
 
 The correction keeps the original sale stored, marks the sale line corrected, returns the item to `in_stock`, and lets the item be sold again. It does not recalculate the original sale total because the cash/receipt consequence happened at checkout.
 
+If a buyer returns a defective sold item, an admin uses `Rembourser` from the same unlocked `/vente/statut` page. The app shows the buyer refund amount before confirmation: item price plus the refunded 10 percent association fee. The original sale totals stay unchanged, the refund is recorded on the sale line, the item becomes `defective`, and the item is returned to the seller without seller payout.
+
 ### After The Sale
 
 1. Admin unlocks `/vente/statut` with the shared admin password and moves the event to `post_sale`.
 2. New sale validation and sale save are rejected server-side.
 3. Admin opens the reconciliation dashboard at `/rapprochement` after entering the shared admin password.
-4. Admin prints all seller sheets from `/rapprochement/feuilles`; sheets are generated only for sellers with at least one `sold`, `missing`, or `in_stock` item.
+4. Admin prints all seller sheets from `/rapprochement/feuilles`; sheets are generated only for sellers with at least one `sold`, `missing`, `in_stock`, or `defective` item.
 5. An operator physically gathers all returned items from the first sheet section, ticking the printed checkboxes as items are found.
 6. If a returned item cannot be found, admin marks it as `missing`.
 7. Seller sheet is regenerated from the dashboard.
 8. If the `missing` status change was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
-9. Another operator writes the check based on the final amount to pay.
-10. Check, final seller sheet, and returned items are physically grouped for seller pickup.
+9. Defective items appear in the returned-items list with `DÉFECTUEUX`; they are not paid to the seller.
+10. Another operator writes the check based on the final amount to pay.
+11. Check, final seller sheet, and returned items are physically grouped for seller pickup.
 
 ## Preregistration Confirmation Workflow
 
@@ -65,7 +69,8 @@ The correction keeps the original sale stored, marks the sale line corrected, re
 4. Delivered items become `in_stock`.
 5. Preregistered items that were not physically brought may remain `registered`, especially if the seller may come back later. The operator may delete a `registered` item when it was entered by mistake or should be removed as cleanup.
 6. If an item was mistakenly entered as physically present, it may also be deleted while still `in_stock`.
-7. V1 does not use a `not_provided` status.
+7. If a defect is found before acceptance, the item is not accepted and does not need a `defective` record.
+8. V1 does not use a `not_provided` status.
 
 ## Seller Sheet Workflow
 
@@ -90,6 +95,30 @@ If an item was marked `missing` by mistake and is found before the seller packet
 1. Admin enters the shared admin password and restores the item to `in_stock`.
 2. The seller sheet is regenerated.
 3. The item moves back from the payable list to the returned list.
+
+## Defective Item Workflow
+
+### Defect Found After Acceptance
+
+If an item is already accepted into stock and an admin later spots a defect:
+
+1. Admin opens `/vente/statut`.
+2. Admin filters the `Articles défectueux` list.
+3. On the `in_stock` item, admin clicks `Marquer défectueux`.
+4. The item disappears from checkout and appears on the seller sheet as an item to return.
+
+If the defect marker was a mistake and no buyer refund exists, admin can use `Remettre en stock` from the same page.
+
+### Defect Returned By A Buyer
+
+If a buyer returns a defective sold item:
+
+1. Admin opens `/vente/statut`.
+2. Admin finds the sold line under `Correction des ventes`.
+3. Admin clicks `Rembourser`.
+4. The confirmation pop-in shows item price, refunded association fee, and total refund.
+5. Admin confirms the refund after reimbursing the buyer operationally.
+6. The item becomes `defective`, is returned to the seller, and is excluded from seller payout.
 
 ## Operational Failures
 

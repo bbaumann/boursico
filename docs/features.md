@@ -34,6 +34,8 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Store sale subtotal, checkout fee, and total paid
 - Optionally print a receipt from one `Adresse` field
 - View saved sales in read-only mode from the checkout area
+- Mark accepted items as defective from the admin page
+- Refund defective sold items, including the 10 percent association fee
 
 ### Sale-Day UX Constraints
 
@@ -87,12 +89,15 @@ The following item fields must no longer be editable in normal operations:
 - `title`
 - `seller_price`
 
-When seller and item master data are locked, only workflow-driven status changes remain allowed in V1:
+When seller and item master data are locked, only workflow-driven status changes remain allowed:
 
 - `in_stock -> sold` when saving a sale
 - `in_stock -> missing` during post-sale reconciliation
+- `in_stock -> defective` when an admin finds a defect after acceptance
 - restoring a mistakenly marked `missing` item to `in_stock` as an admin reconciliation correction
+- restoring a `defective` item to `in_stock` only when it has no buyer refund history
 - correcting a mistaken sale line as an admin sale correction, which marks the sale line corrected and returns the item to `in_stock`
+- refunding a defective sold item as an admin sale correction, which records the refund and moves the item to `defective`
 
 ### Expected Checkout Flow
 
@@ -127,7 +132,8 @@ Operators can inspect saved sales from the checkout area without admin unlock:
 - `/caisse/ventes/{id}` shows one sale in read-only detail mode
 - the detail view shows sale id, sold timestamp, buyer details, payment method, cheque traceability when present, receipt address details when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
 - corrected sale lines remain visible as historical sale facts and are labeled `Corrigée`
-- sale totals stay historical and are not recalculated after corrections
+- refunded defective sale lines remain visible as historical sale facts and are labeled `Remboursée - défectueux`
+- sale totals stay historical and are not recalculated after corrections or refunds
 
 The read-only sales view does not expose correction actions. Mistaken sale-line correction remains on `/vente/statut`.
 
@@ -154,6 +160,30 @@ The correction:
 - keeps the original sale and original sale totals unchanged
 - excludes the corrected sale line from seller-sheet payable output
 - lets the item be sold again normally
+
+### Defective Items And Buyer Refunds
+
+If a defective item is spotted during physical handover, the item is not accepted. If it was preregistered, the operator may delete the `registered` item; if it was being entered in `Dépôt` mode, the row is not created.
+
+If a defect is spotted after the item is already `in_stock`, an admin uses `/vente/statut` to mark it `défectueux`.
+
+The defective status:
+
+- prevents checkout
+- keeps the item on the seller sheet as an item to return
+- excludes the item from seller payout
+- allows `defective -> in_stock` only as an admin correction when no buyer refund exists
+
+If a buyer returns a defective sold item, an admin uses `Rembourser` from `/vente/statut`.
+
+The refund workflow:
+
+- records refund fields on the sale line
+- reimburses the buyer the item price plus the 10 percent association fee for that item
+- keeps the original sale and original sale totals unchanged
+- changes the item from `sold` to `defective`
+- excludes the sale line from seller payout
+- shows the item on seller sheets as `DÉFECTUEUX`
 
 ### Receipt UX Rule
 
@@ -199,7 +229,7 @@ Admins may open the reconciliation dashboard before the event is in `post_sale`,
 - Group items by seller
 - Compute payable items and returned items per seller
 - Print all seller sheets from the dashboard through `/rapprochement/feuilles`
-- Generate one printable seller sheet per seller with at least one `sold`, `missing`, or `in_stock` item
+- Generate one printable seller sheet per seller with at least one `sold`, `missing`, `in_stock`, or `defective` item
 - Allow marking an unsold item as `missing` through an admin-only action
 - Allow restoring a mistakenly marked `missing` item to `in_stock` only as an admin reconciliation correction
 - Regenerate the seller sheet after a `missing` status correction
@@ -227,7 +257,7 @@ The payable items list appears second, visually separated from the return checkl
 
 The payable list contains:
 
-- sold items
+- active sold items that have not been corrected or refunded
 - items with status `missing`
 
 For each payable item, show:
@@ -239,13 +269,14 @@ For each payable item, show:
 
 ### Returned Items List
 
-The returned list contains all items still marked `in_stock`.
+The returned list contains all items still marked `in_stock` or `defective`.
 
 For each returned item, show:
 
 - checkbox
 - reference
 - item title when useful
+- a visible `DÉFECTUEUX` marker when relevant
 
 ### Seller Fees And Final Amount To Pay
 

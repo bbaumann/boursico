@@ -82,7 +82,7 @@ else
 
         <section class="subsection" data-sale-correction-root>
             <h2>Correction des ventes</h2>
-            <p class="seller-meta">Utiliser uniquement si un article a été ajouté à une vente par erreur.</p>
+            <p class="seller-meta">Utiliser uniquement si un article a été ajouté à une vente par erreur, ou si un acheteur rapporte un article défectueux.</p>
 
             <label for="sale-correction-search">Filtrer les ventes</label>
             <input id="sale-correction-search"
@@ -101,6 +101,7 @@ else
                             <th>Vendeur</th>
                             <th>Vente</th>
                             <th>Prix</th>
+                            <th>Montant à rembourser</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -114,7 +115,8 @@ else
                             <td>@item.SellerCode - @item.SellerName</td>
                             <td>#@item.SaleId - @IndexModel.FormatSoldAt(item.SoldAt)</td>
                             <td>@IndexModel.FormatPrice(item.SellerPriceAtSaleCents)</td>
-                            <td>
+                            <td>@IndexModel.FormatPrice(item.RefundTotalCents)</td>
+                            <td class="table-actions-cell">
                                 <form method="post"
                                       asp-page-handler="CorrectSaleLine"
                                       asp-route-saleLineId="@item.SaleLineId"
@@ -125,6 +127,49 @@ else
                                         Remettre en stock
                                     </button>
                                 </form>
+                                <button type="button"
+                                        class="table-action-button"
+                                        onclick="document.getElementById('refund-dialog-@item.SaleLineId')?.showModal();">
+                                    Rembourser
+                                </button>
+                                <dialog id="refund-dialog-@item.SaleLineId" class="admin-dialog">
+                                    <h3>Remboursement article défectueux</h3>
+                                    <dl class="compact-definition-list">
+                                        <div>
+                                            <dt>Article</dt>
+                                            <dd>@item.Reference - @item.Title</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Vente</dt>
+                                            <dd>#@item.SaleId</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Prix article</dt>
+                                            <dd>@IndexModel.FormatPrice(item.SellerPriceAtSaleCents)</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Frais association remboursés</dt>
+                                            <dd>@IndexModel.FormatPrice(item.RefundCheckoutFeeCents)</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Montant à rembourser</dt>
+                                            <dd>@IndexModel.FormatPrice(item.RefundTotalCents)</dd>
+                                        </div>
+                                    </dl>
+                                    <div class="form-actions">
+                                        <form method="dialog" class="inline-form">
+                                            <button type="submit" class="button-link">Annuler</button>
+                                        </form>
+                                        <form method="post"
+                                              asp-page-handler="RefundDefectiveSaleLine"
+                                              asp-route-saleLineId="@item.SaleLineId"
+                                              class="inline-form">
+                                            <button type="submit" class="button-link button-link-solid">
+                                                Confirmer le remboursement
+                                            </button>
+                                        </form>
+                                    </div>
+                                </dialog>
                             </td>
                         </tr>
                     }
@@ -134,6 +179,81 @@ else
             else
             {
                 <p class="empty-state">Aucune ligne de vente active à corriger.</p>
+            }
+        </section>
+
+        <section class="subsection" data-defective-items-root>
+            <h2>Articles défectueux</h2>
+            <p class="seller-meta">Marquer un article en stock comme défectueux, ou remettre en stock un article défectueux qui n'a pas été remboursé.</p>
+
+            <label for="defective-item-search">Filtrer les articles</label>
+            <input id="defective-item-search"
+                   type="search"
+                   autocomplete="off"
+                   data-defective-items-search />
+            <p class="empty-state" data-defective-items-empty-message hidden>Aucun article ne correspond à cette recherche.</p>
+
+            @if (Model.DefectiveItemCandidates.Count > 0)
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>REF</th>
+                            <th>Titre</th>
+                            <th>Vendeur</th>
+                            <th>Statut</th>
+                            <th>Prix</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-defective-items-results>
+                    @foreach (var item in Model.DefectiveItemCandidates)
+                    {
+                        <tr data-defective-item-row
+                            data-defective-item-filter-text="@IndexModel.BuildDefectiveItemFilterText(item)">
+                            <td>@item.Reference</td>
+                            <td>@item.Title</td>
+                            <td>@item.SellerCode - @item.SellerName</td>
+                            <td>@ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
+                            <td>@IndexModel.FormatPrice(item.SellerPriceCents)</td>
+                            <td>
+                                @if (item.Status == "in_stock")
+                                {
+                                    <form method="post"
+                                          asp-page-handler="MarkDefectiveItem"
+                                          asp-route-itemId="@item.ItemId"
+                                          class="inline-form">
+                                        <button type="submit"
+                                                class="table-action-button table-action-button-primary"
+                                                onclick="return confirm('Marquer cet article comme défectueux ?');">
+                                            Marquer défectueux
+                                        </button>
+                                    </form>
+                                }
+                                else if (!item.HasRefundHistory)
+                                {
+                                    <form method="post"
+                                          asp-page-handler="RestoreDefectiveItem"
+                                          asp-route-itemId="@item.ItemId"
+                                          class="inline-form">
+                                        <button type="submit" class="table-action-button">
+                                            Remettre en stock
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="seller-meta">Remboursé - à rendre</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="empty-state">Aucun article en stock ou défectueux.</p>
             }
         </section>
     </section>

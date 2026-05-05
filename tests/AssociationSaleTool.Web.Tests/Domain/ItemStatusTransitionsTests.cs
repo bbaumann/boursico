@@ -14,7 +14,9 @@ public class ItemStatusTransitionsTests
     [InlineData(ItemStatus.Registered, ItemStatus.InStock, true)]
     [InlineData(ItemStatus.InStock, ItemStatus.Sold, true)]
     [InlineData(ItemStatus.InStock, ItemStatus.Missing, true)]
+    [InlineData(ItemStatus.InStock, ItemStatus.Defective, true)]
     [InlineData(ItemStatus.Sold, ItemStatus.InStock, false)]
+    [InlineData(ItemStatus.Defective, ItemStatus.Sold, false)]
     [InlineData(ItemStatus.Registered, ItemStatus.Sold, false)]
     public void EnforcesDocumentedTransitions(ItemStatus from, ItemStatus to, bool expected)
     {

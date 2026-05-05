@@ -5,5 +5,6 @@ public enum ItemStatus
     Registered,
     InStock,
     Sold,
-    Missing
+    Missing,
+    Defective
 }

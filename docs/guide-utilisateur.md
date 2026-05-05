@@ -40,9 +40,11 @@ L'outil n'a pas de comptes utilisateurs individuels. Certaines actions sont simp
 
 - changer le statut de l'événement ;
 - corriger une ligne de vente ;
+- rembourser un article vendu puis rapporté défectueux ;
 - ouvrir le rapprochement ;
 - marquer un article comme manquant ;
-- remettre en stock un article marqué manquant par erreur.
+- remettre en stock un article marqué manquant par erreur ;
+- marquer ou corriger un article défectueux.
 
 Ce mot de passe n'est pas une sécurité forte au sens informatique. Il sert surtout à éviter qu'un bénévole modifie par erreur une information sensible.
 
@@ -163,6 +165,7 @@ Quand un vendeur avait envoyé une liste à l'avance puis apporte les jouets :
 2. Relire les articles un par un.
 3. Pour chaque article réellement apporté, cliquer sur `Marquer en stock`.
 4. Pour un article pas encore apporté, le laisser `enregistré` si le vendeur peut revenir plus tard. Le supprimer seulement si l'entrée a été créée par erreur ou si l'équipe veut nettoyer la fiche.
+5. Si un défaut est vu avant d'accepter physiquement l'article, ne pas l'accepter. Un article encore `enregistré` peut être supprimé ; en mode `Dépôt`, il suffit de ne pas créer la ligne.
 
 Un article `enregistré` n'apparaît ni en caisse ni dans les feuilles vendeurs finales. Il reste toutefois compté dans les articles du vendeur pour les frais d'inscription.
 
@@ -283,6 +286,33 @@ Résultat :
 
 Cette règle évite de réécrire l'historique de caisse tout en corrigeant le stock et le futur rapprochement.
 
+## Gérer un article défectueux
+
+Si un défaut est trouvé après l'acceptation de l'article, aller dans `ADMIN`, déverrouiller la page, puis utiliser `Articles défectueux`.
+
+Pour un article encore `en stock` :
+
+1. Filtrer par référence, titre ou vendeur.
+2. Cliquer sur `Marquer défectueux`.
+
+Résultat :
+
+- l'article ne peut plus être vendu ;
+- il apparaît dans les articles à rendre au vendeur ;
+- il ne compte pas dans le paiement vendeur.
+
+Si le marquage était une erreur et qu'aucun acheteur n'a été remboursé pour cet article, l'administrateur peut cliquer sur `Remettre en stock`.
+
+Si un acheteur rapporte un article vendu parce qu'il est défectueux :
+
+1. Aller dans `Correction des ventes`.
+2. Trouver la ligne de vente.
+3. Cliquer sur `Rembourser`.
+4. Vérifier le montant affiché dans la fenêtre de confirmation.
+5. Rembourser l'acheteur du total indiqué, puis confirmer.
+
+Le montant inclut le prix de l'article et les 10 % de frais association. La vente d'origine reste visible avec ses totaux d'origine, mais la ligne est marquée `Remboursée - défectueux`. L'article sera rendu au vendeur et ne sera pas payé au vendeur.
+
 ## Après la vente : rapprochement
 
 Aller dans `RAPPROCHEMENT` ou `/rapprochement`.
@@ -310,7 +340,7 @@ Les articles à payer sont :
 - les articles vendus ;
 - les articles marqués `MANQUANT`.
 
-Les articles à rendre sont les articles encore `en stock`.
+Les articles à rendre sont les articles encore `en stock` et les articles `DÉFECTUEUX`.
 
 Les articles seulement `enregistré` sont exclus des feuilles, car ils n'ont jamais été confirmés comme présents.
 

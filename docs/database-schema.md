@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the V1 logical database schema for the association toy sale tool.
+This document defines the current VNext logical database schema for the association toy sale tool. V1 is complete; VNext features such as seller fees and defective-item refunds are under development.
 
 V1 will run on SQLite on the central server.
 
@@ -23,8 +23,9 @@ Concrete DDL drafts are available in:
 
 - One physical toy equals one item record.
 - One completed checkout equals one sale.
-- One active sold toy appears in exactly one uncorrected sale line.
+- One active sold toy appears in exactly one active payable sale line.
 - Corrected sale lines remain as historical correction evidence.
+- Refunded sale lines remain as historical refund evidence.
 - Seller sheets are derived from current data, not stored as their own primary business objects in V1.
 - One database file represents one event operationally in V1.
 
@@ -78,7 +79,7 @@ Represents one physical toy.
 - money values are stored as integer cents, e.g. `250` for `2.50 EUR`.
 - V1 operator entry accepts seller prices as whole euros only; new application-created `seller_price_cents` values should be multiples of `100`.
 - The cents column is intentionally kept so the model can support cents later without a column rename.
-- `status` uses the V1 status model: `registered`, `in_stock`, `sold`, `missing`.
+- `status` uses the current status model: `registered`, `in_stock`, `sold`, `missing`, `defective`.
 
 ## `sale`
 
@@ -123,6 +124,11 @@ Represents one sold item inside one sale.
 - `item_id`
 - `seller_price_at_sale_cents`
 - `corrected_at`
+- `refunded_at`
+- `refund_item_price_cents`
+- `refund_checkout_fee_cents`
+- `refund_total_cents`
+- `refund_reason`
 
 ### Notes
 
@@ -131,7 +137,14 @@ Represents one sold item inside one sale.
 - Snapshot prices are stored as integer cents.
 - `corrected_at` is null for an active sale line.
 - If `corrected_at` is filled, the line was corrected by an admin and the linked item can return to `in_stock`.
+- `refunded_at` is null for non-refunded sale lines.
+- If `refunded_at` is filled, the buyer was refunded and the linked item is `defective`.
+- `refund_item_price_cents` stores the item price reimbursed to the buyer.
+- `refund_checkout_fee_cents` stores the reimbursed 10 percent association fee.
+- `refund_total_cents = refund_item_price_cents + refund_checkout_fee_cents`.
+- `refund_reason` is `defective` for the current refund workflow.
 - Original sale totals are not recalculated when a sale line is corrected.
+- Original sale totals are not recalculated when a sale line is refunded.
 
 ## `event_state`
 
@@ -156,7 +169,7 @@ V1 uses a single row with `id = 1`.
 - one `seller` has many `item`
 - one `sale` has many `sale_line`
 - one `item` may have many historical `sale_line` rows
-- one `item` may have at most one active `sale_line` where `corrected_at IS NULL`
+- one `item` may have at most one active payable `sale_line` where `corrected_at IS NULL AND refunded_at IS NULL`
 
 ## Keys And Constraints
 
@@ -179,7 +192,7 @@ V1 uses a single row with `id = 1`.
 - `seller.seller_code` unique
 - `item.reference` unique
 - `(item.seller_id, item.item_number)` unique
-- `sale_line.item_id` unique only for active rows where `corrected_at IS NULL`
+- `sale_line.item_id` unique only for active payable rows where `corrected_at IS NULL AND refunded_at IS NULL`
 
 ## Nullability
 
@@ -221,6 +234,11 @@ V1 uses a single row with `id = 1`.
 - `item_id`: required
 - `seller_price_at_sale_cents`: required
 - `corrected_at`: optional
+- `refunded_at`: optional
+- `refund_item_price_cents`: optional
+- `refund_checkout_fee_cents`: optional
+- `refund_total_cents`: optional
+- `refund_reason`: optional
 
 ## `event_state`
 
@@ -237,6 +255,7 @@ Allowed values:
 - `in_stock`
 - `sold`
 - `missing`
+- `defective`
 
 Business meaning:
 
@@ -244,6 +263,7 @@ Business meaning:
 - `in_stock`: physically present and eligible for sale or return
 - `sold`: the item was sold during the event
 - `missing`: the item was not found during post-sale gathering and is therefore payable to the seller
+- `defective`: the item cannot be sold, is returned to the seller, and is not payable
 
 V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, it may remain `registered`. It is deleted only when entered by mistake or when the seller record should be cleaned up.
 
@@ -264,6 +284,7 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - do not delete a `seller` if items exist for that seller
 - allow deleting an `item` only while its status is `registered` or `in_stock`
 - do not delete an `item` if it is linked to a sale line
+- do not hard-delete a `defective` item in normal operations because it must be returned to the seller
 - do not delete a `sale` in normal operations once created
 - do not delete `sale_line` in normal operations; sale correction fills `corrected_at`
 
@@ -273,9 +294,9 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - in `presale`, intake staff may still correct unsold item master data if needed
 - in `sale` and `post_sale`, item master data becomes read-only in normal operations
 - when item master data is locked, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
-- when item master data is locked, only workflow-driven status transitions remain allowed in V1
+- when item master data is locked, only workflow-driven status transitions remain allowed
 - `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
-- `sale_line` price snapshots are immutable; correction status is represented only by `corrected_at`
+- `sale_line` price snapshots are immutable; correction status is represented by `corrected_at`, and defective buyer refunds are represented by the refund fields
 
 ## Business Invariants
 
@@ -284,9 +305,11 @@ These are important invariants even if they are enforced first in application lo
 - adding an item to a cart does not reserve it in V1
 - a sale may only be persisted while `event_state.sale_phase` is `presale` or `sale`
 - a sale may only be persisted if every item in the cart is still `in_stock` at transaction time
-- if an item has an active sale line where `corrected_at IS NULL`, its status must be `sold`
-- one item can only have one active sale line
+- if an item has an active payable sale line where `corrected_at IS NULL AND refunded_at IS NULL`, its status must be `sold`
+- one item can only have one active payable sale line
 - corrected sale lines do not make an item unavailable for sale
+- refunded sale lines do not make an item payable to the seller
+- if a sale line has `refunded_at`, then `refund_reason`, `refund_item_price_cents`, `refund_checkout_fee_cents`, and `refund_total_cents` should be filled
 - `sale.subtotal_seller_price_cents` must equal the sum of its sale lines' `seller_price_at_sale_cents`
 - `sale.checkout_fee_cents` must equal 10 percent of `sale.subtotal_seller_price_cents`, rounded to the nearest cent with midpoint values rounded away from zero
 - `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
@@ -300,7 +323,7 @@ The following outputs are derived from the schema and are not stored as separate
 
 All seller items with:
 
-- `status = sold`
+- `status = sold` and an active payable sale line
 - or `status = missing`
 
 Missing items must appear in the payable list with a visible `MANQUANT` mention.
@@ -310,6 +333,9 @@ Missing items must appear in the payable list with a visible `MANQUANT` mention.
 All seller items with:
 
 - `status = in_stock`
+- `status = defective`
+
+Defective items must be visibly marked `DÉFECTUEUX`.
 
 ## Excluded Items Per Seller
 
@@ -335,7 +361,7 @@ Recommended indexes:
 - unique index on `seller.seller_code`
 - unique index on `item.reference`
 - unique index on `(item.seller_id, item.item_number)`
-- unique partial index on `sale_line.item_id` where `corrected_at IS NULL`
+- unique partial index on `sale_line.item_id` where `corrected_at IS NULL AND refunded_at IS NULL`
 - index on `item.reference`
 - index on `item.title`
 - index on `item.seller_id`
