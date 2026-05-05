@@ -42,22 +42,23 @@ Saved sales are visible to all operators from `/caisse/ventes`, linked from the 
 
 ### Create Items From An Excel File
 
-Allow operators to import item rows from an Excel workbook instead of entering every row manually.
+Status: implemented.
 
-Accepted VNext design:
+Relevant design/docs:
 
 - [Excel Seller And Item Prefill Design](./plans/2026-05-04-excel-seller-item-prefill-design.md)
 - [Excel Seller And Item Prefill Implementation Plan](./plans/2026-05-04-excel-seller-item-prefill.md)
+- [D-039 Treat Seller Excel Files As Editable Intake Prefill](./decisions.md#d-039-treat-seller-excel-files-as-editable-intake-prefill)
 
-The design treats Excel parsing as a form-prefill helper, not as a direct import workflow. Operators review the prefilled seller and item rows, then save through the normal intake form.
+Implemented behavior:
 
-Implementation should cover:
-
-- the accepted workbook format
-- validation and error reporting before import
-- how imported rows map to seller, title, price, and intake mode
-- whether duplicate detection is required
-- whether import is only an operator helper or a required workflow
+- Excel parsing is a form-prefill helper, not a direct import workflow
+- `/vendeurs/creer` can upload one `.xlsx` workbook with one visible seller sheet; hidden helper sheets such as postal-code lists are ignored
+- item rows are read from columns `B:C`, starting at the first template item row and continuing past the old 15-row limit until the first blank item row
+- upload fills the editable seller and item form but saves nothing
+- the normal save action creates the seller and item rows in one transaction
+- duplicate sellers redirect to the existing seller page with the parsed item rows prefilled in the add-items form
+- Excel-created seller prefill uses postal address `UNKNOWN` and paid seller fee `EUR 0` until those workbook fields are formally designed
 
 ## Seller Management
 

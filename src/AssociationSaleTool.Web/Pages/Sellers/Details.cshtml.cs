@@ -4,6 +4,7 @@ using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -12,6 +13,7 @@ namespace AssociationSaleTool.Web.Pages.Sellers;
 public sealed class DetailsModel(IntakeService intakeService) : PageModel
 {
     private const int DefaultRowCount = 10;
+    private const string ExcelDuplicateAlertMessage = "Ce vendeur existe déjà. Les articles du fichier Excel ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.";
 
     [BindProperty]
     public ItemBatchInput Input { get; set; } = CreateDefaultInput();
@@ -26,6 +28,8 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
     public SellerFeeStatus FeeStatus { get; private set; } = SellerFeeStatus.Empty;
 
+    public string? PendingRowsAlert { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
@@ -38,6 +42,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
         CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
         Input = CreateDefaultInput();
+        ApplyPendingRows(id);
         return Page();
     }
 
@@ -207,6 +212,41 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
         {
             Input.Rows.Add(new ItemRowInput());
         }
+    }
+
+    private void ApplyPendingRows(long sellerId)
+    {
+        PendingRowsAlert = null;
+        var httpContext = PageContext?.HttpContext;
+        if (httpContext is null)
+        {
+            return;
+        }
+
+        var session = httpContext.Features.Get<ISessionFeature>()?.Session;
+        if (session is null)
+        {
+            return;
+        }
+
+        var pendingRows = PendingSellerItemRowsSession.Consume(session, sellerId);
+        if (pendingRows is null)
+        {
+            return;
+        }
+
+        Input.IntakeMode = pendingRows.IntakeMode;
+        Input.Rows = pendingRows.Rows
+            .Select(row => new ItemRowInput
+            {
+                Title = row.Title,
+                SellerPrice = EuroPriceInput.FormatFromCents(row.SellerPriceCents)
+            })
+            .ToList();
+        EnsureDefaultRows();
+        PendingRowsAlert = pendingRows.AlertMessageKey == PendingSellerItemRowsSession.ExcelDuplicateAlertKey
+            ? ExcelDuplicateAlertMessage
+            : ExcelDuplicateAlertMessage;
     }
 
     private static ItemBatchInput CreateDefaultInput()

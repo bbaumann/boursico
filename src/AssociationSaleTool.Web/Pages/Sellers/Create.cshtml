@@ -13,7 +13,24 @@
         <p class="validation">Les vendeurs ne peuvent pas être créés dans le statut actuel de la vente.</p>
     }
 
-    <form method="post" class="stack-form">
+    @if (Model.CanEditSellerMasterData)
+    {
+        <section class="excel-import-panel" aria-label="Préremplissage Excel">
+            <form method="post"
+                  enctype="multipart/form-data"
+                  class="excel-import-form"
+                  asp-page="/Sellers/Create"
+                  asp-page-handler="ImportExcel">
+                <label>
+                    <span>Fichier Excel vendeur</span>
+                    <input asp-for="ExcelFile" type="file" accept=".xlsx" />
+                </label>
+                <button type="submit" class="button-link">Importer</button>
+            </form>
+        </section>
+    }
+
+    <form method="post" class="stack-form" asp-page="/Sellers/Create">
         <div asp-validation-summary="ModelOnly" class="validation"></div>
         @if (Model.DuplicateMatches.Count > 0)
         {
@@ -106,10 +123,59 @@
             <textarea asp-for="Input.Notes" rows="3" disabled="@(!Model.CanEditSellerMasterData)"></textarea>
         </label>
 
+        <fieldset class="mode-field">
+            <legend>Mode de saisie</legend>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input asp-for="Input.IntakeMode" type="radio" value="InPerson" disabled="@(!Model.CanEditSellerMasterData)" />
+                    <span>Dépôt</span>
+                </label>
+                <label class="radio-option">
+                    <input asp-for="Input.IntakeMode" type="radio" value="EmailPreregistration" disabled="@(!Model.CanEditSellerMasterData)" />
+                    <span>Enregistrement</span>
+                </label>
+            </div>
+        </fieldset>
+
+        <table class="data-table intake-table seller-intake-table" data-item-registration-table>
+            <colgroup>
+                <col class="seller-intake-title-column" />
+                <col class="seller-intake-price-column" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Prix vendeur (EUR entier)</th>
+                </tr>
+            </thead>
+            <tbody>
+            @for (var i = 0; i < Model.Input.Rows.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <input asp-for="Input.Rows[i].Title" disabled="@(!Model.CanEditSellerMasterData)" />
+                        <span asp-validation-for="Input.Rows[i].Title" class="validation"></span>
+                    </td>
+                    <td>
+                        <input asp-for="Input.Rows[i].SellerPrice" type="number" min="0" step="1" inputmode="numeric" disabled="@(!Model.CanEditSellerMasterData)" />
+                        <span asp-validation-for="Input.Rows[i].SellerPrice" class="validation"></span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        @if (Model.CanEditSellerMasterData)
+        {
+            <div class="item-registration-actions">
+                <button type="button" class="add-row-button" data-add-item-row aria-label="Ajouter une ligne" title="Ajouter une ligne">+</button>
+            </div>
+        }
+
         <div class="form-actions">
             @if (Model.CanEditSellerMasterData)
             {
-                <button type="submit" class="button-link button-link-solid">Créer le vendeur</button>
+                <button type="submit" class="button-link button-link-solid">Enregistrer le vendeur et les articles</button>
             }
             <a class="button-link" asp-page="/Sellers/Index">Annuler</a>
         </div>

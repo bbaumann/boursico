@@ -59,6 +59,7 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 });
 builder.Services.AddScoped<IntakeService>();
 builder.Services.AddScoped<SellerDuplicateService>();
+builder.Services.AddScoped<ExcelSellerItemParser>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<SalesViewService>();
 builder.Services.AddScoped<DataListService>();

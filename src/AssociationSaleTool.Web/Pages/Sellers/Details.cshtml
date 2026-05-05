@@ -5,6 +5,14 @@
     ViewData["Title"] = "Détail du vendeur";
 }
 
+@if (!string.IsNullOrWhiteSpace(Model.PendingRowsAlert))
+{
+    <aside class="existing-seller-alert" data-existing-seller-alert role="status" aria-live="polite">
+        <p class="existing-seller-alert-title">Vendeur déjà existant</p>
+        <p>@Model.PendingRowsAlert</p>
+    </aside>
+}
+
 <section class="page-card seller-detail-card">
     <div class="page-header">
         <div>

@@ -5,8 +5,10 @@ using AssociationSaleTool.Web.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -39,6 +41,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync();
+        Assert.Equal("utf-8", response.Content.Headers.ContentType?.CharSet);
+        Assert.Contains("<meta charset=\"utf-8\" />", content);
         Assert.Contains("<html lang=\"fr\">", content);
     }
 
@@ -224,15 +228,25 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 ("Input.Phone", "0123"),
                 ("Input.PostalAddress", "2 rue des Tests"),
                 ("Input.PostalCode", "38100"),
-                ("Input.City", "Grenoble")));
+                ("Input.City", "Grenoble"),
+                ("Input.IntakeMode", "EmailPreregistration"),
+                ("Input.Rows[0].Title", "Puzzle doublon"),
+                ("Input.Rows[0].SellerPrice", "5")));
 
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Un vendeur existe déjà avec les mêmes nom, prénom et téléphone", content);
-        Assert.Contains("DS-777 - Ariane Doublon", content);
-        Assert.Contains("ariane.doublon@example.test", content);
-        Assert.Contains("0 article", content);
-        Assert.Contains("Ouvrir ce vendeur", content);
+        Assert.Contains("Ce vendeur existe déjà.", content);
+        Assert.Contains("Vendeur déjà existant", content);
+        Assert.Contains("data-existing-seller-alert", content);
+        Assert.DoesNotContain("d\u00c3", content);
+        Assert.Contains("Puzzle doublon", content);
+        Assert.Contains("value=\"5\"", content);
+        var navigationIndex = content.IndexOf("Navigation principale", StringComparison.Ordinal);
+        var alertIndex = content.IndexOf("data-existing-seller-alert", StringComparison.Ordinal);
+        var sellerCardIndex = content.IndexOf("seller-detail-card", StringComparison.Ordinal);
+        Assert.True(navigationIndex >= 0, "The page should render the main navigation.");
+        Assert.True(alertIndex > navigationIndex, "The existing-seller alert should appear below the navigation.");
+        Assert.True(alertIndex < sellerCardIndex, "The existing-seller alert should appear before the seller detail card.");
     }
 
     [Fact]
@@ -1629,6 +1643,72 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellerCreatePageRendersCombinedSellerItemFormAndExcelUpload()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/vendeurs/creer");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("excel-import-panel", content);
+        Assert.Contains("excel-import-form", content);
+        Assert.Contains("aria-label=\"Préremplissage Excel\"", content);
+        Assert.Contains("Fichier Excel vendeur", content);
+        Assert.DoesNotContain("Pr\u00c3", content);
+        Assert.DoesNotContain("<h2>Importer depuis Excel</h2>", content);
+        Assert.Contains("Enregistrer le vendeur et les articles", content);
+        Assert.Contains("Mode de saisie", content);
+        Assert.Contains("name=\"Input.Rows[9].Title\"", content);
+        Assert.DoesNotContain("name=\"Input.Rows[10].Title\"", content);
+        Assert.Contains("data-item-registration-table", content);
+        Assert.Contains("data-add-item-row", content);
+    }
+
+    [Fact]
+    public async Task SellerCreateExcelUploadPrefillsFormWithoutPersistingData()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+        int sellerCountBefore;
+        int itemCountBefore;
+
+        using (var beforeScope = _factory.Services.CreateScope())
+        {
+            var beforeContext = beforeScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            sellerCountBefore = await beforeContext.Sellers.CountAsync();
+            itemCountBefore = await beforeContext.Items.CountAsync();
+        }
+
+        var form = await client.GetAsync("/vendeurs/creer");
+        form.EnsureSuccessStatusCode();
+        var formContent = await form.Content.ReadAsStringAsync();
+
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StringContent(ExtractRequestVerificationToken(formContent)), "__RequestVerificationToken");
+        multipart.Add(
+            new ByteArrayContent(CreateSellerWorkbookBytes()),
+            "ExcelFile",
+            "liste.xlsx");
+
+        var response = await client.PostAsync("/vendeurs/creer?handler=ImportExcel", multipart);
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("value=\"Marie\"", content);
+        Assert.Contains("value=\"Durand\"", content);
+        Assert.Contains("value=\"0600000000\"", content);
+        Assert.Contains("UNKNOWN", content);
+        Assert.Contains("Puzzle Excel", content);
+        Assert.Contains("value=\"5\"", content);
+        AssertCreateSellerFormPostsToCreatePage(content);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(sellerCountBefore, await dbContext.Sellers.CountAsync());
+        Assert.Equal(itemCountBefore, await dbContext.Items.CountAsync());
+    }
+
+    [Fact]
     public async Task SellerDetailsDisplaysFrenchItemStatusLabels()
     {
         var client = _factory.CreateClient();
@@ -2880,6 +2960,81 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         values.AddRange(fields.Select(field => new KeyValuePair<string, string>(field.Name, field.Value)));
 
         return new FormUrlEncodedContent(values);
+    }
+
+    private static void AssertCreateSellerFormPostsToCreatePage(string html)
+    {
+        var formMatch = Regex.Matches(
+            html,
+            "<form(?<attributes>[^>]*)>(?<body>.*?)</form>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline)
+            .Cast<Match>()
+            .FirstOrDefault(match => match.Groups["body"].Value.Contains("Enregistrer le vendeur et les articles", StringComparison.Ordinal));
+        Assert.NotNull(formMatch);
+
+        var attributes = formMatch.Groups["attributes"].Value;
+        Assert.Contains("action=\"/vendeurs/creer\"", attributes);
+        Assert.DoesNotContain("handler=ImportExcel", attributes);
+    }
+
+    private static byte[] CreateSellerWorkbookBytes()
+    {
+        using var stream = new MemoryStream();
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            AddWorkbookEntry(archive, "[Content_Types].xml", """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                </Types>
+                """);
+            AddWorkbookEntry(archive, "_rels/.rels", """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+                </Relationships>
+                """);
+            AddWorkbookEntry(archive, "xl/workbook.xml", """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                  <sheets><sheet name="Feuil1" sheetId="1" r:id="rId1"/></sheets>
+                </workbook>
+                """);
+            AddWorkbookEntry(archive, "xl/_rels/workbook.xml.rels", """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                </Relationships>
+                """);
+            AddWorkbookEntry(archive, "xl/worksheets/sheet1.xml", $$"""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <sheetData>
+                    <row r="2">{{InlineCell("C2", "NOM PRENOM")}}{{InlineCell("H2", "TELEPHONE")}}</row>
+                    <row r="3">{{InlineCell("C3", "DURAND Marie")}}{{InlineCell("H3", "0600000000")}}</row>
+                    <row r="5">{{InlineCell("B5", "libellé")}}{{InlineCell("C5", "prix")}}</row>
+                    <row r="7">{{InlineCell("B7", "Puzzle Excel")}}<c r="C7"><v>5</v></c></row>
+                  </sheetData>
+                </worksheet>
+                """);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static string InlineCell(string cellReference, string value)
+    {
+        return $"<c r=\"{cellReference}\" t=\"inlineStr\"><is><t>{SecurityElement.Escape(value)}</t></is></c>";
+    }
+
+    private static void AddWorkbookEntry(ZipArchive archive, string name, string content)
+    {
+        var entry = archive.CreateEntry(name);
+        using var writer = new StreamWriter(entry.Open());
+        writer.Write(content);
     }
 
     private static string ExtractRequestVerificationToken(string html)
