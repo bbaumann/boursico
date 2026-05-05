@@ -138,9 +138,9 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("payment_method");
 
-                    b.Property<string>("ReceiptDetails")
+                    b.Property<string>("BuyerAddress")
                         .HasColumnType("TEXT")
-                        .HasColumnName("receipt_details");
+                        .HasColumnName("buyer_address");
 
                     b.Property<DateTime>("SoldAt")
                         .HasColumnType("TEXT")
@@ -214,6 +214,11 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("email");
 
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("city");
+
                     b.Property<int>("FeePaidCents")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -243,6 +248,11 @@ namespace AssociationSaleTool.Web.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("postal_address");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("postal_code");
 
                     b.Property<string>("SellerCode")
                         .IsRequired()

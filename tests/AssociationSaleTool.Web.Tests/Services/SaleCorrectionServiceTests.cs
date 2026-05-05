@@ -36,7 +36,11 @@ public sealed class SaleCorrectionServiceTests
         var checkoutService = new CheckoutService(context);
 
         await correctionService.CorrectSaleLineAsync(saleLine.Id);
-        var result = await checkoutService.SaveSaleAsync([item.Id]);
+        var result = await checkoutService.SaveSaleAsync(
+            [item.Id],
+            buyerName: "Client correction",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
 
         Assert.True(result.Saved);
         Assert.Equal("sold", (await context.Items.SingleAsync(x => x.Id == item.Id)).Status);

@@ -64,7 +64,16 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
         var result = await intakeService.UpdateSellerAsync(
             id,
-            new UpdateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.PostalAddress, Input.Notes, feePaidCents),
+            new UpdateSellerRequest(
+                Input.FirstName,
+                Input.LastName,
+                Input.Email,
+                Input.Phone,
+                Input.PostalAddress,
+                Input.Notes,
+                feePaidCents,
+                Input.PostalCode,
+                Input.City),
             cancellationToken);
 
         if (result == UpdateSellerResult.NotFound)
@@ -124,6 +133,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             Email = seller.Email,
             Phone = seller.Phone,
             PostalAddress = seller.PostalAddress,
+            PostalCode = seller.PostalCode,
+            City = seller.City,
             FeePaid = EuroPriceInput.FormatFromCents(seller.FeePaidCents),
             Notes = seller.Notes
         };
@@ -145,6 +156,12 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
         [Required(ErrorMessage = "L'adresse postale est obligatoire.")]
         public string PostalAddress { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Le code postal est obligatoire.")]
+        public string PostalCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La ville est obligatoire.")]
+        public string City { get; set; } = string.Empty;
 
         public string? FeePaid { get; set; } = "0";
 

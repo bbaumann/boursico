@@ -43,6 +43,8 @@ Represents one seller.
 - `email`
 - `phone`
 - `postal_address`
+- `postal_code`
+- `city`
 - `fee_paid_cents`
 - `notes`
 
@@ -92,7 +94,7 @@ Represents one completed checkout.
 - `buyer_name`
 - `buyer_postal_code`
 - `buyer_city`
-- `receipt_details`
+- `buyer_address`
 - `payment_method`
 - `cheque_number`
 - `cheque_bank_name`
@@ -102,10 +104,10 @@ Represents one completed checkout.
 - There is no `is_paid` field in V1; persisting the sale means the checkout is complete.
 - `sold_at` should be stored in UTC.
 - `subtotal_seller_price_cents`, `checkout_fee_cents`, and `total_paid_cents` are stored as integer cents.
-- `buyer_name`, `buyer_postal_code`, and `buyer_city` are optional structured buyer details captured on the checkout page.
+- `buyer_name`, `buyer_postal_code`, and `buyer_city` are required by the application for new checkout sales.
 - `buyer_postal_code` is stored as text even though the UI input is numeric, so postal-code formatting is not treated as arithmetic.
-- `receipt_details` is an optional free-text field used only in the rare reimbursement case.
-- If `receipt_details` is null, no receipt was requested in V1.
+- `buyer_address` is an optional free-text address field used only when a receipt or invoice must be printed.
+- If `buyer_address` is null, no receipt was requested in V1.
 - `payment_method` is set for new sales and uses `card`, `cash`, or `cheque`.
 - `cheque_number` and `cheque_bank_name` are required by the application only when `payment_method` is `cheque`.
 - Existing rows created before this feature may have null payment traceability fields.
@@ -189,6 +191,8 @@ V1 uses a single row with `id = 1`.
 - `email`: optional
 - `phone`: required
 - `postal_address`: required
+- `postal_code`: required
+- `city`: required
 - `notes`: optional
 
 ## `item`
@@ -206,10 +210,10 @@ V1 uses a single row with `id = 1`.
 - `subtotal_seller_price_cents`: required
 - `checkout_fee_cents`: required
 - `total_paid_cents`: required
-- `buyer_name`: optional
-- `buyer_postal_code`: optional
-- `buyer_city`: optional
-- `receipt_details`: optional
+- `buyer_name`: required for new application-created rows
+- `buyer_postal_code`: required for new application-created rows
+- `buyer_city`: required for new application-created rows
+- `buyer_address`: optional
 
 ## `sale_line`
 

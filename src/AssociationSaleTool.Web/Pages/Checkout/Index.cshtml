@@ -33,24 +33,25 @@
         <section class="subsection checkout-lookup">
             <section class="checkout-buyer-fields" aria-labelledby="checkout-buyer-title">
                 <h2 id="checkout-buyer-title">Acheteur</h2>
-                <div class="field-grid">
+                <div class="field-grid" data-postal-city-root>
                     <label for="checkout-buyer-name">
                         Nom ou structure
                         <input id="checkout-buyer-name"
                                type="text"
                                autocomplete="name"
                                maxlength="200"
+                               required
                                data-checkout-buyer-name />
                     </label>
                     <label for="checkout-buyer-postal-code">
                         Code postal
                         <input id="checkout-buyer-postal-code"
-                               type="number"
+                               type="text"
                                inputmode="numeric"
-                               min="0"
-                               max="99999"
-                               step="1"
+                               maxlength="5"
                                autocomplete="postal-code"
+                               required
+                               data-postal-code-input
                                data-checkout-buyer-postal-code />
                     </label>
                     <label for="checkout-buyer-city">
@@ -60,11 +61,22 @@
                                autocomplete="address-level2"
                                maxlength="200"
                                list="checkout-buyer-city-options"
+                               required
+                               data-city-input
                                data-checkout-buyer-city />
-                        <datalist id="checkout-buyer-city-options" data-checkout-buyer-city-options></datalist>
+                        <datalist id="checkout-buyer-city-options" data-city-options data-checkout-buyer-city-options></datalist>
                     </label>
                 </div>
                 <p class="seller-meta">Pour l'Isère, les villes connues sont proposées. Hors Isère, saisissez la ville librement.</p>
+                <p class="validation" data-checkout-buyer-message role="status" aria-live="polite"></p>
+                <label class="receipt-details-field" for="checkout-buyer-address">
+                    Adresse
+                    <textarea id="checkout-buyer-address"
+                              rows="3"
+                              data-checkout-buyer-address
+                              placeholder="Adresse à imprimer sur le reçu ou la facture"></textarea>
+                    <span class="seller-meta">À remplir uniquement si le client demande un reçu ou une facture.</span>
+                </label>
             </section>
 
         </section>
@@ -137,15 +149,6 @@
                     <dd data-checkout-total>0.00 EUR</dd>
                 </div>
             </dl>
-
-            <label class="receipt-details-field" for="checkout-receipt-details">
-                Détails du reçu
-                <textarea id="checkout-receipt-details"
-                          rows="3"
-                          data-checkout-receipt-details
-                          placeholder="Nom, organisation ou adresse"></textarea>
-                <span class="seller-meta">À remplir uniquement si le client demande un reçu.</span>
-            </label>
 
             <div class="form-actions checkout-finalize-actions">
                 <button type="button"
@@ -256,8 +259,8 @@
     </section>
 
     <section>
-        <h2>Détails du reçu</h2>
-        <p data-checkout-receipt-details-text></p>
+        <h2>Adresse</h2>
+        <p data-checkout-receipt-address-text></p>
     </section>
 
     <table class="data-table">

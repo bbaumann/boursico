@@ -9,6 +9,7 @@ namespace AssociationSaleTool.Web.Services;
 public sealed class CheckoutService
 {
     private const string PostSaleMessage = "La vente est en après-vente. Aucune nouvelle vente ne peut être enregistrée.";
+    private const string MissingBuyerDetailsMessage = "Le nom, le code postal et la ville de l'acheteur sont obligatoires.";
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
 
@@ -47,13 +48,26 @@ public sealed class CheckoutService
 
     public async Task<CheckoutSaleResult> SaveSaleAsync(
         IReadOnlyList<long> itemIds,
-        string? receiptDetails = null,
+        string? buyerAddress = null,
         string? buyerName = null,
         string? buyerPostalCode = null,
         string? buyerCity = null,
         CancellationToken cancellationToken = default,
         CheckoutPaymentDetails? paymentDetails = null)
     {
+        var normalizedBuyerDetails = NormalizeBuyerDetails(buyerName, buyerPostalCode, buyerCity);
+        if (!normalizedBuyerDetails.IsValid)
+        {
+            return new CheckoutSaleResult(
+                false,
+                null,
+                [],
+                null,
+                0,
+                normalizedBuyerDetails.Message,
+                IsValidationError: true);
+        }
+
         var normalizedPayment = NormalizePaymentDetails(paymentDetails);
         if (!normalizedPayment.IsValid)
         {
@@ -92,10 +106,10 @@ public sealed class CheckoutService
             SubtotalSellerPriceCents = validation.Totals.SubtotalSellerPriceCents,
             CheckoutFeeCents = validation.Totals.CheckoutFeeCents,
             TotalPaidCents = validation.Totals.TotalPaidCents,
-            ReceiptDetails = NormalizeOptionalText(receiptDetails),
-            BuyerName = NormalizeOptionalText(buyerName),
-            BuyerPostalCode = NormalizeOptionalText(buyerPostalCode),
-            BuyerCity = NormalizeOptionalText(buyerCity),
+            BuyerAddress = NormalizeOptionalText(buyerAddress),
+            BuyerName = normalizedBuyerDetails.BuyerName,
+            BuyerPostalCode = normalizedBuyerDetails.BuyerPostalCode,
+            BuyerCity = normalizedBuyerDetails.BuyerCity,
             PaymentMethod = normalizedPayment.PaymentMethod,
             ChequeNumber = normalizedPayment.ChequeNumber,
             ChequeBankName = normalizedPayment.ChequeBankName
@@ -121,6 +135,23 @@ public sealed class CheckoutService
             [],
             validation.Totals,
             validation.ItemCount);
+    }
+
+    private static BuyerDetailsNormalizationResult NormalizeBuyerDetails(
+        string? buyerName,
+        string? buyerPostalCode,
+        string? buyerCity)
+    {
+        var normalizedBuyerName = NormalizeOptionalText(buyerName);
+        var normalizedPostalCode = NormalizeOptionalText(buyerPostalCode);
+        var normalizedCity = NormalizeOptionalText(buyerCity);
+
+        if (normalizedBuyerName is null || normalizedPostalCode is null || normalizedCity is null)
+        {
+            return BuyerDetailsNormalizationResult.Invalid(MissingBuyerDetailsMessage);
+        }
+
+        return BuyerDetailsNormalizationResult.Valid(normalizedBuyerName, normalizedPostalCode, normalizedCity);
     }
 
     private static PaymentNormalizationResult NormalizePaymentDetails(CheckoutPaymentDetails? paymentDetails)
@@ -218,6 +249,27 @@ public sealed class CheckoutService
         public static PaymentNormalizationResult Invalid(string message)
         {
             return new PaymentNormalizationResult(false, null, null, null, message);
+        }
+    }
+
+    private sealed record BuyerDetailsNormalizationResult(
+        bool IsValid,
+        string? BuyerName,
+        string? BuyerPostalCode,
+        string? BuyerCity,
+        string? Message = null)
+    {
+        public static BuyerDetailsNormalizationResult Valid(
+            string buyerName,
+            string buyerPostalCode,
+            string buyerCity)
+        {
+            return new BuyerDetailsNormalizationResult(true, buyerName, buyerPostalCode, buyerCity);
+        }
+
+        public static BuyerDetailsNormalizationResult Invalid(string message)
+        {
+            return new BuyerDetailsNormalizationResult(false, null, null, null, message);
         }
     }
 }

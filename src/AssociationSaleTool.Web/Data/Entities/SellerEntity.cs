@@ -16,6 +16,10 @@ public sealed class SellerEntity
 
     public string PostalAddress { get; set; } = string.Empty;
 
+    public string PostalCode { get; set; } = string.Empty;
+
+    public string City { get; set; } = string.Empty;
+
     public int FeePaidCents { get; set; }
 
     public string? Notes { get; set; }

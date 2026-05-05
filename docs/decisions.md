@@ -136,8 +136,8 @@ This file captures the main project decisions in a lightweight ADR format.
   - receipts are primarily for reimbursement cases
 - Decision:
   - receipt printing is optional and secondary in the checkout flow
-  - use one optional `receipt_details` text field, empty by default
-  - if `receipt_details` is filled, that means a receipt was requested
+  - use one optional `buyer_address` text field, empty by default
+  - if `buyer_address` is filled, that means a receipt was requested
 - Consequence:
   - receipt logic should not complicate the main save-sale action
   - V1 does not need separate `receipt_requested` or `receipt_printed` fields
@@ -329,7 +329,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - if validation succeeds, a finalization modal is shown with the subtotal, checkout fee, final total, item count, and the actions `Go back`, `Save`, and `Save and print receipt`
   - `Go back` returns to the editable cart without saving
   - both `Save` and `Save and print receipt` perform a second authoritative validation inside the save transaction
-  - `Save and print receipt` is disabled unless `receipt_details` was filled, and it saves before opening the browser print dialog
+  - `Save and print receipt` is disabled unless `buyer_address` was filled, and it saves before opening the browser print dialog
 - Consequence:
   - operators get a safer and clearer last-step review flow
   - sale correctness still depends on the authoritative server-side save validation
@@ -460,13 +460,13 @@ This file captures the main project decisions in a lightweight ADR format.
   - checkout operators may need to inspect a saved sale during normal sale-day work
   - sale lookup should be reachable from the checkout area without turning the admin page into a general sales browser
   - saved sales are historical facts and should not be edited from a browse view
-  - receipt details may be useful for lookup, but V1 already treats checkout operators as trusted event staff
+  - receipt address details may be useful for lookup, but V1 already treats checkout operators as trusted event staff
 - Decision:
   - keep `/caisse` as the default sale-creation page
   - expose a prominent `LISTE DES VENTES` action from `/caisse`
   - add `/caisse/ventes` for read-only sales history, visible to all operators without the shared admin password
   - add `/caisse/ventes/{id}` for read-only sale detail
-  - search the list by sale id, item reference, item title, and receipt details
+  - search the list by sale id, item reference, item title, buyer details, and receipt address details
   - show corrected sale lines as historical sale facts labeled `Corrigée`
   - keep sale-line correction actions only on `/vente/statut`
 - Consequence:
@@ -485,11 +485,13 @@ This file captures the main project decisions in a lightweight ADR format.
 - Decision:
   - make `seller.phone` required
   - add required `seller.postal_address`
-  - enforce both fields in the seller create/edit UI and in backend intake validation
+  - add required `seller.postal_code` and `seller.city`
+  - enforce those contact fields in the seller create/edit UI and in backend intake validation
+  - reuse the checkout postal-code city helper on seller create/edit pages
   - keep `email` optional
 - Consequence:
   - existing databases receive empty default values during migration and should be completed by organizers
-  - new seller records cannot be created or edited through intake without phone and postal address
+  - new seller records cannot be created or edited through intake without phone, postal address, postal code, and city
   - seller detail and printable seller sheets show the required contact information
 
 ## D-034 Restrict Seller Price Entry To Whole Euros
@@ -503,7 +505,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - keep `item.seller_price_cents` as the persisted column
   - require application-created seller prices to be whole euros, stored as cent values divisible by `100`
   - reject seller item creation and item price edits when the submitted seller price contains cents
-  - render seller price inputs as whole-euro numeric fields in the intake and item edit UI
+  - render seller price inputs as whole-euro text fields with numeric input mode and French custom browser validation
 - Consequence:
   - checkout and reconciliation can continue reading existing cent values if they exist
   - future cents support would mainly relax application validation rather than rename price columns
@@ -535,10 +537,12 @@ This file captures the main project decisions in a lightweight ADR format.
   - buyer location should be searchable and visible in sales history
   - city suggestions should support the local Isère workflow without adding an internet dependency during the sale
 - Decision:
-  - add optional `buyer_name`, `buyer_postal_code`, and `buyer_city` fields to `sale`
+  - add `buyer_name`, `buyer_postal_code`, and `buyer_city` fields to `sale`
+  - require buyer name, postal code, and city for new application-created checkout sales
   - render those fields at the top of `/caisse`, above item lookup
-  - keep `receipt_details` as a separate optional free-text field whose presence still controls whether receipt printing is enabled
+  - keep `buyer_address` as a separate optional free-text field, labeled `Adresse` in the UI, whose presence still controls whether receipt printing is enabled
   - generate local city suggestion data for Isère (`38xxx`) from the official French Geo API commune dataset
+  - prefill city when an Isère postal code maps to exactly one known city
   - keep city entry free text for other French departments
 - Consequence:
   - sale creation persists buyer identity and location as structured sale-level data

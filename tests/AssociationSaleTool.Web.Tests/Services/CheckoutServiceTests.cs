@@ -125,7 +125,11 @@ public sealed class CheckoutServiceTests
         var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
         var service = new CheckoutService(context);
 
-        var result = await service.SaveSaleAsync([firstItem.Id, secondItem.Id]);
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id, secondItem.Id],
+            buyerName: "Client caisse",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
 
         Assert.True(result.Saved);
         Assert.NotNull(result.SaleId);
@@ -143,7 +147,7 @@ public sealed class CheckoutServiceTests
         Assert.Equal(SalePaymentMethods.Card, sale.PaymentMethod);
         Assert.Null(sale.ChequeNumber);
         Assert.Null(sale.ChequeBankName);
-        Assert.Null(sale.ReceiptDetails);
+        Assert.Null(sale.BuyerAddress);
         Assert.Equal(DateTimeKind.Utc, sale.SoldAt.Kind);
 
         Assert.Collection(
@@ -163,7 +167,7 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
-    public async Task SaveSaleAsync_StoresTrimmedReceiptDetails()
+    public async Task SaveSaleAsync_StoresTrimmedBuyerAddress()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -176,11 +180,16 @@ public sealed class CheckoutServiceTests
         var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
         var service = new CheckoutService(context);
 
-        var result = await service.SaveSaleAsync([firstItem.Id], "  Association sportive\n12 rue des Lilas  ");
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            "  Association sportive\n12 rue des Lilas  ",
+            buyerName: "Association sportive",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
 
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
-        Assert.Equal("Association sportive\n12 rue des Lilas", sale.ReceiptDetails);
+        Assert.Equal("Association sportive\n12 rue des Lilas", sale.BuyerAddress);
     }
 
     [Fact]
@@ -199,6 +208,9 @@ public sealed class CheckoutServiceTests
 
         var result = await service.SaveSaleAsync(
             [firstItem.Id],
+            buyerName: "Client especes",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
             paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cash));
 
         Assert.True(result.Saved);
@@ -224,6 +236,9 @@ public sealed class CheckoutServiceTests
 
         var result = await service.SaveSaleAsync(
             [firstItem.Id],
+            buyerName: "Client cheque",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
             paymentDetails: new CheckoutPaymentDetails(
                 SalePaymentMethods.Cheque,
                 "  1234567  ",
@@ -252,6 +267,9 @@ public sealed class CheckoutServiceTests
 
         var result = await service.SaveSaleAsync(
             [firstItem.Id],
+            buyerName: "Client cheque",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
             paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cheque, "1234567", " "));
 
         Assert.False(result.Saved);
@@ -262,7 +280,7 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
-    public async Task SaveSaleAsync_StoresNullForBlankReceiptDetails()
+    public async Task SaveSaleAsync_StoresNullForBlankBuyerAddress()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -275,11 +293,16 @@ public sealed class CheckoutServiceTests
         var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
         var service = new CheckoutService(context);
 
-        var result = await service.SaveSaleAsync([firstItem.Id], " \r\n ");
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            " \r\n ",
+            buyerName: "Client sans adresse",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
 
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
-        Assert.Null(sale.ReceiptDetails);
+        Assert.Null(sale.BuyerAddress);
     }
 
     [Fact]
@@ -310,6 +333,33 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task SaveSaleAsync_RejectsMissingBuyerDetails()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            buyerName: "Client incomplet",
+            buyerPostalCode: "38000",
+            buyerCity: " ");
+
+        Assert.False(result.Saved);
+        Assert.True(result.IsValidationError);
+        Assert.Equal("Le nom, le code postal et la ville de l'acheteur sont obligatoires.", result.Message);
+        Assert.Empty(await context.Sales.ToListAsync());
+        Assert.Equal("in_stock", (await context.Items.SingleAsync(x => x.Id == firstItem.Id)).Status);
+    }
+
+    [Fact]
     public async Task SaveSaleAsync_RejectsUnavailableItemsWithoutPersistingPartialSale()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -323,7 +373,11 @@ public sealed class CheckoutServiceTests
         var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "sold");
         var service = new CheckoutService(context);
 
-        var result = await service.SaveSaleAsync([firstItem.Id, secondItem.Id]);
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id, secondItem.Id],
+            buyerName: "Client conflit",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
 
         Assert.False(result.Saved);
         Assert.Null(result.SaleId);
@@ -351,7 +405,11 @@ public sealed class CheckoutServiceTests
         await phaseService.SetPhaseAsync(SalePhase.PostSale);
         var service = new CheckoutService(context);
 
-        var result = await service.SaveSaleAsync([firstItem.Id]);
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            buyerName: "Client fermeture",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
 
         Assert.False(result.Saved);
         Assert.Null(result.SaleId);

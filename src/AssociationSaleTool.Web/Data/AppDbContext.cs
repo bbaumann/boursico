@@ -27,6 +27,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Email).HasColumnName("email");
             entity.Property(x => x.Phone).HasColumnName("phone").IsRequired();
             entity.Property(x => x.PostalAddress).HasColumnName("postal_address").IsRequired();
+            entity.Property(x => x.PostalCode).HasColumnName("postal_code").IsRequired();
+            entity.Property(x => x.City).HasColumnName("city").IsRequired();
             entity.Property(x => x.FeePaidCents).HasColumnName("fee_paid_cents").HasDefaultValue(0).IsRequired();
             entity.Property(x => x.Notes).HasColumnName("notes");
 
@@ -81,7 +83,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.BuyerName).HasColumnName("buyer_name");
             entity.Property(x => x.BuyerPostalCode).HasColumnName("buyer_postal_code");
             entity.Property(x => x.BuyerCity).HasColumnName("buyer_city");
-            entity.Property(x => x.ReceiptDetails).HasColumnName("receipt_details");
+            entity.Property(x => x.BuyerAddress).HasColumnName("buyer_address");
             entity.Property(x => x.PaymentMethod).HasColumnName("payment_method");
             entity.Property(x => x.ChequeNumber).HasColumnName("cheque_number");
             entity.Property(x => x.ChequeBankName).HasColumnName("cheque_bank_name");

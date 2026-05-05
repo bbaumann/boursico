@@ -124,6 +124,8 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                     seller.Email,
                     seller.Phone,
                     seller.PostalAddress,
+                    seller.PostalCode,
+                    seller.City,
                     payableItems,
                     returnedItems,
                     itemSubtotalCents,

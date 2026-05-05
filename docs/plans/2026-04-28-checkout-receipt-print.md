@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add checkout slice 3: optional receipt details, sale persistence of those details, and browser receipt printing after a successful sale save.
+**Goal:** Add checkout slice 3: optional buyer address, sale persistence of that address, and browser receipt printing after a successful sale save.
 
-**Architecture:** Keep `/caisse` as the checkout workflow surface. Extend `POST /api/ventes` with optional receipt details and keep business rules in `CheckoutService`. Use vanilla JavaScript to enable the print action, save first, render a print-only receipt, call `window.print()`, and reload after printing.
+**Architecture:** Keep `/caisse` as the checkout workflow surface. Extend `POST /api/ventes` with optional buyer address and keep business rules in `CheckoutService`. Use vanilla JavaScript to enable the print action, save first, render a print-only receipt, call `window.print()`, and reload after printing.
 
 **Tech Stack:** ASP.NET Core Razor Pages, ASP.NET Core controllers, EF Core SQLite, vanilla JavaScript, CSS print media, xUnit.
 
@@ -20,10 +20,10 @@
 - Modify: `tests/AssociationSaleTool.Web.Tests/Smoke/WebApplicationSmokeTests.cs`
 
 **Steps:**
-1. Write failing service tests proving `SaveSaleAsync(itemIds, receiptDetails)` stores trimmed receipt details and stores `null` for whitespace.
-2. Write a failing HTTP test proving `POST /api/ventes` with `receiptDetails` persists the value on `sale.receipt_details`.
+1. Write failing service tests proving `SaveSaleAsync(itemIds, buyerAddress)` stores the trimmed buyer address and stores `null` for whitespace.
+2. Write a failing HTTP test proving `POST /api/ventes` with `buyerAddress` persists the value on `sale.buyer_address`.
 3. Run `rtk dotnet test tests\AssociationSaleTool.Web.Tests\AssociationSaleTool.Web.Tests.csproj --filter "CheckoutServiceTests|WebApplicationSmokeTests" -p:UseAppHost=false -p:OutputPath=C:\dev\association-sale-tool\.artifacts\checkout-print-persistence`.
-4. Add `ReceiptDetails` to `CheckoutCartRequest`, pass it through `SalesController`, and update `CheckoutService.SaveSaleAsync` to normalize and persist it.
+4. Add `BuyerAddress` to `CheckoutCartRequest`, pass it through `SalesController`, and update `CheckoutService.SaveSaleAsync` to normalize and persist it.
 5. Rerun the filtered tests and commit `Add checkout receipt persistence`.
 
 ### Task 2: Checkout Receipt UI
@@ -36,11 +36,11 @@
 - Modify: `tests/AssociationSaleTool.Web.Tests/Smoke/WebApplicationSmokeTests.cs`
 
 **Steps:**
-1. Write failing smoke/static tests for the French receipt details label, `Enregistrer et imprimer`, receipt header data, print receipt hooks, `window.print()`, and print CSS.
+1. Write failing smoke/static tests for the French address label, `Enregistrer et imprimer`, receipt header data, print receipt hooks, `window.print()`, and print CSS.
 2. Run the smoke tests with isolated output.
 3. Inject `PrintingOptions` into the checkout page model and expose the receipt header text.
-4. Add the optional receipt details text area, the disabled print-save button, and the print-only receipt container.
-5. Extend JavaScript to enable the print-save button when receipt details are filled, send `receiptDetails` to `/api/ventes`, render the receipt, call `window.print()`, and reload after print.
+4. Add the optional buyer address text area, the disabled print-save button, and the print-only receipt container.
+5. Extend JavaScript to enable the print-save button when buyer address is filled, send `buyerAddress` to `/api/ventes`, render the receipt, call `window.print()`, and reload after print.
 6. Add print media CSS so the normal checkout UI is hidden and only the receipt is printed.
 7. Rerun smoke tests and commit `Add checkout receipt print UI`.
 

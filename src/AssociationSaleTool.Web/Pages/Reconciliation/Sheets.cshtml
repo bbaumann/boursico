@@ -62,8 +62,15 @@ else
                         <dd>@sheet.Phone</dd>
                     </div>
                     <div>
-                        <dt>Adresse postale</dt>
-                        <dd>@sheet.PostalAddress</dd>
+                        <dt>Adresse</dt>
+                        <dd>
+                            @sheet.PostalAddress
+                            @if (!string.IsNullOrWhiteSpace(sheet.PostalCode) || !string.IsNullOrWhiteSpace(sheet.City))
+                            {
+                                <br />
+                                <span>@sheet.PostalCode @sheet.City</span>
+                            }
+                        </dd>
                     </div>
                 </dl>
             </header>
@@ -145,23 +152,23 @@ else
             </section>
 
             <dl class="checkout-totals">
-                <div class="checkout-total-row">
+                <div>
                     <dt>Sous-total articles</dt>
                     <dd>@SheetsModel.FormatPrice(sheet.ItemSubtotalCents)</dd>
                 </div>
-                <div class="checkout-total-row">
+                <div>
                     <dt>Frais attendus</dt>
                     <dd>@SheetsModel.FormatPrice(sheet.ExpectedFeeCents)</dd>
                 </div>
-                <div class="checkout-total-row">
+                <div>
                     <dt>Frais payés</dt>
                     <dd>@SheetsModel.FormatPrice(sheet.PaidFeeCents)</dd>
                 </div>
-                <div class="checkout-total-row">
+                <div>
                     <dt>Frais restant dus</dt>
                     <dd>@SheetsModel.FormatPrice(sheet.RemainingFeeCents)</dd>
                 </div>
-                <div class="checkout-total-row">
+                <div class="checkout-total-row seller-sheet-total-row">
                     <dt>Total à payer</dt>
                     <dd>@SheetsModel.FormatPrice(sheet.TotalPayableCents)</dd>
                 </div>

@@ -170,6 +170,12 @@ Un article `enregistré` n'apparaît ni en caisse ni dans les feuilles vendeurs 
 
 Aller dans `CAISSE` ou ouvrir `/caisse`.
 
+### Renseigner l'acheteur
+
+Avant de finaliser une vente, remplir les champs `Nom ou structure`, `Code postal` et `Ville`.
+
+Pour les codes postaux de l'Isère, la ville est proposée automatiquement et peut être modifiée si nécessaire. Pour les autres départements, saisir la ville librement.
+
 ### Chercher un article
 
 Dans `Rechercher un article`, taper une partie de la référence ou du titre.
@@ -208,7 +214,7 @@ Si un article n'est plus disponible, la vente est refusée clairement. Le béné
 
 Le reçu est optionnel.
 
-Si le client demande un reçu, remplir `Détails du reçu` avec les informations utiles : nom, organisation, adresse, ou autre texte demandé.
+Si le client demande un reçu ou une facture, remplir `Adresse` avec l'adresse à imprimer.
 
 Ensuite, dans la fenêtre de finalisation, le bouton `Enregistrer et imprimer` devient disponible. L'application enregistre d'abord la vente, puis ouvre l'impression du navigateur.
 

@@ -12,7 +12,7 @@ public sealed class CheckoutCartRequest
 
     public string? BuyerCity { get; set; }
 
-    public string? ReceiptDetails { get; set; }
+    public string? BuyerAddress { get; set; }
 
     public string? PaymentMethod { get; set; } = SalePaymentMethods.Card;
 

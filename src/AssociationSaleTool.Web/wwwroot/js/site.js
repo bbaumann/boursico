@@ -49,6 +49,7 @@ document.addEventListener("click", event => {
   const row = lastRow.cloneNode(true);
   reindexRow(row, nextIndex);
   clearRow(row);
+  row.querySelectorAll("[data-whole-euro-input]").forEach(initializeWholeEuroInput);
   tbody.appendChild(row);
   row.querySelector("input")?.focus();
 });
@@ -90,13 +91,82 @@ async function loadCheckoutCitiesByPostalCode() {
   return checkoutCitiesByPostalCode;
 }
 
+function initializePostalCityRoot(root) {
+  const postalCodeInput = root.querySelector("[data-postal-code-input]");
+  const cityInput = root.querySelector("[data-city-input]");
+  const cityOptions = root.querySelector("[data-city-options]");
+
+  if (!postalCodeInput || !cityInput || !cityOptions) {
+    return;
+  }
+
+  let lastPrefilledCity = "";
+
+  async function updateCityOptions() {
+    const postalCode = postalCodeInput.value.trim();
+    cityOptions.replaceChildren();
+
+    if (!/^38\d{3}$/.test(postalCode)) {
+      if (cityInput.value === lastPrefilledCity) {
+        cityInput.value = "";
+      }
+
+      lastPrefilledCity = "";
+      return;
+    }
+
+    const cityMap = await loadCheckoutCitiesByPostalCode();
+    if (postalCodeInput.value.trim() !== postalCode) {
+      return;
+    }
+
+    const cities = cityMap[postalCode] || [];
+    for (const city of cities) {
+      const option = document.createElement("option");
+      option.value = city;
+      cityOptions.appendChild(option);
+    }
+
+    if (cities.length === 1 && (!cityInput.value.trim() || cityInput.value === lastPrefilledCity)) {
+      cityInput.value = cities[0];
+      lastPrefilledCity = cities[0];
+      cityInput.dispatchEvent(new Event("change", { bubbles: true }));
+      return;
+    }
+
+    if (cityInput.value !== lastPrefilledCity) {
+      lastPrefilledCity = "";
+    }
+  }
+
+  postalCodeInput.addEventListener("input", updateCityOptions);
+  updateCityOptions();
+}
+
+function initializeWholeEuroInput(input) {
+  const message = input.dataset.wholeEuroMessage || "Le montant doit être un nombre entier en euros.";
+
+  function updateValidityMessage() {
+    if (input.validity.patternMismatch) {
+      input.setCustomValidity(message);
+      return;
+    }
+
+    input.setCustomValidity("");
+  }
+
+  input.addEventListener("input", updateValidityMessage);
+  input.addEventListener("invalid", updateValidityMessage);
+  updateValidityMessage();
+}
+
 async function postCheckoutCart(url, cart, options = {}) {
   const body = {
     itemIds: cart.map(item => item.id)
   };
 
-  if (options.receiptDetails !== undefined) {
-    body.receiptDetails = options.receiptDetails;
+  if (options.buyerAddress !== undefined) {
+    body.buyerAddress = options.buyerAddress;
   }
 
   if (options.buyerName !== undefined) {
@@ -145,11 +215,11 @@ function initializeCheckout(root) {
   const subtotalElement = root.querySelector("[data-checkout-subtotal]");
   const feeElement = root.querySelector("[data-checkout-fee]");
   const totalElement = root.querySelector("[data-checkout-total]");
-  const receiptDetailsInput = root.querySelector("[data-checkout-receipt-details]");
+  const buyerAddressInput = root.querySelector("[data-checkout-buyer-address]");
   const buyerNameInput = root.querySelector("[data-checkout-buyer-name]");
   const buyerPostalCodeInput = root.querySelector("[data-checkout-buyer-postal-code]");
   const buyerCityInput = root.querySelector("[data-checkout-buyer-city]");
-  const buyerCityOptions = root.querySelector("[data-checkout-buyer-city-options]");
+  const buyerMessage = root.querySelector("[data-checkout-buyer-message]");
   const finalizeButton = root.querySelector("[data-checkout-finalize]");
   const modal = root.querySelector("[data-checkout-modal]");
   const modalBackButton = root.querySelector("[data-checkout-modal-back]");
@@ -169,7 +239,7 @@ function initializeCheckout(root) {
   const receiptDate = document.querySelector("[data-checkout-receipt-date]");
   const receiptBuyerSection = document.querySelector("[data-checkout-receipt-buyer-section]");
   const receiptBuyerText = document.querySelector("[data-checkout-receipt-buyer-text]");
-  const receiptDetailsText = document.querySelector("[data-checkout-receipt-details-text]");
+  const receiptAddressText = document.querySelector("[data-checkout-receipt-address-text]");
   const receiptLines = document.querySelector("[data-checkout-receipt-lines]");
   const receiptSubtotal = document.querySelector("[data-checkout-receipt-subtotal]");
   const receiptFee = document.querySelector("[data-checkout-receipt-fee]");
@@ -198,8 +268,8 @@ function initializeCheckout(root) {
     itemIds.forEach(itemId => conflictItemIds.add(Number(itemId)));
   }
 
-  function getReceiptDetails() {
-    return receiptDetailsInput?.value.trim() || "";
+  function getBuyerAddress() {
+    return buyerAddressInput?.value.trim() || "";
   }
 
   function getBuyerDetails() {
@@ -208,6 +278,30 @@ function initializeCheckout(root) {
       buyerPostalCode: buyerPostalCodeInput?.value.trim() || "",
       buyerCity: buyerCityInput?.value.trim() || ""
     };
+  }
+
+  function setBuyerMessage(text) {
+    if (buyerMessage) {
+      buyerMessage.textContent = text;
+    }
+  }
+
+  function validateBuyerDetails() {
+    const buyerDetails = getBuyerDetails();
+    const missingFields = [
+      [buyerDetails.buyerName, buyerNameInput],
+      [buyerDetails.buyerPostalCode, buyerPostalCodeInput],
+      [buyerDetails.buyerCity, buyerCityInput]
+    ].filter(([value]) => value.length === 0);
+
+    if (missingFields.length === 0) {
+      setBuyerMessage("");
+      return true;
+    }
+
+    setBuyerMessage("Le nom, le code postal et la ville de l'acheteur sont obligatoires.");
+    missingFields[0][1]?.focus();
+    return false;
   }
 
   function getPaymentDetails() {
@@ -269,7 +363,7 @@ function initializeCheckout(root) {
 
   function getSaleDetails() {
     return {
-      receiptDetails: getReceiptDetails(),
+      buyerAddress: getBuyerAddress(),
       ...getBuyerDetails(),
       ...getPaymentDetails()
     };
@@ -285,33 +379,9 @@ function initializeCheckout(root) {
       .join(" - ");
   }
 
-  async function updateBuyerCityOptions() {
-    if (!buyerPostalCodeInput || !buyerCityOptions) {
-      return;
-    }
-
-    const postalCode = buyerPostalCodeInput.value.trim();
-    buyerCityOptions.replaceChildren();
-
-    if (!/^38\d{3}$/.test(postalCode)) {
-      return;
-    }
-
-    const cityMap = await loadCheckoutCitiesByPostalCode();
-    if (buyerPostalCodeInput.value.trim() !== postalCode) {
-      return;
-    }
-
-    for (const city of cityMap[postalCode] || []) {
-      const option = document.createElement("option");
-      option.value = city;
-      buyerCityOptions.appendChild(option);
-    }
-  }
-
   function updateSavePrintButtonState() {
     if (savePrintButton) {
-      savePrintButton.disabled = getReceiptDetails().length === 0;
+      savePrintButton.disabled = getBuyerAddress().length === 0;
     }
   }
 
@@ -368,8 +438,8 @@ function initializeCheckout(root) {
       receiptBuyerText.textContent = buyerDetails;
     }
 
-    if (receiptDetailsText) {
-      receiptDetailsText.textContent = saleDetails.receiptDetails;
+    if (receiptAddressText) {
+      receiptAddressText.textContent = saleDetails.buyerAddress;
     }
 
     receiptLines.replaceChildren();
@@ -482,12 +552,17 @@ function initializeCheckout(root) {
   }
 
   searchInput.addEventListener("input", renderResults);
-  receiptDetailsInput?.addEventListener("input", updateSavePrintButtonState);
+  buyerAddressInput?.addEventListener("input", updateSavePrintButtonState);
+  [buyerNameInput, buyerPostalCodeInput, buyerCityInput].forEach(input => {
+    input?.addEventListener("input", () => {
+      if (getBuyerDetails().buyerName && getBuyerDetails().buyerPostalCode && getBuyerDetails().buyerCity) {
+        setBuyerMessage("");
+      }
+    });
+  });
   paymentMethodInputs.forEach(input => input.addEventListener("change", updateChequeDetailsVisibility));
   chequeNumberInput?.addEventListener("input", validatePaymentDetails);
   chequeBankNameInput?.addEventListener("input", validatePaymentDetails);
-  buyerPostalCodeInput?.addEventListener("input", updateBuyerCityOptions);
-
   resultsBody.addEventListener("click", event => {
     const row = event.target.closest("[data-checkout-item-id]");
     if (!row) {
@@ -533,6 +608,10 @@ function initializeCheckout(root) {
       return;
     }
 
+    if (!validateBuyerDetails()) {
+      return;
+    }
+
     setMessage("");
     setConflictItems([]);
     renderCart();
@@ -557,6 +636,10 @@ function initializeCheckout(root) {
   modalBackButton?.addEventListener("click", hideModal);
 
   saveSaleButton?.addEventListener("click", async () => {
+    if (!validateBuyerDetails()) {
+      return;
+    }
+
     if (!validatePaymentDetails()) {
       return;
     }
@@ -590,7 +673,11 @@ function initializeCheckout(root) {
 
   savePrintButton?.addEventListener("click", async () => {
     const saleDetails = getSaleDetails();
-    if (saleDetails.receiptDetails.length === 0) {
+    if (saleDetails.buyerAddress.length === 0) {
+      return;
+    }
+
+    if (!validateBuyerDetails()) {
       return;
     }
 
@@ -626,9 +713,10 @@ function initializeCheckout(root) {
   renderCart();
   updateChequeDetailsVisibility();
   updateSavePrintButtonState();
-  updateBuyerCityOptions();
 }
 
+document.querySelectorAll("[data-postal-city-root]").forEach(initializePostalCityRoot);
+document.querySelectorAll("[data-whole-euro-input]").forEach(initializeWholeEuroInput);
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);
 
 function initializeReconciliation(root) {

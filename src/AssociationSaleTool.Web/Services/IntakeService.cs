@@ -63,6 +63,8 @@ public sealed class IntakeService
 
         var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
         var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
+        var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
 
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
@@ -81,6 +83,8 @@ public sealed class IntakeService
             Email = NormalizeOptional(request.Email),
             Phone = normalizedPhone,
             PostalAddress = normalizedPostalAddress,
+            PostalCode = normalizedPostalCode,
+            City = normalizedCity,
             FeePaidCents = request.FeePaidCents,
             Notes = NormalizeOptional(request.Notes)
         };
@@ -88,6 +92,73 @@ public sealed class IntakeService
         _dbContext.Sellers.Add(seller);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return CreateSellerResult.Created(seller);
+    }
+
+    public async Task<CreateSellerWithItemsResult> CreateSellerWithItemsAsync(
+        CreateSellerWithItemsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
+        {
+            throw new InvalidOperationException("Seller master data is locked outside presale.");
+        }
+
+        if (request.Rows.Count == 0)
+        {
+            throw new ArgumentException("At least one item row is required.", nameof(request.Rows));
+        }
+
+        foreach (var row in request.Rows)
+        {
+            EnsureSellerPriceIsWholeEuro(row.SellerPriceCents);
+        }
+
+        var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
+        var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
+        var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
+        EnsureSellerFeePaidIsValid(request.FeePaidCents);
+
+        var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
+            new SellerDuplicateCheckRequest(request.FirstName, request.LastName, normalizedPhone),
+            cancellationToken);
+        if (duplicateMatches.Count > 0)
+        {
+            return CreateSellerWithItemsResult.ExistingSellerFound(duplicateMatches);
+        }
+
+        var seller = new SellerEntity
+        {
+            SellerCode = SellerCodeGenerator.GetCodeAt(await _dbContext.Sellers.CountAsync(cancellationToken)),
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            Email = NormalizeOptional(request.Email),
+            Phone = normalizedPhone,
+            PostalAddress = normalizedPostalAddress,
+            PostalCode = normalizedPostalCode,
+            City = normalizedCity,
+            FeePaidCents = request.FeePaidCents,
+            Notes = NormalizeOptional(request.Notes)
+        };
+
+        var status = request.IntakeMode == IntakeMode.EmailPreregistration ? "registered" : "in_stock";
+        for (var index = 0; index < request.Rows.Count; index++)
+        {
+            var row = request.Rows[index];
+            var itemNumber = index + 1;
+            seller.Items.Add(new ItemEntity
+            {
+                Reference = ItemReference.Format(seller.SellerCode, itemNumber),
+                ItemNumber = itemNumber,
+                Title = row.Title.Trim(),
+                SellerPriceCents = row.SellerPriceCents,
+                Status = status
+            });
+        }
+
+        _dbContext.Sellers.Add(seller);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return CreateSellerWithItemsResult.Created(seller);
     }
 
     public async Task<List<ItemEntity>> CreateItemBatchAsync(CreateItemBatchRequest request, CancellationToken cancellationToken = default)
@@ -147,6 +218,8 @@ public sealed class IntakeService
 
         var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
         var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
+        var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
 
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
@@ -162,6 +235,8 @@ public sealed class IntakeService
         seller.Email = NormalizeOptional(request.Email);
         seller.Phone = normalizedPhone;
         seller.PostalAddress = normalizedPostalAddress;
+        seller.PostalCode = normalizedPostalCode;
+        seller.City = normalizedCity;
         seller.FeePaidCents = request.FeePaidCents;
         seller.Notes = NormalizeOptional(request.Notes);
 

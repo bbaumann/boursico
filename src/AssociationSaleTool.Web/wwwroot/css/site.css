@@ -576,6 +576,12 @@ textarea {
   font-weight: 700;
 }
 
+.seller-sheet-total-row {
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
 .checkout-finalize-actions {
   margin-top: 1.25rem;
   justify-content: flex-end;

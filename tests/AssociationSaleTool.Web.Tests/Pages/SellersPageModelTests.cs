@@ -32,7 +32,7 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
-    public void SellerCreateAndEditInputsRequirePhoneAndPostalAddress()
+    public void SellerCreateAndEditInputsRequirePhoneAddressPostalCodeAndCity()
     {
         AssertRequiredContactMessages(new CreateModel.InputModel
         {
@@ -668,5 +668,7 @@ public sealed class SellersPageModelTests
 
         Assert.Contains(validationResults, result => result.ErrorMessage == "Le téléphone est obligatoire.");
         Assert.Contains(validationResults, result => result.ErrorMessage == "L'adresse postale est obligatoire.");
+        Assert.Contains(validationResults, result => result.ErrorMessage == "Le code postal est obligatoire.");
+        Assert.Contains(validationResults, result => result.ErrorMessage == "La ville est obligatoire.");
     }
 }

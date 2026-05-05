@@ -19,7 +19,7 @@ The list shows sale id, sale timestamp, item count, subtotal, checkout fee, tota
 - sale id
 - item reference
 - item title
-- receipt details
+- buyer address
 
 The first version can load the displayed sale set server-side and filter it client-side, matching the existing checkout and reconciliation table style. Newest sales appear first.
 
@@ -31,7 +31,7 @@ It shows:
 
 - sale id
 - sold timestamp
-- receipt details when present
+- buyer address when present
 - item references
 - item titles
 - seller price at sale time

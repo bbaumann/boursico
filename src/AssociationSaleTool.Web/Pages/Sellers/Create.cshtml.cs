@@ -42,7 +42,16 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
         }
 
         var result = await intakeService.CreateSellerAsync(
-            new CreateSellerRequest(Input.FirstName, Input.LastName, Input.Email, Input.Phone, Input.PostalAddress, Input.Notes, feePaidCents),
+            new CreateSellerRequest(
+                Input.FirstName,
+                Input.LastName,
+                Input.Email,
+                Input.Phone,
+                Input.PostalAddress,
+                Input.Notes,
+                feePaidCents,
+                Input.PostalCode,
+                Input.City),
             cancellationToken);
 
         if (result.Outcome == CreateSellerOutcome.DuplicateFound)
@@ -98,6 +107,12 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
 
         [Required(ErrorMessage = "L'adresse postale est obligatoire.")]
         public string PostalAddress { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Le code postal est obligatoire.")]
+        public string PostalCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La ville est obligatoire.")]
+        public string City { get; set; } = string.Empty;
 
         public string? FeePaid { get; set; } = "0";
 

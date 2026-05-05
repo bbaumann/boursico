@@ -49,11 +49,11 @@
         </dl>
     </section>
 
-    @if (!string.IsNullOrWhiteSpace(Model.Sale.ReceiptDetails))
+    @if (!string.IsNullOrWhiteSpace(Model.Sale.BuyerAddress))
     {
         <section class="subsection">
-            <h2>Détails du reçu</h2>
-            <p>@Model.Sale.ReceiptDetails</p>
+            <h2>Adresse</h2>
+            <p>@Model.Sale.BuyerAddress</p>
         </section>
     }
 

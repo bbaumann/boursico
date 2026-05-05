@@ -93,7 +93,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerPriceInputsUseWholeEuroBrowserConstraints()
+    public async Task SellerPriceInputsUseFrenchWholeEuroBrowserValidation()
     {
         var client = _factory.CreateClient();
         await SetSalePhaseAsync(SalePhase.Presale);
@@ -134,10 +134,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         AssertInputIncludesAttributes(
             sellerContent,
             "Input.Rows[0].SellerPrice",
-            ("type", "number"),
-            ("min", "0"),
-            ("step", "1"),
-            ("inputmode", "numeric"));
+            ("type", "text"),
+            ("inputmode", "numeric"),
+            ("pattern", "[0-9]+"),
+            ("data-whole-euro-input", "true"),
+            ("data-whole-euro-message", "Le prix vendeur doit être un montant entier en euros."));
 
         var editResponse = await client.GetAsync($"/articles/{itemId}/modifier");
         editResponse.EnsureSuccessStatusCode();
@@ -145,10 +146,50 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         AssertInputIncludesAttributes(
             editContent,
             "Input.SellerPrice",
-            ("type", "number"),
-            ("min", "0"),
-            ("step", "1"),
-            ("inputmode", "numeric"));
+            ("type", "text"),
+            ("inputmode", "numeric"),
+            ("pattern", "[0-9]+"),
+            ("data-whole-euro-input", "true"),
+            ("data-whole-euro-message", "Le prix vendeur doit être un montant entier en euros."));
+    }
+
+    [Fact]
+    public async Task SellerFormsRenderPostalCodeAndCitySuggestionFields()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Sellers.Add(new SellerEntity
+            {
+                SellerCode = "SF-001",
+                FirstName = "Sophie",
+                LastName = "Formulaire",
+                Phone = "0102030405",
+                PostalAddress = "1 rue des Tests"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var createResponse = await client.GetAsync("/vendeurs/creer");
+        createResponse.EnsureSuccessStatusCode();
+        var createContent = WebUtility.HtmlDecode(await createResponse.Content.ReadAsStringAsync());
+        Assert.Contains("data-postal-city-root", createContent);
+        Assert.Contains("name=\"Input.PostalCode\"", createContent);
+        Assert.Contains("name=\"Input.City\"", createContent);
+        Assert.Contains("data-city-options", createContent);
+        Assert.Contains("Code postal", createContent);
+        Assert.Contains("Ville", createContent);
+
+        var sellerId = await GetSellerIdByCodeAsync("SF-001");
+        var editResponse = await client.GetAsync($"/vendeurs/{sellerId}/modifier");
+        editResponse.EnsureSuccessStatusCode();
+        var editContent = WebUtility.HtmlDecode(await editResponse.Content.ReadAsStringAsync());
+        Assert.Contains("name=\"Input.PostalCode\"", editContent);
+        Assert.Contains("name=\"Input.City\"", editContent);
+        Assert.Contains("data-postal-city-root", editContent);
     }
 
     [Fact]
@@ -181,7 +222,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 ("Input.FirstName", "Ariane"),
                 ("Input.LastName", "Doublon"),
                 ("Input.Phone", "0123"),
-                ("Input.PostalAddress", "2 rue des Tests")));
+                ("Input.PostalAddress", "2 rue des Tests"),
+                ("Input.PostalCode", "38100"),
+                ("Input.City", "Grenoble")));
 
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
@@ -1440,6 +1483,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("padding: 0.6mm 1.2mm;", content);
         Assert.Contains("font-size: 8pt;", content);
         Assert.Contains("font-size: 7.5pt;", content);
+        Assert.Contains(".seller-sheet-total-row", content);
     }
 
     [Fact]
@@ -1754,7 +1798,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("/api/caisse/validation", content);
         Assert.Contains("/api/ventes", content);
         Assert.Contains("checkout-conflict-row", content);
-        Assert.Contains("receiptDetails", content);
+        Assert.Contains("buyerAddress", content);
         Assert.Contains("paymentMethod", content);
         Assert.Contains("chequeNumber", content);
         Assert.Contains("chequeBankName", content);
@@ -2025,6 +2069,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-buyer-postal-code", content);
         Assert.Contains("data-checkout-buyer-city", content);
         Assert.Contains("data-checkout-buyer-city-options", content);
+        Assert.Contains("data-checkout-buyer-message", content);
+        Assert.Contains("data-postal-city-root", content);
+        Assert.Contains("data-postal-code-input", content);
+        Assert.Contains("data-city-input", content);
         Assert.Contains("Nom ou structure", content);
         Assert.Contains("Code postal", content);
         Assert.Contains("Ville", content);
@@ -2038,8 +2086,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-modal-count", content);
         Assert.Contains("data-checkout-save-sale", content);
         Assert.Contains("Enregistrer la vente", content);
-        Assert.Contains("data-checkout-receipt-details", content);
-        Assert.Contains("Détails du reçu", content);
+        Assert.Contains("data-checkout-buyer-address", content);
+        Assert.Contains("Adresse", content);
+        Assert.DoesNotContain("Détails du reçu", content);
         Assert.Contains("data-checkout-save-print", content);
         Assert.Contains("Enregistrer et imprimer", content);
         Assert.Contains("Mode de paiement", content);
@@ -2251,7 +2300,16 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             itemId = item.Id;
         }
 
-        var response = await client.PostAsJsonAsync("/api/ventes", new { itemIds = new[] { itemId }, paymentMethod = "cash" });
+        var response = await client.PostAsJsonAsync(
+            "/api/ventes",
+            new
+            {
+                itemIds = new[] { itemId },
+                buyerName = "Client vente",
+                buyerPostalCode = "38100",
+                buyerCity = "Grenoble",
+                paymentMethod = "cash"
+            });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -2415,7 +2473,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     private async Task<(long SaleId, string FirstReference, string SecondReference)> SeedSalesViewSaleAsync(
-        string? receiptDetails,
+        string? buyerAddress,
         DateTime? firstLineCorrectedAt = null)
     {
         using var scope = _factory.Services.CreateScope();
@@ -2460,7 +2518,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             SubtotalSellerPriceCents = 1500,
             CheckoutFeeCents = 150,
             TotalPaidCents = 1650,
-            ReceiptDetails = receiptDetails,
+            BuyerAddress = buyerAddress,
             SaleLines =
             [
                 new SaleLineEntity
@@ -2488,6 +2546,16 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await new SalePhaseService(dbContext).SetPhaseAsync(phase);
+    }
+
+    private async Task<long> GetSellerIdByCodeAsync(string sellerCode)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return await dbContext.Sellers
+            .Where(x => x.SellerCode == sellerCode)
+            .Select(x => x.Id)
+            .SingleAsync();
     }
 
     private async Task EnsureSoldItemsHaveSaleLinesAsync()
@@ -2569,7 +2637,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SalesApiPersistsReceiptDetails()
+    public async Task SalesApiPersistsBuyerAddress()
     {
         var client = _factory.CreateClient();
         long itemId;
@@ -2605,7 +2673,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var response = await client.PostAsJsonAsync(
             "/api/ventes",
-            new { itemIds = new[] { itemId }, receiptDetails = "  Association sportive  " });
+            new
+            {
+                itemIds = new[] { itemId },
+                buyerName = "  Association sportive  ",
+                buyerPostalCode = "  38100  ",
+                buyerCity = " Grenoble ",
+                buyerAddress = "  Association sportive  "
+            });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -2613,7 +2688,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var sale = await dbContext.Sales.Include(x => x.SaleLines).SingleAsync(x => x.SaleLines.Any(line => line.ItemId == itemId));
-            Assert.Equal("Association sportive", sale.ReceiptDetails);
+            Assert.Equal("Association sportive", sale.BuyerAddress);
         }
     }
 
@@ -2657,6 +2732,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                buyerName = "Sonia Cheque",
+                buyerPostalCode = "38100",
+                buyerCity = "Grenoble",
                 paymentMethod = "cheque",
                 chequeNumber = "  CH-2026  ",
                 chequeBankName = "  Crédit Agricole  "
@@ -2714,6 +2792,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                buyerName = "Sonia Cheque",
+                buyerPostalCode = "38100",
+                buyerCity = "Grenoble",
                 paymentMethod = "cheque",
                 chequeNumber = "CH-2026",
                 chequeBankName = " "
@@ -2725,6 +2806,66 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.False(document.RootElement.GetProperty("saved").GetBoolean());
         Assert.True(document.RootElement.GetProperty("isValidationError").GetBoolean());
         Assert.Contains("numéro de chèque", document.RootElement.GetProperty("message").GetString());
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Empty(await dbContext.Sales.Where(x => x.SaleLines.Any(line => line.ItemId == itemId)).ToListAsync());
+            Assert.Equal("in_stock", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+        }
+    }
+
+    [Fact]
+    public async Task SalesApiRejectsMissingBuyerDetails()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SV-007",
+                FirstName = "Sonia",
+                LastName = "AcheteurObligatoire",
+                Email = "sonia.acheteur.obligatoire@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "SV-007-001",
+                ItemNumber = 1,
+                Title = "Jeu sans acheteur",
+                SellerPriceCents = 1500,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.PostAsJsonAsync(
+            "/api/ventes",
+            new
+            {
+                itemIds = new[] { itemId },
+                buyerName = "Sonia",
+                buyerPostalCode = "38100",
+                buyerCity = " "
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.False(document.RootElement.GetProperty("saved").GetBoolean());
+        Assert.True(document.RootElement.GetProperty("isValidationError").GetBoolean());
+        Assert.Contains("nom, le code postal et la ville", document.RootElement.GetProperty("message").GetString());
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -2826,7 +2967,15 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             itemId = item.Id;
         }
 
-        var response = await client.PostAsJsonAsync("/api/ventes", new { itemIds = new[] { itemId } });
+        var response = await client.PostAsJsonAsync(
+            "/api/ventes",
+            new
+            {
+                itemIds = new[] { itemId },
+                buyerName = "Client conflit",
+                buyerPostalCode = "38100",
+                buyerCity = "Grenoble"
+            });
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 

@@ -8,7 +8,7 @@ namespace AssociationSaleTool.Web.Tests.Data;
 public class AppDbContextModelTests
 {
     [Fact]
-    public void SellerStoresRequiredPhoneAndPostalAddressColumns()
+    public void SellerStoresRequiredContactColumns()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite("Data Source=:memory:")
@@ -20,8 +20,12 @@ public class AppDbContextModelTests
         Assert.NotNull(entityType);
         var phone = Assert.Single(entityType!.GetProperties(), property => property.GetColumnName() == "phone");
         var postalAddress = Assert.Single(entityType.GetProperties(), property => property.GetColumnName() == "postal_address");
+        var postalCode = Assert.Single(entityType.GetProperties(), property => property.GetColumnName() == "postal_code");
+        var city = Assert.Single(entityType.GetProperties(), property => property.GetColumnName() == "city");
         Assert.False(phone.IsNullable);
         Assert.False(postalAddress.IsNullable);
+        Assert.False(postalCode.IsNullable);
+        Assert.False(city.IsNullable);
     }
 
     [Fact]
@@ -41,7 +45,7 @@ public class AppDbContextModelTests
     }
 
     [Fact]
-    public void SellerTableRequiresPhoneAndPostalAddress()
+    public void SellerTableRequiresContactFields()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
@@ -58,6 +62,8 @@ public class AppDbContextModelTests
         var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
         Assert.Contains("\"phone\" TEXT NOT NULL", createTableSql);
         Assert.Contains("\"postal_address\" TEXT NOT NULL", createTableSql);
+        Assert.Contains("\"postal_code\" TEXT NOT NULL", createTableSql);
+        Assert.Contains("\"city\" TEXT NOT NULL", createTableSql);
     }
 
     [Fact]
@@ -176,6 +182,8 @@ public class AppDbContextModelTests
         Assert.Contains(saleEntityType!.GetProperties(), property => property.GetColumnName() == "buyer_name");
         Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "buyer_postal_code");
         Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "buyer_city");
+        Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "buyer_address");
+        Assert.DoesNotContain(saleEntityType.GetProperties(), property => property.GetColumnName() == "receipt_details");
     }
 
     [Fact]

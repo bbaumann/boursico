@@ -21,7 +21,7 @@ public sealed class SalesController(CheckoutService checkoutService) : Controlle
 
         var result = await checkoutService.SaveSaleAsync(
             request.ItemIds,
-            request.ReceiptDetails,
+            request.BuyerAddress,
             request.BuyerName,
             request.BuyerPostalCode,
             request.BuyerCity,

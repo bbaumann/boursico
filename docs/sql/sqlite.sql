@@ -11,7 +11,12 @@ CREATE TABLE seller (
     email TEXT,
     phone TEXT NOT NULL,
     postal_address TEXT NOT NULL,
+    postal_code TEXT NOT NULL,
+    city TEXT NOT NULL,
+    fee_paid_cents INTEGER NOT NULL DEFAULT 0,
     notes TEXT,
+    CONSTRAINT ck_seller_fee_paid_cents
+        CHECK (fee_paid_cents >= 0),
     CONSTRAINT uq_seller_code UNIQUE (seller_code)
 );
 
@@ -45,7 +50,10 @@ CREATE TABLE sale (
     buyer_name TEXT,
     buyer_postal_code TEXT,
     buyer_city TEXT,
-    receipt_details TEXT,
+    buyer_address TEXT,
+    payment_method TEXT,
+    cheque_number TEXT,
+    cheque_bank_name TEXT,
     CONSTRAINT ck_sale_subtotal_seller_price_cents
         CHECK (subtotal_seller_price_cents >= 0),
     CONSTRAINT ck_sale_checkout_fee_cents

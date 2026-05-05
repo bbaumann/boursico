@@ -44,7 +44,7 @@
                     <th>Nom</th>
                     <th>E-mail</th>
                     <th>Téléphone</th>
-                    <th>Adresse postale</th>
+                    <th>Adresse</th>
                     <th>Articles</th>
                     <th></th>
                 </tr>
@@ -57,7 +57,14 @@
                     <td>@seller.FirstName @seller.LastName</td>
                     <td>@(seller.Email ?? "—")</td>
                     <td>@seller.Phone</td>
-                    <td>@seller.PostalAddress</td>
+                    <td>
+                        @seller.PostalAddress
+                        @if (!string.IsNullOrWhiteSpace(seller.PostalCode) || !string.IsNullOrWhiteSpace(seller.City))
+                        {
+                            <br />
+                            <span>@seller.PostalCode @seller.City</span>
+                        }
+                    </td>
                     <td>@seller.Items.Count</td>
                     <td><a asp-page="/Sellers/Details" asp-route-id="@seller.Id">Ouvrir</a></td>
                 </tr>

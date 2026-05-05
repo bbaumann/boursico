@@ -21,6 +21,8 @@ Suggested fields:
 - optional email
 - required phone number
 - required postal address
+- required postal code
+- required city
 
 ### Item
 
@@ -47,10 +49,10 @@ Suggested fields:
 - subtotal seller price
 - checkout fee
 - total paid
-- optional buyer name or organization
-- optional buyer postal code
-- optional buyer city
-- optional `receipt_details` text
+- required buyer name or organization
+- required buyer postal code
+- required buyer city
+- optional `buyer_address` text
 
 ### SaleLine
 
@@ -122,28 +124,28 @@ Persistence rule:
 
 ## Buyer Model
 
-A sale may store optional structured buyer details:
+A sale stores required structured buyer details:
 
 - `buyer_name`
 - `buyer_postal_code`
 - `buyer_city`
 
-These fields identify the person or structure associated with the checkout. They are stored separately from receipt text so sale history can search and display the buyer without parsing `receipt_details`.
+These fields identify the person or structure associated with the checkout. They are stored separately from the optional address so sale history can search and display the buyer without parsing `buyer_address`.
 
-The checkout UI offers local city suggestions only for Isère postal codes (`38xxx`). Other French departments use free-text city entry.
+The checkout UI offers local city suggestions only for Isère postal codes (`38xxx`) and prefills the city when exactly one known city matches the postal code. Other French departments use free-text city entry.
 
 ## Receipt Model
 
-V1 uses one optional receipt text field:
+V1 uses one optional receipt address text field:
 
-- `receipt_details`
+- `buyer_address`
 
 Meaning:
 
-- if `receipt_details` is null or empty, no receipt was requested
-- if `receipt_details` is filled, a receipt was requested for later reimbursement handling
+- if `buyer_address` is null or empty, no receipt was requested
+- if `buyer_address` is filled, a receipt was requested for later reimbursement handling
 
-The field may contain the customer name, organization, address, or any other text the operator needs to print on the receipt.
+The operator-facing field is labeled `Adresse`. It may contain the customer address or any other address text the operator needs to print on the receipt or invoice.
 
 V1 does not track a separate:
 

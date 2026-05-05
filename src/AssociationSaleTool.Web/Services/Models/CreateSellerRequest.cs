@@ -7,4 +7,6 @@ public sealed record CreateSellerRequest(
     string? Phone,
     string? PostalAddress,
     string? Notes,
-    int FeePaidCents = 0);
+    int FeePaidCents = 0,
+    string? PostalCode = null,
+    string? City = null);

@@ -27,12 +27,12 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Assign one unique reference per item
 - Store one seller-set printed price per item
 - Search items by `reference + title` using a live-filtered table
-- Capture optional buyer name or organization, postal code, and city on the checkout page
+- Capture required buyer name or organization, postal code, and city on the checkout page
 - Add selected items to a cart
 - Compute subtotal, checkout fee, and final bill total automatically
 - Save a sale as paid
 - Store sale subtotal, checkout fee, and total paid
-- Optionally print a receipt from one receipt-details field
+- Optionally print a receipt from one `Adresse` field
 - View saved sales in read-only mode from the checkout area
 
 ### Sale-Day UX Constraints
@@ -75,6 +75,8 @@ The following seller fields must no longer be editable in normal operations:
 - `email`
 - `phone`
 - `postal_address`
+- `postal_code`
+- `city`
 - `notes`
 
 The following item fields must no longer be editable in normal operations:
@@ -95,8 +97,8 @@ When seller and item master data are locked, only workflow-driven status changes
 ### Expected Checkout Flow
 
 1. Checkout loads a lightweight item catalog into page memory when the page opens.
-2. Operator optionally fills the buyer name or organization, postal code, and city.
-3. When the postal code is in Isère (`38xxx`), the city field offers known city suggestions from the local city lookup data. For other French departments, the city remains free text.
+2. Operator fills the required buyer name or organization, postal code, and city.
+3. When the postal code is in Isère (`38xxx`), the city field offers known city suggestions from the local city lookup data and is prefilled when the postal code has exactly one known city. For other French departments, the city remains free text.
 4. Operator types in the item lookup field.
 5. The item table is filtered on each keystroke using `reference + title` matching.
 6. Operator selects the correct item from the filtered table.
@@ -121,9 +123,9 @@ Operators can inspect saved sales from the checkout area without admin unlock:
 - `/caisse` remains the default sale-creation page
 - `/caisse` links to `/caisse/ventes` with a prominent `LISTE DES VENTES` action
 - `/caisse/ventes` lists saved sales newest first
-- the list supports client-side filtering by sale id, buyer details, item reference, item title, receipt details, payment method, cheque number, and bank name
+- the list supports client-side filtering by sale id, buyer details, item reference, item title, receipt address details, payment method, cheque number, and bank name
 - `/caisse/ventes/{id}` shows one sale in read-only detail mode
-- the detail view shows sale id, sold timestamp, buyer details when present, payment method, cheque traceability when present, receipt details when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
+- the detail view shows sale id, sold timestamp, buyer details, payment method, cheque traceability when present, receipt address details when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
 - corrected sale lines remain visible as historical sale facts and are labeled `Corrigée`
 - sale totals stay historical and are not recalculated after corrections
 
@@ -157,7 +159,7 @@ The correction:
 
 V1 receipt handling is intentionally simple:
 
-- the checkout form shows one optional receipt-details text field
+- the checkout form shows one optional `Adresse` text field for receipt or invoice printing
 - the field is empty by default
 - if the operator leaves it empty, `Save and print receipt` stays disabled in the finalization modal
 - if the operator fills it, `Save and print receipt` becomes available in the finalization modal

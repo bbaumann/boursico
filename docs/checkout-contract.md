@@ -36,15 +36,15 @@ The server also checks the event sale phase. Checkout validation and sale persis
 
 ## Buyer Details
 
-The top of the checkout content includes optional buyer information fields before the item lookup:
+The top of the checkout content includes required buyer information fields before the item lookup:
 
 - buyer name or organization
 - postal code
 - city
 
-The postal code input is numeric. When the postal code is an Isère code (`38xxx`), the city input offers a dropdown of matching cities from local static data generated from the official French Geo API commune dataset for department 38. For other French departments, the city input remains free text.
+The postal code input is numeric. When the postal code is an Isère code (`38xxx`), the city input offers a dropdown of matching cities from local static data generated from the official French Geo API commune dataset for department 38. When one city matches the postal code, the city field is prefilled. For other French departments, the city input remains free text.
 
-Buyer details are persisted on the sale when the operator saves. Blank buyer fields are stored as null. Buyer details are separate from `receipt_details`; filling buyer details alone does not mean a receipt was requested.
+Buyer details are persisted on the sale when the operator saves. The sale is rejected if buyer name, postal code, or city is blank. Buyer details are separate from the optional `buyer_address`; filling name, postal code, and city alone does not mean a receipt was requested.
 
 The checkout lookup is not an autocomplete widget.
 
@@ -133,7 +133,7 @@ The modal has exactly three actions:
 
 `Save and print receipt`
 
-- is disabled unless `receipt_details` was filled on the checkout page
+- is disabled unless the checkout `Adresse` field, stored internally as `buyer_address`, was filled on the checkout page
 - performs a second authoritative validation at save time
 - persists the sale if validation succeeds
 - opens the browser print dialog
@@ -164,7 +164,7 @@ If save-time validation fails because the event is in `post_sale`, no cart line 
 
 ## Receipt Handling
 
-- the checkout form has one optional `receipt_details` field
+- the checkout form has one optional operator-facing `Adresse` field, stored internally as `buyer_address`
 - if it is empty, no receipt action is available in the finalization modal
 - if it is filled, `Save and print receipt` becomes available
 - there is no separate receipt-requested flag

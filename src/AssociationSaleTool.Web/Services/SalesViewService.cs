@@ -48,7 +48,7 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.BuyerName,
             sale.BuyerPostalCode,
             sale.BuyerCity,
-            !string.IsNullOrWhiteSpace(sale.ReceiptDetails),
+            !string.IsNullOrWhiteSpace(sale.BuyerAddress),
             SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
             BuildSearchText(sale));
     }
@@ -74,7 +74,7 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.BuyerName,
             sale.BuyerPostalCode,
             sale.BuyerCity,
-            sale.ReceiptDetails,
+            sale.BuyerAddress,
             SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
             sale.ChequeNumber,
             sale.ChequeBankName,
@@ -89,7 +89,7 @@ public sealed class SalesViewService(AppDbContext dbContext)
             sale.BuyerName ?? string.Empty,
             sale.BuyerPostalCode ?? string.Empty,
             sale.BuyerCity ?? string.Empty,
-            sale.ReceiptDetails ?? string.Empty,
+            sale.BuyerAddress ?? string.Empty,
             SalePaymentMethods.GetDisplayLabel(sale.PaymentMethod),
             sale.ChequeNumber ?? string.Empty,
             sale.ChequeBankName ?? string.Empty

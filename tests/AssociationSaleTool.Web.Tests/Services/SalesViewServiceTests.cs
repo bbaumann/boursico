@@ -44,7 +44,7 @@ public sealed class SalesViewServiceTests
                 Assert.Equal(1700, first.SubtotalSellerPriceCents);
                 Assert.Equal(170, first.CheckoutFeeCents);
                 Assert.Equal(1870, first.TotalPaidCents);
-                Assert.False(first.HasReceiptDetails);
+                Assert.False(first.HasBuyerAddress);
                 Assert.Equal("Espèces", first.PaymentMethodLabel);
                 Assert.Contains(newerSale.Id.ToString(), first.SearchText);
                 Assert.Contains("espèces", first.SearchText);
@@ -56,7 +56,7 @@ public sealed class SalesViewServiceTests
             {
                 Assert.Equal(olderSale.Id, second.SaleId);
                 Assert.Equal(1, second.ItemCount);
-                Assert.True(second.HasReceiptDetails);
+                Assert.True(second.HasBuyerAddress);
                 Assert.Equal("Chèque", second.PaymentMethodLabel);
                 Assert.Contains("association sportive", second.SearchText);
                 Assert.Contains("987654", second.SearchText);
@@ -85,7 +85,7 @@ public sealed class SalesViewServiceTests
 
         Assert.NotNull(detail);
         Assert.Equal(sale.Id, detail!.SaleId);
-        Assert.Equal("Client recu", detail.ReceiptDetails);
+        Assert.Equal("Client recu", detail.BuyerAddress);
         Assert.Equal(1500, detail.SubtotalSellerPriceCents);
         Assert.Equal(150, detail.CheckoutFeeCents);
         Assert.Equal(1650, detail.TotalPaidCents);
@@ -159,7 +159,7 @@ public sealed class SalesViewServiceTests
     private static async Task<SaleEntity> SeedSaleAsync(
         AppDbContext context,
         DateTime soldAt,
-        string? receiptDetails,
+        string? buyerAddress,
         string? paymentMethod = SalePaymentMethods.Card,
         string? chequeNumber = null,
         string? chequeBankName = null,
@@ -181,7 +181,7 @@ public sealed class SalesViewServiceTests
             SubtotalSellerPriceCents = lines.Sum(x => x.PriceCents),
             CheckoutFeeCents = lines.Sum(x => x.PriceCents) / 10,
             TotalPaidCents = lines.Sum(x => x.PriceCents) + lines.Sum(x => x.PriceCents) / 10,
-            ReceiptDetails = receiptDetails,
+            BuyerAddress = buyerAddress,
             PaymentMethod = paymentMethod,
             ChequeNumber = chequeNumber,
             ChequeBankName = chequeBankName

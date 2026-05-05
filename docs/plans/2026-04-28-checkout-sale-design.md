@@ -18,7 +18,7 @@ This slice includes:
 
 This slice does not include:
 
-- receipt details
+- buyer address and print action
 - print action
 - receipt print view
 - sale listing or cancellation

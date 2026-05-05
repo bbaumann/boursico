@@ -21,7 +21,7 @@
 
 Add tests for:
 
-- `ListSalesAsync` returns newest sales first with item count, totals, receipt flag, and searchable text containing sale id, item reference, title, and receipt details.
+- `ListSalesAsync` returns newest sales first with item count, totals, receipt flag, and searchable text containing sale id, item reference, title, and buyer address.
 - `GetSaleAsync` returns a sale detail with line references, titles, seller prices at sale time, and corrected-line timestamps.
 - `GetSaleAsync` returns `null` when the sale does not exist.
 

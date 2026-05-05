@@ -36,7 +36,7 @@ Relevant design/docs:
 - [Read-Only Sales View Implementation Plan](./plans/2026-05-04-sales-readonly-view.md)
 - [D-032 Expose Read-Only Sales History From Checkout](./decisions.md#d-032-expose-read-only-sales-history-from-checkout)
 
-Saved sales are visible to all operators from `/caisse/ventes`, linked from the checkout page. The view is read-only, searchable by sale id, item reference, item title, and receipt details, and includes corrected sale lines as labeled historical facts. Sale-line correction stays on `/vente/statut`.
+Saved sales are visible to all operators from `/caisse/ventes`, linked from the checkout page. The view is read-only, searchable by sale id, item reference, item title, and buyer address, and includes corrected sale lines as labeled historical facts. Sale-line correction stays on `/vente/statut`.
 
 ## Item Intake
 
