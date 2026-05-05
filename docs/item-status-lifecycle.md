@@ -28,8 +28,9 @@ The following item fields also become read-only in normal operations:
 - `item_number`
 - `seller_id`
 - `title`
-- `seller_price`
-- `sale_price`
+- `seller_price_cents`
+
+V1 stores one item price: `seller_price_cents`. Sold items keep their read-only sale-time snapshot on `sale_line.seller_price_at_sale_cents`.
 
 The status field remains editable only through the workflow transitions defined in this document.
 

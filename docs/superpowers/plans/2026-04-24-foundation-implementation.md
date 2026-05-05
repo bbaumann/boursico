@@ -279,7 +279,8 @@ rtk git commit -m "Add configuration contract"
 - Create: `src/AssociationSaleTool.Web/Domain/Items/ItemStatusTransitions.cs`
 - Create: `src/AssociationSaleTool.Web/Domain/Sellers/SellerCodeGenerator.cs`
 - Create: `src/AssociationSaleTool.Web/Domain/Items/ItemReference.cs`
-- Create: `src/AssociationSaleTool.Web/Domain/Pricing/PriceCalculator.cs`
+- Create: `src/AssociationSaleTool.Web/Domain/Pricing/CheckoutTotals.cs`
+- Create: `src/AssociationSaleTool.Web/Domain/Pricing/CheckoutPricingCalculator.cs`
 - Create: `tests/AssociationSaleTool.Web.Tests/Domain/SellerCodeGeneratorTests.cs`
 - Create: `tests/AssociationSaleTool.Web.Tests/Domain/ItemReferenceTests.cs`
 - Create: `tests/AssociationSaleTool.Web.Tests/Domain/ItemStatusTransitionsTests.cs`
@@ -320,9 +321,13 @@ public void EnforcesDocumentedTransitions(ItemStatus from, ItemStatus to, bool e
 
 ```csharp
 [Fact]
-public void AppliesTwentyPercentMarginToSellerPrice()
+public void CalculateTotals_AppliesTenPercentSaleLevelFee()
 {
-    Assert.Equal(600, PriceCalculator.ToSalePriceCents(500));
+    var totals = CheckoutPricingCalculator.CalculateTotals(500);
+
+    Assert.Equal(500, totals.SubtotalSellerPriceCents);
+    Assert.Equal(50, totals.CheckoutFeeCents);
+    Assert.Equal(550, totals.TotalPaidCents);
 }
 ```
 
@@ -395,9 +400,29 @@ public static class ItemReference
 ```csharp
 namespace AssociationSaleTool.Web.Domain.Pricing;
 
-public static class PriceCalculator
+public readonly record struct CheckoutTotals(
+    int SubtotalSellerPriceCents,
+    int CheckoutFeeCents,
+    int TotalPaidCents);
+```
+
+```csharp
+namespace AssociationSaleTool.Web.Domain.Pricing;
+
+public static class CheckoutPricingCalculator
 {
-    public static int ToSalePriceCents(int sellerPriceCents) => sellerPriceCents + (sellerPriceCents / 5);
+    public static CheckoutTotals CalculateTotals(int subtotalSellerPriceCents)
+    {
+        var checkoutFeeCents = (int)Math.Round(
+            subtotalSellerPriceCents / 10m,
+            0,
+            MidpointRounding.AwayFromZero);
+
+        return new CheckoutTotals(
+            subtotalSellerPriceCents,
+            checkoutFeeCents,
+            subtotalSellerPriceCents + checkoutFeeCents);
+    }
 }
 ```
 
@@ -478,10 +503,9 @@ public sealed class ItemEntity
     public int ItemNumber { get; set; }
     public string Title { get; set; } = string.Empty;
     public int SellerPriceCents { get; set; }
-    public int SalePriceCents { get; set; }
     public string Status { get; set; } = string.Empty;
     public SellerEntity Seller { get; set; } = null!;
-    public SaleLineEntity? SaleLine { get; set; }
+    public List<SaleLineEntity> SaleLines { get; set; } = [];
 }
 ```
 
