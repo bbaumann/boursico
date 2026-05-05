@@ -61,6 +61,7 @@ builder.Services.AddScoped<IntakeService>();
 builder.Services.AddScoped<SellerDuplicateService>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<SalesViewService>();
+builder.Services.AddScoped<DataListService>();
 builder.Services.AddScoped<ReconciliationService>();
 builder.Services.AddScoped<SalePhaseService>();
 builder.Services.AddScoped<SaleCorrectionService>();

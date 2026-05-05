@@ -624,6 +624,138 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task DataListsPageLoadsWithoutAdminGateAndShowsArticlesByDefault()
+    {
+        var client = _factory.CreateClient();
+        var scenario = await SeedDataListScenarioAsync();
+
+        var response = await client.GetAsync("/donnees");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Donn\u00e9es", content);
+        Assert.Contains("Consultation en lecture seule des donn\u00e9es de l'\u00e9v\u00e9nement.", content);
+        Assert.Contains("data-data-list-root", content);
+        Assert.Contains("data-list-filter-bar", content);
+        Assert.Contains("data-list-filter-field-search", content);
+        Assert.Contains("data-list-filter-field-status", content);
+        Assert.Contains("data-data-list-search", content);
+        Assert.Contains("data-data-list-status-filter", content);
+        Assert.Contains(scenario.RegisteredReference, content);
+        Assert.Contains(scenario.InStockReference, content);
+        Assert.Contains(scenario.SoldReference, content);
+        Assert.Contains(scenario.MissingReference, content);
+        Assert.Contains($"href=\"/vendeurs/{scenario.SellerId}\">{scenario.RegisteredReference}</a>", content);
+        Assert.Contains("data-data-list-status=\"registered\"", content);
+        Assert.Contains("data-data-list-status=\"in_stock\"", content);
+        Assert.Contains("data-data-list-status=\"sold\"", content);
+        Assert.Contains("data-data-list-status=\"missing\"", content);
+        Assert.DoesNotContain("Mot de passe administrateur", content);
+        Assert.DoesNotContain("Cr\u00e9er", content);
+        Assert.DoesNotContain("Modifier", content);
+        Assert.DoesNotContain("Supprimer", content);
+    }
+
+    [Fact]
+    public async Task DataListsPageShowsMainNavigationWithDataActive()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/donnees");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        AssertMainNavigationContainsExpectedLinks(content);
+        AssertMainNavigationActive("/donnees", content);
+    }
+
+    [Fact]
+    public async Task DataListsSellersTabSearchesByCodeAndNameOnly()
+    {
+        var client = _factory.CreateClient();
+        var scenario = await SeedDataListScenarioAsync();
+
+        var response = await client.GetAsync("/donnees?onglet=vendeurs");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Vendeurs", content);
+        Assert.Contains(scenario.SellerCode, content);
+        Assert.Contains("Diane Liste", content);
+        Assert.Contains("diane.liste@example.test", content);
+        Assert.Contains("0606060606", content);
+        Assert.Contains("data-list-seller-table", content);
+        Assert.Contains("class=\"data-list-size-xxs data-list-code-column\">Code", content);
+        Assert.Contains("class=\"data-list-size-l data-list-name-column\">Nom", content);
+        Assert.Contains("class=\"data-list-size-l data-list-email-column\">E-mail", content);
+        Assert.Contains("class=\"data-list-size-m data-list-phone-column\">T\u00e9l\u00e9phone", content);
+        Assert.Contains("class=\"data-list-size-xs data-list-count-column\">Enregistr\u00e9s", content);
+        Assert.Contains("class=\"data-list-size-xs data-list-count-column\">En stock", content);
+        Assert.Contains("class=\"data-list-size-xs data-list-count-column\">Manquants", content);
+        Assert.Contains("class=\"data-list-size-xs data-list-fee-column\">Frais", content);
+        Assert.Contains($"href=\"/vendeurs/{scenario.SellerId}\">{scenario.SellerCode}</a>", content);
+        Assert.Contains("0/2\u20ac", content);
+        Assert.DoesNotContain("0.00 EUR / 2.00 EUR", content);
+        Assert.Contains($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste\"", content);
+        Assert.DoesNotContain("diane.liste@example.test\"", content);
+        Assert.DoesNotContain("0606060606\"", content);
+        Assert.DoesNotContain("rue lecture\"", content);
+    }
+
+    [Fact]
+    public async Task DataListsSalesTabSearchesByApprovedSaleCriteriaOnly()
+    {
+        var client = _factory.CreateClient();
+        var scenario = await SeedDataListScenarioAsync();
+
+        var response = await client.GetAsync("/donnees?onglet=ventes");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Ventes", content);
+        Assert.Contains("data-list-sale-table", content);
+        Assert.DoesNotContain("sales-view-table", content);
+        Assert.Contains("class=\"data-list-size-xxs data-list-sale-id-column\">Vente", content);
+        Assert.DoesNotContain("<th>Articles</th>", content);
+        Assert.DoesNotContain("<th>Frais</th>", content);
+        Assert.Contains($"#{scenario.SaleId}", content);
+        Assert.Contains("MJC Centre - 38100 Grenoble", content);
+        Assert.Contains("Ch\u00e8que", content);
+        Assert.Contains("jeu vendu", content);
+        Assert.Contains("data-data-list-filter-text", content);
+        Assert.Contains("mjc centre", content);
+        Assert.Contains("38100", content);
+        Assert.Contains("grenoble", content);
+        Assert.Contains("ch\u00e8que", content);
+        Assert.Contains(scenario.SoldReference.ToLowerInvariant(), content);
+        Assert.DoesNotContain("texte re\u00e7u confidentiel", content);
+        Assert.DoesNotContain("CH-123", content);
+        Assert.DoesNotContain("banque cach\u00e9e", content);
+    }
+
+    [Fact]
+    public async Task DataListsChequesTabShowsRegisteredChequesOnly()
+    {
+        var client = _factory.CreateClient();
+        var scenario = await SeedDataListScenarioAsync();
+
+        var response = await client.GetAsync("/donnees?onglet=cheques");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Ch\u00e8ques", content);
+        Assert.Contains("data-list-cheque-table", content);
+        Assert.Contains("class=\"data-list-size-xxs data-list-cheque-sale-column\">Vente", content);
+        Assert.Contains("<th>N\u00b0 ch\u00e8que</th>", content);
+        Assert.Contains("<th>Banque</th>", content);
+        Assert.Contains("<th>Montant</th>", content);
+        Assert.Contains($"href=\"/caisse/ventes/{scenario.SaleId}\">#{scenario.SaleId}</a>", content);
+        Assert.Contains("CH-123", content);
+        Assert.Contains("banque cach\u00e9e", content);
+        Assert.Contains("9.90 EUR", content);
+    }
+
+    [Fact]
     public async Task ReconciliationPageShowsMainNavigationWithReconciliationActive()
     {
         var client = _factory.CreateClient();
@@ -1813,6 +1945,57 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SiteJsContainsDataListFiltering()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/js/site.js");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("initializeDataList", content);
+        Assert.Contains("data-data-list-root", content);
+        Assert.Contains("data-data-list-search", content);
+        Assert.Contains("data-data-list-status-filter", content);
+        Assert.Contains("data-data-list-row", content);
+        Assert.Contains("dataListFilterText", content);
+    }
+
+    [Fact]
+    public async Task SiteCssContainsDataListFilterAlignment()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/css/site.css");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains(".data-list-filter-bar", content);
+        Assert.Contains(".data-list-filter-field", content);
+        Assert.Contains("grid-template-columns: max-content minmax(0, 1fr);", content);
+        Assert.Contains("align-items: center;", content);
+        Assert.Contains("column-gap: 0.5rem;", content);
+        Assert.Contains(".data-list-seller-table", content);
+        Assert.Contains("table-layout: fixed;", content);
+        Assert.Contains(".data-list-count-column", content);
+        Assert.Contains(".data-list-size-xxs", content);
+        Assert.Contains("width: 2.3rem;", content);
+        Assert.Contains(".data-list-size-xs", content);
+        Assert.Contains("width: 3.4rem;", content);
+        Assert.Contains(".data-list-size-m", content);
+        Assert.Contains("width: 5.75rem;", content);
+        Assert.Contains(".data-list-size-l", content);
+        Assert.Contains("width: 10.25rem;", content);
+        Assert.Contains(".data-list-seller-table th.data-list-count-column", content);
+        Assert.Contains("white-space: normal;", content);
+        Assert.Contains("letter-spacing: 0;", content);
+        Assert.Contains(".data-list-sale-table", content);
+        Assert.Contains(".data-list-sale-table th,", content);
+        Assert.Contains(".data-list-sale-table td", content);
+        Assert.Contains(".data-list-sale-id-column", content);
+    }
+
+    [Fact]
     public async Task SiteCssContainsCheckoutCatalogLayout()
     {
         var client = _factory.CreateClient();
@@ -2386,10 +2569,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("main-navigation", content);
         Assert.Contains("href=\"/vendeurs\"", content);
         Assert.Contains("href=\"/caisse\"", content);
+        Assert.Contains("href=\"/donnees\"", content);
         Assert.Contains("href=\"/rapprochement\"", content);
         Assert.Contains("href=\"/vente/statut\"", content);
         Assert.Contains("VENDEURS", content);
         Assert.Contains("CAISSE", content);
+        Assert.Contains("DONN\u00c9ES", content);
         Assert.Contains("ADMIN", content);
         Assert.True(
             content.Contains("Rapprochement", StringComparison.OrdinalIgnoreCase),
@@ -2539,6 +2724,102 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         await dbContext.SaveChangesAsync();
 
         return (sale.Id, firstItem.Reference, secondItem.Reference);
+    }
+
+    private async Task<(
+        long SellerId,
+        string SellerCode,
+        long SaleId,
+        string RegisteredReference,
+        string InStockReference,
+        string SoldReference,
+        string MissingReference)> SeedDataListScenarioAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var suffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+        var sellerCode = $"DL{suffix}";
+        var seller = new SellerEntity
+        {
+            SellerCode = sellerCode,
+            FirstName = "Diane",
+            LastName = "Liste",
+            Email = "diane.liste@example.test",
+            Phone = "0606060606",
+            PostalAddress = "7 rue Lecture",
+            FeePaidCents = 0
+        };
+
+        dbContext.Sellers.Add(seller);
+        await dbContext.SaveChangesAsync();
+
+        var registeredItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = $"{sellerCode}001",
+            ItemNumber = 1,
+            Title = "Jeu enregistr\u00e9",
+            SellerPriceCents = 500,
+            Status = "registered"
+        };
+        var inStockItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = $"{sellerCode}002",
+            ItemNumber = 2,
+            Title = "Jeu disponible",
+            SellerPriceCents = 700,
+            Status = "in_stock"
+        };
+        var soldItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = $"{sellerCode}003",
+            ItemNumber = 3,
+            Title = "Jeu vendu",
+            SellerPriceCents = 900,
+            Status = "sold"
+        };
+        var missingItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = $"{sellerCode}004",
+            ItemNumber = 4,
+            Title = "Jeu manquant",
+            SellerPriceCents = 600,
+            Status = "missing"
+        };
+
+        dbContext.Items.AddRange(registeredItem, inStockItem, soldItem, missingItem);
+        await dbContext.SaveChangesAsync();
+
+        var sale = new SaleEntity
+        {
+            SoldAt = new DateTime(2026, 5, 5, 9, 30, 0, DateTimeKind.Utc),
+            SubtotalSellerPriceCents = 900,
+            CheckoutFeeCents = 90,
+            TotalPaidCents = 990,
+            BuyerName = "MJC Centre",
+            BuyerPostalCode = "38100",
+            BuyerCity = "Grenoble",
+            BuyerAddress = "texte re\u00e7u confidentiel",
+            PaymentMethod = "cheque",
+            ChequeNumber = "CH-123",
+            ChequeBankName = "banque cach\u00e9e",
+            SaleLines =
+            [
+                new SaleLineEntity
+                {
+                    ItemId = soldItem.Id,
+                    SellerPriceAtSaleCents = soldItem.SellerPriceCents
+                }
+            ]
+        };
+
+        dbContext.Sales.Add(sale);
+        await dbContext.SaveChangesAsync();
+
+        return (seller.Id, sellerCode, sale.Id, registeredItem.Reference, inStockItem.Reference, soldItem.Reference, missingItem.Reference);
     }
 
     private async Task SetSalePhaseAsync(SalePhase phase)

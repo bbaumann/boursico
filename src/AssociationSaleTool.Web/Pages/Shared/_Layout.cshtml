@@ -5,6 +5,7 @@
     var sellersActive = requestPath.StartsWithSegments("/vendeurs")
         || requestPath.StartsWithSegments("/articles");
     var checkoutActive = requestPath.StartsWithSegments("/caisse");
+    var dataActive = requestPath.StartsWithSegments("/donnees");
     var reconciliationActive = requestPath.StartsWithSegments("/rapprochement");
     var saleStatusActive = requestPath.StartsWithSegments("/vente/statut");
     var salePhase = await SalePhaseService.GetCurrentPhaseAsync();
@@ -33,6 +34,9 @@
         <a class="main-navigation-link @(checkoutActive ? "main-navigation-link-active" : null)"
            href="/caisse"
            aria-current="@(checkoutActive ? "page" : null)">CAISSE</a>
+        <a class="main-navigation-link @(dataActive ? "main-navigation-link-active" : null)"
+           href="/donnees"
+           aria-current="@(dataActive ? "page" : null)">DONNÉES</a>
         <a class="main-navigation-link @(reconciliationActive ? "main-navigation-link-active" : null)"
            href="/rapprochement"
            aria-current="@(reconciliationActive ? "page" : null)">RAPPROCHEMENT</a>
