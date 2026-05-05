@@ -40,9 +40,11 @@ L'outil n'a pas de comptes utilisateurs individuels. Certaines actions sont simp
 
 - changer le statut de l'événement ;
 - corriger une ligne de vente ;
+- rembourser un article vendu puis rapporté défectueux ;
 - ouvrir le rapprochement ;
 - marquer un article comme manquant ;
-- remettre en stock un article marqué manquant par erreur.
+- remettre en stock un article marqué manquant par erreur ;
+- marquer ou corriger un article défectueux.
 
 Ce mot de passe n'est pas une sécurité forte au sens informatique. Il sert surtout à éviter qu'un bénévole modifie par erreur une information sensible.
 
@@ -163,6 +165,7 @@ Quand un vendeur avait envoyé une liste à l'avance puis apporte les jouets :
 2. Relire les articles un par un.
 3. Pour chaque article réellement apporté, cliquer sur `Marquer en stock`.
 4. Pour un article pas encore apporté, le laisser `enregistré` si le vendeur peut revenir plus tard. Le supprimer seulement si l'entrée a été créée par erreur ou si l'équipe veut nettoyer la fiche.
+5. Si un défaut est vu avant d'accepter physiquement l'article, ne pas l'accepter. Un article encore `enregistré` peut être supprimé ; en mode `Dépôt`, il suffit de ne pas créer la ligne.
 
 Un article `enregistré` n'apparaît ni en caisse ni dans les feuilles vendeurs finales. Il reste toutefois compté dans les articles du vendeur pour les frais d'inscription.
 
@@ -220,11 +223,11 @@ Ensuite, dans la fenêtre de finalisation, le bouton `Enregistrer et imprimer` d
 
 Si le champ de reçu est vide, l'option d'impression reste désactivée.
 
-## Administrer le statut de la vente
+## Administration
 
-Aller dans `ADMIN` ou `/vente/statut`.
+Aller dans `ADMIN` ou `/administration`.
 
-La page demande le `Mot de passe administrateur`. Une fois déverrouillée dans le navigateur, elle permet de changer le statut sans redemander le mot de passe à chaque clic.
+La page demande le `Mot de passe administrateur`. Une fois déverrouillée dans le navigateur, elle permet de changer le statut de la vente et de corriger des articles exceptionnels sans redemander le mot de passe à chaque clic.
 
 ### Prévente
 
@@ -266,10 +269,10 @@ Dans ce statut :
 
 Cas typique : un bénévole a tapé ou choisi une mauvaise référence, et l'article enregistré comme vendu doit pouvoir être revendu.
 
-Aller dans `ADMIN`, déverrouiller la page, puis utiliser `Correction des ventes`.
+Aller dans `ADMIN`, déverrouiller la page, puis utiliser `Correction des articles`.
 
-1. Filtrer les ventes par référence, titre, vendeur ou numéro de vente.
-2. Trouver la mauvaise ligne.
+1. Filtrer les articles affichés par référence, titre, vendeur, statut ou numéro de vente.
+2. Trouver le mauvais article vendu.
 3. Cliquer sur `Remettre en stock`.
 4. Confirmer l'action.
 
@@ -282,6 +285,35 @@ Résultat :
 - la ligne corrigée ne compte plus dans le paiement vendeur.
 
 Cette règle évite de réécrire l'historique de caisse tout en corrigeant le stock et le futur rapprochement.
+
+## Gérer un article défectueux
+
+Si un défaut est trouvé après l'acceptation de l'article, aller dans `ADMIN`, déverrouiller la page, puis utiliser `Correction des articles`.
+
+Pour un article encore `en stock` :
+
+1. Filtrer les articles affichés par référence, titre, vendeur ou statut.
+2. Cliquer sur `Marquer défectueux`.
+
+Résultat :
+
+- l'article ne peut plus être vendu ;
+- il apparaît dans les articles à rendre au vendeur ;
+- il ne compte pas dans le paiement vendeur.
+
+Si le marquage était une erreur et qu'aucun acheteur n'a été remboursé pour cet article, l'administrateur peut cliquer sur `Remettre en stock`.
+
+Si un acheteur rapporte un article vendu parce qu'il est défectueux :
+
+1. Aller dans `Correction des articles`.
+2. Trouver l'article vendu.
+3. Cliquer sur `Rembourser`.
+4. Vérifier le montant affiché dans la fenêtre de confirmation.
+5. Rembourser l'acheteur du total indiqué, puis confirmer.
+
+Le montant inclut le prix de l'article et les 10 % de frais association. La vente d'origine reste visible avec son total d'origine, la ligne est marquée `Remboursé` avec la date du remboursement, puis les totaux affichent `Remboursements` et `Total corrigé`. L'article sera rendu au vendeur et ne sera pas payé au vendeur.
+
+Si le remboursement a été saisi par erreur, l'administrateur peut cliquer sur `Annuler le remboursement`. L'article redevient `vendu` et la ligne de vente n'est plus marquée comme remboursée.
 
 ## Après la vente : rapprochement
 
@@ -310,7 +342,7 @@ Les articles à payer sont :
 - les articles vendus ;
 - les articles marqués `MANQUANT`.
 
-Les articles à rendre sont les articles encore `en stock`.
+Les articles à rendre sont les articles encore `en stock` et les articles `DÉFECTUEUX`.
 
 Les articles seulement `enregistré` sont exclus des feuilles, car ils n'ont jamais été confirmés comme présents.
 

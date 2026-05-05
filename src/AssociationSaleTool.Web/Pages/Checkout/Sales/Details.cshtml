@@ -71,7 +71,7 @@
             <tbody>
             @foreach (var line in Model.Sale.Lines)
             {
-                <tr class="@(line.IsCorrected ? "sales-view-corrected-row" : null)">
+                <tr class="@(line.IsCorrected || line.IsRefunded ? "sales-view-corrected-row" : null)">
                     <td>@line.Reference</td>
                     <td>@line.Title</td>
                     <td>@DetailsModel.FormatPrice(line.SellerPriceAtSaleCents)</td>
@@ -80,6 +80,13 @@
                         {
                             <span class="sales-view-status sales-view-status-corrected">
                                 Corrigée le @DetailsModel.FormatCorrectedAt(correctedAt)
+                            </span>
+                        }
+                        else if (line.RefundedAt is { } refundedAt)
+                        {
+                            <span class="sales-view-status sales-view-status-corrected sales-view-status-refunded">
+                                <span>@line.RefundStatusLabel</span>
+                                <span class="sales-view-status-date">le @DetailsModel.FormatCorrectedAt(refundedAt)</span>
                             </span>
                         }
                         else
@@ -104,10 +111,21 @@
                 <dt>Frais association familiale</dt>
                 <dd>@DetailsModel.FormatPrice(Model.Sale.CheckoutFeeCents)</dd>
             </div>
-            <div class="checkout-total-row">
+            <div class="@(Model.Sale.HasRefunds ? null : "checkout-total-row")">
                 <dt>Total</dt>
                 <dd>@DetailsModel.FormatPrice(Model.Sale.TotalPaidCents)</dd>
             </div>
+            @if (Model.Sale.HasRefunds)
+            {
+                <div>
+                    <dt>Remboursements</dt>
+                    <dd>-@DetailsModel.FormatPrice(Model.Sale.RefundTotalCents)</dd>
+                </div>
+                <div class="checkout-total-row">
+                    <dt>Total corrigé</dt>
+                    <dd>@DetailsModel.FormatPrice(Model.Sale.CorrectedTotalPaidCents)</dd>
+                </div>
+            }
         </dl>
     </section>
 </section>

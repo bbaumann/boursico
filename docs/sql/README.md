@@ -1,6 +1,6 @@
 # Physical SQL DDL
 
-This directory contains concrete SQL DDL for the agreed V1 logical schema.
+This directory contains concrete SQL DDL for the agreed current VNext logical schema.
 
 Files:
 
@@ -10,7 +10,7 @@ Files:
 
 These files are intended to:
 
-- provide the V1 SQLite schema directly
+- provide the SQLite schema directly
 - keep the logical schema and the physical schema aligned
 
 ## Important Notes
@@ -27,7 +27,7 @@ The schemas enforce:
 
 They intentionally do not enforce every business invariant in the database.
 
-Some rules remain application-level in V1, especially:
+Some rules remain application-level, especially:
 
 - when an item status transitions to `sold`
 - sale subtotal matching the sum of sale lines

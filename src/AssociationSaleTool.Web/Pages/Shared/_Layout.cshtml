@@ -7,7 +7,7 @@
     var checkoutActive = requestPath.StartsWithSegments("/caisse");
     var dataActive = requestPath.StartsWithSegments("/donnees");
     var reconciliationActive = requestPath.StartsWithSegments("/rapprochement");
-    var saleStatusActive = requestPath.StartsWithSegments("/vente/statut");
+    var adminActive = requestPath.StartsWithSegments("/administration");
     var salePhase = await SalePhaseService.GetCurrentPhaseAsync();
     var salePhaseLabel = AssociationSaleTool.Web.Infrastructure.SalePhaseDisplay.ToFrenchLabel(salePhase);
 }
@@ -40,9 +40,9 @@
         <a class="main-navigation-link @(reconciliationActive ? "main-navigation-link-active" : null)"
            href="/rapprochement"
            aria-current="@(reconciliationActive ? "page" : null)">RAPPROCHEMENT</a>
-        <a class="main-navigation-link @(saleStatusActive ? "main-navigation-link-active" : null)"
-           href="/vente/statut"
-           aria-current="@(saleStatusActive ? "page" : null)">ADMIN</a>
+        <a class="main-navigation-link @(adminActive ? "main-navigation-link-active" : null)"
+           href="/administration"
+           aria-current="@(adminActive ? "page" : null)">ADMIN</a>
     </nav>
     <main class="page-shell">
         @RenderBody()

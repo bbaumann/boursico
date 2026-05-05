@@ -12,6 +12,8 @@ namespace AssociationSaleTool.Web.Pages.SaleStatus;
 public sealed class IndexModel(
     SalePhaseService salePhaseService,
     SaleCorrectionService saleCorrectionService,
+    DefectiveItemService defectiveItemService,
+    ItemCorrectionService itemCorrectionService,
     IOptions<AdminOptions> adminOptions) : PageModel
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
@@ -33,7 +35,7 @@ public sealed class IndexModel(
         _ => throw new ArgumentOutOfRangeException(nameof(CurrentPhase), CurrentPhase, null)
     };
 
-    public IReadOnlyList<SaleCorrectionItem> ActiveSoldItems { get; private set; } = [];
+    public IReadOnlyList<ItemCorrectionCandidate> ItemCorrectionCandidates { get; private set; } = [];
 
     [BindProperty]
     public PhaseInputModel Input { get; set; } = new();
@@ -112,25 +114,120 @@ public sealed class IndexModel(
         return Page();
     }
 
+    public async Task<IActionResult> OnPostRefundDefectiveSaleLineAsync(
+        long saleLineId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await saleCorrectionService.RefundDefectiveSaleLineAsync(saleLineId, cancellationToken);
+        if (result == SaleCorrectionResult.Refunded)
+        {
+            SuccessMessage = "L'article est marqué défectueux. Remboursez l'acheteur du montant indiqué et rendez l'article au vendeur en fin de vente.";
+            return RedirectToPage();
+        }
+
+        var message = result == SaleCorrectionResult.NotFound
+            ? "Ligne de vente introuvable."
+            : "Cette ligne de vente ne peut pas être remboursée dans son état actuel.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostMarkDefectiveItemAsync(
+        long itemId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await defectiveItemService.MarkDefectiveAsync(itemId, cancellationToken);
+        if (result == DefectiveItemStatusChangeResult.Changed)
+        {
+            SuccessMessage = "L'article est marqué défectueux. Il ne peut plus être vendu et sera rendu au vendeur.";
+            return RedirectToPage();
+        }
+
+        var message = result == DefectiveItemStatusChangeResult.NotFound
+            ? "Article introuvable."
+            : "Cet article ne peut pas être marqué défectueux dans son état actuel.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostRestoreDefectiveItemAsync(
+        long itemId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await defectiveItemService.MarkInStockAsync(itemId, cancellationToken);
+        if (result == DefectiveItemStatusChangeResult.Changed)
+        {
+            SuccessMessage = "L'article est remis en stock.";
+            return RedirectToPage();
+        }
+
+        var message = result == DefectiveItemStatusChangeResult.NotFound
+            ? "Article introuvable."
+            : "Cet article défectueux ne peut pas être remis en stock.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostCancelDefectiveRefundAsync(
+        long saleLineId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await saleCorrectionService.CancelDefectiveRefundAsync(saleLineId, cancellationToken);
+        if (result == SaleCorrectionResult.RefundCanceled)
+        {
+            SuccessMessage = "Le remboursement est annulé. L'article est de nouveau marqué vendu.";
+            return RedirectToPage();
+        }
+
+        var message = result == SaleCorrectionResult.NotFound
+            ? "Ligne de vente introuvable."
+            : "Ce remboursement ne peut pas être annulé dans son état actuel.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
     public static string FormatPrice(int priceCents)
     {
         return $"{priceCents / 100m:0.00} EUR";
     }
 
-    public static string FormatSoldAt(DateTime soldAt)
+    public static string BuildCorrectionFilterText(ItemCorrectionCandidate item)
     {
-        return soldAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", FrenchCulture);
-    }
-
-    public static string BuildCorrectionFilterText(SaleCorrectionItem item)
-    {
-        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.SaleId}".ToLower(FrenchCulture);
+        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.Status} {item.SaleId}".ToLower(FrenchCulture);
     }
 
     private async Task LoadPageAsync(CancellationToken cancellationToken)
     {
         CurrentPhase = await salePhaseService.GetCurrentPhaseAsync(cancellationToken);
-        ActiveSoldItems = await saleCorrectionService.ListActiveSoldItemsAsync(cancellationToken);
+        ItemCorrectionCandidates = await itemCorrectionService.ListCandidatesAsync(cancellationToken);
     }
 
     private bool UnlockPageIfSessionAllows()

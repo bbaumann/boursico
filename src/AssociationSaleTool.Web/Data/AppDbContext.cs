@@ -67,7 +67,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing')");
+                table.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')");
                 table.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
             });
         });
@@ -105,6 +105,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.ItemId).HasColumnName("item_id").IsRequired();
             entity.Property(x => x.SellerPriceAtSaleCents).HasColumnName("seller_price_at_sale_cents").IsRequired();
             entity.Property(x => x.CorrectedAt).HasColumnName("corrected_at");
+            entity.Property(x => x.RefundedAt).HasColumnName("refunded_at");
+            entity.Property(x => x.RefundItemPriceCents).HasColumnName("refund_item_price_cents");
+            entity.Property(x => x.RefundCheckoutFeeCents).HasColumnName("refund_checkout_fee_cents");
+            entity.Property(x => x.RefundTotalCents).HasColumnName("refund_total_cents");
+            entity.Property(x => x.RefundReason).HasColumnName("refund_reason");
 
             entity.HasOne(x => x.Sale)
                 .WithMany(x => x.SaleLines)
@@ -117,12 +122,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
             entity.HasIndex(x => x.ItemId)
                 .IsUnique()
-                .HasFilter("corrected_at IS NULL");
+                .HasFilter("corrected_at IS NULL AND refunded_at IS NULL");
             entity.HasIndex(x => x.SaleId);
 
             entity.ToTable(table =>
             {
                 table.HasCheckConstraint("ck_sale_line_seller_price_cents", "seller_price_at_sale_cents >= 0");
+                table.HasCheckConstraint("ck_sale_line_refund_item_price_cents", "refund_item_price_cents IS NULL OR refund_item_price_cents >= 0");
+                table.HasCheckConstraint("ck_sale_line_refund_checkout_fee_cents", "refund_checkout_fee_cents IS NULL OR refund_checkout_fee_cents >= 0");
+                table.HasCheckConstraint("ck_sale_line_refund_total_cents", "refund_total_cents IS NULL OR refund_total_cents >= 0");
             });
         });
 

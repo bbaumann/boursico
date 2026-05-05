@@ -4,7 +4,7 @@
 
 The project uses a small item-centric operational model with seller-aware reconciliation.
 
-Operationally, one database file represents one event in V1. Event metadata is stored in application configuration rather than as a relational entity.
+Operationally, one database file represents one event. Event metadata is stored in application configuration rather than as a relational entity. V1 is complete; the current software state is VNext.
 
 ## Entities
 
@@ -65,22 +65,27 @@ Suggested fields:
 - item id
 - seller price at time of sale
 - corrected at timestamp, when an admin corrected a mistaken sale line
+- refunded at timestamp, when an admin refunded a defective sold item
+- refund item price, refunded checkout fee, total refunded amount, and refund reason
 
 If a sale line is corrected, the original sale and sale totals remain stored. The corrected line no longer makes the item unavailable for sale and is ignored by seller-sheet payable output.
 
+If a sale line is refunded because the sold item is defective, the original sale and sale totals remain stored. The refunded line is ignored by seller-sheet payable output, and the item becomes `defective` so it is returned to the seller.
+
 ## Item Status Model
 
-V1 uses one simple status field:
+The current model uses one simple status field:
 
 - `registered`
 - `in_stock`
 - `sold`
 - `missing`
+- `defective`
 
 Derived meanings:
 
-- payable items = `sold` + `missing`
-- returned items = `in_stock`
+- payable items = active non-refunded `sold` lines + `missing`
+- returned items = `in_stock` + `defective`
 - preregistered but excluded from sale/reconciliation = `registered`
 
 Lifecycle meaning:
@@ -89,6 +94,7 @@ Lifecycle meaning:
 - `in_stock`: physically present in association stock and eligible for sale or return
 - `sold`: sold during the event
 - `missing`: expected to be returned after the event, but not found physically
+- `defective`: physically accepted but not suitable for sale; returned to the seller and not payable
 
 V1 does not use a `not_provided` status. Preregistered items that are not physically delivered may remain `registered`; they are deleted only when entered by mistake or when the seller record should be cleaned up. Items mistakenly entered as present may be deleted while still `in_stock`.
 
@@ -104,7 +110,7 @@ One event-level phase controls normal operations:
 
 Each item stores one price:
 
-- seller price: the amount payable to the seller if the item is payable and the printed per-item price seen by the customer in V1
+- seller price: the amount payable to the seller if the item is payable and the printed per-item price seen by the customer
 
 Each sale stores the transaction-level customer payment values:
 
@@ -112,7 +118,7 @@ Each sale stores the transaction-level customer payment values:
 - checkout fee: 10 percent of the subtotal, rounded to the nearest cent with midpoint values rounded away from zero
 - total paid: subtotal + checkout fee
 
-V1 seller settlement uses seller price only.
+Seller settlement uses seller price only. A defective-item buyer refund reimburses the buyer the item price plus the 10 percent checkout fee for that item; it does not change the original sale totals.
 
 Persistence rule:
 
@@ -239,11 +245,16 @@ Contains:
 
 Missing items are shown in the payable list with a visible `MANQUANT` marker.
 
+Refunded sold lines are excluded from payable output.
+
 ### Returned List
 
 Contains:
 
 - items with status `in_stock`
+- items with status `defective`
+
+Defective items are shown in the returned list with a visible `DÉFECTUEUX` marker.
 
 ### Final Amount To Pay
 

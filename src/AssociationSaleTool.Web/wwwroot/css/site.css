@@ -665,12 +665,110 @@ textarea {
   color: #8a1f11;
   background: transparent;
   font: inherit;
+  text-align: left;
   text-decoration: underline;
   cursor: pointer;
 }
 
 .table-action-button-primary {
   color: var(--accent);
+}
+
+.table-actions-cell {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.item-correction-table {
+  table-layout: fixed;
+}
+
+.item-correction-reference-column {
+  width: 5.5rem;
+}
+
+.item-correction-title-column,
+.item-correction-seller-column {
+  width: 24%;
+}
+
+.item-correction-status-column,
+.item-correction-price-column {
+  width: 7.5rem;
+}
+
+.item-correction-sale-column {
+  width: 4.5rem;
+}
+
+.item-correction-action-column {
+  width: 13rem;
+}
+
+.item-correction-table th:first-child,
+.item-correction-table td:first-child,
+.item-correction-table th:nth-child(4),
+.item-correction-table td:nth-child(4),
+.item-correction-table th:nth-child(5),
+.item-correction-table td:nth-child(5),
+.item-correction-table th:nth-child(6),
+.item-correction-table td:nth-child(6) {
+  white-space: nowrap;
+}
+
+.admin-dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 24px 60px rgba(35, 31, 28, 0.2);
+}
+
+.admin-dialog::backdrop {
+  background: rgba(35, 31, 28, 0.3);
+}
+
+.compact-definition-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.compact-definition-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.compact-definition-list dt {
+  color: var(--muted);
+}
+
+.compact-definition-list dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.sales-view-refund-details {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.sales-view-refund-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sales-view-refund-details dd {
+  margin: 0;
+  font-weight: 700;
 }
 
 .item-registration-actions {
@@ -929,6 +1027,21 @@ textarea {
   border-color: rgba(138, 31, 17, 0.35);
   color: #8a1f11;
   background: rgba(138, 31, 17, 0.08);
+}
+
+.sales-view-status-refunded {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.1rem;
+  border-radius: 12px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.sales-view-status-date {
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .sales-view-totals {

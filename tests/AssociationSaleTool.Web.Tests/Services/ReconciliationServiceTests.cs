@@ -197,15 +197,17 @@ public sealed class ReconciliationServiceTests
         var missingSeller = new SellerEntity { SellerCode = "BB", FirstName = "Grace", LastName = "Hopper" };
         var inStockSeller = new SellerEntity { SellerCode = "CC", FirstName = "Katherine", LastName = "Johnson" };
         var registeredSeller = new SellerEntity { SellerCode = "DD", FirstName = "Margaret", LastName = "Hamilton" };
+        var defectiveSeller = new SellerEntity { SellerCode = "EE", FirstName = "Hedy", LastName = "Lamarr" };
         var emptySeller = new SellerEntity { SellerCode = "FF", FirstName = "Mary", LastName = "Jackson" };
 
-        context.Sellers.AddRange(soldSeller, missingSeller, inStockSeller, registeredSeller, emptySeller);
+        context.Sellers.AddRange(soldSeller, missingSeller, inStockSeller, registeredSeller, defectiveSeller, emptySeller);
         await context.SaveChangesAsync();
 
         var soldItem = AddItem(context, soldSeller, "AA-001", 1, "Train", 400, "sold");
         AddItem(context, missingSeller, "BB-001", 1, "Puzzle", 500, "missing");
         AddItem(context, inStockSeller, "CC-001", 1, "Camion", 600, "in_stock");
         AddItem(context, registeredSeller, "DD-001", 1, "Piano", 700, "registered");
+        AddItem(context, defectiveSeller, "EE-001", 1, "Livre", 800, "defective");
         await context.SaveChangesAsync();
 
         context.Sales.Add(new SaleEntity
@@ -222,11 +224,11 @@ public sealed class ReconciliationServiceTests
 
         var sheets = await service.ListSellerSheetsAsync();
 
-        Assert.Equal(["AA", "BB", "CC"], sheets.Select(sheet => sheet.SellerCode));
+        Assert.Equal(["AA", "BB", "CC", "EE"], sheets.Select(sheet => sheet.SellerCode));
     }
 
     [Fact]
-    public async Task ListSellerSheetsAsync_ExcludesInactiveItemsAndReturnsOnlyInStockItems()
+    public async Task ListSellerSheetsAsync_ExcludesInactiveItemsAndReturnsOnlyInStockAndDefectiveItems()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -244,6 +246,7 @@ public sealed class ReconciliationServiceTests
         var sold = AddItem(context, seller, "AA-003", 3, "Train", 900, "sold");
         var missing = AddItem(context, seller, "AA-002", 2, "Puzzle", 700, "missing");
         var inStock = AddItem(context, seller, "AA-001", 1, "Camion", 600, "in_stock");
+        var defective = AddItem(context, seller, "AA-005", 5, "Livre abime", 500, "defective");
         AddItem(context, seller, "AA-004", 4, "Piano", 500, "registered");
         await context.SaveChangesAsync();
 
@@ -262,8 +265,56 @@ public sealed class ReconciliationServiceTests
         var sheet = Assert.Single(await service.ListSellerSheetsAsync());
 
         Assert.Equal([missing.Id, sold.Id], sheet.PayableItems.Select(item => item.ItemId));
-        Assert.Equal([inStock.Id], sheet.ReturnedItems.Select(item => item.ItemId));
-        Assert.All(sheet.ReturnedItems, item => Assert.Equal("in_stock", item.Status));
+        Assert.Equal([inStock.Id, defective.Id], sheet.ReturnedItems.Select(item => item.ItemId));
+        Assert.Contains(sheet.ReturnedItems, item => item.ItemId == defective.Id && item.IsDefective);
+    }
+
+    [Fact]
+    public async Task ListSellerSheetsAsync_ReturnsRefundedDefectiveSoldItemsWithoutPayingSeller()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var sold = AddItem(context, seller, "AA-001", 1, "Train vendu", 1000, "sold");
+        var refunded = AddItem(context, seller, "AA-002", 2, "Puzzle rembourse", 700, "defective");
+        var directDefective = AddItem(context, seller, "AA-003", 3, "Livre abime", 600, "defective");
+        await context.SaveChangesAsync();
+
+        context.Sales.Add(new SaleEntity
+        {
+            SoldAt = DateTime.UtcNow,
+            SubtotalSellerPriceCents = 1700,
+            CheckoutFeeCents = 170,
+            TotalPaidCents = 1870,
+            SaleLines =
+            [
+                new SaleLineEntity { ItemId = sold.Id, SellerPriceAtSaleCents = 1000 },
+                new SaleLineEntity
+                {
+                    ItemId = refunded.Id,
+                    SellerPriceAtSaleCents = 700,
+                    RefundedAt = DateTime.UtcNow,
+                    RefundItemPriceCents = 700,
+                    RefundCheckoutFeeCents = 70,
+                    RefundTotalCents = 770,
+                    RefundReason = "defective"
+                }
+            ]
+        });
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var sheet = Assert.Single(await service.ListSellerSheetsAsync());
+
+        Assert.Equal([sold.Id], sheet.PayableItems.Select(item => item.ItemId));
+        Assert.Equal(1000, sheet.ItemSubtotalCents);
+        Assert.Equal([refunded.Id, directDefective.Id], sheet.ReturnedItems.Select(item => item.ItemId));
+        Assert.All(sheet.ReturnedItems, item => Assert.True(item.IsDefective));
     }
 
     [Fact]
@@ -331,20 +382,22 @@ public sealed class ReconciliationServiceTests
         var secondSeller = new SellerEntity { SellerCode = "BB", FirstName = "Grace", LastName = "Hopper" };
         var firstSeller = new SellerEntity { SellerCode = "AA", FirstName = "Ada", LastName = "Lovelace" };
         var inactiveSeller = new SellerEntity { SellerCode = "CC", FirstName = "Mary", LastName = "Jackson" };
-        context.Sellers.AddRange(secondSeller, firstSeller, inactiveSeller);
+        var defectiveSeller = new SellerEntity { SellerCode = "DD", FirstName = "Hedy", LastName = "Lamarr" };
+        context.Sellers.AddRange(secondSeller, firstSeller, inactiveSeller, defectiveSeller);
         await context.SaveChangesAsync();
 
         AddItem(context, secondSeller, "BB-001", 1, "Puzzle", 600, "missing");
         AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
         AddItem(context, inactiveSeller, "CC-001", 1, "Livre", 400, "registered");
+        AddItem(context, defectiveSeller, "DD-001", 1, "Camion", 700, "defective");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
 
         var options = await service.ListSellerSheetOptionsAsync();
 
-        Assert.Equal(["AA", "BB"], options.Select(option => option.SellerCode));
-        Assert.Equal(["Ada Lovelace", "Grace Hopper"], options.Select(option => option.SellerName));
+        Assert.Equal(["AA", "BB", "DD"], options.Select(option => option.SellerCode));
+        Assert.Equal(["Ada Lovelace", "Grace Hopper", "Hedy Lamarr"], options.Select(option => option.SellerName));
     }
 
     [Fact]

@@ -51,8 +51,8 @@ Primary goals:
 
 Access model in V1:
 
-- sale status administration requires the shared admin password to unlock `/vente/statut`
-- phase changes and sale-line corrections are available after that page is unlocked
+- administration requires the shared admin password to unlock `/administration`
+- phase changes, sale-line corrections, and exceptional item corrections are available after that page is unlocked
 - `missing` changes require the shared admin password
 - this is a lightweight misuse-prevention control, not a full user/role system
 
@@ -192,7 +192,7 @@ Actor:
 
 Description:
 
-- Move the event between `presale`, `sale`, and `post_sale` from `/vente/statut`.
+- Move the event between `presale`, `sale`, and `post_sale` from `/administration`.
 - The admin page must be unlocked with the shared admin password in V1.
 
 Expected outcome:
@@ -210,7 +210,7 @@ Actor:
 Description:
 
 - Find a sold item that was added to a sale by mistake.
-- Confirm correction from the already-unlocked `/vente/statut` admin page.
+- Confirm correction from the already-unlocked `/administration` admin page.
 
 Expected outcome:
 

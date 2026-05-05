@@ -76,7 +76,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-007 Item Status Is A Single Field With Four Values
 
-- Status: accepted
+- Status: superseded for VNext by D-040
 - Key drivers:
   - the workflow needs to distinguish preregistered items from physically delivered stock
   - preregistered-but-not-delivered items do not need to remain in the operational dataset in V1
@@ -444,7 +444,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - allow new sale creation in `presale` and `sale`
   - block new sale validation and sale creation in `post_sale`
     - lock seller and item master data in `sale` and `post_sale`
-  - expose admin phase changes through `/vente/statut`, guarded by a session-backed `Admin:SharedPassword` unlock
+  - expose admin phase changes through `/administration`, guarded by a session-backed `Admin:SharedPassword` unlock
   - correct a mistaken sale by marking the active `sale_line` with `corrected_at` and returning the item to `in_stock`
 - Consequence:
   - `presale` is a preparation mode, not a hard "sales disabled" mode
@@ -468,11 +468,11 @@ This file captures the main project decisions in a lightweight ADR format.
   - add `/caisse/ventes/{id}` for read-only sale detail
   - search the list by sale id, item reference, item title, buyer details, and receipt address details
   - show corrected sale lines as historical sale facts labeled `Corrigée`
-  - keep sale-line correction actions only on `/vente/statut`
+  - keep sale-line correction actions only on `/administration`
 - Consequence:
   - operators can resolve checkout questions without admin unlock
   - sale browsing stays visually and conceptually attached to checkout
-  - the admin sale-status page remains focused on phase changes and exceptional corrections
+  - the admin page remains focused on phase changes and exceptional corrections
   - historical sale totals remain immutable and visible even when a sale line was later corrected
 
 ## D-033 Require Seller Phone And Postal Address
@@ -611,3 +611,44 @@ This file captures the main project decisions in a lightweight ADR format.
   - the authoritative save path is shared by manual and Excel-assisted intake
   - imported rows do not need a staging table or stored workbook copy
   - existing seller details are not silently updated from Excel files
+
+## D-040 Track Defective Items And Refunds
+
+- Status: accepted
+- Key drivers:
+  - defects can be discovered after an item has already been accepted into association stock
+  - defective items must not be sold, must be returned to the seller, and must not be paid to the seller
+  - buyer-return defects require a full buyer refund including the 10 percent association fee
+  - the original sale remains a historical checkout fact and should not be recalculated after a refund
+- Decision:
+  - extend `item.status` with `defective`
+  - keep defects found before physical acceptance outside the database, except that a preregistered `registered` row may be deleted
+  - keep `in_stock -> defective` as an admin task from `Correction des articles` on `/administration`, not from the seller item list
+  - let admins restore `defective -> in_stock` only when no buyer refund history exists
+  - repurpose the admin correction section as `Correction des articles`, listing the first 15 non-`registered` items with a status column
+  - handle buyer-return defects from `/administration` with a `Rembourser` action on sold items only
+  - record defective refunds directly on `sale_line` with `refunded_at`, refunded item price, refunded checkout fee, total refund, and `refund_reason = defective`
+  - allow admins to cancel a defective refund that was entered by mistake, clearing the sale-line refund fields and restoring the item to `sold`
+  - treat active payable sale lines as `corrected_at IS NULL AND refunded_at IS NULL`
+  - include `defective` items in seller-sheet returned items with a visible `DÉFECTUEUX` marker
+  - exclude refunded sale lines and defective items from seller payout
+- Consequence:
+  - the admin page covers phase changes, item correction, mistaken sale correction, rare buyer-return refunds, and refund cancellation for operator mistakes
+  - read-only sale history shows refunded defective lines separately from corrected lines, then shows `Remboursements` and `Total corrigé` in the totals block
+  - seller settlement remains based on payable sold and missing items only
+  - a future richer accounting model can promote refunds to a separate table if needed, but VNext keeps the lightweight sale-line correction pattern
+
+## D-041 Use A General Administration Route
+
+- Status: accepted
+- Key drivers:
+  - the former sale-status page now handles event phase changes, mistaken sale corrections, defective item marking, defective refunds, and refund cancellation
+  - the previous sale-status route no longer describes the scope of the page
+  - operators need one obvious admin entry point rather than several subtly different correction pages
+- Decision:
+  - make `/administration` the user-facing admin route and main navigation target
+  - keep the page title as `Administration`
+  - keep the sale phase controls as a section named `Statut de la vente`
+- Consequence:
+  - future exceptional item workflows should live under `/administration` when they require the shared admin unlock
+  - docs and operator guidance should refer to `/administration`

@@ -1,3 +1,5 @@
+using AssociationSaleTool.Web.Domain.Pricing;
+
 namespace AssociationSaleTool.Web.Services.Models;
 
 public sealed record SaleCorrectionItem(
@@ -9,4 +11,10 @@ public sealed record SaleCorrectionItem(
     string SellerCode,
     string SellerName,
     int SellerPriceAtSaleCents,
-    DateTime SoldAt);
+    DateTime SoldAt)
+{
+    public int RefundCheckoutFeeCents =>
+        CheckoutPricingCalculator.CalculateTotals(SellerPriceAtSaleCents).CheckoutFeeCents;
+
+    public int RefundTotalCents => SellerPriceAtSaleCents + RefundCheckoutFeeCents;
+}

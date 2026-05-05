@@ -145,6 +145,100 @@ public sealed class SalesViewServiceTests
     }
 
     [Fact]
+    public async Task GetSaleAsync_ReturnsReadonlySaleDetailWithRefundedDefectiveLines()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var refundedAt = new DateTime(2026, 5, 4, 15, 30, 0, DateTimeKind.Utc);
+        var seller = new SellerEntity
+        {
+            SellerCode = "SV-005",
+            FirstName = "Sonia",
+            LastName = "Vente"
+        };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var refundedItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "SV-005-001",
+            ItemNumber = 1,
+            Title = "Jeu defectueux",
+            SellerPriceCents = 1200,
+            Status = "defective"
+        };
+        var activeItem = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "SV-005-002",
+            ItemNumber = 2,
+            Title = "Jeu conserve",
+            SellerPriceCents = 800,
+            Status = "sold"
+        };
+        context.Items.AddRange(refundedItem, activeItem);
+        await context.SaveChangesAsync();
+
+        var sale = new SaleEntity
+        {
+            SoldAt = new DateTime(2026, 5, 4, 14, 0, 0, DateTimeKind.Utc),
+            SubtotalSellerPriceCents = 2000,
+            CheckoutFeeCents = 200,
+            TotalPaidCents = 2200,
+            SaleLines =
+            [
+                new SaleLineEntity
+                {
+                    ItemId = refundedItem.Id,
+                    SellerPriceAtSaleCents = 1200,
+                    RefundedAt = refundedAt,
+                    RefundItemPriceCents = 1200,
+                    RefundCheckoutFeeCents = 120,
+                    RefundTotalCents = 1320,
+                    RefundReason = "defective"
+                },
+                new SaleLineEntity
+                {
+                    ItemId = activeItem.Id,
+                    SellerPriceAtSaleCents = 800
+                }
+            ]
+        };
+        context.Sales.Add(sale);
+        await context.SaveChangesAsync();
+        var service = new SalesViewService(context);
+
+        var detail = await service.GetSaleAsync(sale.Id);
+
+        Assert.NotNull(detail);
+        Assert.Equal(2000, detail!.SubtotalSellerPriceCents);
+        Assert.Equal(200, detail.CheckoutFeeCents);
+        Assert.Equal(2200, detail.TotalPaidCents);
+        Assert.True(detail.HasRefunds);
+        Assert.Equal(1320, detail.RefundTotalCents);
+        Assert.Equal(880, detail.CorrectedTotalPaidCents);
+        Assert.Collection(
+            detail.Lines,
+            first =>
+            {
+                Assert.Equal("SV-005-001", first.Reference);
+                Assert.False(first.IsCorrected);
+                Assert.True(first.IsRefunded);
+                Assert.Equal(refundedAt, first.RefundedAt);
+                Assert.Equal(1200, first.RefundItemPriceCents);
+                Assert.Equal(120, first.RefundCheckoutFeeCents);
+                Assert.Equal(1320, first.RefundTotalCents);
+                Assert.Equal("Rembours\u00e9", first.RefundStatusLabel);
+            },
+            second =>
+            {
+                Assert.Equal("SV-005-002", second.Reference);
+                Assert.False(second.IsRefunded);
+            });
+    }
+
+    [Fact]
     public async Task GetSaleAsync_ReturnsNullWhenSaleDoesNotExist()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

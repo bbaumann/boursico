@@ -9,6 +9,7 @@ public static class ItemStatusTransitions
             (ItemStatus.Registered, ItemStatus.InStock) => true,
             (ItemStatus.InStock, ItemStatus.Sold) => true,
             (ItemStatus.InStock, ItemStatus.Missing) => true,
+            (ItemStatus.InStock, ItemStatus.Defective) => true,
             _ => false
         };
     }

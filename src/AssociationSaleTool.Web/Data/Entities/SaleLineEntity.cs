@@ -12,6 +12,16 @@ public sealed class SaleLineEntity
 
     public DateTime? CorrectedAt { get; set; }
 
+    public DateTime? RefundedAt { get; set; }
+
+    public int? RefundItemPriceCents { get; set; }
+
+    public int? RefundCheckoutFeeCents { get; set; }
+
+    public int? RefundTotalCents { get; set; }
+
+    public string? RefundReason { get; set; }
+
     public SaleEntity Sale { get; set; } = null!;
 
     public ItemEntity Item { get; set; } = null!;

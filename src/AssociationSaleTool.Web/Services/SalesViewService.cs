@@ -62,7 +62,12 @@ public sealed class SalesViewService(AppDbContext dbContext)
                 x.Item.Reference,
                 x.Item.Title,
                 x.SellerPriceAtSaleCents,
-                x.CorrectedAt))
+                x.CorrectedAt,
+                x.RefundedAt,
+                x.RefundItemPriceCents,
+                x.RefundCheckoutFeeCents,
+                x.RefundTotalCents,
+                x.RefundReason))
             .ToList();
 
         return new SaleDetail(

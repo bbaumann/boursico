@@ -100,7 +100,7 @@ namespace AssociationSaleTool.Web.Migrations
                         {
                             t.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
 
-                            t.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing')");
+                            t.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')");
                         });
                 });
 
@@ -109,6 +109,10 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("BuyerAddress")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("buyer_address");
 
                     b.Property<string>("BuyerCity")
                         .HasColumnType("TEXT")
@@ -137,10 +141,6 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Property<string>("PaymentMethod")
                         .HasColumnType("TEXT")
                         .HasColumnName("payment_method");
-
-                    b.Property<string>("BuyerAddress")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("buyer_address");
 
                     b.Property<DateTime>("SoldAt")
                         .HasColumnType("TEXT")
@@ -182,6 +182,26 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("item_id");
 
+                    b.Property<int?>("RefundCheckoutFeeCents")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("refund_checkout_fee_cents");
+
+                    b.Property<int?>("RefundItemPriceCents")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("refund_item_price_cents");
+
+                    b.Property<string>("RefundReason")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("refund_reason");
+
+                    b.Property<int?>("RefundTotalCents")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("refund_total_cents");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("refunded_at");
+
                     b.Property<long>("SaleId")
                         .HasColumnType("INTEGER")
                         .HasColumnName("sale_id");
@@ -194,12 +214,18 @@ namespace AssociationSaleTool.Web.Migrations
 
                     b.HasIndex("ItemId")
                         .IsUnique()
-                        .HasFilter("corrected_at IS NULL");
+                        .HasFilter("corrected_at IS NULL AND refunded_at IS NULL");
 
                     b.HasIndex("SaleId");
 
                     b.ToTable("sale_line", null, t =>
                         {
+                            t.HasCheckConstraint("ck_sale_line_refund_checkout_fee_cents", "refund_checkout_fee_cents IS NULL OR refund_checkout_fee_cents >= 0");
+
+                            t.HasCheckConstraint("ck_sale_line_refund_item_price_cents", "refund_item_price_cents IS NULL OR refund_item_price_cents >= 0");
+
+                            t.HasCheckConstraint("ck_sale_line_refund_total_cents", "refund_total_cents IS NULL OR refund_total_cents >= 0");
+
                             t.HasCheckConstraint("ck_sale_line_seller_price_cents", "seller_price_at_sale_cents >= 0");
                         });
                 });
@@ -210,14 +236,14 @@ namespace AssociationSaleTool.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("email");
-
                     b.Property<string>("City")
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("city");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("email");
 
                     b.Property<int>("FeePaidCents")
                         .ValueGeneratedOnAdd()

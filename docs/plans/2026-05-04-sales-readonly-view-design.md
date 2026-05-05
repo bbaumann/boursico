@@ -43,7 +43,7 @@ Corrected sale lines remain visible as historical sale facts and are labeled `Co
 
 ## Boundaries
 
-Sale-line corrections stay on `/vente/statut`. The read-only sales view must not add admin-only actions or mutate sale, item, or correction state.
+Sale-line corrections stay on `/administration`. The read-only sales view must not add admin-only actions or mutate sale, item, or correction state.
 
 ## Testing
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-V1 uses an event-level sale phase to prevent accidental operational changes without blocking the event when organizers are still preparing.
+The system uses an event-level sale phase to prevent accidental operational changes without blocking the event when organizers are still preparing. V1 is complete; the current software state is VNext.
 
 The phase is a system rule, not just a visual label. Server-side services must enforce the phase because browser pages can stay open while an admin changes the phase.
 
@@ -66,11 +66,11 @@ Rules:
 
 When the event is still in `presale` or `sale`, an admin may open the reconciliation dashboard, but it is read-only. Seller-sheet printing and missing-item reconciliation corrections are only available in `post_sale`.
 
-## Phase Administration
+## Administration
 
-Phase transitions are exposed through the French route `/vente/statut`, which is also a fourth item in the main navigation.
+Phase transitions and exceptional item corrections are exposed through the French route `/administration`, which is also a fourth item in the main navigation.
 
-The page is guarded by the shared admin password from `Admin:SharedPassword`. Once the page is unlocked in the current browser session, phase changes and sale-line corrections do not ask for the password again. V1 does not add per-user identity or an audit log for phase changes.
+The page is guarded by the shared admin password from `Admin:SharedPassword`. Once the page is unlocked in the current browser session, phase changes, sale-line corrections, defective-item marking, defective-item refunds, and refund cancellations do not ask for the password again. VNext does not add per-user identity or an audit log for these admin actions.
 
 ## Sale Correction
 
@@ -90,4 +90,23 @@ V1 therefore uses an explicit admin sale-line correction:
 
 The original sale totals are not recalculated because the persisted sale represents what happened at checkout, including any cash or receipt consequence. Sale correction fixes item availability and seller payout facts without silently rewriting the historical checkout.
 
-Only one active, uncorrected sale line may exist for an item at a time. Corrected sale lines remain as historical correction evidence.
+Only one active payable sale line may exist for an item at a time. Active payable means `corrected_at IS NULL AND refunded_at IS NULL`. Corrected sale lines remain as historical correction evidence.
+
+## Defective Buyer Refund
+
+Defective buyer refund covers the case where a buyer returns a sold item because it is defective.
+
+This is not a mistaken sale correction. The sale did happen, but the buyer must be reimbursed and the item must not be sold again.
+
+VNext uses an explicit admin refund workflow:
+
+1. Admin finds the active sold item in `Correction des articles` on `/administration`.
+2. Admin clicks `Rembourser`.
+3. The confirmation pop-in shows item price, refunded 10 percent association fee, and total refund.
+4. The sale line receives `refunded_at`, refund amount fields, and `refund_reason = defective`.
+5. The item becomes `defective`.
+6. The original sale remains stored with its original totals.
+7. The refunded line is excluded from seller-sheet payable output.
+8. The item appears on the seller sheet as `DÉFECTUEUX` in the returned-items list.
+
+If the refund was entered by mistake, an admin may use `Annuler le remboursement` from the same page. The application clears `refunded_at`, the refund amount fields, and `refund_reason`, then restores the item to `sold`. This is only an error-recovery action; it is not used for a real buyer-return defect.
