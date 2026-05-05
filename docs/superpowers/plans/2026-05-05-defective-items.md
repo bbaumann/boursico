@@ -1,10 +1,10 @@
-﻿# Defective Items Implementation Plan
+# Defective Items Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Track accepted items that become defective, prevent their sale, return them to the seller, and record full buyer refunds when a sold item is returned as defective.
 
-**Architecture:** Add `defective` as a first-class item status, record defective buyer refunds on `sale_line`, keep original sale totals immutable, and extend the existing admin sale-status page for both sold-line refunds and in-stock defect handling.
+**Architecture:** Add `defective` as a first-class item status, record defective buyer refunds on `sale_line`, keep original sale totals immutable, and extend the `/administration` page for sold-line refunds, refund cancellation, and in-stock defect handling.
 
 **Tech Stack:** ASP.NET Core Razor Pages, EF Core, SQLite, xUnit.
 
@@ -13,7 +13,7 @@
 ## Task 1: Domain And Schema
 
 - [x] Add failing tests:
-  - `ItemStatusTransitionsTests` covers `in_stock -> defective` and blocks `defective -> sold`.
+  - `ItemStatusTransitionsTests` covers `in_stock -> defective` and blocks ad hoc `defective -> sold`.
   - `ItemStatusDisplayTests` covers the French label `défectueux`.
   - `AppDbContextModelTests` covers `defective` in the item status constraint and refund columns on `sale_line`.
 - [x] Run the focused tests and verify they fail for the missing status/schema.
@@ -50,6 +50,7 @@
   - refunded lines are no longer listed as active sold items
   - corrected sale lines cannot be refunded
   - refunded sale lines cannot be corrected
+  - `CancelDefectiveRefundAsync` clears refund fields and restores the item to `sold` when the refund was entered by mistake
 - [x] Add failing tests for in-stock defect handling:
   - admin can mark `in_stock -> defective`
   - admin can restore `defective -> in_stock` when no refund history exists
@@ -64,7 +65,7 @@
 
 ## Task 4: Admin Page
 
-- [x] Add/extend Razor Page tests if available for `/vente/statut`; otherwise add a smoke test that verifies rendered HTML contains:
+- [x] Add/extend Razor Page tests if available for `/administration`; otherwise add a smoke test that verifies rendered HTML contains:
   - `Correction des articles`
   - `Rembourser`
   - `Marquer défectueux`
@@ -73,6 +74,7 @@
 - [x] Run the focused tests and verify they fail.
 - [x] Update `Pages/SaleStatus/Index.cshtml.cs`:
   - add `OnPostRefundDefectiveAsync`
+  - add `OnPostCancelDefectiveRefundAsync`
   - add handlers for marking/restoring defective items
   - keep admin unlock behavior unchanged
   - use French success/error messages
@@ -81,6 +83,7 @@
   - show `Rembourser` beside `Remettre en stock` for sold items
   - show a confirmation pop-in with item reference, title, sale id, item price, refunded association fee, and total refund
   - show `Marquer défectueux` for `in_stock` items and `Remettre en stock` for eligible `defective` items
+  - show `Annuler le remboursement` for refunded defective items when the refund was entered by mistake
 - [x] Keep the seller detail article list free of the admin-only `Marquer défectueux` action.
 - [x] Run the focused page/smoke tests and verify they pass.
 

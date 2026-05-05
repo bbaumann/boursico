@@ -91,4 +91,56 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
         await transaction.CommitAsync(cancellationToken);
         return SaleCorrectionResult.Refunded;
     }
+
+    public async Task<SaleCorrectionResult> CancelDefectiveRefundAsync(
+        long saleLineId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var saleLine = await dbContext.SaleLines
+            .Include(x => x.Item)
+            .SingleOrDefaultAsync(x => x.Id == saleLineId, cancellationToken);
+
+        if (saleLine is null)
+        {
+            return SaleCorrectionResult.NotFound;
+        }
+
+        await dbContext.Entry(saleLine).ReloadAsync(cancellationToken);
+        await dbContext.Entry(saleLine).Reference(x => x.Item).LoadAsync(cancellationToken);
+        await dbContext.Entry(saleLine.Item).ReloadAsync(cancellationToken);
+
+        if (saleLine.CorrectedAt is not null
+            || saleLine.RefundedAt is null
+            || saleLine.RefundReason != "defective"
+            || saleLine.Item.Status != "defective")
+        {
+            return SaleCorrectionResult.NotAllowed;
+        }
+
+        var hasOtherActiveSaleLine = await dbContext.SaleLines
+            .AsNoTracking()
+            .AnyAsync(x =>
+                x.ItemId == saleLine.ItemId
+                && x.Id != saleLine.Id
+                && x.CorrectedAt == null
+                && x.RefundedAt == null,
+                cancellationToken);
+
+        if (hasOtherActiveSaleLine)
+        {
+            return SaleCorrectionResult.NotAllowed;
+        }
+
+        saleLine.RefundedAt = null;
+        saleLine.RefundItemPriceCents = null;
+        saleLine.RefundCheckoutFeeCents = null;
+        saleLine.RefundTotalCents = null;
+        saleLine.RefundReason = null;
+        saleLine.Item.Status = "sold";
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return SaleCorrectionResult.RefundCanceled;
+    }
 }

@@ -72,6 +72,50 @@ public sealed class ItemCorrectionServiceTests
         Assert.Equal(1320, candidate.RefundTotalCents);
     }
 
+    [Fact]
+    public async Task ListCandidatesAsync_ProjectsRefundUndoDataForRefundedDefectiveItems()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var seller = await SeedSellerAsync(context);
+        var item = AddItem(context, seller, "AA-001", 1, "Refunded toy", 1200, "defective");
+        await context.SaveChangesAsync();
+        var sale = new SaleEntity
+        {
+            SoldAt = new DateTime(2026, 5, 5, 10, 0, 0, DateTimeKind.Utc),
+            SubtotalSellerPriceCents = 1200,
+            CheckoutFeeCents = 120,
+            TotalPaidCents = 1320,
+            SaleLines =
+            [
+                new SaleLineEntity
+                {
+                    ItemId = item.Id,
+                    SellerPriceAtSaleCents = 1200,
+                    RefundedAt = new DateTime(2026, 5, 5, 11, 0, 0, DateTimeKind.Utc),
+                    RefundItemPriceCents = 1200,
+                    RefundCheckoutFeeCents = 120,
+                    RefundTotalCents = 1320,
+                    RefundReason = "defective"
+                }
+            ]
+        };
+        context.Sales.Add(sale);
+        await context.SaveChangesAsync();
+        var service = new ItemCorrectionService(context);
+
+        var candidate = Assert.Single(await service.ListCandidatesAsync());
+
+        Assert.Equal(item.Id, candidate.ItemId);
+        Assert.Equal(sale.Id, candidate.SaleId);
+        Assert.Equal(sale.SaleLines.Single().Id, candidate.RefundedSaleLineId);
+        Assert.Null(candidate.SaleLineId);
+        Assert.Equal("defective", candidate.Status);
+        Assert.True(candidate.CanCancelRefund);
+        Assert.False(candidate.CanRestoreInStock);
+        Assert.Equal(1200, candidate.DisplayPriceCents);
+    }
+
     private static async Task<AppDbContext> CreateContextAsync(SqliteConnection connection)
     {
         await connection.OpenAsync();

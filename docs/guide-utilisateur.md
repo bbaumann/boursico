@@ -1,4 +1,4 @@
-﻿# Guide utilisateur - Outil de vente de l'association
+# Guide utilisateur - Outil de vente de l'association
 
 Ce guide explique l'outil du point de vue des organisateurs, des bénévoles et des personnes qui préparent le rapprochement après la vente. Il est volontairement plus simple que la documentation technique : il décrit les usages, les écrans importants et la logique de sécurité opérationnelle.
 
@@ -223,11 +223,11 @@ Ensuite, dans la fenêtre de finalisation, le bouton `Enregistrer et imprimer` d
 
 Si le champ de reçu est vide, l'option d'impression reste désactivée.
 
-## Administrer le statut de la vente
+## Administration
 
-Aller dans `ADMIN` ou `/vente/statut`.
+Aller dans `ADMIN` ou `/administration`.
 
-La page demande le `Mot de passe administrateur`. Une fois déverrouillée dans le navigateur, elle permet de changer le statut sans redemander le mot de passe à chaque clic.
+La page demande le `Mot de passe administrateur`. Une fois déverrouillée dans le navigateur, elle permet de changer le statut de la vente et de corriger des articles exceptionnels sans redemander le mot de passe à chaque clic.
 
 ### Prévente
 
@@ -312,6 +312,8 @@ Si un acheteur rapporte un article vendu parce qu'il est défectueux :
 5. Rembourser l'acheteur du total indiqué, puis confirmer.
 
 Le montant inclut le prix de l'article et les 10 % de frais association. La vente d'origine reste visible avec son total d'origine, la ligne est marquée `Remboursé` avec la date du remboursement, puis les totaux affichent `Remboursements` et `Total corrigé`. L'article sera rendu au vendeur et ne sera pas payé au vendeur.
+
+Si le remboursement a été saisi par erreur, l'administrateur peut cliquer sur `Annuler le remboursement`. L'article redevient `vendu` et la ligne de vente n'est plus marquée comme remboursée.
 
 ## Après la vente : rapprochement
 

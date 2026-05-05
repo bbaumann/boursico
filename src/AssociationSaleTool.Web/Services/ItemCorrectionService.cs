@@ -35,13 +35,28 @@ public sealed class ItemCorrectionService(AppDbContext dbContext)
                     .Select(line => (long?)line.Id)
                     .FirstOrDefault(),
                 x.SaleLines
+                    .Where(line => line.RefundedAt != null && line.RefundReason == "defective")
+                    .OrderByDescending(line => line.RefundedAt)
+                    .Select(line => (long?)line.Id)
+                    .FirstOrDefault(),
+                x.SaleLines
                     .Where(line => line.CorrectedAt == null && line.RefundedAt == null)
                     .OrderByDescending(line => line.Sale.SoldAt)
+                    .Select(line => (long?)line.SaleId)
+                    .FirstOrDefault()
+                ?? x.SaleLines
+                    .Where(line => line.RefundedAt != null && line.RefundReason == "defective")
+                    .OrderByDescending(line => line.RefundedAt)
                     .Select(line => (long?)line.SaleId)
                     .FirstOrDefault(),
                 x.SaleLines
                     .Where(line => line.CorrectedAt == null && line.RefundedAt == null)
                     .OrderByDescending(line => line.Sale.SoldAt)
+                    .Select(line => (DateTime?)line.Sale.SoldAt)
+                    .FirstOrDefault()
+                ?? x.SaleLines
+                    .Where(line => line.RefundedAt != null && line.RefundReason == "defective")
+                    .OrderByDescending(line => line.RefundedAt)
                     .Select(line => (DateTime?)line.Sale.SoldAt)
                     .FirstOrDefault(),
                 x.Reference,
@@ -53,6 +68,11 @@ public sealed class ItemCorrectionService(AppDbContext dbContext)
                 x.SaleLines
                     .Where(line => line.CorrectedAt == null && line.RefundedAt == null)
                     .OrderByDescending(line => line.Sale.SoldAt)
+                    .Select(line => (int?)line.SellerPriceAtSaleCents)
+                    .FirstOrDefault()
+                ?? x.SaleLines
+                    .Where(line => line.RefundedAt != null && line.RefundReason == "defective")
+                    .OrderByDescending(line => line.RefundedAt)
                     .Select(line => (int?)line.SellerPriceAtSaleCents)
                     .FirstOrDefault(),
                 x.SaleLines.Any(line => line.RefundedAt != null)))

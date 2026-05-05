@@ -4,6 +4,7 @@ public enum SaleCorrectionResult
 {
     Corrected,
     Refunded,
+    RefundCanceled,
     NotFound,
     NotAllowed
 }

@@ -83,6 +83,7 @@ The status field remains editable only through the workflow transitions defined 
 
 - `in_stock -> sold` when a sale is saved
 - `sold -> defective` only through the admin defective-item refund workflow when a buyer returns a defective sold item
+- `defective -> sold` only when an admin cancels a defective refund that was entered by mistake
 
 No reservation status exists in V1:
 
@@ -103,9 +104,9 @@ The following are final in normal V1 operations:
 
 - `sold`, except for an explicit admin sale-line correction when the item was added to a sale by mistake
 - `missing`, except for an explicit admin reconciliation correction when the item was marked `missing` by mistake
-- `defective`, except for an explicit admin correction before any buyer refund exists
+- `defective`, except for an explicit admin correction before any buyer refund exists, or cancellation of a defective refund that was entered by mistake
 
-No plain item-status transition back out of `sold` is defined. A mistaken sale uses sale-line correction. A defective buyer return uses the refund workflow and changes the item to `defective`.
+No plain item-status transition back out of `sold` is defined. A mistaken sale uses sale-line correction. A defective buyer return uses the refund workflow and changes the item to `defective`. If the refund itself was entered by mistake, the admin refund-cancellation workflow clears the refund fields and restores the item to `sold`.
 
 ## Forbidden Transitions
 
@@ -114,12 +115,12 @@ No plain item-status transition back out of `sold` is defined. A mistaken sale u
 - ad hoc `sold -> in_stock`
 - `sold -> missing`
 - ad hoc `sold -> defective` without a refund record
-- `defective -> sold`
+- ad hoc `defective -> sold` outside refund cancellation
 - `defective -> missing`
 
 V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, it can stay `registered` without affecting checkout or seller-sheet outputs. If the entry was created by mistake or the team wants a cleaner seller record, it may be deleted while still `registered`. If an item was mistakenly recorded as present, it may be removed while it is still `in_stock`.
 
-If an operator mistake or defect is discovered after an item has become `sold`, `missing`, or `defective`, correction must be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow. Restoring a mistakenly sold item to `in_stock` is allowed only by correcting the active sale line, which leaves the original sale stored and marks the sale line corrected. Refunding a defective sold item leaves the original sale stored, records the refund on the sale line, and marks the item `defective`.
+If an operator mistake or defect is discovered after an item has become `sold`, `missing`, or `defective`, correction must be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow. Restoring a mistakenly sold item to `in_stock` is allowed only by correcting the active sale line, which leaves the original sale stored and marks the sale line corrected. Refunding a defective sold item leaves the original sale stored, records the refund on the sale line, and marks the item `defective`. Canceling a refund is allowed only when the refund was entered by mistake; it clears the sale-line refund fields and restores the item to `sold`.
 
 ## Role Summary
 
@@ -149,7 +150,8 @@ After the sale:
 - move `in_stock` items to `missing` when a physically expected return cannot be found
 - restore a mistakenly marked `missing` item to `in_stock` only as a correction
 - mark `in_stock` items as `defective` when they cannot be sold and must be returned
-- refund a defective sold item from `/vente/statut`, including the buyer-paid 10 percent association fee
+- refund a defective sold item from `/administration`, including the buyer-paid 10 percent association fee
+- cancel a mistaken defective refund from `/administration`, restoring the item to `sold`
 - restore `defective` items to `in_stock` only when they have no refund history
 - must enter the shared admin password before confirming that action
 - cannot reopen or rewrite seller or item master data as part of normal reconciliation

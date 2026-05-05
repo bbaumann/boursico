@@ -5,6 +5,7 @@ namespace AssociationSaleTool.Web.Services.Models;
 public sealed record ItemCorrectionCandidate(
     long ItemId,
     long? SaleLineId,
+    long? RefundedSaleLineId,
     long? SaleId,
     DateTime? SoldAt,
     string Reference,
@@ -23,6 +24,8 @@ public sealed record ItemCorrectionCandidate(
     public bool CanMarkDefective => Status == "in_stock";
 
     public bool CanRestoreInStock => Status == "defective" && !HasRefundHistory;
+
+    public bool CanCancelRefund => Status == "defective" && RefundedSaleLineId is not null;
 
     public int DisplayPriceCents => SellerPriceAtSaleCents ?? SellerPriceCents;
 

@@ -1,9 +1,9 @@
-@page "/vente/statut"
+@page "/administration"
 @using AssociationSaleTool.Web.Infrastructure
 @using AssociationSaleTool.Web.Services
 @model AssociationSaleTool.Web.Pages.SaleStatus.IndexModel
 @{
-    ViewData["Title"] = "Statut de la vente";
+    ViewData["Title"] = "Administration";
 }
 
 @if (!Model.IsUnlocked)
@@ -12,7 +12,7 @@
         <div class="page-header">
             <div>
                 <p class="eyebrow">Administration</p>
-                <h1 class="page-title">Statut de la vente</h1>
+                <h1 class="page-title">Administration</h1>
             </div>
         </div>
 
@@ -34,7 +34,7 @@ else
         <div class="page-header">
             <div>
                 <p class="eyebrow">Administration</p>
-                <h1 class="page-title">Statut de la vente</h1>
+                <h1 class="page-title">Administration</h1>
                 <p class="seller-meta">Statut actuel : @Model.CurrentPhaseLabel</p>
                 <p class="seller-meta">@Model.CurrentPhaseDescription</p>
             </div>
@@ -48,7 +48,7 @@ else
         <div asp-validation-summary="All" class="validation"></div>
 
         <section class="subsection">
-            <h2>Changer le statut</h2>
+            <h2>Statut de la vente</h2>
 
             <div class="phase-action-grid">
                 <form method="post" asp-page-handler="ChangePhase" class="phase-action">
@@ -216,6 +216,19 @@ else
                                           class="inline-form">
                                         <button type="submit" class="table-action-button">
                                             Remettre en stock
+                                        </button>
+                                    </form>
+                                }
+                                else if (item.CanCancelRefund && item.RefundedSaleLineId is { } refundedSaleLineId)
+                                {
+                                    <form method="post"
+                                          asp-page-handler="CancelDefectiveRefund"
+                                          asp-route-saleLineId="@refundedSaleLineId"
+                                          class="inline-form">
+                                        <button type="submit"
+                                                class="table-action-button"
+                                                onclick="return confirm('Annuler ce remboursement et remettre l'article vendu ? À utiliser uniquement si le remboursement a été saisi par erreur.');">
+                                            Annuler le remboursement
                                         </button>
                                     </form>
                                 }

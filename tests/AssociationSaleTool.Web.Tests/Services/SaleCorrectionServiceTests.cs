@@ -89,6 +89,42 @@ public sealed class SaleCorrectionServiceTests
     }
 
     [Fact]
+    public async Task CancelDefectiveRefundAsync_RestoresSoldItemAndClearsRefundFields()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var (item, saleLine) = await SeedSoldItemAsync(context);
+        var service = new SaleCorrectionService(context);
+        await service.RefundDefectiveSaleLineAsync(saleLine.Id);
+
+        var result = await service.CancelDefectiveRefundAsync(saleLine.Id);
+
+        Assert.Equal(SaleCorrectionResult.RefundCanceled, result);
+        var savedItem = await context.Items.SingleAsync(x => x.Id == item.Id);
+        var restoredLine = await context.SaleLines.SingleAsync(x => x.Id == saleLine.Id);
+        Assert.Equal("sold", savedItem.Status);
+        Assert.Null(restoredLine.RefundedAt);
+        Assert.Null(restoredLine.RefundItemPriceCents);
+        Assert.Null(restoredLine.RefundCheckoutFeeCents);
+        Assert.Null(restoredLine.RefundTotalCents);
+        Assert.Null(restoredLine.RefundReason);
+        Assert.Null(restoredLine.CorrectedAt);
+    }
+
+    [Fact]
+    public async Task CancelDefectiveRefundAsync_ReturnsNotAllowedForNonRefundedLine()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var (_, saleLine) = await SeedSoldItemAsync(context);
+        var service = new SaleCorrectionService(context);
+
+        var result = await service.CancelDefectiveRefundAsync(saleLine.Id);
+
+        Assert.Equal(SaleCorrectionResult.NotAllowed, result);
+    }
+
+    [Fact]
     public async Task RefundDefectiveSaleLineAsync_ReturnsNotAllowedForCorrectedLine()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

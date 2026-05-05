@@ -145,6 +145,7 @@ Represents one sold item inside one sale.
 - `refund_reason` is `defective` for the current refund workflow.
 - Original sale totals are not recalculated when a sale line is corrected.
 - Original sale totals are not recalculated when a sale line is refunded.
+- If an admin cancels a defective refund that was entered by mistake, the refund fields are cleared and the original sale totals still remain unchanged.
 
 ## `event_state`
 
@@ -162,7 +163,7 @@ V1 uses a single row with `id = 1`.
 
 - `sale_phase` values are `presale`, `sale`, and `post_sale`.
 - a new database starts in `presale`.
-- phase changes are made through `/vente/statut` and require `Admin:SharedPassword`.
+- phase changes are made through `/administration` and require `Admin:SharedPassword`.
 
 ## Relationships
 
@@ -296,7 +297,7 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - when item master data is locked, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
 - when item master data is locked, only workflow-driven status transitions remain allowed
 - `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
-- `sale_line` price snapshots are immutable; correction status is represented by `corrected_at`, and defective buyer refunds are represented by the refund fields
+- `sale_line` price snapshots are immutable; correction status is represented by `corrected_at`, and defective buyer refunds are represented by the refund fields, which may only be cleared by the explicit admin refund-cancellation workflow
 
 ## Business Invariants
 

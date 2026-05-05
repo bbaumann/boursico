@@ -14,6 +14,8 @@ namespace AssociationSaleTool.Web.Tests.Smoke;
 
 public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactory>
 {
+    private const string AdminPath = "/administration";
+
     private readonly IntakeWebApplicationFactory _factory;
 
     public WebApplicationSmokeTests(IntakeWebApplicationFactory factory)
@@ -269,20 +271,36 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SaleStatusPageShowsMainNavigationWithAdminActive()
+    public async Task AdminPageShowsMainNavigationWithAdminActive()
     {
         var client = _factory.CreateClient();
-        var response = await client.GetAsync("/vente/statut");
+        var response = await client.GetAsync(AdminPath);
 
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         AssertMainNavigationContainsExpectedLinks(content);
-        AssertMainNavigationActive("/vente/statut", content);
+        AssertMainNavigationActive(AdminPath, content);
     }
 
     [Fact]
-    public async Task SaleStatusPageShowsAdminGateWhenLocked()
+    public async Task AdminPageShowsAdminGateWhenLocked()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync(AdminPath);
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Administration", content);
+        Assert.Contains("Mot de passe administrateur", content);
+        Assert.Contains("Déverrouiller", content);
+        Assert.DoesNotContain("Statut de la vente", content);
+        Assert.DoesNotContain("Correction des articles", content);
+    }
+
+    [Fact]
+    public async Task AdminPageKeepsLegacySaleStatusRouteAlias()
     {
         var client = _factory.CreateClient();
         var response = await client.GetAsync("/vente/statut");
@@ -290,11 +308,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Statut de la vente", content);
-        Assert.Contains("Mot de passe administrateur", content);
-        Assert.Contains("Déverrouiller", content);
-        Assert.DoesNotContain("Changer le statut", content);
-        Assert.DoesNotContain("Correction des articles", content);
+        Assert.Contains("Administration", content);
+        AssertMainNavigationActive(AdminPath, content);
     }
 
     [Fact]
@@ -304,7 +319,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var gateContent = await GetSaleStatusGateAsync(client);
 
         var response = await client.PostAsync(
-            "/vente/statut?handler=Unlock",
+            $"{AdminPath}?handler=Unlock",
             BuildFormContent(gateContent, ("PasswordInput.Password", "wrong-password")));
 
         response.EnsureSuccessStatusCode();
@@ -322,14 +337,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = await UnlockSaleStatusPageAsync(client);
 
-        Assert.Contains("Changer le statut", content);
+        Assert.Contains("Statut de la vente", content);
         Assert.Contains("Correction des articles", content);
         Assert.Contains("Passer en prévente", content);
         Assert.Contains("Passer en vente", content);
         Assert.Contains("Passer en après-vente", content);
         Assert.DoesNotContain("name=\"Input.Password\"", content);
         Assert.DoesNotContain("name=\"CorrectionPassword\"", content);
-        Assert.Contains("href=\"/vente/statut\"", content);
+        Assert.Contains($"href=\"{AdminPath}\"", content);
     }
 
     [Theory]
@@ -405,14 +420,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var dashboardContent = await UnlockSaleStatusPageAsync(client);
         var response = await client.PostAsync(
-            "/vente/statut?handler=ChangePhase",
+            $"{AdminPath}?handler=ChangePhase",
             BuildFormContent(
                 dashboardContent,
                 ("Input.Phase", "sale")));
 
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Statut de la vente", content);
+        Assert.Contains("Administration", content);
         Assert.Contains("Vente", content);
 
         using (var scope = _factory.Services.CreateScope())
@@ -480,7 +495,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var dashboardContent = await UnlockSaleStatusPageAsync(client);
         var response = await client.PostAsync(
-            $"/vente/statut?handler=CorrectSaleLine&saleLineId={saleLineId}",
+            $"{AdminPath}?handler=CorrectSaleLine&saleLineId={saleLineId}",
             BuildFormContent(dashboardContent));
 
         response.EnsureSuccessStatusCode();
@@ -660,7 +675,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var dashboardContent = await UnlockSaleStatusPageAsync(client);
         var response = await client.PostAsync(
-            $"/vente/statut?handler=RefundDefectiveSaleLine&saleLineId={saleLineId}",
+            $"{AdminPath}?handler=RefundDefectiveSaleLine&saleLineId={saleLineId}",
             BuildFormContent(dashboardContent));
 
         response.EnsureSuccessStatusCode();
@@ -675,6 +690,85 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Equal(150, saleLine.RefundCheckoutFeeCents);
             Assert.Equal(1650, saleLine.RefundTotalCents);
             Assert.Equal("defective", saleLine.RefundReason);
+        }
+    }
+
+    [Fact]
+    public async Task AdminPageCancelsDefectiveRefundWhenUnlocked()
+    {
+        var client = _factory.CreateClient();
+        long itemId;
+        long saleLineId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "SU-001",
+                FirstName = "Solene",
+                LastName = "Undo"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "00-SU-001",
+                ItemNumber = 1,
+                Title = "Article remboursement erreur",
+                SellerPriceCents = 1500,
+                Status = "defective"
+            };
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+
+            var sale = new SaleEntity
+            {
+                SoldAt = DateTime.UtcNow,
+                SubtotalSellerPriceCents = 1500,
+                CheckoutFeeCents = 150,
+                TotalPaidCents = 1650,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = item.Id,
+                        SellerPriceAtSaleCents = 1500,
+                        RefundedAt = DateTime.UtcNow,
+                        RefundItemPriceCents = 1500,
+                        RefundCheckoutFeeCents = 150,
+                        RefundTotalCents = 1650,
+                        RefundReason = "defective"
+                    }
+                ]
+            };
+            dbContext.Sales.Add(sale);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+            saleLineId = sale.SaleLines.Single().Id;
+        }
+
+        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        Assert.Contains("Annuler le remboursement", dashboardContent);
+
+        var response = await client.PostAsync(
+            $"{AdminPath}?handler=CancelDefectiveRefund&saleLineId={saleLineId}",
+            BuildFormContent(dashboardContent));
+
+        response.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal("sold", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+            var saleLine = await dbContext.SaleLines.SingleAsync(x => x.Id == saleLineId);
+            Assert.Null(saleLine.RefundedAt);
+            Assert.Null(saleLine.RefundItemPriceCents);
+            Assert.Null(saleLine.RefundCheckoutFeeCents);
+            Assert.Null(saleLine.RefundTotalCents);
+            Assert.Null(saleLine.RefundReason);
         }
     }
 
@@ -712,7 +806,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var dashboardContent = await UnlockSaleStatusPageAsync(client);
         var response = await client.PostAsync(
-            $"/vente/statut?handler=MarkDefectiveItem&itemId={itemId}",
+            $"{AdminPath}?handler=MarkDefectiveItem&itemId={itemId}",
             BuildFormContent(dashboardContent));
 
         response.EnsureSuccessStatusCode();
@@ -779,10 +873,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var gateContent = await GetSaleStatusGateAsync(client);
         var phaseResponse = await client.PostAsync(
-            "/vente/statut?handler=ChangePhase",
+            $"{AdminPath}?handler=ChangePhase",
             BuildFormContent(gateContent, ("Input.Phase", "sale")));
         var correctionResponse = await client.PostAsync(
-            $"/vente/statut?handler=CorrectSaleLine&saleLineId={saleLineId}",
+            $"{AdminPath}?handler=CorrectSaleLine&saleLineId={saleLineId}",
             BuildFormContent(gateContent));
 
         foreach (var response in new[] { phaseResponse, correctionResponse })
@@ -2724,7 +2818,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var gateContent = await GetSaleStatusGateAsync(client);
 
         var response = await client.PostAsync(
-            "/vente/statut?handler=Unlock",
+            $"{AdminPath}?handler=Unlock",
             BuildFormContent(gateContent, ("PasswordInput.Password", "test-password")));
 
         response.EnsureSuccessStatusCode();
@@ -2734,7 +2828,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
     private static async Task<string> GetSaleStatusGateAsync(HttpClient client)
     {
-        var gate = await client.GetAsync("/vente/statut");
+        var gate = await client.GetAsync(AdminPath);
         var gateContent = await gate.Content.ReadAsStringAsync();
 
         gate.EnsureSuccessStatusCode();
@@ -2748,7 +2842,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("href=\"/vendeurs\"", content);
         Assert.Contains("href=\"/caisse\"", content);
         Assert.Contains("href=\"/rapprochement\"", content);
-        Assert.Contains("href=\"/vente/statut\"", content);
+        Assert.Contains($"href=\"{AdminPath}\"", content);
         Assert.Contains("VENDEURS", content);
         Assert.Contains("CAISSE", content);
         Assert.Contains("ADMIN", content);

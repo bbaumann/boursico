@@ -7,7 +7,7 @@ The recommended V1 architecture is a small custom local-network system:
 - one local server machine on the event network
 - one central authoritative database
 - one browser-based operations UI for intake and sale-day use
-- one admin-gated sale status page for event phase changes and sale corrections
+- one admin-gated administration page for event phase changes, sale corrections, and exceptional item corrections
 - one admin-gated in-app reconciliation dashboard for post-sale processing
 
 This is intentionally not an offline-first distributed architecture.
@@ -54,8 +54,8 @@ Responsibilities:
 - sale saving
 - optional receipt printing
 - visible current sale phase on every page
-- admin-gated sale status workflow from `/vente/statut`
-- correction of mistaken sale lines from the unlocked sale status workflow
+- admin-gated administration workflow from `/administration`
+- correction of mistaken sale lines and exceptional item states from the unlocked administration workflow
 
 Properties:
 
@@ -65,15 +65,18 @@ Properties:
 - optimized for elderly volunteers
 - very narrow workflow
 
-### 4. Sale Status Administration
+### 4. Administration
 
 Responsibilities:
 
-- expose event phase controls at `/vente/statut`
+- expose event phase controls at `/administration`
 - move the event between `presale`, `sale`, and `post_sale`
 - require `Admin:SharedPassword` to unlock the page
-- list active sold sale lines that can be corrected
+- list non-`registered` items that can be corrected
 - return a mistakenly sold item to `in_stock` while marking the original sale line as corrected
+- mark accepted items as `defective`
+- refund buyer-returned defective sold items
+- cancel a mistaken defective refund and restore the item to `sold`
 
 Properties:
 
@@ -82,6 +85,7 @@ Properties:
 - operational rather than accounting-focused
 - phase is persisted in the database and enforced server-side
 - corrected sale lines remain in the historical sale record
+- defective refunds remain on the historical sale line unless an admin cancels a mistaken refund
 - the original sale totals are not recalculated by correction
 
 ### 5. Reconciliation Dashboard
@@ -91,7 +95,7 @@ Responsibilities:
 - expose the reconciliation dashboard at `/rapprochement`
 - compute seller-level outputs after sales are over
 - print seller sheets from `/rapprochement/feuilles`
-- generate sheets only for sellers with at least one `sold`, `missing`, or `in_stock` item
+- generate sheets only for sellers with at least one `sold`, `missing`, `in_stock`, or `defective` item
 - support marking items as `missing`
 - support restoring mistakenly marked `missing` items to `in_stock` as reconciliation corrections
 - regenerate corrected seller sheets from current database facts
@@ -116,7 +120,7 @@ Properties:
 
 ### Sale Phase
 
-1. Admin moves the event to `sale` from `/vente/statut`.
+1. Admin moves the event to `sale` from `/administration`.
 2. Seller and item master data become read-only in normal operations.
 3. `/` opens `/caisse`.
 4. Operator types part of a reference.
@@ -125,11 +129,11 @@ Properties:
 7. Item is added to the current cart.
 8. Sale is saved.
 9. Item status becomes unavailable for further sale.
-10. Admin can correct a mistaken sale line from `/vente/statut` if an item was sold by mistake.
+10. Admin can correct a mistaken sale line from `/administration` if an item was sold by mistake.
 
 ### Post-Sale Phase
 
-1. Admin moves the event to `post_sale` from `/vente/statut`.
+1. Admin moves the event to `post_sale` from `/administration`.
 2. Checkout validation and sale persistence are rejected server-side.
 3. `/` opens `/rapprochement`.
 4. Reconciliation dashboard reads database facts.

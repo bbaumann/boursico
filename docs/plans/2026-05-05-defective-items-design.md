@@ -1,4 +1,4 @@
-﻿# Defective Items Design
+# Defective Items Design
 
 ## Goal
 
@@ -74,6 +74,8 @@ This is not the same business operation as a mistaken sale-line correction. A mi
 
 The UI can still live next to the existing sale correction action because both actions are rare, admin-only sale-line interventions.
 
+If an admin records the refund by mistake, the admin can cancel that refund from the same correction table. Cancellation clears the sale-line refund fields and restores the item to `sold`; it is not the path for real returned defective items.
+
 ## Refund Calculation
 
 The refund amount is:
@@ -124,6 +126,7 @@ Rules:
 - a refunded sale line is not payable to the seller
 - a refunded sale line remains visible in sale history as a historical fact
 - `refund_total_cents = refund_item_price_cents + refund_checkout_fee_cents`
+- refund fields are cleared only by the explicit admin refund-cancellation workflow when the refund was entered by mistake
 
 The existing active sale-line concept becomes active payable sale line:
 
@@ -144,6 +147,7 @@ Allowed normal transitions:
 - `in_stock -> defective`
 - `defective -> in_stock`, only as an admin correction when no buyer refund is involved
 - `sold -> defective`, only through the defective-item refund workflow
+- `defective -> sold`, only when an admin cancels a defective refund that was entered by mistake
 - `missing -> in_stock`, only as an admin reconciliation correction
 
 Forbidden plain status edits:
@@ -153,7 +157,7 @@ Forbidden plain status edits:
 - `registered -> missing`
 - ad hoc `sold -> defective` without a refund record
 - ad hoc `sold -> in_stock`
-- `defective -> sold`
+- ad hoc `defective -> sold` outside refund cancellation
 - `defective -> missing`
 
 Deletion remains allowed only for `registered` and `in_stock` items that are not linked to sale history. A `defective` item should not be hard-deleted in normal operations because it is a physical item that must be returned to the seller.
@@ -162,7 +166,7 @@ Deletion remains allowed only for `registered` and `in_stock` items that are not
 
 Use the existing admin surface rather than adding a volunteer-facing control.
 
-The existing `/vente/statut` correction area is the right home for item corrections. It should be labeled `Correction des articles` and display the first 15 non-`registered` items, with a status column.
+The existing `/administration` correction area is the right home for item corrections. It should be labeled `Correction des articles` and display the first 15 non-`registered` items, with a status column.
 
 For active sold items, the table should show two distinct admin actions:
 
@@ -177,6 +181,7 @@ The same table should support defect workflows for non-sold items:
 - show status, seller, and price
 - for `in_stock` items: `Marquer défectueux`
 - for eligible `defective` items with no refund history: `Remettre en stock`
+- for refunded `defective` items: `Annuler le remboursement`, only when the refund was entered by mistake
 
 The seller detail article list must not expose `Marquer défectueux`; marking an item defective is an admin task.
 
@@ -247,6 +252,7 @@ The admin workflow should show French errors for:
 - attempt to mark a non-`in_stock` item defective through the in-stock defect action
 - attempt to refund a sale line that is already corrected or refunded
 - attempt to restore a defective item that came from a buyer refund
+- attempt to cancel a refund that is not a defective refund or whose item is no longer `defective`
 
 Status changes and refunds must reload the current item and sale-line state from the database immediately before saving.
 
@@ -261,6 +267,7 @@ Tests should cover:
 - admin can restore non-refunded `defective -> in_stock`
 - buyer refund workflow changes `sold -> defective`
 - buyer refund workflow records item-price refund, association-fee refund, and total refund
+- admin can cancel a mistaken defective refund, clearing refund fields and restoring the item to `sold`
 - refunded sale lines are excluded from seller-sheet payable items
 - defective items appear in seller-sheet returned items with a visible marker
 - sale history labels refunded defective lines distinctly from corrected lines

@@ -189,6 +189,31 @@ public sealed class IndexModel(
         return Page();
     }
 
+    public async Task<IActionResult> OnPostCancelDefectiveRefundAsync(
+        long saleLineId,
+        CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = await saleCorrectionService.CancelDefectiveRefundAsync(saleLineId, cancellationToken);
+        if (result == SaleCorrectionResult.RefundCanceled)
+        {
+            SuccessMessage = "Le remboursement est annulé. L'article est de nouveau marqué vendu.";
+            return RedirectToPage();
+        }
+
+        var message = result == SaleCorrectionResult.NotFound
+            ? "Ligne de vente introuvable."
+            : "Ce remboursement ne peut pas être annulé dans son état actuel.";
+
+        ModelState.AddModelError(string.Empty, message);
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
     public static string FormatPrice(int priceCents)
     {
         return $"{priceCents / 100m:0.00} EUR";

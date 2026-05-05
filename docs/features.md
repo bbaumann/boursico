@@ -1,4 +1,4 @@
-﻿# Features
+# Features
 
 ## Feature Split
 
@@ -36,6 +36,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - View saved sales in read-only mode from the checkout area
 - Mark accepted items as defective from the admin page
 - Refund defective sold items, including the 10 percent association fee
+- Cancel a mistaken defective refund from the admin page
 
 ### Sale-Day UX Constraints
 
@@ -64,7 +65,7 @@ The event has one persisted sale phase:
 
 `presale` is the default. Sales are allowed in `presale` and `sale` so the sale day is not blocked if organizers are still doing final corrections. `sale` locks seller and item master data. `post_sale` blocks new sale validation and sale save server-side.
 
-The phase appears near the event/software name on every page as information only. The admin page is available as a fourth main navigation item. Admins unlock `/vente/statut` with the shared admin password, then change the phase from that page without re-entering the password for every action.
+The phase appears near the event/software name on every page as information only. The admin page is available as a fourth main navigation item. Admins unlock `/administration` with the shared admin password, then change the phase from that page without re-entering the password for every action.
 
 ### Seller And Item Data Freeze At Sale Start
 
@@ -98,6 +99,7 @@ When seller and item master data are locked, only workflow-driven status changes
 - restoring a `defective` item to `in_stock` only when it has no buyer refund history
 - correcting a mistaken sale line as an admin sale correction, which marks the sale line corrected and returns the item to `in_stock`
 - refunding a defective sold item as an admin sale correction, which records the refund and moves the item to `defective`
+- canceling a mistaken defective refund as an admin correction, which clears the refund fields and restores the item to `sold`
 
 ### Expected Checkout Flow
 
@@ -135,7 +137,7 @@ Operators can inspect saved sales from the checkout area without admin unlock:
 - refunded defective sale lines remain visible as historical sale facts and are labeled `Remboursé` with the refund date
 - when a buyer refund exists, sale totals show the original total, then `Remboursements`, then `Total corrigé`
 
-The read-only sales view does not expose correction actions. Mistaken sale-line correction remains on `/vente/statut`.
+The read-only sales view does not expose correction actions. Mistaken sale-line correction and exceptional item correction remain on `/administration`.
 
 ### Concurrent Checkout Rule
 
@@ -150,11 +152,11 @@ V1 does not use cart-level reservation.
 
 ### Sale Correction
 
-If a volunteer saved a sale with the wrong item reference, an admin may correct the active sale line from `/vente/statut`.
+If a volunteer saved a sale with the wrong item reference, an admin may correct the active sale line from `/administration`.
 
 The correction:
 
-- requires the sale status admin page to be unlocked with the shared admin password
+- requires the admin page to be unlocked with the shared admin password
 - records a correction timestamp on the sale line
 - returns the item to `in_stock`
 - keeps the original sale and original sale totals unchanged
@@ -165,7 +167,7 @@ The correction:
 
 If a defective item is spotted during physical handover, the item is not accepted. If it was preregistered, the operator may delete the `registered` item; if it was being entered in `Dépôt` mode, the row is not created.
 
-If a defect is spotted after the item is already `in_stock`, an admin uses `/vente/statut` to mark it `défectueux`.
+If a defect is spotted after the item is already `in_stock`, an admin uses `/administration` to mark it `défectueux`.
 
 The defective status:
 
@@ -173,8 +175,9 @@ The defective status:
 - keeps the item on the seller sheet as an item to return
 - excludes the item from seller payout
 - allows `defective -> in_stock` only as an admin correction when no buyer refund exists
+- allows `defective -> sold` only when an admin cancels a defective refund that was entered by mistake
 
-If a buyer returns a defective sold item, an admin uses `Rembourser` from `Correction des articles` on `/vente/statut`.
+If a buyer returns a defective sold item, an admin uses `Rembourser` from `Correction des articles` on `/administration`.
 
 The refund workflow:
 
@@ -184,6 +187,8 @@ The refund workflow:
 - changes the item from `sold` to `defective`
 - excludes the sale line from seller payout
 - shows the item on seller sheets as `DÉFECTUEUX`
+
+If the refund was entered by mistake, an admin may use `Annuler le remboursement`. This clears the sale-line refund fields and restores the item to `sold`; it is not the normal path for returned defective items.
 
 ### Receipt UX Rule
 
