@@ -1,6 +1,6 @@
 # VNext Backlog
 
-This backlog captures known feature requests that are intentionally outside the current V1 commitment.
+V1 is complete. This backlog captures VNext feature requests and implementation slices that extend the completed V1 baseline.
 
 ## Checkout And Item Lifecycle
 
@@ -8,7 +8,7 @@ This backlog captures known feature requests that are intentionally outside the 
 
 Prevent operators from updating item master data after the item has been sold.
 
-Status: covered by the sale phase and sale correction work that is currently under verification.
+Status: implemented by the sale phase and sale correction work.
 
 Relevant design/docs:
 
@@ -24,7 +24,7 @@ The sale phase design covers the original backlog questions:
 - mistaken sold-item corrections use an explicit admin sale-line correction instead of an ad hoc `sold -> in_stock` item status edit
 - seller sheets ignore corrected sale lines and use current item status for the returned item, preserving seller payout consistency
 
-Once the sale phase work is verified and committed, this item can be treated as implemented rather than a separate VNext feature.
+This item is implemented rather than a separate open VNext feature.
 
 ### View Existing Sales
 

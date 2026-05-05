@@ -59,15 +59,19 @@ Post-sale reconciliation is optimized for correctness and auditability. It is an
 - Sale-day UX must feel like an appliance, not like an admin application.
 - The sale phase is visible globally and enforced server-side.
 - Reconciliation happens after sales are over and is treated as a separate in-app feature.
-- Simplicity is preferred over cleverness in V1.
+- Simplicity is preferred over cleverness.
 
-## Current V1 Orientation
+## Current Project State
+
+V1 is complete. The software is now in VNext: V1 remains the baseline event workflow, and VNext features are being designed, implemented, and verified incrementally.
+
+## Current Orientation
 
 - Custom tool, not Odoo-based
 - Local-network deployment
 - Central server only, no offline sync between stations
 - Paper fallback if the server is unavailable
-- Seller self-service is out of scope for V1
+- Seller self-service remains out of scope unless a future VNext decision changes it
 - `Admin:SharedPassword` must be configured for production; blank values and `change-me` are invalid.
 
 ## Suggested Extra Reading Order

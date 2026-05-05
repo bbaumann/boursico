@@ -7,7 +7,7 @@
 1. Some sellers send their item lists outside the system, typically by email.
 2. Intake operator creates sellers in the system.
 3. For emailed preregistration, items are entered as `registered`.
-4. When preregistered sellers physically deliver toys, operator reviews the preregistered list, marks delivered items as `in_stock`, and deletes entries for toys that were not brought.
+4. When preregistered sellers physically deliver toys, operator reviews the preregistered list and marks delivered items as `in_stock`. Items not brought yet may remain `registered`; deletion is only cleanup for mistakes or records the team wants to remove.
 5. Other sellers may register in person with toys physically present; those items are created directly as `in_stock`.
 6. References are generated for each item.
 7. `in_stock` items are prepared for the event.
@@ -63,7 +63,7 @@ The correction keeps the original sale stored, marks the sale line corrected, re
 2. Preregistered items exist in `registered` status.
 3. When toys are physically delivered, the operator reviews the list line by line.
 4. Delivered items become `in_stock`.
-5. Preregistered items that were not physically brought are deleted while still `registered`.
+5. Preregistered items that were not physically brought may remain `registered`, especially if the seller may come back later. The operator may delete a `registered` item when it was entered by mistake or should be removed as cleanup.
 6. If an item was mistakenly entered as physically present, it may also be deleted while still `in_stock`.
 7. V1 does not use a `not_provided` status.
 

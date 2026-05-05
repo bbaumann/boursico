@@ -2,7 +2,7 @@
 
 ## V1 Scope
 
-V1 is deliberately narrow.
+V1 is deliberately narrow and is now complete. Current development is VNext work layered on top of this completed V1 baseline.
 
 ### Included In V1
 
@@ -35,7 +35,7 @@ V1 is deliberately narrow.
 
 ## Stretch Goals
 
-These are known ideas but not part of the current V1 commitment:
+These are known ideas beyond the completed V1 baseline:
 
 - seller pre-registration portal
 - more organizer-friendly reconciliation UI

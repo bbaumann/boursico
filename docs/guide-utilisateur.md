@@ -36,7 +36,7 @@ Ces statuts ne sont pas seulement informatifs. Le serveur applique les règles c
 
 ### Mot de passe pour les actions risquées
 
-V1 n'a pas de comptes utilisateurs individuels. Certaines actions sont simplement protégées par un mot de passe administrateur partagé :
+L'outil n'a pas de comptes utilisateurs individuels. Certaines actions sont simplement protégées par un mot de passe administrateur partagé :
 
 - changer le statut de l'événement ;
 - corriger une ligne de vente ;
@@ -146,7 +146,7 @@ Pour chaque article, saisir :
 - le titre ;
 - le prix vendeur en euros.
 
-Le prix vendeur est aussi le prix imprimé vu par le client dans V1. Il sert aussi au calcul du montant à reverser au vendeur si l'article est vendu ou marqué manquant.
+Le prix vendeur est aussi le prix imprimé vu par le client dans l'outil actuel. Il sert aussi au calcul du montant à reverser au vendeur si l'article est vendu ou marqué manquant.
 
 ### Choisir le mode de saisie
 
@@ -162,9 +162,9 @@ Quand un vendeur avait envoyé une liste à l'avance puis apporte les jouets :
 1. Ouvrir sa fiche vendeur.
 2. Relire les articles un par un.
 3. Pour chaque article réellement apporté, cliquer sur `Marquer en stock`.
-4. Pour les articles finalement non apportés, supprimer l'article tant qu'il est encore `enregistré`.
+4. Pour un article pas encore apporté, le laisser `enregistré` si le vendeur peut revenir plus tard. Le supprimer seulement si l'entrée a été créée par erreur ou si l'équipe veut nettoyer la fiche.
 
-Un article `enregistré` n'apparaît ni en caisse ni dans les feuilles vendeurs finales.
+Un article `enregistré` n'apparaît ni en caisse ni dans les feuilles vendeurs finales. Il reste toutefois compté dans les articles du vendeur pour les frais d'inscription.
 
 ## Pendant la vente : encaisser un client
 
@@ -355,7 +355,7 @@ Une fois la feuille correcte :
 3. Regrouper la feuille finale, le paiement et les articles à rendre.
 4. Préparer le retrait par le vendeur.
 
-V1 ne calcule pas les frais vendeurs du type `2 EUR par 15 articles`. Si l'association applique cette règle, elle reste traitée hors application pour le moment.
+L'outil calcule les frais vendeurs attendus : `2 EUR` par tranche commencée de 15 articles saisis pour le vendeur, y compris ceux encore au statut `enregistré`. Les frais déjà payés sont saisis sur la fiche vendeur. S'il reste des frais dus, ils sont déduits du montant final à payer au vendeur.
 
 ## En cas de panne
 
@@ -368,9 +368,9 @@ Si le serveur central ou l'application n'est plus disponible pendant l'événeme
 5. Continuer l'événement manuellement.
 6. Faire le rapprochement après l'événement à partir des factures papier et du stock physique restant.
 
-L'outil ne tente pas de rejouer plus tard des ventes faites hors ligne sur plusieurs postes. C'est volontaire : pour cette V1, une panne doit être visible, claire, et traitée avec un processus papier.
+L'outil ne tente pas de rejouer plus tard des ventes faites hors ligne sur plusieurs postes. C'est volontaire : une panne doit être visible, claire, et traitée avec un processus papier.
 
-## Ce que l'outil ne fait pas en V1
+## Ce que l'outil ne fait pas
 
 L'outil ne couvre pas :
 
@@ -379,12 +379,12 @@ L'outil ne couvre pas :
 - scanner code-barres obligatoire ;
 - suivi du mode de paiement ;
 - intégration comptable ;
-- calcul automatique des frais vendeurs ;
+- portail de paiement ou comptabilité complète des frais vendeurs ;
 - synchronisation hors ligne entre postes ;
 - gestion de stock générique hors événement ;
 - comptes utilisateurs individuels.
 
-Ces limites sont des choix de simplicité. L'objectif V1 est d'avoir un flux fiable pour l'événement, pas de couvrir tous les cas d'un logiciel de gestion commerciale.
+Ces limites sont des choix de simplicité. L'objectif de l'outil est d'avoir un flux fiable pour l'événement, pas de couvrir tous les cas d'un logiciel de gestion commerciale.
 
 ## Parcours de démonstration rapide
 
@@ -393,7 +393,7 @@ Pour présenter l'outil à des utilisateurs :
 1. Montrer le statut visible en haut de page.
 2. Ouvrir `VENDEURS`, créer ou ouvrir un vendeur.
 3. Ajouter quelques articles avec les modes `Dépôt` et `Enregistrement`.
-4. Montrer qu'un article `enregistré` doit être confirmé avec `Marquer en stock`.
+4. Montrer qu'un article `enregistré` peut être confirmé avec `Marquer en stock`, ou rester `enregistré` si le vendeur n'a pas encore apporté le jouet.
 5. Passer dans `CAISSE`, chercher un article, l'ajouter au panier et montrer le calcul du total.
 6. Ouvrir `ADMIN`, expliquer le mot de passe et les trois statuts.
 7. Passer en `Après-vente`.

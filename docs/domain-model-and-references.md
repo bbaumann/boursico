@@ -85,12 +85,12 @@ Derived meanings:
 
 Lifecycle meaning:
 
-- `registered`: preregistered in the system but not yet physically handed over
+- `registered`: preregistered in the system but not yet physically handed over; it may remain pending if the seller might still bring the item later
 - `in_stock`: physically present in association stock and eligible for sale or return
 - `sold`: sold during the event
 - `missing`: expected to be returned after the event, but not found physically
 
-V1 does not use a `not_provided` status. Preregistered items that are not physically delivered are deleted while still `registered`; items mistakenly entered as present may be deleted while still `in_stock`.
+V1 does not use a `not_provided` status. Preregistered items that are not physically delivered may remain `registered`; they are deleted only when entered by mistake or when the seller record should be cleaned up. Items mistakenly entered as present may be deleted while still `in_stock`.
 
 ## Sale Phase
 

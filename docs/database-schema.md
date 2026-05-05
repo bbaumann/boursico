@@ -53,7 +53,7 @@ Represents one seller.
 - `seller_code` is the two-letter safe code used in item references.
 - No stored `display_name` is required; it can be derived when needed.
 - `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
-- The expected seller fee is derived from the seller's item count and is not stored.
+- The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
 
 ## `item`
 
@@ -240,12 +240,12 @@ Allowed values:
 
 Business meaning:
 
-- `registered`: preregistered in the system but not yet physically delivered
+- `registered`: preregistered in the system but not yet physically delivered; it may remain pending if the seller might still bring the item later
 - `in_stock`: physically present and eligible for sale or return
 - `sold`: the item was sold during the event
 - `missing`: the item was not found during post-sale gathering and is therefore payable to the seller
 
-V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, the item is deleted while still `registered`.
+V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, it may remain `registered`. It is deleted only when entered by mistake or when the seller record should be cleaned up.
 
 ## Sale Phase
 
@@ -324,7 +324,7 @@ These items are not part of post-sale payable or returned outputs.
 For VNext:
 
 - item subtotal = sum of `seller_price_cents` for all payable items
-- expected seller fee = EUR 2 per started block of 15 seller items
+- expected seller fee = EUR 2 per started block of 15 seller items, including `registered` items
 - remaining seller fee = max(expected seller fee - `seller.fee_paid_cents`, 0)
 - final payout = max(item subtotal - remaining seller fee, 0)
 

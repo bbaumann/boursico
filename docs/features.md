@@ -174,7 +174,8 @@ V1 receipt handling is intentionally simple:
 - Items start in `registered` state.
 - When the seller physically delivers toys, the operator reviews the preregistered list line by line.
 - Delivered items become `in_stock`.
-- Items declared but not actually delivered are deleted while still `registered`.
+- Items not yet delivered may remain `registered`; they can be marked `in_stock` later if the seller returns with them.
+- A `registered` item may be deleted when it was entered by mistake or the operator wants to clean up the seller record.
 - If an item was mistakenly entered as physically present, it may also be deleted while still `in_stock`.
 - V1 does not use a `not_provided` status.
 
@@ -251,7 +252,7 @@ For each returned item, show:
 The expected seller fee is:
 
 - EUR 0 when the seller has no items
-- EUR 2 for each started block of 15 seller items in the system
+- EUR 2 for each started block of 15 seller items in the system, including items that remain `registered`
 
 The operator records the amount already paid by the seller on the seller form.
 
