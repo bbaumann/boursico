@@ -300,16 +300,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task AdminPageKeepsLegacySaleStatusRouteAlias()
+    public async Task AdminPageDoesNotExposeLegacySaleStatusRoute()
     {
         var client = _factory.CreateClient();
         var response = await client.GetAsync("/vente/statut");
 
-        response.EnsureSuccessStatusCode();
-
-        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Administration", content);
-        AssertMainNavigationActive(AdminPath, content);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -2181,6 +2177,27 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(".main-navigation", content);
         Assert.Contains(".main-navigation-link", content);
         Assert.Contains(".main-navigation-link-active", content);
+    }
+
+    [Fact]
+    public async Task SiteCssLeftAlignsTableActions()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/css/site.css");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Matches(
+            new Regex(
+                @"\.table-action-button\s*\{[^}]*text-align:\s*left;",
+                RegexOptions.Singleline),
+            content);
+        Assert.Matches(
+            new Regex(
+                @"\.table-actions-cell\s*\{[^}]*justify-content:\s*flex-start;",
+                RegexOptions.Singleline),
+            content);
     }
 
     [Fact]

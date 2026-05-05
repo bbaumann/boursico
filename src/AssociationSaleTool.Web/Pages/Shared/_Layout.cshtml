@@ -6,8 +6,7 @@
         || requestPath.StartsWithSegments("/articles");
     var checkoutActive = requestPath.StartsWithSegments("/caisse");
     var reconciliationActive = requestPath.StartsWithSegments("/rapprochement");
-    var adminActive = requestPath.StartsWithSegments("/administration")
-        || requestPath.StartsWithSegments("/vente/statut");
+    var adminActive = requestPath.StartsWithSegments("/administration");
     var salePhase = await SalePhaseService.GetCurrentPhaseAsync();
     var salePhaseLabel = AssociationSaleTool.Web.Infrastructure.SalePhaseDisplay.ToFrenchLabel(salePhase);
 }

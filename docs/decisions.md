@@ -599,13 +599,12 @@ This file captures the main project decisions in a lightweight ADR format.
 - Status: accepted
 - Key drivers:
   - the former sale-status page now handles event phase changes, mistaken sale corrections, defective item marking, defective refunds, and refund cancellation
-  - `/vente/statut` no longer describes the scope of the page
+  - the previous sale-status route no longer describes the scope of the page
   - operators need one obvious admin entry point rather than several subtly different correction pages
 - Decision:
   - make `/administration` the user-facing admin route and main navigation target
   - keep the page title as `Administration`
   - keep the sale phase controls as a section named `Statut de la vente`
-  - keep `/vente/statut` only as a compatibility alias for existing bookmarks
 - Consequence:
   - future exceptional item workflows should live under `/administration` when they require the shared admin unlock
-  - docs and operator guidance should refer to `/administration`, not `/vente/statut`
+  - docs and operator guidance should refer to `/administration`

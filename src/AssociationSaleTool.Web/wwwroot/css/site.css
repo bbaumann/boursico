@@ -455,6 +455,7 @@ textarea {
   color: #8a1f11;
   background: transparent;
   font: inherit;
+  text-align: left;
   text-decoration: underline;
   cursor: pointer;
 }
@@ -467,6 +468,7 @@ textarea {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
