@@ -269,10 +269,10 @@ Dans ce statut :
 
 Cas typique : un bénévole a tapé ou choisi une mauvaise référence, et l'article enregistré comme vendu doit pouvoir être revendu.
 
-Aller dans `ADMIN`, déverrouiller la page, puis utiliser `Correction des ventes`.
+Aller dans `ADMIN`, déverrouiller la page, puis utiliser `Correction des articles`.
 
-1. Filtrer les ventes par référence, titre, vendeur ou numéro de vente.
-2. Trouver la mauvaise ligne.
+1. Filtrer les articles affichés par référence, titre, vendeur, statut ou numéro de vente.
+2. Trouver le mauvais article vendu.
 3. Cliquer sur `Remettre en stock`.
 4. Confirmer l'action.
 
@@ -288,11 +288,11 @@ Cette règle évite de réécrire l'historique de caisse tout en corrigeant le s
 
 ## Gérer un article défectueux
 
-Si un défaut est trouvé après l'acceptation de l'article, ouvrir la page du vendeur et utiliser la liste `Articles`. La page `ADMIN` garde aussi la liste `Articles défectueux` pour les recherches globales.
+Si un défaut est trouvé après l'acceptation de l'article, aller dans `ADMIN`, déverrouiller la page, puis utiliser `Correction des articles`.
 
 Pour un article encore `en stock` :
 
-1. Trouver l'article dans la liste du vendeur, ou filtrer par référence, titre ou vendeur depuis `ADMIN`.
+1. Filtrer les articles affichés par référence, titre, vendeur ou statut.
 2. Cliquer sur `Marquer défectueux`.
 
 Résultat :
@@ -305,9 +305,9 @@ Si le marquage était une erreur et qu'aucun acheteur n'a été remboursé pour 
 
 Si un acheteur rapporte un article vendu parce qu'il est défectueux :
 
-1. Aller dans `Correction des ventes`.
-2. Trouver la ligne de vente.
-3. Cliquer sur `Rembourser`.
+1. Aller dans `Correction des articles`.
+2. Trouver l'article vendu.
+3. Cliquer sur `Rembourser / marquer défectueux`.
 4. Vérifier le montant affiché dans la fenêtre de confirmation.
 5. Rembourser l'acheteur du total indiqué, puis confirmer.
 

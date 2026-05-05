@@ -45,7 +45,7 @@ If a volunteer saved a sale with the wrong reference and the real item later nee
 
 The correction keeps the original sale stored, marks the sale line corrected, returns the item to `in_stock`, and lets the item be sold again. It does not recalculate the original sale total because the cash/receipt consequence happened at checkout.
 
-If a buyer returns a defective sold item, an admin uses `Rembourser` from the same unlocked `/vente/statut` page. The app shows the buyer refund amount before confirmation: item price plus the refunded 10 percent association fee. The original sale totals stay unchanged, the refund is recorded on the sale line, the item becomes `defective`, and the item is returned to the seller without seller payout.
+If a buyer returns a defective sold item, an admin uses `Rembourser / marquer défectueux` from `Correction des articles` on the same unlocked `/vente/statut` page. The app shows the buyer refund amount before confirmation: item price plus the refunded 10 percent association fee. The original sale totals stay unchanged, the refund is recorded on the sale line, the item becomes `defective`, and the item is returned to the seller without seller payout.
 
 ### After The Sale
 
@@ -102,8 +102,8 @@ If an item was marked `missing` by mistake and is found before the seller packet
 
 If an item is already accepted into stock and an admin later spots a defect:
 
-1. Admin opens the seller detail page, or `/vente/statut` for a global search.
-2. Admin finds the `in_stock` item.
+1. Admin opens `/vente/statut`.
+2. Admin finds the `in_stock` item under `Correction des articles`.
 3. Admin clicks `Marquer défectueux`.
 4. The item disappears from checkout and appears on the seller sheet as an item to return.
 
@@ -114,8 +114,8 @@ If the defect marker was a mistake and no buyer refund exists, admin can use `Re
 If a buyer returns a defective sold item:
 
 1. Admin opens `/vente/statut`.
-2. Admin finds the sold line under `Correction des ventes`.
-3. Admin clicks `Rembourser`.
+2. Admin finds the sold item under `Correction des articles`.
+3. Admin clicks `Rembourser / marquer défectueux`.
 4. The confirmation pop-in shows item price, refunded association fee, and total refund.
 5. Admin confirms the refund after reimbursing the buyer operationally.
 6. The item becomes `defective`, is returned to the seller, and is excluded from seller payout.

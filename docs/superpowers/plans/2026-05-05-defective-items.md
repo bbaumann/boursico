@@ -65,9 +65,11 @@
 ## Task 4: Admin Page
 
 - [x] Add/extend Razor Page tests if available for `/vente/statut`; otherwise add a smoke test that verifies rendered HTML contains:
-  - `Rembourser`
+  - `Correction des articles`
+  - `Rembourser / marquer défectueux`
   - `Marquer défectueux`
-  - refund amount fields
+  - a status column
+  - no refund amount column
 - [x] Run the focused tests and verify they fail.
 - [x] Update `Pages/SaleStatus/Index.cshtml.cs`:
   - add `OnPostRefundDefectiveAsync`
@@ -75,10 +77,11 @@
   - keep admin unlock behavior unchanged
   - use French success/error messages
 - [x] Update `Pages/SaleStatus/Index.cshtml`:
-  - show `Rembourser` beside `Remettre en stock`
+  - show one item correction table for the first 15 non-`registered` items
+  - show `Rembourser / marquer défectueux` beside `Remettre en stock` for sold items
   - show a confirmation pop-in with item reference, title, sale id, item price, refunded association fee, and total refund
-  - add the defect-candidate section for `in_stock` and eligible `defective` items
-- [x] Update the seller detail article list to show `Marquer défectueux` directly for `in_stock` items.
+  - show `Marquer défectueux` for `in_stock` items and `Remettre en stock` for eligible `defective` items
+- [x] Keep the seller detail article list free of the admin-only `Marquer défectueux` action.
 - [x] Run the focused page/smoke tests and verify they pass.
 
 ## Task 5: Reconciliation And Seller Sheets

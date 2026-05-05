@@ -174,7 +174,7 @@ The defective status:
 - excludes the item from seller payout
 - allows `defective -> in_stock` only as an admin correction when no buyer refund exists
 
-If a buyer returns a defective sold item, an admin uses `Rembourser` from `/vente/statut`.
+If a buyer returns a defective sold item, an admin uses `Rembourser / marquer défectueux` from `Correction des articles` on `/vente/statut`.
 
 The refund workflow:
 

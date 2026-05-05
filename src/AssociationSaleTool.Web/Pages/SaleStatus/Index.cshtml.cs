@@ -13,6 +13,7 @@ public sealed class IndexModel(
     SalePhaseService salePhaseService,
     SaleCorrectionService saleCorrectionService,
     DefectiveItemService defectiveItemService,
+    ItemCorrectionService itemCorrectionService,
     IOptions<AdminOptions> adminOptions) : PageModel
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
@@ -34,9 +35,7 @@ public sealed class IndexModel(
         _ => throw new ArgumentOutOfRangeException(nameof(CurrentPhase), CurrentPhase, null)
     };
 
-    public IReadOnlyList<SaleCorrectionItem> ActiveSoldItems { get; private set; } = [];
-
-    public IReadOnlyList<DefectiveItemCandidate> DefectiveItemCandidates { get; private set; } = [];
+    public IReadOnlyList<ItemCorrectionCandidate> ItemCorrectionCandidates { get; private set; } = [];
 
     [BindProperty]
     public PhaseInputModel Input { get; set; } = new();
@@ -200,21 +199,15 @@ public sealed class IndexModel(
         return soldAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", FrenchCulture);
     }
 
-    public static string BuildCorrectionFilterText(SaleCorrectionItem item)
+    public static string BuildCorrectionFilterText(ItemCorrectionCandidate item)
     {
-        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.SaleId}".ToLower(FrenchCulture);
-    }
-
-    public static string BuildDefectiveItemFilterText(DefectiveItemCandidate item)
-    {
-        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.Status}".ToLower(FrenchCulture);
+        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.Status} {item.SaleId}".ToLower(FrenchCulture);
     }
 
     private async Task LoadPageAsync(CancellationToken cancellationToken)
     {
         CurrentPhase = await salePhaseService.GetCurrentPhaseAsync(cancellationToken);
-        ActiveSoldItems = await saleCorrectionService.ListActiveSoldItemsAsync(cancellationToken);
-        DefectiveItemCandidates = await defectiveItemService.ListCandidatesAsync(cancellationToken);
+        ItemCorrectionCandidates = await itemCorrectionService.ListCandidatesAsync(cancellationToken);
     }
 
     private bool UnlockPageIfSessionAllows()

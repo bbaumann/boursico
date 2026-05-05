@@ -162,21 +162,23 @@ Deletion remains allowed only for `registered` and `in_stock` items that are not
 
 Use the existing admin surface rather than adding a volunteer-facing control.
 
-The existing `/vente/statut` sale correction area is the right home for buyer refunds. For active sold sale lines, the table should show two distinct admin actions:
+The existing `/vente/statut` correction area is the right home for item corrections. It should be labeled `Correction des articles` and display the first 15 non-`registered` items, with a status column.
+
+For active sold items, the table should show two distinct admin actions:
 
 - `Remettre en stock` for the current wrong-item correction
-- `Rembourser` for a buyer-returned defective item
+- `Rembourser / marquer défectueux` for a buyer-returned defective item
 
-`Rembourser` opens a confirmation pop-in that shows the reimbursement amount before saving the refund. This keeps the workflow close to the existing correction screen while making the different outcome explicit.
+`Rembourser / marquer défectueux` opens a confirmation pop-in that shows the reimbursement amount before saving the refund. Reimbursement only applies to sold items.
 
-The `/vente/statut` admin page should also support defect workflows for non-sold items:
+The same table should support defect workflows for non-sold items:
 
 - search by item reference, item title, seller code, or seller name
 - show status, seller, and price
 - for `in_stock` items: `Marquer défectueux`
 - for eligible `defective` items with no refund history: `Remettre en stock`
 
-The seller detail article list should also show `Marquer défectueux` directly on `in_stock` items, because that is where operators already manage the seller handover list.
+The seller detail article list must not expose `Marquer défectueux`; marking an item defective is an admin task.
 
 The refund confirmation must show:
 

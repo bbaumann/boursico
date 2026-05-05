@@ -398,7 +398,7 @@ textarea {
 }
 
 .seller-items-action-column {
-  width: 17rem;
+  width: 12rem;
 }
 
 .seller-intake-price-column {
@@ -467,6 +467,28 @@ textarea {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.item-correction-table {
+  table-layout: fixed;
+}
+
+.item-correction-table th:first-child {
+  width: 7rem;
+}
+
+.item-correction-table th:nth-child(4),
+.item-correction-table th:nth-child(6) {
+  width: 7.5rem;
+}
+
+.item-correction-table th:nth-child(5) {
+  width: 11rem;
+}
+
+.item-correction-table th:last-child {
+  width: 16rem;
 }
 
 .admin-dialog {

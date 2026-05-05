@@ -753,10 +753,10 @@ function initializeReconciliation(root) {
 
 document.querySelectorAll("[data-reconciliation-root]").forEach(initializeReconciliation);
 
-function initializeSaleCorrection(root) {
-  const searchInput = root.querySelector("[data-sale-correction-search]");
-  const rows = Array.from(root.querySelectorAll("[data-sale-correction-item-row]"));
-  const emptyMessage = root.querySelector("[data-sale-correction-empty-message]");
+function initializeItemCorrection(root) {
+  const searchInput = root.querySelector("[data-item-correction-search]");
+  const rows = Array.from(root.querySelectorAll("[data-item-correction-row]"));
+  const emptyMessage = root.querySelector("[data-item-correction-empty-message]");
 
   if (!searchInput || rows.length === 0) {
     return;
@@ -767,7 +767,7 @@ function initializeSaleCorrection(root) {
     let visibleRows = 0;
 
     for (const row of rows) {
-      const filterText = row.dataset.saleCorrectionFilterText || "";
+      const filterText = row.dataset.itemCorrectionFilterText || "";
       const isVisible = !query || filterText.includes(query);
       row.hidden = !isVisible;
 
@@ -785,41 +785,7 @@ function initializeSaleCorrection(root) {
   renderRows();
 }
 
-document.querySelectorAll("[data-sale-correction-root]").forEach(initializeSaleCorrection);
-
-function initializeDefectiveItems(root) {
-  const searchInput = root.querySelector("[data-defective-items-search]");
-  const rows = Array.from(root.querySelectorAll("[data-defective-item-row]"));
-  const emptyMessage = root.querySelector("[data-defective-items-empty-message]");
-
-  if (!searchInput || rows.length === 0) {
-    return;
-  }
-
-  function renderRows() {
-    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
-    let visibleRows = 0;
-
-    for (const row of rows) {
-      const filterText = row.dataset.defectiveItemFilterText || "";
-      const isVisible = !query || filterText.includes(query);
-      row.hidden = !isVisible;
-
-      if (isVisible) {
-        visibleRows++;
-      }
-    }
-
-    if (emptyMessage) {
-      emptyMessage.hidden = visibleRows > 0 || !query;
-    }
-  }
-
-  searchInput.addEventListener("input", renderRows);
-  renderRows();
-}
-
-document.querySelectorAll("[data-defective-items-root]").forEach(initializeDefectiveItems);
+document.querySelectorAll("[data-item-correction-root]").forEach(initializeItemCorrection);
 
 function initializeSalesView(root) {
   const searchInput = root.querySelector("[data-sales-view-search]");

@@ -294,7 +294,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Mot de passe administrateur", content);
         Assert.Contains("Déverrouiller", content);
         Assert.DoesNotContain("Changer le statut", content);
-        Assert.DoesNotContain("Correction des ventes", content);
+        Assert.DoesNotContain("Correction des articles", content);
     }
 
     [Fact]
@@ -312,7 +312,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Mot de passe administrateur", content);
         Assert.Contains("Mot de passe administrateur incorrect.", content);
-        Assert.DoesNotContain("Correction des ventes", content);
+        Assert.DoesNotContain("Correction des articles", content);
     }
 
     [Fact]
@@ -323,7 +323,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = await UnlockSaleStatusPageAsync(client);
 
         Assert.Contains("Changer le statut", content);
-        Assert.Contains("Correction des ventes", content);
+        Assert.Contains("Correction des articles", content);
         Assert.Contains("Passer en prévente", content);
         Assert.Contains("Passer en vente", content);
         Assert.Contains("Passer en après-vente", content);
@@ -494,7 +494,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SaleStatusUnlockShowsDefectiveItemControls()
+    public async Task SaleStatusUnlockShowsItemCorrectionControls()
     {
         var client = _factory.CreateClient();
 
@@ -513,7 +513,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var soldItem = new ItemEntity
             {
                 SellerId = seller.Id,
-                Reference = "SD-001-001",
+                Reference = "00-SD-001",
                 ItemNumber = 1,
                 Title = "Article remboursable",
                 SellerPriceCents = 1000,
@@ -522,14 +522,41 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var inStockItem = new ItemEntity
             {
                 SellerId = seller.Id,
-                Reference = "SD-001-002",
+                Reference = "00-SD-002",
                 ItemNumber = 2,
                 Title = "Article \u00e0 contr\u00f4ler",
                 SellerPriceCents = 700,
                 Status = "in_stock"
             };
+            var defectiveItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "00-SD-003",
+                ItemNumber = 3,
+                Title = "Article déjà défectueux",
+                SellerPriceCents = 500,
+                Status = "defective"
+            };
+            var missingItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "00-SD-004",
+                ItemNumber = 4,
+                Title = "Article manquant",
+                SellerPriceCents = 300,
+                Status = "missing"
+            };
+            var registeredItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "00-SD-005",
+                ItemNumber = 5,
+                Title = "Article enregistré",
+                SellerPriceCents = 200,
+                Status = "registered"
+            };
 
-            dbContext.Items.AddRange(soldItem, inStockItem);
+            dbContext.Items.AddRange(soldItem, inStockItem, defectiveItem, missingItem, registeredItem);
             await dbContext.SaveChangesAsync();
             dbContext.Sales.Add(new SaleEntity
             {
@@ -551,14 +578,22 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = await UnlockSaleStatusPageAsync(client);
 
-        Assert.Contains("Rembourser", content);
-        Assert.Contains("Montant \u00e0 rembourser", content);
+        Assert.Contains("Correction des articles", content);
+        Assert.Contains("data-item-correction-root", content);
+        Assert.DoesNotContain("data-defective-items-root", content);
+        Assert.Contains("Statut", content);
+        Assert.Contains("Rembourser / marquer d\u00e9fectueux", content);
+        Assert.DoesNotContain("<th>Montant \u00e0 rembourser</th>", content);
         Assert.Contains("10.00 EUR", content);
         Assert.Contains("1.00 EUR", content);
         Assert.Contains("11.00 EUR", content);
-        Assert.Contains("Articles d\u00e9fectueux", content);
+        Assert.Contains("Article remboursable", content);
+        Assert.Contains("Article \u00e0 contr\u00f4ler", content);
+        Assert.Contains("Article d\u00e9j\u00e0 d\u00e9fectueux", content);
+        Assert.Contains("Article manquant", content);
+        Assert.DoesNotContain("Article enregistr\u00e9", content);
         Assert.Contains("Marquer d\u00e9fectueux", content);
-        Assert.Contains("data-defective-items-root", content);
+        Assert.Contains("Remettre en stock", content);
     }
 
     [Fact]
@@ -746,7 +781,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
             Assert.Contains("Mot de passe administrateur", content);
             Assert.Contains("Déverrouiller", content);
-            Assert.DoesNotContain("Correction des ventes", content);
+            Assert.DoesNotContain("Correction des articles", content);
         }
 
         using (var scope = _factory.Services.CreateScope())
@@ -2237,12 +2272,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerDetailsDisplaysMarkDefectiveActionForInStockItemsOnly()
+    public async Task SellerDetailsDoesNotDisplayAdminDefectAction()
     {
         var client = _factory.CreateClient();
         long sellerId;
-        long registeredItemId;
-        long inStockItemId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -2281,8 +2314,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             await dbContext.SaveChangesAsync();
 
             sellerId = seller.Id;
-            registeredItemId = registeredItem.Id;
-            inStockItemId = inStockItem.Id;
         }
 
         var response = await client.GetAsync($"/vendeurs/{sellerId}");
@@ -2290,65 +2321,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Marquer défectueux", content);
-        Assert.Contains("handler=MarkItemDefective", content);
-        Assert.Contains($"itemId={inStockItemId}", content);
-        Assert.DoesNotContain($"handler=MarkItemDefective&amp;itemId={registeredItemId}", content);
-    }
-
-    [Fact]
-    public async Task SellerDetailsPostMarkItemDefectiveMarksInStockItemDefective()
-    {
-        var client = _factory.CreateClient();
-        long sellerId;
-        long itemId;
-
-        using (var scope = _factory.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var seller = new SellerEntity
-            {
-                SellerCode = "BK-010",
-                FirstName = "Nadia",
-                LastName = "Controle",
-                Email = "nadia@example.test"
-            };
-
-            dbContext.Sellers.Add(seller);
-            await dbContext.SaveChangesAsync();
-
-            var item = new ItemEntity
-            {
-                SellerId = seller.Id,
-                Reference = "BK-010-001",
-                ItemNumber = 1,
-                Title = "Article abimé",
-                SellerPriceCents = 900,
-                Status = "in_stock"
-            };
-
-            dbContext.Items.Add(item);
-            await dbContext.SaveChangesAsync();
-
-            sellerId = seller.Id;
-            itemId = item.Id;
-        }
-
-        var pageResponse = await client.GetAsync($"/vendeurs/{sellerId}");
-        pageResponse.EnsureSuccessStatusCode();
-        var pageContent = await pageResponse.Content.ReadAsStringAsync();
-
-        var response = await client.PostAsync(
-            $"/vendeurs/{sellerId}?handler=MarkItemDefective&itemId={itemId}",
-            BuildFormContent(pageContent));
-
-        response.EnsureSuccessStatusCode();
-
-        using (var scope = _factory.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            Assert.Equal("defective", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
-        }
+        Assert.DoesNotContain("Marquer défectueux", content);
+        Assert.DoesNotContain("handler=MarkItemDefective", content);
     }
 
     [Fact]

@@ -579,15 +579,16 @@ This file captures the main project decisions in a lightweight ADR format.
 - Decision:
   - extend `item.status` with `defective`
   - keep defects found before physical acceptance outside the database, except that a preregistered `registered` row may be deleted
-  - let admins mark `in_stock -> defective` from the seller item list, with `/vente/statut` as the global admin search view
+  - keep `in_stock -> defective` as an admin task from `Correction des articles` on `/vente/statut`, not from the seller item list
   - let admins restore `defective -> in_stock` only when no buyer refund history exists
-  - handle buyer-return defects from `/vente/statut` with a `Rembourser` action next to mistaken sale-line correction
+  - repurpose the sale-status correction section as `Correction des articles`, listing the first 15 non-`registered` items with a status column
+  - handle buyer-return defects from `/vente/statut` with a `Rembourser / marquer défectueux` action on sold items only
   - record defective refunds directly on `sale_line` with `refunded_at`, refunded item price, refunded checkout fee, total refund, and `refund_reason = defective`
   - treat active payable sale lines as `corrected_at IS NULL AND refunded_at IS NULL`
   - include `defective` items in seller-sheet returned items with a visible `DÉFECTUEUX` marker
   - exclude refunded sale lines and defective items from seller payout
 - Consequence:
-  - the admin sale-status page now covers both mistaken sale correction and rare buyer-return refunds
+  - the admin sale-status page now covers item correction, mistaken sale correction, and rare buyer-return refunds
   - read-only sale history shows refunded defective lines separately from corrected lines, then shows `Remboursements` and `Total corrigé` in the totals block
   - seller settlement remains based on payable sold and missing items only
   - a future richer accounting model can promote refunds to a separate table if needed, but VNext keeps the lightweight sale-line correction pattern

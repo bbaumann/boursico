@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AssociationSaleTool.Web.Pages.Sellers;
 
-public sealed class DetailsModel(IntakeService intakeService, DefectiveItemService defectiveItemService) : PageModel
+public sealed class DetailsModel(IntakeService intakeService) : PageModel
 {
     private const int DefaultRowCount = 10;
 
@@ -127,35 +127,6 @@ public sealed class DetailsModel(IntakeService intakeService, DefectiveItemServi
         if (result is ItemStatusChangeResult.NotAllowed)
         {
             ModelState.AddModelError(string.Empty, "Seuls les articles enregistrés peuvent être marqués en stock.");
-            return Page();
-        }
-
-        return RedirectToPage("/Sellers/Details", new { id });
-    }
-
-    public async Task<IActionResult> OnPostMarkItemDefectiveAsync(long id, long itemId, CancellationToken cancellationToken)
-    {
-        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
-        if (loaded is null || loaded.Items.All(x => x.Id != itemId))
-        {
-            return NotFound();
-        }
-
-        PopulateSellerState(loaded);
-        Input = CreateDefaultInput();
-        CanEditItemMasterData = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
-        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
-
-        if (!CanEditItemMasterData)
-        {
-            ModelState.AddModelError(string.Empty, "Les articles ne peuvent pas changer de statut dans le statut actuel de la vente.");
-            return Page();
-        }
-
-        var result = await defectiveItemService.MarkDefectiveAsync(itemId, cancellationToken);
-        if (result is DefectiveItemStatusChangeResult.NotAllowed)
-        {
-            ModelState.AddModelError(string.Empty, "Seuls les articles en stock peuvent être marqués défectueux.");
             return Page();
         }
 

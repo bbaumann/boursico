@@ -100,8 +100,8 @@ This is not a mistaken sale correction. The sale did happen, but the buyer must 
 
 VNext uses an explicit admin refund workflow:
 
-1. Admin finds the active sold sale line on `/vente/statut`.
-2. Admin clicks `Rembourser`.
+1. Admin finds the active sold item in `Correction des articles` on `/vente/statut`.
+2. Admin clicks `Rembourser / marquer défectueux`.
 3. The confirmation pop-in shows item price, refunded 10 percent association fee, and total refund.
 4. The sale line receives `refunded_at`, refund amount fields, and `refund_reason = defective`.
 5. The item becomes `defective`.
