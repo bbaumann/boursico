@@ -12,7 +12,7 @@ This VNext slice includes:
 
 - a combined seller and item intake form for creating a seller with item rows in one save
 - an Excel upload button on that form
-- parsing one `.xlsx` workbook with one seller worksheet
+- parsing one `.xlsx` workbook with exactly one visible seller worksheet
 - filling seller fields and item rows from the workbook
 - appending parsed item rows to an existing seller when the seller already exists
 - server-side seller code and item reference generation
@@ -47,7 +47,8 @@ The browser asks for one `.xlsx` file. The server parses the single worksheet, t
 
 - seller name
 - phone when present
-- postal/city information when present
+- postal address set to `UNKNOWN` until address parsing is formally designed
+- paid seller fee defaulted to `EUR 0`
 - item title and seller price rows
 - default intake mode `Enregistrement`
 
@@ -73,18 +74,18 @@ If the seller now exists, the server does not create a second seller. It redirec
 
 ## Accepted Workbook Format
 
-The first version accepts one `.xlsx` file with one worksheet for one seller.
+The first version accepts one `.xlsx` file with exactly one visible worksheet for one seller.
+Hidden helper worksheets, such as postal-code lookup sheets embedded in the template, are ignored.
 
 The parser should support the existing historical template shape:
 
 - seller name near the `NOM PRENOM` label
-- postal/city near the `CP VILLE` label
 - phone near the `TELEPHONE` label
-- item rows in columns `A:B`, with title in column `A` and seller price in column `B`
+- item rows in columns `B:C`, with title in column `B` and seller price in column `C`
 
-For seller information, the parser should find labels instead of hard-coding every cell. Product rows use the fixed historical template area in columns `A:B`.
+For seller information, the parser should find labels instead of hard-coding every cell. Product rows use the fixed template item area in columns `B:C`.
 
-The example workbook shows product rows from `A7:B7` through `A21:B21`. Row `21` is not a hard limit. In real files, sellers may add more product rows below row `21`, so the parser must continue reading the same `A:B` product block beyond row `21`.
+The example workbook shows the first product row at row `7`. The old template expected 15 item rows, but row `21` is not a hard limit. In real files, sellers may add more product rows below row `21`, so the parser must continue reading the same `B:C` product block beyond row `21`.
 
 The first product row is `7`. The parser should read rows downward until the first fully blank row after the product block, then stop so footer text below the product area is not treated as an item. Only complete title-and-price rows before that stop point are imported.
 
@@ -94,13 +95,15 @@ Seller fields:
 
 - workbook seller name maps to `FirstName` and `LastName` using the template convention `NOM PRENOM`
 - phone maps to `Phone`
-- postal/city maps to `Notes` unless seller address fields are added later
+  - if Excel stores the phone as a number and drops the leading `0`, the parser restores that leading `0`
+- postal address maps to the temporary value `UNKNOWN` until workbook address handling is formally designed
 - email remains blank unless the workbook contains an obvious email cell in a future template
+- paid seller fee maps to `EUR 0`
 
 Item fields:
 
-- column `A` maps to item title
-- column `B` maps to seller price
+- column `B` maps to item title
+- column `C` maps to seller price
 
 Intake mode:
 

@@ -21,6 +21,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Prevent accidental duplicate sellers during seller creation and seller editing
 - Search sellers by code or name using a live-filtered sellers table
 - Create items manually from seller-provided lists
+- Prefill seller and item rows from a one-seller Excel workbook before reviewed save
 - Record seller preregistration received by email
 - Register sellers and items in person when toys are physically brought in
 - Confirm preregistered items against physically delivered toys
@@ -180,6 +181,20 @@ V1 receipt handling is intentionally simple:
 
 - Seller and items are entered while the toys are physically present.
 - Items are created directly in `in_stock` state.
+
+### Excel Seller And Item Prefill
+
+Excel intake is an operator helper on `/vendeurs/creer`, not a direct import path.
+
+- the upload accepts one `.xlsx` workbook with one visible seller sheet; hidden helper sheets are ignored
+- the parser reads seller identity from the template labels and item title/price rows from columns `B:C`
+- item rows may continue beyond the old 15-row template area
+- upload fills the editable seller and item form and saves nothing
+- the operator reviews the prefilled form, then saves through the normal intake action
+- final save creates the seller and item rows in one transaction
+- duplicate sellers redirect to the existing seller detail page with the parsed item rows prefilled in `Ajouter des articles`
+- until workbook address handling is formally designed, Excel prefill sets seller postal address to `UNKNOWN`
+- Excel prefill defaults the paid seller fee to `EUR 0`
 
 ## Post-Sale Reconciliation
 

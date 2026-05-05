@@ -563,3 +563,25 @@ This file captures the main project decisions in a lightweight ADR format.
   - `D-012` is superseded for VNext
   - the expected fee remains derived and cannot drift from the item count
   - overpayment is visible as paid fee but never increases the seller payout
+
+## D-038 Treat Seller Excel Files As Editable Intake Prefill
+
+- Status: accepted
+- Key drivers:
+  - seller-provided Excel files should reduce manual typing without bypassing operator review
+  - the accepted workbook template describes one seller and one item list, not a bulk multi-seller import
+  - seller code and item reference generation must remain server-side and transactional
+  - duplicate seller detection must prevent Excel intake from creating a second seller record
+- Decision:
+  - expose Excel upload from `/vendeurs/creer` as a prefill helper
+  - accept only one `.xlsx` workbook with one visible seller worksheet for this slice, ignoring hidden helper worksheets
+  - read item titles and seller prices from columns `B:C`, continuing below the old 15-row template limit until the first blank item row
+  - fill the editable seller and item form during upload but do not persist seller or item data
+  - save manually entered or Excel-prefilled seller and item data through one normal intake action and one database transaction
+  - redirect duplicate sellers to the existing seller detail page and prefill the parsed rows into the add-items form for review
+  - use `UNKNOWN` for Excel-prefilled postal address and `EUR 0` for paid seller fee until those workbook fields are formally designed
+- Consequence:
+  - Excel parsing remains reversible because operators can correct the form before saving
+  - the authoritative save path is shared by manual and Excel-assisted intake
+  - imported rows do not need a staging table or stored workbook copy
+  - existing seller details are not silently updated from Excel files

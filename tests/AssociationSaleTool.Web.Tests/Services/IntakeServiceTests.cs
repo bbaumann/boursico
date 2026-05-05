@@ -150,6 +150,181 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task CreateSellerWithItemsAsync_CreatesSellerAndRegisteredItemsInOneSave()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+
+        var result = await service.CreateSellerWithItemsAsync(
+            new CreateSellerWithItemsRequest(
+                "Marie",
+                "Durand",
+                null,
+                "0600000000",
+                "UNKNOWN",
+                null,
+                IntakeMode.EmailPreregistration,
+                [
+                    new CreateItemRowRequest("Puzzle bois", 500),
+                    new CreateItemRowRequest("Train", 1200)
+                ]));
+
+        Assert.Equal(CreateSellerWithItemsOutcome.Created, result.Outcome);
+        var seller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("BB", seller.SellerCode);
+        Assert.Equal("UNKNOWN", seller.PostalAddress);
+        Assert.Equal(0, seller.FeePaidCents);
+        Assert.Collection(
+            seller.Items.OrderBy(x => x.ItemNumber),
+            first =>
+            {
+                Assert.Equal("BB001", first.Reference);
+                Assert.Equal("registered", first.Status);
+                Assert.Equal(500, first.SellerPriceCents);
+            },
+            second =>
+            {
+                Assert.Equal("BB002", second.Reference);
+                Assert.Equal("registered", second.Status);
+                Assert.Equal(1200, second.SellerPriceCents);
+            });
+    }
+
+    [Fact]
+    public async Task CreateSellerWithItemsAsync_CreatesInStockItemsForInPersonIntake()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+
+        var result = await service.CreateSellerWithItemsAsync(
+            new CreateSellerWithItemsRequest(
+                "Nadia",
+                "Petit",
+                null,
+                "0611111111",
+                "UNKNOWN",
+                null,
+                IntakeMode.InPerson,
+                [new CreateItemRowRequest("Garage", 800)]));
+
+        Assert.Equal(CreateSellerWithItemsOutcome.Created, result.Outcome);
+        var item = await context.Items.SingleAsync();
+        Assert.Equal("in_stock", item.Status);
+    }
+
+    [Fact]
+    public async Task CreateSellerWithItemsAsync_ReturnsExistingSellerAndCreatesNothingForDuplicate()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var existing = (await service.CreateSellerAsync(
+            new CreateSellerRequest("Marie", "Durand", null, "0600000000", "1 rue des Tests", null))).Seller!;
+
+        var result = await service.CreateSellerWithItemsAsync(
+            new CreateSellerWithItemsRequest(
+                " marie ",
+                "durand",
+                null,
+                "0600000000",
+                "UNKNOWN",
+                null,
+                IntakeMode.EmailPreregistration,
+                [new CreateItemRowRequest("Puzzle bois", 500)]));
+
+        Assert.Equal(CreateSellerWithItemsOutcome.ExistingSellerFound, result.Outcome);
+        Assert.Null(result.Seller);
+        Assert.Equal(existing.Id, Assert.Single(result.DuplicateMatches).SellerId);
+        Assert.Equal(1, await context.Sellers.CountAsync());
+        Assert.Empty(await context.Items.ToListAsync());
+    }
+
+    [Fact]
+    public async Task CreateSellerWithItemsAsync_RejectsEmptyRowsAndCreatesNothing()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.CreateSellerWithItemsAsync(
+                new CreateSellerWithItemsRequest(
+                    "Marie",
+                    "Durand",
+                    null,
+                    "0600000000",
+                    "UNKNOWN",
+                    null,
+                    IntakeMode.EmailPreregistration,
+                    [])));
+
+        Assert.Equal("Rows", exception.ParamName);
+        Assert.Empty(await context.Sellers.ToListAsync());
+        Assert.Empty(await context.Items.ToListAsync());
+    }
+
+    [Fact]
+    public async Task CreateSellerWithItemsAsync_RejectsInvalidItemPriceAndCreatesNothing()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.CreateSellerWithItemsAsync(
+                new CreateSellerWithItemsRequest(
+                    "Marie",
+                    "Durand",
+                    null,
+                    "0600000000",
+                    "UNKNOWN",
+                    null,
+                    IntakeMode.EmailPreregistration,
+                    [new CreateItemRowRequest("Puzzle bois", 550)])));
+
+        Assert.Contains("whole euro", exception.Message);
+        Assert.Empty(await context.Sellers.ToListAsync());
+        Assert.Empty(await context.Items.ToListAsync());
+    }
+
+    [Fact]
     public async Task CreateItemBatchAsync_CreatesMultipleItemsForSellerWithSequentialReferences()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

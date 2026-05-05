@@ -6,7 +6,7 @@
 
 **Architecture:** Keep Excel parsing separate from persistence. Add a parser service that converts one `.xlsx` worksheet into form input, a combined intake save method in `IntakeService`, and short-lived session handoff for existing-seller redirects. Razor Pages remain server-rendered with French routes and labels.
 
-**Tech Stack:** ASP.NET Core Razor Pages, EF Core, SQLite, session state, ClosedXML for `.xlsx` parsing, xUnit.
+**Tech Stack:** ASP.NET Core Razor Pages, EF Core, SQLite, session state, built-in `.xlsx` ZIP/XML parsing for the fixed template shape, xUnit.
 
 ---
 
@@ -28,9 +28,11 @@ public sealed record CreateSellerWithItemsRequest(
     string LastName,
     string? Email,
     string? Phone,
+    string? PostalAddress,
     string? Notes,
     IntakeMode IntakeMode,
-    IReadOnlyList<CreateItemRowRequest> Rows);
+    IReadOnlyList<CreateItemRowRequest> Rows,
+    int FeePaidCents = 0);
 ```
 
 Create `CreateSellerWithItemsResult.cs`:
@@ -43,7 +45,7 @@ namespace AssociationSaleTool.Web.Services.Models;
 public sealed record CreateSellerWithItemsResult(
     CreateSellerWithItemsOutcome Outcome,
     SellerEntity? Seller,
-    long? ExistingSellerId);
+    IReadOnlyList<SellerDuplicateMatch> DuplicateMatches);
 
 public enum CreateSellerWithItemsOutcome
 {
@@ -195,20 +197,13 @@ rtk git commit -m "Add combined seller item intake save"
 ### Task 4: Add Excel Parser Service
 
 **Files:**
-- Modify: `src/AssociationSaleTool.Web/AssociationSaleTool.Web.csproj`
 - Create: `src/AssociationSaleTool.Web/Services/ExcelSellerItemParser.cs`
 - Create: `src/AssociationSaleTool.Web/Services/Models/ExcelSellerItemParseResult.cs`
 - Test: `tests/AssociationSaleTool.Web.Tests/Services/ExcelSellerItemParserTests.cs`
 
-**Step 1: Add package**
+**Step 1: Use built-in workbook parsing**
 
-Run:
-
-```bash
-rtk dotnet add src/AssociationSaleTool.Web/AssociationSaleTool.Web.csproj package ClosedXML
-```
-
-Expected: package reference is added.
+Do not add a package for this slice. The accepted template shape is fixed enough to parse the `.xlsx` ZIP/XML parts directly.
 
 **Step 2: Write parser result models**
 
@@ -222,10 +217,10 @@ Create result records for:
 
 **Step 3: Write failing parser tests**
 
-Build small `.xlsx` files in test memory with ClosedXML. Cover:
+Build small `.xlsx` files in test memory with `ZipArchive`. Cover:
 
 - valid workbook maps seller and rows
-- product rows from `A7:B7` through `A21:B21`
+- product rows from `B7:C7` through the old 15-row template area
 - product rows after row `21` are still imported
 - parsing stops at the first fully blank row after the product block
 - missing seller name rejected
@@ -237,9 +232,9 @@ Build small `.xlsx` files in test memory with ClosedXML. Cover:
 Implementation rules:
 
 - accept `.xlsx` only
-- require exactly one worksheet
+- require exactly one visible worksheet, ignoring hidden helper worksheets
 - find seller information labels by normalized text
-- read product rows from columns `A:B`, starting at row `7`
+- read product rows from columns `B:C`, starting at row `7`
 - continue reading product rows after row `21` when they are present
 - stop reading the product block at the first fully blank row after row `7`
 - parse price values as whole or decimal euro amounts using existing euro parsing rules where possible
@@ -254,7 +249,7 @@ Expected: parser tests pass.
 **Step 6: Commit**
 
 ```bash
-rtk git add src/AssociationSaleTool.Web/AssociationSaleTool.Web.csproj src/AssociationSaleTool.Web/Services/ExcelSellerItemParser.cs src/AssociationSaleTool.Web/Services/Models/ExcelSellerItemParseResult.cs tests/AssociationSaleTool.Web.Tests/Services/ExcelSellerItemParserTests.cs
+rtk git add src/AssociationSaleTool.Web/Services/ExcelSellerItemParser.cs src/AssociationSaleTool.Web/Services/Models/ExcelSellerItemParseResult.cs tests/AssociationSaleTool.Web.Tests/Services/ExcelSellerItemParserTests.cs
 rtk git commit -m "Add Excel seller item parser"
 ```
 

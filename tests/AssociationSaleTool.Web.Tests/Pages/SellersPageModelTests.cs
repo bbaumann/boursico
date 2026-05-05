@@ -1,12 +1,16 @@
 using AssociationSaleTool.Web.Data;
+using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Pages.Items;
 using AssociationSaleTool.Web.Pages.Sellers;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 using System.ComponentModel.DataAnnotations;
 
 namespace AssociationSaleTool.Web.Tests.Pages;
@@ -68,7 +72,9 @@ public sealed class SellersPageModelTests
                 LastName = "Lovelace",
                 Email = "ada@example.com",
                 Phone = "0123",
-                PostalAddress = "1 rue des Tests"
+                PostalAddress = "1 rue des Tests",
+                IntakeMode = IntakeMode.InPerson,
+                Rows = [new CreateModel.ItemRowInput { Title = "Toy train", SellerPrice = "4" }]
             }
         };
 
@@ -77,6 +83,9 @@ public sealed class SellersPageModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal("BB", (await context.Sellers.SingleAsync()).SellerCode);
+        var item = await context.Items.SingleAsync();
+        Assert.Equal("BB001", item.Reference);
+        Assert.Equal("in_stock", item.Status);
     }
 
     [Fact]
@@ -100,7 +109,9 @@ public sealed class SellersPageModelTests
                 LastName = "Lovelace",
                 Phone = "0123",
                 PostalAddress = "1 rue des Tests",
-                FeePaid = "2"
+                FeePaid = "2",
+                IntakeMode = IntakeMode.EmailPreregistration,
+                Rows = [new CreateModel.ItemRowInput { Title = "Toy train", SellerPrice = "4" }]
             }
         };
 
@@ -111,7 +122,7 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
-    public async Task CreateSellerPage_Post_ReturnsPageWithDuplicateMatches()
+    public async Task CreateSellerPage_Post_RedirectsDuplicateSellerWithPendingRows()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -131,17 +142,25 @@ public sealed class SellersPageModelTests
                 FirstName = "Ada",
                 LastName = "Lovelace",
                 Phone = "0123",
-                PostalAddress = "2 rue des Tests"
+                PostalAddress = "2 rue des Tests",
+                IntakeMode = IntakeMode.EmailPreregistration,
+                Rows = [new CreateModel.ItemRowInput { Title = "Toy train", SellerPrice = "4" }]
             }
         };
+        var session = new TestSession();
+        pageModel.PageContext = new PageContext { HttpContext = CreateHttpContextWithSession(session) };
 
         var result = await pageModel.OnPostAsync(CancellationToken.None);
 
-        Assert.IsType<PageResult>(result);
-        Assert.False(pageModel.ModelState.IsValid);
-        var match = Assert.Single(pageModel.DuplicateMatches);
-        Assert.Equal(existing.Id, match.SellerId);
-        Assert.Equal("ada@example.com", match.Email);
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("/Sellers/Details", redirect.PageName);
+        Assert.Equal(existing.Id, redirect.RouteValues!["id"]);
+        var pendingRows = PendingSellerItemRowsSession.Consume(session, existing.Id);
+        Assert.NotNull(pendingRows);
+        Assert.Equal(IntakeMode.EmailPreregistration, pendingRows.IntakeMode);
+        var row = Assert.Single(pendingRows.Rows);
+        Assert.Equal("Toy train", row.Title);
+        Assert.Equal(400, row.SellerPriceCents);
         Assert.Equal(1, await context.Sellers.CountAsync());
     }
 
@@ -203,6 +222,47 @@ public sealed class SellersPageModelTests
         Assert.IsType<PageResult>(result);
         Assert.Equal(IntakeMode.EmailPreregistration, pageModel.Input.IntakeMode);
         Assert.Equal(10, pageModel.Input.Rows.Count);
+    }
+
+    [Fact]
+    public async Task SellerDetailsPage_Get_ConsumesPendingRowsOnce()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+        var session = new TestSession();
+        PendingSellerItemRowsSession.Store(
+            session,
+            new PendingSellerItemRows(
+                seller.Id,
+                IntakeMode.EmailPreregistration,
+                [new CreateItemRowRequest("Toy train", 400)],
+                PendingSellerItemRowsSession.ExcelDuplicateAlertKey));
+        var pageModel = new DetailsModel(service)
+        {
+            PageContext = new PageContext { HttpContext = CreateHttpContextWithSession(session) }
+        };
+
+        var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("Ce vendeur existe déjà. Les articles du fichier Excel ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.", pageModel.PendingRowsAlert);
+        Assert.Equal(IntakeMode.EmailPreregistration, pageModel.Input.IntakeMode);
+        Assert.Equal("Toy train", pageModel.Input.Rows[0].Title);
+        Assert.Equal("4", pageModel.Input.Rows[0].SellerPrice);
+        Assert.True(pageModel.Input.Rows.Count >= 10);
+
+        var secondResult = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
+        Assert.IsType<PageResult>(secondResult);
+        Assert.Null(pageModel.PendingRowsAlert);
+        Assert.True(pageModel.Input.Rows.All(row => string.IsNullOrWhiteSpace(row.Title)));
     }
 
     [Fact]
@@ -668,5 +728,58 @@ public sealed class SellersPageModelTests
 
         Assert.Contains(validationResults, result => result.ErrorMessage == "Le téléphone est obligatoire.");
         Assert.Contains(validationResults, result => result.ErrorMessage == "L'adresse postale est obligatoire.");
+    }
+
+    private static DefaultHttpContext CreateHttpContextWithSession(ISession session)
+    {
+        var context = new DefaultHttpContext();
+        context.Features.Set<ISessionFeature>(new TestSessionFeature { Session = session });
+        return context;
+    }
+
+    private sealed class TestSessionFeature : ISessionFeature
+    {
+        public ISession Session { get; set; } = null!;
+    }
+
+    private sealed class TestSession : ISession
+    {
+        private readonly Dictionary<string, byte[]> _values = [];
+
+        public IEnumerable<string> Keys => _values.Keys;
+
+        public string Id { get; } = Guid.NewGuid().ToString("N");
+
+        public bool IsAvailable => true;
+
+        public void Clear()
+        {
+            _values.Clear();
+        }
+
+        public Task CommitAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task LoadAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public void Remove(string key)
+        {
+            _values.Remove(key);
+        }
+
+        public void Set(string key, byte[] value)
+        {
+            _values[key] = value;
+        }
+
+        public bool TryGetValue(string key, out byte[] value)
+        {
+            return _values.TryGetValue(key, out value!);
+        }
     }
 }

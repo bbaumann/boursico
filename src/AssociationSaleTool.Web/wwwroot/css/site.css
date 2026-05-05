@@ -264,6 +264,29 @@ h1 {
   gap: 1rem;
 }
 
+.excel-import-panel {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.excel-import-form {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.excel-import-form label {
+  min-width: 0;
+}
+
+.excel-import-form .button-link {
+  white-space: nowrap;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -296,6 +319,29 @@ textarea {
 .success-message {
   color: #1f6b3a;
   font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.existing-seller-alert {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #8ab9f5;
+  border-radius: 8px;
+  color: #0a3d78;
+  background: #e8f2ff;
+  box-shadow: 0 14px 36px rgba(31, 91, 166, 0.16);
+}
+
+.existing-seller-alert p {
+  margin: 0;
+}
+
+.existing-seller-alert p + p {
+  margin-top: 0.35rem;
+}
+
+.existing-seller-alert-title {
+  font-size: 1.15rem;
   font-weight: 700;
 }
 
