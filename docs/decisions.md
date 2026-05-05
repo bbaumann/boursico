@@ -1,4 +1,4 @@
-# Decisions
+﻿# Decisions
 
 This file captures the main project decisions in a lightweight ADR format.
 
@@ -582,7 +582,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - keep `in_stock -> defective` as an admin task from `Correction des articles` on `/vente/statut`, not from the seller item list
   - let admins restore `defective -> in_stock` only when no buyer refund history exists
   - repurpose the sale-status correction section as `Correction des articles`, listing the first 15 non-`registered` items with a status column
-  - handle buyer-return defects from `/vente/statut` with a `Rembourser / marquer défectueux` action on sold items only
+  - handle buyer-return defects from `/vente/statut` with a `Rembourser` action on sold items only
   - record defective refunds directly on `sale_line` with `refunded_at`, refunded item price, refunded checkout fee, total refund, and `refund_reason = defective`
   - treat active payable sale lines as `corrected_at IS NULL AND refunded_at IS NULL`
   - include `defective` items in seller-sheet returned items with a visible `DÉFECTUEUX` marker

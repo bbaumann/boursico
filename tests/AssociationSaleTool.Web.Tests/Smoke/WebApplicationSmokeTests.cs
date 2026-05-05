@@ -497,6 +497,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     public async Task SaleStatusUnlockShowsItemCorrectionControls()
     {
         var client = _factory.CreateClient();
+        long saleId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -558,7 +559,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.AddRange(soldItem, inStockItem, defectiveItem, missingItem, registeredItem);
             await dbContext.SaveChangesAsync();
-            dbContext.Sales.Add(new SaleEntity
+            var sale = new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
                 SubtotalSellerPriceCents = 1000,
@@ -572,8 +573,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                         SellerPriceAtSaleCents = 1000
                     }
                 ]
-            });
+            };
+            dbContext.Sales.Add(sale);
             await dbContext.SaveChangesAsync();
+            saleId = sale.Id;
         }
 
         var content = await UnlockSaleStatusPageAsync(client);
@@ -581,9 +584,16 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Correction des articles", content);
         Assert.Contains("data-item-correction-root", content);
         Assert.DoesNotContain("data-defective-items-root", content);
+        Assert.Contains("item-correction-reference-column", content);
+        Assert.Contains("item-correction-title-column", content);
+        Assert.Contains("item-correction-seller-column", content);
         Assert.Contains("Statut", content);
-        Assert.Contains("Rembourser / marquer d\u00e9fectueux", content);
+        Assert.Contains("Rembourser", content);
+        Assert.DoesNotContain("Rembourser / marquer d\u00e9fectueux", content);
         Assert.DoesNotContain("<th>Montant \u00e0 rembourser</th>", content);
+        Assert.Contains($">#{saleId}</a>", content);
+        Assert.Contains($"href=\"/caisse/ventes/{saleId}\"", content);
+        Assert.DoesNotContain($"#{saleId} -", content);
         Assert.Contains("10.00 EUR", content);
         Assert.Contains("1.00 EUR", content);
         Assert.Contains("11.00 EUR", content);

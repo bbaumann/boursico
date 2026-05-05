@@ -194,11 +194,6 @@ public sealed class IndexModel(
         return $"{priceCents / 100m:0.00} EUR";
     }
 
-    public static string FormatSoldAt(DateTime soldAt)
-    {
-        return soldAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", FrenchCulture);
-    }
-
     public static string BuildCorrectionFilterText(ItemCorrectionCandidate item)
     {
         return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.Status} {item.SaleId}".ToLower(FrenchCulture);

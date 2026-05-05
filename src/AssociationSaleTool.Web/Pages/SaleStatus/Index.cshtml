@@ -95,6 +95,15 @@ else
             @if (Model.ItemCorrectionCandidates.Count > 0)
             {
                 <table class="data-table item-correction-table">
+                    <colgroup>
+                        <col class="item-correction-reference-column" />
+                        <col class="item-correction-title-column" />
+                        <col class="item-correction-seller-column" />
+                        <col class="item-correction-status-column" />
+                        <col class="item-correction-sale-column" />
+                        <col class="item-correction-price-column" />
+                        <col class="item-correction-action-column" />
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>REF</th>
@@ -116,9 +125,9 @@ else
                             <td>@item.SellerCode - @item.SellerName</td>
                             <td>@ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
                             <td>
-                                @if (item.SaleId is { } saleId && item.SoldAt is { } soldAt)
+                                @if (item.SaleId is { } saleId)
                                 {
-                                    <span>#@saleId - @IndexModel.FormatSoldAt(soldAt)</span>
+                                    <a asp-page="/Checkout/Sales/Details" asp-route-id="@saleId">#@saleId</a>
                                 }
                                 else
                                 {
@@ -145,7 +154,7 @@ else
                                     <button type="button"
                                             class="table-action-button"
                                             onclick="document.getElementById('refund-dialog-@refundSaleLineId')?.showModal();">
-                                        Rembourser / marquer défectueux
+                                        Rembourser
                                     </button>
                                     <dialog id="refund-dialog-@refundSaleLineId" class="admin-dialog">
                                         <h3>Remboursement article défectueux</h3>

@@ -1,4 +1,4 @@
-# Defective Items Implementation Plan
+﻿# Defective Items Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -66,7 +66,7 @@
 
 - [x] Add/extend Razor Page tests if available for `/vente/statut`; otherwise add a smoke test that verifies rendered HTML contains:
   - `Correction des articles`
-  - `Rembourser / marquer défectueux`
+  - `Rembourser`
   - `Marquer défectueux`
   - a status column
   - no refund amount column
@@ -78,7 +78,7 @@
   - use French success/error messages
 - [x] Update `Pages/SaleStatus/Index.cshtml`:
   - show one item correction table for the first 15 non-`registered` items
-  - show `Rembourser / marquer défectueux` beside `Remettre en stock` for sold items
+  - show `Rembourser` beside `Remettre en stock` for sold items
   - show a confirmation pop-in with item reference, title, sale id, item price, refunded association fee, and total refund
   - show `Marquer défectueux` for `in_stock` items and `Remettre en stock` for eligible `defective` items
 - [x] Keep the seller detail article list free of the admin-only `Marquer défectueux` action.

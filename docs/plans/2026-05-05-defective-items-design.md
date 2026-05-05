@@ -1,4 +1,4 @@
-# Defective Items Design
+﻿# Defective Items Design
 
 ## Goal
 
@@ -167,9 +167,9 @@ The existing `/vente/statut` correction area is the right home for item correcti
 For active sold items, the table should show two distinct admin actions:
 
 - `Remettre en stock` for the current wrong-item correction
-- `Rembourser / marquer défectueux` for a buyer-returned defective item
+- `Rembourser` for a buyer-returned defective item
 
-`Rembourser / marquer défectueux` opens a confirmation pop-in that shows the reimbursement amount before saving the refund. Reimbursement only applies to sold items.
+`Rembourser` opens a confirmation pop-in that shows the reimbursement amount before saving the refund. Reimbursement only applies to sold items.
 
 The same table should support defect workflows for non-sold items:
 

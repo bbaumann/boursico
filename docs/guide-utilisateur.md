@@ -1,4 +1,4 @@
-# Guide utilisateur - Outil de vente de l'association
+﻿# Guide utilisateur - Outil de vente de l'association
 
 Ce guide explique l'outil du point de vue des organisateurs, des bénévoles et des personnes qui préparent le rapprochement après la vente. Il est volontairement plus simple que la documentation technique : il décrit les usages, les écrans importants et la logique de sécurité opérationnelle.
 
@@ -307,7 +307,7 @@ Si un acheteur rapporte un article vendu parce qu'il est défectueux :
 
 1. Aller dans `Correction des articles`.
 2. Trouver l'article vendu.
-3. Cliquer sur `Rembourser / marquer défectueux`.
+3. Cliquer sur `Rembourser`.
 4. Vérifier le montant affiché dans la fenêtre de confirmation.
 5. Rembourser l'acheteur du total indiqué, puis confirmer.
 

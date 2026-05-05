@@ -474,21 +474,37 @@ textarea {
   table-layout: fixed;
 }
 
-.item-correction-table th:first-child {
-  width: 7rem;
+.item-correction-reference-column {
+  width: 5.5rem;
 }
 
-.item-correction-table th:nth-child(4),
-.item-correction-table th:nth-child(6) {
+.item-correction-title-column,
+.item-correction-seller-column {
+  width: 24%;
+}
+
+.item-correction-status-column,
+.item-correction-price-column {
   width: 7.5rem;
 }
 
-.item-correction-table th:nth-child(5) {
-  width: 11rem;
+.item-correction-sale-column {
+  width: 4.5rem;
 }
 
-.item-correction-table th:last-child {
-  width: 16rem;
+.item-correction-action-column {
+  width: 13rem;
+}
+
+.item-correction-table th:first-child,
+.item-correction-table td:first-child,
+.item-correction-table th:nth-child(4),
+.item-correction-table td:nth-child(4),
+.item-correction-table th:nth-child(5),
+.item-correction-table td:nth-child(5),
+.item-correction-table th:nth-child(6),
+.item-correction-table td:nth-child(6) {
+  white-space: nowrap;
 }
 
 .admin-dialog {
