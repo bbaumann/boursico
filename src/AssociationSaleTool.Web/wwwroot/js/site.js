@@ -252,6 +252,11 @@ function initializeCheckout(root) {
   const catalog = JSON.parse(dataElement.textContent || "[]");
   const cart = [];
   const conflictItemIds = new Set();
+  const touchedPaymentFields = {
+    chequeNumber: false,
+    chequeBankName: false
+  };
+  let paymentSubmitAttempted = false;
 
   function findCatalogItem(itemId) {
     return catalog.find(item => String(item.id) === String(itemId));
@@ -337,6 +342,58 @@ function initializeCheckout(root) {
 
     if (!isCheque) {
       setPaymentMessage("");
+      touchedPaymentFields.chequeNumber = false;
+      touchedPaymentFields.chequeBankName = false;
+      paymentSubmitAttempted = false;
+    }
+  }
+
+  function getMissingPaymentFields() {
+    const paymentDetails = getPaymentDetails();
+    if (paymentDetails.paymentMethod !== "cheque") {
+      return [];
+    }
+
+    return [
+      {
+        name: "chequeNumber",
+        value: paymentDetails.chequeNumber,
+        input: chequeNumberInput,
+        message: "Le numéro de chèque est obligatoire."
+      },
+      {
+        name: "chequeBankName",
+        value: paymentDetails.chequeBankName,
+        input: chequeBankNameInput,
+        message: "Le nom de la banque est obligatoire."
+      }
+    ].filter(field => field.value.length === 0);
+  }
+
+  function validatePaymentDetailField(fieldName) {
+    touchedPaymentFields[fieldName] = true;
+    const paymentDetails = getPaymentDetails();
+    if (paymentDetails.paymentMethod !== "cheque") {
+      setPaymentMessage("");
+      return true;
+    }
+
+    const missingFields = getMissingPaymentFields();
+    const currentField = missingFields.find(field => field.name === fieldName);
+    if (currentField) {
+      setPaymentMessage(currentField.message);
+      return false;
+    }
+
+    const visibleField = missingFields.find(field =>
+      touchedPaymentFields[field.name] || paymentSubmitAttempted);
+    setPaymentMessage(visibleField?.message || "");
+    return missingFields.length === 0;
+  }
+
+  function updatePaymentDetailField(fieldName) {
+    if (touchedPaymentFields[fieldName] || paymentSubmitAttempted) {
+      validatePaymentDetailField(fieldName);
     }
   }
 
@@ -347,17 +404,15 @@ function initializeCheckout(root) {
       return true;
     }
 
-    if (paymentDetails.chequeNumber.length > 0 && paymentDetails.chequeBankName.length > 0) {
+    paymentSubmitAttempted = true;
+    const missingFields = getMissingPaymentFields();
+    if (missingFields.length === 0) {
       setPaymentMessage("");
       return true;
     }
 
     setPaymentMessage("Le numéro de chèque et le nom de la banque sont obligatoires pour un paiement par chèque.");
-    if (paymentDetails.chequeNumber.length === 0) {
-      chequeNumberInput?.focus();
-    } else {
-      chequeBankNameInput?.focus();
-    }
+    missingFields[0].input?.focus();
     return false;
   }
 
@@ -561,8 +616,10 @@ function initializeCheckout(root) {
     });
   });
   paymentMethodInputs.forEach(input => input.addEventListener("change", updateChequeDetailsVisibility));
-  chequeNumberInput?.addEventListener("input", validatePaymentDetails);
-  chequeBankNameInput?.addEventListener("input", validatePaymentDetails);
+  chequeNumberInput?.addEventListener("blur", () => validatePaymentDetailField("chequeNumber"));
+  chequeNumberInput?.addEventListener("input", () => updatePaymentDetailField("chequeNumber"));
+  chequeBankNameInput?.addEventListener("blur", () => validatePaymentDetailField("chequeBankName"));
+  chequeBankNameInput?.addEventListener("input", () => updatePaymentDetailField("chequeBankName"));
   resultsBody.addEventListener("click", event => {
     const row = event.target.closest("[data-checkout-item-id]");
     if (!row) {
