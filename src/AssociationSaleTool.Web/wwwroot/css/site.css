@@ -328,6 +328,170 @@ textarea {
   margin-top: 2rem;
 }
 
+.data-list-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.data-list-tabs .button-link {
+  min-width: 8rem;
+  font-weight: 700;
+}
+
+.data-list-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.data-list-filter-bar-single {
+  grid-template-columns: minmax(0, 34rem);
+}
+
+.data-list-filter-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.data-list-filter-field label {
+  color: var(--muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.data-list-filter-field input,
+.data-list-filter-field select {
+  min-height: 3rem;
+}
+
+.data-list-filter-field-status {
+  grid-template-columns: max-content 12rem;
+}
+
+.data-list-page {
+  overflow-x: auto;
+}
+
+.data-list-table {
+  min-width: 760px;
+  margin-top: 1rem;
+}
+
+.data-list-seller-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.data-list-seller-table th,
+.data-list-seller-table td {
+  padding: 0.55rem 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+.data-list-seller-table th {
+  letter-spacing: 0;
+}
+
+.data-list-seller-table .data-list-size-xxs {
+  width: 2.3rem;
+}
+
+.data-list-seller-table .data-list-size-xs {
+  width: 3.4rem;
+}
+
+.data-list-seller-table .data-list-size-s {
+  width: 4.25rem;
+}
+
+.data-list-seller-table .data-list-size-m {
+  width: 5.75rem;
+}
+
+.data-list-seller-table .data-list-size-l {
+  width: 10.25rem;
+}
+
+.data-list-seller-table .data-list-code-column,
+.data-list-seller-table .data-list-phone-column {
+  white-space: nowrap;
+}
+
+.data-list-seller-table th.data-list-count-column {
+  line-height: 1.05;
+  white-space: normal;
+}
+
+.data-list-seller-table td.data-list-count-column {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.data-list-seller-table .data-list-fee-column {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.data-list-sale-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.data-list-sale-table th,
+.data-list-sale-table td {
+  padding: 0.55rem 0.4rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.data-list-sale-table th {
+  letter-spacing: 0;
+}
+
+.data-list-sale-table .data-list-sale-id-column {
+  width: 2.3rem;
+}
+
+.data-list-sale-table .data-list-sale-money-column,
+.data-list-sale-table .data-list-sale-receipt-column {
+  text-align: right;
+}
+
+.data-list-cheque-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.data-list-cheque-table th,
+.data-list-cheque-table td {
+  padding: 0.55rem 0.4rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.data-list-cheque-table th {
+  letter-spacing: 0;
+}
+
+.data-list-cheque-table .data-list-cheque-sale-column {
+  width: 2.3rem;
+}
+
+.data-list-cheque-table .data-list-cheque-number-column {
+  width: 8rem;
+}
+
+.data-list-cheque-table .data-list-cheque-amount-column {
+  width: 5.5rem;
+  text-align: right;
+}
+
 .seller-contact-list {
   display: grid;
   gap: 0.75rem;

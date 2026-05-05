@@ -129,6 +129,21 @@ Operators can inspect saved sales from the checkout area without admin unlock:
 
 The read-only sales view does not expose correction actions. Mistaken sale-line correction remains on `/vente/statut`.
 
+### Read-Only Data Lists
+
+Operators can inspect the main event data from `/donnees` without admin unlock:
+
+- the main navigation exposes a `DONNÉES` entry
+- the page is read-only and does not expose edit, correction, or workflow actions
+- the page uses four tabs: `Articles`, `Vendeurs`, `Ventes`, and `Chèques`
+- the `Articles` tab lists all item statuses and supports a status filter in addition to live text search
+- article text search matches item reference, title, seller code, seller name, and status
+- the `Vendeurs` tab supports live text search by seller code and seller name only
+- the `Ventes` tab supports live text search by sale id, buyer details, payment method, item reference, and item title
+- sale receipt details, cheque number, and bank name stay visible in checkout sales history, but are not part of the general data-list sale search
+- the `Chèques` tab lists only cheque-payment sales with stored cheque number and bank name
+- cheque rows show sale id, cheque number, bank name, and total paid amount, with the sale id linking to read-only sale detail
+
 ### Concurrent Checkout Rule
 
 V1 does not use cart-level reservation.

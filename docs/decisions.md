@@ -563,3 +563,25 @@ This file captures the main project decisions in a lightweight ADR format.
   - `D-012` is superseded for VNext
   - the expected fee remains derived and cannot drift from the item count
   - overpayment is visible as paid fee but never increases the seller payout
+
+## D-038 Expose Ungated Read-Only Data Lists
+
+- Status: accepted
+- Key drivers:
+  - organizers need a broad operational browser for items, sellers, and sales without entering a correction workflow
+  - existing screens are optimized for specific tasks and sometimes hard-filter records by workflow status
+  - the view should help inspection without creating another place where event data can be changed
+- Decision:
+  - expose a French read-only data browser at `/donnees`
+  - add a top-level `DONNÉES` navigation entry
+  - keep the feature available to operators without the shared admin password
+  - use four tabs: `Articles`, `Vendeurs`, `Ventes`, and `Chèques`
+  - list all item statuses on the `Articles` tab and provide a status filter
+  - search sellers only by seller code and seller name
+  - search sales only by sale id, buyer details, payment method, item reference, and item title
+  - list registered cheques on a dedicated tab by sale id, cheque number, bank name, and sale total amount
+  - do not expose edit, correction, deletion, phase, or reconciliation actions from this page
+- Consequence:
+  - the data browser complements the focused checkout, intake, and reconciliation pages instead of replacing them
+  - sale lookup in `/donnees` is intentionally narrower than `/caisse/ventes`, which can still search receipt and cheque traceability details
+  - future additions to the data browser should stay read-only unless a separate decision creates an admin workflow there

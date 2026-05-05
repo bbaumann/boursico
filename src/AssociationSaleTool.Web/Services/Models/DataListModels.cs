@@ -1,0 +1,49 @@
+namespace AssociationSaleTool.Web.Services.Models;
+
+public sealed record DataListItemRow(
+    long ItemId,
+    long SellerId,
+    string Reference,
+    string Title,
+    string SellerCode,
+    string SellerName,
+    string Status,
+    string StatusLabel,
+    int SellerPriceCents,
+    string SearchText);
+
+public sealed record DataListSellerRow(
+    long SellerId,
+    string SellerCode,
+    string SellerName,
+    string? Email,
+    string Phone,
+    int ItemCount,
+    int RegisteredCount,
+    int InStockCount,
+    int SoldCount,
+    int MissingCount,
+    int ExpectedFeeCents,
+    int PaidFeeCents,
+    int RemainingFeeCents,
+    string SearchText);
+
+public sealed record DataListSaleRow(
+    long SaleId,
+    DateTime SoldAt,
+    int ItemCount,
+    int SubtotalSellerPriceCents,
+    int CheckoutFeeCents,
+    int TotalPaidCents,
+    string BuyerDisplay,
+    string ItemSummary,
+    string PaymentMethodLabel,
+    bool HasReceiptDetails,
+    string SearchText);
+
+public sealed record DataListChequeRow(
+    long SaleId,
+    string ChequeNumber,
+    string ChequeBankName,
+    int TotalPaidCents,
+    string SearchText);

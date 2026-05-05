@@ -1,0 +1,246 @@
+@page "/donnees"
+@model AssociationSaleTool.Web.Pages.Data.IndexModel
+@{
+    ViewData["Title"] = "Données";
+}
+
+<section class="page-card data-list-page" data-data-list-root>
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Consultation</p>
+            <h1 class="page-title">Donn&eacute;es</h1>
+            <p class="seller-meta">Consultation en lecture seule des donn&eacute;es de l'&eacute;v&eacute;nement.</p>
+        </div>
+    </div>
+
+    <nav class="data-list-tabs" aria-label="Listes de donn&eacute;es">
+        <a class="@Model.TabClass("articles")"
+           href="/donnees?onglet=articles"
+           aria-current="@Model.TabAriaCurrent("articles")">Articles</a>
+        <a class="@Model.TabClass("vendeurs")"
+           href="/donnees?onglet=vendeurs"
+           aria-current="@Model.TabAriaCurrent("vendeurs")">Vendeurs</a>
+        <a class="@Model.TabClass("ventes")"
+           href="/donnees?onglet=ventes"
+           aria-current="@Model.TabAriaCurrent("ventes")">Ventes</a>
+        <a class="@Model.TabClass("cheques")"
+           href="/donnees?onglet=cheques"
+           aria-current="@Model.TabAriaCurrent("cheques")">Ch&egrave;ques</a>
+    </nav>
+
+    @if (Model.IsActiveTab("articles"))
+    {
+        <section class="subsection">
+            <div class="data-list-filter-bar">
+                <div class="data-list-filter-field data-list-filter-field-search">
+                    <label for="data-list-search">Filtrer les articles</label>
+                    <input id="data-list-search"
+                           type="search"
+                           autocomplete="off"
+                           data-data-list-search
+                           placeholder="R&eacute;f&eacute;rence, titre, vendeur ou statut" />
+                </div>
+                <div class="data-list-filter-field data-list-filter-field-status">
+                    <label for="data-list-status-filter">Statut</label>
+                    <select id="data-list-status-filter" data-data-list-status-filter>
+                        <option value="">Tous les statuts</option>
+                        <option value="registered">Enregistr&eacute;</option>
+                        <option value="in_stock">En stock</option>
+                        <option value="sold">Vendu</option>
+                        <option value="missing">Manquant</option>
+                    </select>
+                </div>
+            </div>
+            <p class="empty-state" data-data-list-empty-message hidden>Aucun article ne correspond &agrave; cette recherche.</p>
+
+            @if (Model.Items.Count == 0)
+            {
+                <p class="empty-state">Aucun article enregistr&eacute;.</p>
+            }
+            else
+            {
+                <table class="data-table data-list-table">
+                    <thead>
+                        <tr>
+                            <th>REF</th>
+                            <th>Titre</th>
+                            <th>Vendeur</th>
+                            <th>Statut</th>
+                            <th>Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr data-data-list-row
+                            data-data-list-filter-text="@item.SearchText"
+                            data-data-list-status="@item.Status">
+                            <td><a href="/vendeurs/@item.SellerId">@item.Reference</a></td>
+                            <td>@item.Title</td>
+                            <td>@item.SellerCode - @item.SellerName</td>
+                            <td>@item.StatusLabel</td>
+                            <td>@IndexModel.FormatPrice(item.SellerPriceCents)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
+
+    @if (Model.IsActiveTab("vendeurs"))
+    {
+        <section class="subsection">
+            <div class="data-list-filter-bar data-list-filter-bar-single">
+                <div class="data-list-filter-field data-list-filter-field-search">
+                    <label for="data-list-search">Filtrer les vendeurs</label>
+                    <input id="data-list-search"
+                           type="search"
+                           autocomplete="off"
+                           data-data-list-search
+                           placeholder="Code ou nom" />
+                </div>
+            </div>
+            <p class="empty-state" data-data-list-empty-message hidden>Aucun vendeur ne correspond &agrave; cette recherche.</p>
+
+            @if (Model.Sellers.Count == 0)
+            {
+                <p class="empty-state">Aucun vendeur enregistr&eacute;.</p>
+            }
+            else
+            {
+                <table class="data-table data-list-table data-list-seller-table">
+                    <thead>
+                        <tr>
+                            <th class="data-list-size-xxs data-list-code-column">Code</th>
+                            <th class="data-list-size-l data-list-name-column">Nom</th>
+                            <th class="data-list-size-l data-list-email-column">E-mail</th>
+                            <th class="data-list-size-m data-list-phone-column">T&eacute;l&eacute;phone</th>
+                            <th class="data-list-size-xs data-list-count-column">Total</th>
+                            <th class="data-list-size-xs data-list-count-column">Enregistr&eacute;s</th>
+                            <th class="data-list-size-xs data-list-count-column">En stock</th>
+                            <th class="data-list-size-xs data-list-count-column">Vendus</th>
+                            <th class="data-list-size-xs data-list-count-column">Manquants</th>
+                            <th class="data-list-size-xs data-list-fee-column">Frais</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var seller in Model.Sellers)
+                    {
+                        <tr data-data-list-row data-data-list-filter-text="@seller.SearchText">
+                            <td class="data-list-size-xxs data-list-code-column"><a href="/vendeurs/@seller.SellerId">@seller.SellerCode</a></td>
+                            <td class="data-list-size-l data-list-name-column">@seller.SellerName</td>
+                            <td class="data-list-size-l data-list-email-column">@(seller.Email ?? "-")</td>
+                            <td class="data-list-size-m data-list-phone-column">@seller.Phone</td>
+                            <td class="data-list-size-xs data-list-count-column">@seller.ItemCount</td>
+                            <td class="data-list-size-xs data-list-count-column">@seller.RegisteredCount</td>
+                            <td class="data-list-size-xs data-list-count-column">@seller.InStockCount</td>
+                            <td class="data-list-size-xs data-list-count-column">@seller.SoldCount</td>
+                            <td class="data-list-size-xs data-list-count-column">@seller.MissingCount</td>
+                            <td class="data-list-size-xs data-list-fee-column">@IndexModel.FormatSellerFeeProgress(seller.PaidFeeCents, seller.ExpectedFeeCents)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
+
+    @if (Model.IsActiveTab("ventes"))
+    {
+        <section class="subsection">
+            <div class="data-list-filter-bar data-list-filter-bar-single">
+                <div class="data-list-filter-field data-list-filter-field-search">
+                    <label for="data-list-search">Filtrer les ventes</label>
+                    <input id="data-list-search"
+                           type="search"
+                           autocomplete="off"
+                           data-data-list-search
+                           placeholder="Num&eacute;ro, acheteur, paiement, r&eacute;f&eacute;rence ou titre" />
+                </div>
+            </div>
+            <p class="empty-state" data-data-list-empty-message hidden>Aucune vente ne correspond &agrave; cette recherche.</p>
+
+            @if (Model.Sales.Count == 0)
+            {
+                <p class="empty-state">Aucune vente enregistr&eacute;e.</p>
+            }
+            else
+            {
+                <table class="data-table data-list-table data-list-sale-table">
+                    <thead>
+                        <tr>
+                            <th class="data-list-size-xxs data-list-sale-id-column">Vente</th>
+                            <th class="data-list-size-m data-list-sale-date-column">Date</th>
+                            <th class="data-list-size-l data-list-sale-buyer-column">Acheteur</th>
+                            <th class="data-list-size-s data-list-sale-money-column">Sous-total</th>
+                            <th class="data-list-size-s data-list-sale-money-column">Total</th>
+                            <th class="data-list-size-s data-list-sale-payment-column">Paiement</th>
+                            <th class="data-list-size-xs data-list-sale-receipt-column">Re&ccedil;u</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var sale in Model.Sales)
+                    {
+                        <tr data-data-list-row data-data-list-filter-text="@sale.SearchText">
+                            <td class="data-list-size-xxs data-list-sale-id-column"><a href="/caisse/ventes/@sale.SaleId">#@sale.SaleId</a></td>
+                            <td class="data-list-size-m data-list-sale-date-column">@IndexModel.FormatSoldAt(sale.SoldAt)</td>
+                            <td class="data-list-size-l data-list-sale-buyer-column">@(string.IsNullOrWhiteSpace(sale.BuyerDisplay) ? "-" : sale.BuyerDisplay)</td>
+                            <td class="data-list-size-s data-list-sale-money-column">@IndexModel.FormatPrice(sale.SubtotalSellerPriceCents)</td>
+                            <td class="data-list-size-s data-list-sale-money-column">@IndexModel.FormatPrice(sale.TotalPaidCents)</td>
+                            <td class="data-list-size-s data-list-sale-payment-column">@sale.PaymentMethodLabel</td>
+                            <td class="data-list-size-xs data-list-sale-receipt-column">@(sale.HasReceiptDetails ? "Oui" : "Non")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
+
+    @if (Model.IsActiveTab("cheques"))
+    {
+        <section class="subsection">
+            <div class="data-list-filter-bar data-list-filter-bar-single">
+                <div class="data-list-filter-field data-list-filter-field-search">
+                    <label for="data-list-search">Filtrer les ch&egrave;ques</label>
+                    <input id="data-list-search"
+                           type="search"
+                           autocomplete="off"
+                           data-data-list-search
+                           placeholder="Vente, num&eacute;ro, banque ou montant" />
+                </div>
+            </div>
+            <p class="empty-state" data-data-list-empty-message hidden>Aucun ch&egrave;que ne correspond &agrave; cette recherche.</p>
+
+            @if (Model.Cheques.Count == 0)
+            {
+                <p class="empty-state">Aucun ch&egrave;que enregistr&eacute;.</p>
+            }
+            else
+            {
+                <table class="data-table data-list-table data-list-cheque-table">
+                    <thead>
+                        <tr>
+                            <th class="data-list-size-xxs data-list-cheque-sale-column">Vente</th>
+                            <th>N&deg; ch&egrave;que</th>
+                            <th>Banque</th>
+                            <th>Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var cheque in Model.Cheques)
+                    {
+                        <tr data-data-list-row data-data-list-filter-text="@cheque.SearchText">
+                            <td class="data-list-size-xxs data-list-cheque-sale-column"><a href="/caisse/ventes/@cheque.SaleId">#@cheque.SaleId</a></td>
+                            <td class="data-list-cheque-number-column">@cheque.ChequeNumber</td>
+                            <td class="data-list-cheque-bank-column">@cheque.ChequeBankName</td>
+                            <td class="data-list-cheque-amount-column">@IndexModel.FormatPrice(cheque.TotalPaidCents)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
+</section>

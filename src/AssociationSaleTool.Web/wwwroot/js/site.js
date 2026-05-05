@@ -733,6 +733,46 @@ function initializeSalesView(root) {
 
 document.querySelectorAll("[data-sales-view-root]").forEach(initializeSalesView);
 
+function initializeDataList(root) {
+  const searchInput = root.querySelector("[data-data-list-search]");
+  const statusFilter = root.querySelector("[data-data-list-status-filter]");
+  const rows = Array.from(root.querySelectorAll("[data-data-list-row]"));
+  const emptyMessage = root.querySelector("[data-data-list-empty-message]");
+
+  if (!searchInput || rows.length === 0) {
+    return;
+  }
+
+  function renderRows() {
+    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    const selectedStatus = statusFilter?.value || "";
+    let visibleRows = 0;
+
+    for (const row of rows) {
+      const filterText = row.dataset.dataListFilterText || "";
+      const rowStatus = row.dataset.dataListStatus || "";
+      const matchesText = !query || filterText.includes(query);
+      const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+      const isVisible = matchesText && matchesStatus;
+      row.hidden = !isVisible;
+
+      if (isVisible) {
+        visibleRows++;
+      }
+    }
+
+    if (emptyMessage) {
+      emptyMessage.hidden = visibleRows > 0 || (!query && !selectedStatus);
+    }
+  }
+
+  searchInput.addEventListener("input", renderRows);
+  statusFilter?.addEventListener("change", renderRows);
+  renderRows();
+}
+
+document.querySelectorAll("[data-data-list-root]").forEach(initializeDataList);
+
 function initializeSellerSearch(root) {
   const searchInput = root.querySelector("[data-seller-search]");
   const rows = Array.from(root.querySelectorAll("[data-seller-row]"));
