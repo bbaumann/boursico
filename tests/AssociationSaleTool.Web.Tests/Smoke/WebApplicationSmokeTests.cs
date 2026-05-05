@@ -868,13 +868,18 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Rembours\u00e9e - d\u00e9fectueux", content);
-        Assert.Contains("Prix rembours\u00e9", content);
-        Assert.Contains("Frais rembours\u00e9s", content);
-        Assert.Contains("Total rembours\u00e9", content);
+        Assert.Contains("Rembours\u00e9", content);
+        Assert.Contains("Remboursements", content);
+        Assert.Contains("Total corrig\u00e9", content);
+        Assert.DoesNotContain("Rembours\u00e9e - d\u00e9fectueux", content);
+        Assert.DoesNotContain("Prix rembours\u00e9", content);
+        Assert.DoesNotContain("Frais rembours\u00e9s", content);
+        Assert.DoesNotContain("Total rembours\u00e9", content);
         Assert.Contains("10.00 EUR", content);
         Assert.Contains("1.00 EUR", content);
         Assert.Contains("11.00 EUR", content);
+        Assert.Contains("-11.00 EUR", content);
+        Assert.Contains("0.00 EUR", content);
     }
 
     [Fact]
@@ -2229,6 +2234,121 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("handler=MarkItemInStock", content);
         Assert.Contains($"itemId={registeredItemId}", content);
         Assert.DoesNotContain($"handler=MarkItemInStock&amp;itemId={inStockItemId}", content);
+    }
+
+    [Fact]
+    public async Task SellerDetailsDisplaysMarkDefectiveActionForInStockItemsOnly()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+        long registeredItemId;
+        long inStockItemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-009",
+                FirstName = "Marion",
+                LastName = "Defaut",
+                Email = "marion@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var registeredItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-009-001",
+                ItemNumber = 1,
+                Title = "Puzzle",
+                SellerPriceCents = 450,
+                Status = "registered"
+            };
+            var inStockItem = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-009-002",
+                ItemNumber = 2,
+                Title = "Camion",
+                SellerPriceCents = 700,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.AddRange(registeredItem, inStockItem);
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+            registeredItemId = registeredItem.Id;
+            inStockItemId = inStockItem.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Marquer défectueux", content);
+        Assert.Contains("handler=MarkItemDefective", content);
+        Assert.Contains($"itemId={inStockItemId}", content);
+        Assert.DoesNotContain($"handler=MarkItemDefective&amp;itemId={registeredItemId}", content);
+    }
+
+    [Fact]
+    public async Task SellerDetailsPostMarkItemDefectiveMarksInStockItemDefective()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-010",
+                FirstName = "Nadia",
+                LastName = "Controle",
+                Email = "nadia@example.test"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-010-001",
+                ItemNumber = 1,
+                Title = "Article abimé",
+                SellerPriceCents = 900,
+                Status = "in_stock"
+            };
+
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+            itemId = item.Id;
+        }
+
+        var pageResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        pageResponse.EnsureSuccessStatusCode();
+        var pageContent = await pageResponse.Content.ReadAsStringAsync();
+
+        var response = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=MarkItemDefective&itemId={itemId}",
+            BuildFormContent(pageContent));
+
+        response.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal("defective", (await dbContext.Items.SingleAsync(x => x.Id == itemId)).Status);
+        }
     }
 
     [Fact]

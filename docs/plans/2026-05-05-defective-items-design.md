@@ -176,6 +176,8 @@ The `/vente/statut` admin page should also support defect workflows for non-sold
 - for `in_stock` items: `Marquer défectueux`
 - for eligible `defective` items with no refund history: `Remettre en stock`
 
+The seller detail article list should also show `Marquer défectueux` directly on `in_stock` items, because that is where operators already manage the seller handover list.
+
 The refund confirmation must show:
 
 - item reference
@@ -210,15 +212,15 @@ Refunded defective sold items are not payable to the seller. They are returned t
 
 ## Sales History
 
-Read-only sale history keeps the original sale totals and shows refunded lines explicitly.
+Read-only sale history keeps the original sale total visible and shows refunded lines explicitly.
 
 A refunded line should display:
 
 - the original item price at sale time
-- the refund marker `Remboursée - défectueux`
-- refund item price
-- refunded association fee
-- total refunded amount
+- the refund marker `Remboursé`
+- the refund date below the marker
+
+Refund amounts should not be repeated inside the article table. The totals block should display the original `Total`, followed by `Remboursements`, then a final `Total corrigé`.
 
 Corrected lines and refunded lines are distinct labels.
 

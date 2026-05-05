@@ -101,6 +101,17 @@
                                         <button type="submit" class="table-action-button table-action-button-primary">Marquer en stock</button>
                                     </form>
                                 }
+                                @if (Model.CanEditItemMasterData && item.Status == "in_stock")
+                                {
+                                    <form method="post"
+                                          class="inline-form"
+                                          asp-page-handler="MarkItemDefective"
+                                          asp-route-id="@Model.Seller.Id"
+                                          asp-route-itemId="@item.Id"
+                                          onsubmit="return confirm('Marquer cet article comme défectueux ?');">
+                                        <button type="submit" class="table-action-button">Marquer défectueux</button>
+                                    </form>
+                                }
                                 @if (Model.CanEditItemMasterData && ItemDeletionPolicy.CanDelete(item.Status))
                                 {
                                     <form method="post"

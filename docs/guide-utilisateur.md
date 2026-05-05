@@ -288,11 +288,11 @@ Cette règle évite de réécrire l'historique de caisse tout en corrigeant le s
 
 ## Gérer un article défectueux
 
-Si un défaut est trouvé après l'acceptation de l'article, aller dans `ADMIN`, déverrouiller la page, puis utiliser `Articles défectueux`.
+Si un défaut est trouvé après l'acceptation de l'article, ouvrir la page du vendeur et utiliser la liste `Articles`. La page `ADMIN` garde aussi la liste `Articles défectueux` pour les recherches globales.
 
 Pour un article encore `en stock` :
 
-1. Filtrer par référence, titre ou vendeur.
+1. Trouver l'article dans la liste du vendeur, ou filtrer par référence, titre ou vendeur depuis `ADMIN`.
 2. Cliquer sur `Marquer défectueux`.
 
 Résultat :
@@ -311,7 +311,7 @@ Si un acheteur rapporte un article vendu parce qu'il est défectueux :
 4. Vérifier le montant affiché dans la fenêtre de confirmation.
 5. Rembourser l'acheteur du total indiqué, puis confirmer.
 
-Le montant inclut le prix de l'article et les 10 % de frais association. La vente d'origine reste visible avec ses totaux d'origine, mais la ligne est marquée `Remboursée - défectueux`. L'article sera rendu au vendeur et ne sera pas payé au vendeur.
+Le montant inclut le prix de l'article et les 10 % de frais association. La vente d'origine reste visible avec son total d'origine, la ligne est marquée `Remboursé` avec la date du remboursement, puis les totaux affichent `Remboursements` et `Total corrigé`. L'article sera rendu au vendeur et ne sera pas payé au vendeur.
 
 ## Après la vente : rapprochement
 

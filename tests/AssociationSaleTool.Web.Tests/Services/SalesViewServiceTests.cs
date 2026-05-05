@@ -215,6 +215,9 @@ public sealed class SalesViewServiceTests
         Assert.Equal(2000, detail!.SubtotalSellerPriceCents);
         Assert.Equal(200, detail.CheckoutFeeCents);
         Assert.Equal(2200, detail.TotalPaidCents);
+        Assert.True(detail.HasRefunds);
+        Assert.Equal(1320, detail.RefundTotalCents);
+        Assert.Equal(880, detail.CorrectedTotalPaidCents);
         Assert.Collection(
             detail.Lines,
             first =>
@@ -226,7 +229,7 @@ public sealed class SalesViewServiceTests
                 Assert.Equal(1200, first.RefundItemPriceCents);
                 Assert.Equal(120, first.RefundCheckoutFeeCents);
                 Assert.Equal(1320, first.RefundTotalCents);
-                Assert.Equal("Rembours\u00e9e - d\u00e9fectueux", first.RefundReasonLabel);
+                Assert.Equal("Rembours\u00e9", first.RefundStatusLabel);
             },
             second =>
             {

@@ -78,6 +78,7 @@
   - show `Rembourser` beside `Remettre en stock`
   - show a confirmation pop-in with item reference, title, sale id, item price, refunded association fee, and total refund
   - add the defect-candidate section for `in_stock` and eligible `defective` items
+- [x] Update the seller detail article list to show `Marquer défectueux` directly for `in_stock` items.
 - [x] Run the focused page/smoke tests and verify they pass.
 
 ## Task 5: Reconciliation And Seller Sheets
@@ -97,11 +98,12 @@
 
 - [x] Add failing `SalesViewServiceTests` for refunded defective lines:
   - original sale totals remain unchanged
-  - line exposes `RefundedAt`, refund item price, refund fee, refund total, and reason label
+  - line exposes `RefundedAt` and a short refund status label
+  - the sale exposes refund total and corrected total
   - corrected and refunded labels remain distinct
 - [x] Run the focused tests and verify they fail.
 - [x] Update `SalesViewService` and sales view models.
-- [x] Update `Pages/Checkout/Sales/Details.cshtml` to show `Remboursée - défectueux` and refund amounts.
+- [x] Update `Pages/Checkout/Sales/Details.cshtml` to show `Remboursé` with date in the item table, then `Remboursements` and `Total corrigé` in the totals block.
 - [x] Run focused sales-history tests and verify they pass.
 
 ## Task 7: Documentation

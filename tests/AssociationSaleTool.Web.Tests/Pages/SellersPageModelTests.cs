@@ -159,7 +159,7 @@ public sealed class SellersPageModelTests
         var service = new IntakeService(context);
         var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
 
-        var pageModel = new DetailsModel(service)
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context))
         {
             Input = new DetailsModel.ItemBatchInput
             {
@@ -196,7 +196,7 @@ public sealed class SellersPageModelTests
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
         var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
-        var pageModel = new DetailsModel(service);
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context));
 
         var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
 
@@ -222,7 +222,7 @@ public sealed class SellersPageModelTests
             .Select(index => new CreateItemRowRequest($"Toy {index}", 100))
             .ToList();
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(seller.Id, IntakeMode.EmailPreregistration, rows));
-        var pageModel = new DetailsModel(service);
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context));
 
         var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
 
@@ -455,7 +455,7 @@ public sealed class SellersPageModelTests
         var service = new IntakeService(context);
         var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
 
-        var pageModel = new DetailsModel(service)
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context))
         {
             Input = new DetailsModel.ItemBatchInput
             {
@@ -558,7 +558,7 @@ public sealed class SellersPageModelTests
             IntakeMode.InPerson,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
 
-        var pageModel = new DetailsModel(service);
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context));
 
         var result = await pageModel.OnPostDeleteItemAsync(seller.Id, item.Id, CancellationToken.None);
 
@@ -593,7 +593,7 @@ public sealed class SellersPageModelTests
         context.Items.Add(item);
         await context.SaveChangesAsync();
 
-        var pageModel = new DetailsModel(service);
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context));
 
         var result = await pageModel.OnPostDeleteItemAsync(seller.Id, item.Id, CancellationToken.None);
 
@@ -620,7 +620,7 @@ public sealed class SellersPageModelTests
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
 
-        var pageModel = new DetailsModel(service);
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context));
 
         var result = await pageModel.OnPostMarkItemInStockAsync(seller.Id, item.Id, CancellationToken.None);
 
@@ -647,7 +647,7 @@ public sealed class SellersPageModelTests
             IntakeMode.InPerson,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
 
-        var pageModel = new DetailsModel(service);
+        var pageModel = new DetailsModel(service, new DefectiveItemService(context));
 
         var result = await pageModel.OnPostMarkItemInStockAsync(seller.Id, item.Id, CancellationToken.None);
 

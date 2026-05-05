@@ -132,8 +132,8 @@ Operators can inspect saved sales from the checkout area without admin unlock:
 - `/caisse/ventes/{id}` shows one sale in read-only detail mode
 - the detail view shows sale id, sold timestamp, buyer details, payment method, cheque traceability when present, receipt address details when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
 - corrected sale lines remain visible as historical sale facts and are labeled `Corrigée`
-- refunded defective sale lines remain visible as historical sale facts and are labeled `Remboursée - défectueux`
-- sale totals stay historical and are not recalculated after corrections or refunds
+- refunded defective sale lines remain visible as historical sale facts and are labeled `Remboursé` with the refund date
+- when a buyer refund exists, sale totals show the original total, then `Remboursements`, then `Total corrigé`
 
 The read-only sales view does not expose correction actions. Mistaken sale-line correction remains on `/vente/statut`.
 

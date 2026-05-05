@@ -84,23 +84,10 @@
                         }
                         else if (line.RefundedAt is { } refundedAt)
                         {
-                            <span class="sales-view-status sales-view-status-corrected">
-                                @line.RefundReasonLabel le @DetailsModel.FormatCorrectedAt(refundedAt)
+                            <span class="sales-view-status sales-view-status-corrected sales-view-status-refunded">
+                                <span>@line.RefundStatusLabel</span>
+                                <span class="sales-view-status-date">le @DetailsModel.FormatCorrectedAt(refundedAt)</span>
                             </span>
-                            <dl class="sales-view-refund-details">
-                                <div>
-                                    <dt>Prix remboursé</dt>
-                                    <dd>@DetailsModel.FormatPrice(line.RefundItemPriceCents ?? 0)</dd>
-                                </div>
-                                <div>
-                                    <dt>Frais remboursés</dt>
-                                    <dd>@DetailsModel.FormatPrice(line.RefundCheckoutFeeCents ?? 0)</dd>
-                                </div>
-                                <div>
-                                    <dt>Total remboursé</dt>
-                                    <dd>@DetailsModel.FormatPrice(line.RefundTotalCents ?? 0)</dd>
-                                </div>
-                            </dl>
                         }
                         else
                         {
@@ -124,10 +111,21 @@
                 <dt>Frais association familiale</dt>
                 <dd>@DetailsModel.FormatPrice(Model.Sale.CheckoutFeeCents)</dd>
             </div>
-            <div class="checkout-total-row">
+            <div class="@(Model.Sale.HasRefunds ? null : "checkout-total-row")">
                 <dt>Total</dt>
                 <dd>@DetailsModel.FormatPrice(Model.Sale.TotalPaidCents)</dd>
             </div>
+            @if (Model.Sale.HasRefunds)
+            {
+                <div>
+                    <dt>Remboursements</dt>
+                    <dd>-@DetailsModel.FormatPrice(Model.Sale.RefundTotalCents)</dd>
+                </div>
+                <div class="checkout-total-row">
+                    <dt>Total corrigé</dt>
+                    <dd>@DetailsModel.FormatPrice(Model.Sale.CorrectedTotalPaidCents)</dd>
+                </div>
+            }
         </dl>
     </section>
 </section>

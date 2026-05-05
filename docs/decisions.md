@@ -579,7 +579,7 @@ This file captures the main project decisions in a lightweight ADR format.
 - Decision:
   - extend `item.status` with `defective`
   - keep defects found before physical acceptance outside the database, except that a preregistered `registered` row may be deleted
-  - let admins mark `in_stock -> defective` from `/vente/statut`
+  - let admins mark `in_stock -> defective` from the seller item list, with `/vente/statut` as the global admin search view
   - let admins restore `defective -> in_stock` only when no buyer refund history exists
   - handle buyer-return defects from `/vente/statut` with a `Rembourser` action next to mistaken sale-line correction
   - record defective refunds directly on `sale_line` with `refunded_at`, refunded item price, refunded checkout fee, total refund, and `refund_reason = defective`
@@ -588,6 +588,6 @@ This file captures the main project decisions in a lightweight ADR format.
   - exclude refunded sale lines and defective items from seller payout
 - Consequence:
   - the admin sale-status page now covers both mistaken sale correction and rare buyer-return refunds
-  - read-only sale history shows refunded defective lines separately from corrected lines
+  - read-only sale history shows refunded defective lines separately from corrected lines, then shows `Remboursements` and `Total corrigé` in the totals block
   - seller settlement remains based on payable sold and missing items only
   - a future richer accounting model can promote refunds to a separate table if needed, but VNext keeps the lightweight sale-line correction pattern

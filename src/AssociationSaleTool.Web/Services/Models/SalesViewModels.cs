@@ -42,6 +42,12 @@ public sealed record SaleDetail(
         || !string.IsNullOrWhiteSpace(BuyerPostalCode)
         || !string.IsNullOrWhiteSpace(BuyerCity);
 
+    public int RefundTotalCents => Lines.Sum(line => line.RefundTotalCents ?? 0);
+
+    public bool HasRefunds => Lines.Any(line => line.IsRefunded);
+
+    public int CorrectedTotalPaidCents => Math.Max(0, TotalPaidCents - RefundTotalCents);
+
     public string BuyerDisplay => SaleBuyerDisplay.Format(BuyerName, BuyerPostalCode, BuyerCity);
 }
 
@@ -61,12 +67,7 @@ public sealed record SaleDetailLine(
 
     public bool IsRefunded => RefundedAt is not null;
 
-    public string RefundReasonLabel => RefundReason switch
-    {
-        "defective" => "Remboursée - défectueux",
-        null => string.Empty,
-        _ => "Remboursée"
-    };
+    public string RefundStatusLabel => IsRefunded ? "Remboursé" : string.Empty;
 }
 
 internal static class SaleBuyerDisplay

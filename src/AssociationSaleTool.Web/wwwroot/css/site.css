@@ -398,7 +398,7 @@ textarea {
 }
 
 .seller-items-action-column {
-  width: 12rem;
+  width: 17rem;
 }
 
 .seller-intake-price-column {
@@ -777,6 +777,21 @@ textarea {
   border-color: rgba(138, 31, 17, 0.35);
   color: #8a1f11;
   background: rgba(138, 31, 17, 0.08);
+}
+
+.sales-view-status-refunded {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.1rem;
+  border-radius: 12px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.sales-view-status-date {
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .sales-view-totals {

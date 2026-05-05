@@ -102,9 +102,9 @@ If an item was marked `missing` by mistake and is found before the seller packet
 
 If an item is already accepted into stock and an admin later spots a defect:
 
-1. Admin opens `/vente/statut`.
-2. Admin filters the `Articles défectueux` list.
-3. On the `in_stock` item, admin clicks `Marquer défectueux`.
+1. Admin opens the seller detail page, or `/vente/statut` for a global search.
+2. Admin finds the `in_stock` item.
+3. Admin clicks `Marquer défectueux`.
 4. The item disappears from checkout and appears on the seller sheet as an item to return.
 
 If the defect marker was a mistake and no buyer refund exists, admin can use `Remettre en stock` from the same page.
