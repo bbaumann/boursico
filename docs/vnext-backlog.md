@@ -27,7 +27,7 @@ Relevant docs:
 - item rows are read from columns `B:C`, including rows beyond the old 15-row template area
 - Excel upload saves nothing until the operator reviews and submits the normal form
 - duplicate seller detection blocks create/edit conflicts and redirects Excel-prefilled rows to the existing seller detail page for review
-- Excel prefill reads `CP VILLE` when present and accepts only exact postal-code/city pairs from the authoritative Isere city list
+- Excel prefill reads `CP VILLE` when present and accepts canonical postal-code/city pairs from the authoritative Isere city list, plus unambiguous shortened depot-template names that map to one canonical city
 
 Relevant docs:
 
@@ -63,11 +63,26 @@ These are optional post-V1 directions. They should stay out of the first live re
 
 ### Seller Self-Service
 
-A seller portal could let sellers preregister themselves, enter items, and reduce organizer typing. This remains out of scope for V1 because it adds account, validation, support, and moderation work.
+A seller-facing intake flow could let sellers preregister themselves, enter items, and reduce organizer typing. The preferred VNext shape is not a hosted portal inside this application; the app should remain private on the local network.
+
+The current feature request is a file-based form import workflow:
+
+- sellers fill an external no-paid-third-party form, such as Google Forms or Framaforms/Yakforms
+- organizers export responses as CSV, TSV, or spreadsheet files
+- organizers upload the export into the local app
+- the app shows a batch review table
+- organizers bulk-import ready submissions
+- city corrections and duplicate handling are resolved row by row
+- invalid item lines are ignored rather than blocking seller import
+- a later slice may add seller-level import notes so ignored item lines remain visible until an organizer clears them
+
+Relevant design:
+
+- [Seller Self-Service Form Import](./seller-self-service-form-import.md)
 
 ### Broader Import And Export Tooling
 
-V1 has a reviewed one-seller Excel prefill helper. Future work could support additional workbook shapes, batch review tooling, formal exports, or archival packages if real event operations need them.
+V1 has a reviewed one-seller Excel prefill helper. Future work could support additional workbook shapes, batch review tooling, formal exports, archival packages, or provider-specific form-export mappings if real event operations need them.
 
 ### Richer Accounting And Refund Model
 

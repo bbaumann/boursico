@@ -38,6 +38,7 @@ Archived or translated variants may exist elsewhere in the repository, but agent
 - [Domain Model And References](./domain-model-and-references.md)
 - [Item Status Lifecycle](./item-status-lifecycle.md)
 - [Sale Phases And Sale Corrections](./sale-phases-and-corrections.md)
+- [Seller Self-Service Form Import](./seller-self-service-form-import.md)
 - [Scope And Phasing](./scope-and-phasing.md)
 - [VNext Backlog](./vnext-backlog.md)
 
@@ -93,5 +94,6 @@ If someone is new to the project, the best reading order is:
 9. [Process And Failover](./process-and-failover.md)
 10. [Item Status Lifecycle](./item-status-lifecycle.md)
 11. [Sale Phases And Sale Corrections](./sale-phases-and-corrections.md)
-12. [Decisions](./decisions.md)
-13. [VNext Backlog](./vnext-backlog.md)
+12. [Seller Self-Service Form Import](./seller-self-service-form-import.md)
+13. [Decisions](./decisions.md)
+14. [VNext Backlog](./vnext-backlog.md)
