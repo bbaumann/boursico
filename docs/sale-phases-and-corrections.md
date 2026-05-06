@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The system uses an event-level sale phase to prevent accidental operational changes without blocking the event when organizers are still preparing. V1 is complete; the current software state is VNext.
+The system uses an event-level sale phase to prevent accidental operational changes without blocking the event when organizers are still preparing. V1 is feature-complete but not live yet.
 
 The phase is a system rule, not just a visual label. Server-side services must enforce the phase because browser pages can stay open while an admin changes the phase.
 
@@ -70,7 +70,7 @@ When the event is still in `presale` or `sale`, an admin may open the reconcilia
 
 Phase transitions and exceptional item corrections are exposed through the French route `/administration`, which is also a fourth item in the main navigation.
 
-The page is guarded by the shared admin password from `Admin:SharedPassword`. Once the page is unlocked in the current browser session, phase changes, sale-line corrections, defective-item marking, defective-item refunds, and refund cancellations do not ask for the password again. VNext does not add per-user identity or an audit log for these admin actions.
+The page is guarded by the shared admin password from `Admin:SharedPassword`. Once the page is unlocked in the current browser session, phase changes, sale-line corrections, defective-item marking, defective-item refunds, and refund cancellations do not ask for the password again. V1 does not add per-user identity or an audit log for these admin actions.
 
 ## Sale Correction
 
@@ -98,7 +98,7 @@ Defective buyer refund covers the case where a buyer returns a sold item because
 
 This is not a mistaken sale correction. The sale did happen, but the buyer must be reimbursed and the item must not be sold again.
 
-VNext uses an explicit admin refund workflow:
+V1 uses an explicit admin refund workflow:
 
 1. Admin finds the active sold item in `Correction des articles` on `/administration`.
 2. Admin clicks `Rembourser`.

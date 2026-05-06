@@ -1000,7 +1000,7 @@ Implemented behavior:
 - when a submitted phone is blank, same-name matches block and ask the operator to verify manually
 - all duplicate matches are shown with seller code, contact context, item count, and a link to the existing seller
 - existing historical duplicates are not cleaned up by this feature
-- future Excel prefill should reuse the same duplicate-check service and redirect to the existing seller with pending item rows
+- Excel prefill reuses the same duplicate-check service and redirects to the existing seller with pending item rows
 ```
 
 - [ ] **Step 2: Update features**

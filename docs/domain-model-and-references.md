@@ -4,7 +4,7 @@
 
 The project uses a small item-centric operational model with seller-aware reconciliation.
 
-Operationally, one database file represents one event. Event metadata is stored in application configuration rather than as a relational entity. V1 is complete; the current software state is VNext.
+Operationally, one database file represents one event. Event metadata is stored in application configuration rather than as a relational entity. V1 is feature-complete but not live yet.
 
 ## Entities
 

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add VNext seller fee tracking, display, and reconciliation payout deduction.
+**Goal:** Add current V1 seller fee tracking, display, and reconciliation payout deduction.
 
 **Architecture:** Store only the manually paid seller fee on `seller` as integer cents. Compute the expected fee from the seller's total item count with a small domain calculator, then project fee status into seller intake pages and reconciliation seller sheets.
 
@@ -138,7 +138,7 @@ Expected: targeted reconciliation tests pass.
 
 **Step 1: Update docs**
 
-Add a VNext seller-fee decision superseding `D-012`, update the database schema, update reconciliation behavior, and remove the seller-fee item from the VNext backlog.
+Add a current V1 seller-fee decision superseding `D-012`, update the database schema, update reconciliation behavior, and remove the seller-fee item from the VNext backlog.
 
 **Step 2: Run full verification**
 

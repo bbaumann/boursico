@@ -10,7 +10,7 @@ This documentation consolidates the current project understanding for:
 
 The project is a yearly event tool for an association that sells toys on behalf of sellers.
 
-The first version is intentionally narrow:
+The current V1 is intentionally focused:
 
 - make intake manageable
 - make sale-day operations simple and safe for non-technical volunteers
@@ -63,7 +63,11 @@ Post-sale reconciliation is optimized for correctness and auditability. It is an
 
 ## Current Project State
 
-V1 is complete. The software is now in VNext: V1 remains the baseline event workflow, and VNext features are being designed, implemented, and verified incrementally.
+V1 is feature-complete but not live yet.
+
+The earlier deliberately narrow baseline is now called the MVP in these docs. Current V1 includes that MVP foundation plus the implemented checkout, administration, reconciliation, data-list, Excel-prefill, seller-fee, payment-tracking, and defective-item workflows recorded in the decisions.
+
+VNext now means future work after the first live V1, not the current software state.
 
 ## Current Orientation
 

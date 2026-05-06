@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This document defines the current VNext logical database schema for the association toy sale tool. V1 is complete; VNext features such as seller fees and defective-item refunds are under development.
+This document defines the current V1 logical database schema for the association toy sale tool. V1 is feature-complete but not live yet; seller fees and defective-item refunds are part of the current V1 schema.
 
-V1 will run on SQLite on the central server.
+V1 runs on SQLite on the central server.
 
 V1 uses one database file per event.
 
@@ -348,7 +348,7 @@ These items are not part of post-sale payable or returned outputs.
 
 ## Final Amount To Pay Seller
 
-For VNext:
+For V1 seller settlement:
 
 - item subtotal = sum of `seller_price_cents` for all payable items
 - expected seller fee = EUR 2 per started block of 15 seller items, including `registered` items

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document summarizes the current VNext item status model and the allowed status changes across event phases. V1 is complete; the `defective` status and refund workflow are VNext features under development.
+This document summarizes the current V1 item status model and the allowed status changes across event phases. V1 is feature-complete but not live yet; the `defective` status and refund workflow are part of the current V1 behavior.
 
 It also defines the operational mutability rule introduced by sale phases:
 

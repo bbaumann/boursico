@@ -1,5 +1,7 @@
 # Features
 
+V1 is feature-complete but not live yet. The earlier narrow baseline is now called MVP; current V1 includes the implemented features described here.
+
 ## Feature Split
 
 The system is intentionally split into two independent features over a shared database:
@@ -42,7 +44,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 ### Sale-Day UX Constraints
 
 - No seller information in the checkout flow
-- No payment method tracking beyond the fact that the sale was completed
+- Payment tracking is deliberately simple: a sale-level choice of `CB`, `Espèces`, or `Chèque`, with cheque number and bank name only for cheque sales
 - No barcode scanner required in V1
 - All operator-facing UI labels and URLs must be in French
 - Search must support partial `reference + title` filtering with immediate updates on each keystroke
@@ -112,12 +114,12 @@ When seller and item master data are locked, only workflow-driven status changes
 6. Operator selects the correct item from the filtered table.
 7. Item is added to the current cart.
 8. Operator repeats until the customer is done.
-9. Operator clicks `Finalize`.
+9. Operator clicks `Finaliser`.
 10. The app validates the cart against the live database before showing the finalization modal.
 11. If validation succeeds, a finalization modal shows the subtotal, checkout fee, final total, item count, and payment method choice.
 12. Operator chooses `CB`, `Espèces`, or `Chèque`.
 13. If `Chèque` is chosen, the operator must enter the cheque number and bank name before saving.
-14. Operator chooses `Go back`, `Save`, or `Save and print receipt`.
+14. Operator chooses `Retour`, `Enregistrer la vente`, or `Enregistrer et imprimer`.
 15. The server re-validates that every cart item is still `in_stock` at save time inside the save transaction.
 16. The server rejects the sale if the phase is `post_sale`.
 17. If validation succeeds, the sale, buyer details, payment method, and cheque traceability fields are persisted and the items become `sold`.
@@ -212,9 +214,9 @@ V1 receipt handling is intentionally simple:
 
 - the checkout form shows one optional `Adresse` text field for receipt or invoice printing
 - the field is empty by default
-- if the operator leaves it empty, `Save and print receipt` stays disabled in the finalization modal
-- if the operator fills it, `Save and print receipt` becomes available in the finalization modal
-- `Save and print receipt` saves first, then opens the browser print dialog
+- if the operator leaves it empty, `Enregistrer et imprimer` stays disabled in the finalization modal
+- if the operator fills it, `Enregistrer et imprimer` becomes available in the finalization modal
+- `Enregistrer et imprimer` saves first, then opens the browser print dialog
 - V1 does not track a separate receipt-requested flag or receipt-printed flag
 
 ### Intake Modes
@@ -247,6 +249,7 @@ Excel intake is an operator helper on `/vendeurs/creer`, not a direct import pat
 - final save creates the seller and item rows in one transaction
 - duplicate sellers redirect to the existing seller detail page with the parsed item rows prefilled in `Ajouter des articles`
 - until workbook address handling is formally designed, Excel prefill sets seller postal address to `UNKNOWN`
+- when the workbook has a `CP VILLE` value, Excel prefill accepts it only if the postal-code/city pair exactly matches the authoritative Isere city list used by the application
 - Excel prefill defaults the paid seller fee to `EUR 0`
 
 ## Post-Sale Reconciliation

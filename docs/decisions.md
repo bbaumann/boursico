@@ -76,7 +76,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-007 Item Status Is A Single Field With Four Values
 
-- Status: superseded for VNext by D-040
+- Status: superseded by D-040 for current V1
 - Key drivers:
   - the workflow needs to distinguish preregistered items from physically delivered stock
   - preregistered-but-not-delivered items do not need to remain in the operational dataset in V1
@@ -117,16 +117,17 @@ This file captures the main project decisions in a lightweight ADR format.
 - Consequence:
   - seller logic stays in intake and reconciliation only
 
-## D-010 Do Not Track Payment Methods In V1
+## D-010 Do Not Track Payment Methods In MVP
 
-- Status: accepted
+- Status: superseded by D-035 for current V1
 - Key drivers:
   - operationally only "paid" matters
-  - payment method detail does not create value for the event in V1
+  - payment method detail did not create value for the original MVP scope
 - Decision:
-  - track only that a sale was completed
+  - the MVP tracked only that a sale was completed
 - Consequence:
-  - simpler checkout flow and simpler data model
+  - the MVP checkout flow and data model stayed simpler
+  - current V1 stores payment method and cheque traceability at sale level
 
 ## D-011 Receipts Are Optional And Rare
 
@@ -142,14 +143,14 @@ This file captures the main project decisions in a lightweight ADR format.
   - receipt logic should not complicate the main save-sale action
   - V1 does not need separate `receipt_requested` or `receipt_printed` fields
 
-## D-012 Seller Fee Logic Stays Outside The System In V1
+## D-012 Seller Fee Logic Stays Outside The System In MVP
 
 - Status: superseded by D-037
 - Key drivers:
   - the EUR 2 per 15 items fee can be handled outside the system for now
   - seller statement logic is simpler if it only reflects payable items and returned items
 - Decision:
-  - final amount to pay seller in V1 is only the sum of seller prices for payable items
+  - final amount to pay seller in the MVP is only the sum of seller prices for payable items
 - Consequence:
   - seller fee handling was deferred without blocking the core workflow
 
@@ -325,11 +326,12 @@ This file captures the main project decisions in a lightweight ADR format.
   - the UI should detect stale cart conflicts early without sacrificing authoritative save-time validation
   - printing must not create ambiguity about whether a sale was persisted
 - Decision:
-  - when the operator clicks `Finalize`, the cart is first validated against the live database
-  - if validation succeeds, a finalization modal is shown with the subtotal, checkout fee, final total, item count, and the actions `Go back`, `Save`, and `Save and print receipt`
-  - `Go back` returns to the editable cart without saving
-  - both `Save` and `Save and print receipt` perform a second authoritative validation inside the save transaction
-  - `Save and print receipt` is disabled unless `buyer_address` was filled, and it saves before opening the browser print dialog
+  - when the operator clicks `Finaliser`, the cart is first validated against the live database
+  - if validation succeeds, a finalization modal is shown with the subtotal, checkout fee, final total, item count, and the French actions `Retour`, `Enregistrer la vente`, and `Enregistrer et imprimer`
+  - the modal was later extended by D-035 with a required sale-level payment method choice and cheque fields when relevant
+  - `Retour` returns to the editable cart without saving
+  - both `Enregistrer la vente` and `Enregistrer et imprimer` perform a second authoritative validation inside the save transaction
+  - `Enregistrer et imprimer` is disabled unless `buyer_address` was filled, and it saves before opening the browser print dialog
 - Consequence:
   - operators get a safer and clearer last-step review flow
   - sale correctness still depends on the authoritative server-side save validation
@@ -419,10 +421,10 @@ This file captures the main project decisions in a lightweight ADR format.
   - expose a French reconciliation dashboard at `/rapprochement`
   - expose printable seller sheets at `/rapprochement/feuilles`
   - protect the whole reconciliation area with the shared `Admin:SharedPassword`
-  - include seller sheets only for sellers with at least one `sold`, `missing`, or `in_stock` item
+  - include seller sheets only for sellers with at least one `sold`, `missing`, `in_stock`, or `defective` item
   - allow admin corrections between `in_stock` and `missing`
   - keep seller-sheet printing and `missing` corrections read-only until the event phase is `post_sale`
-  - seller fee calculation was kept outside the system for V1; this is superseded by D-037 for VNext
+  - seller fee calculation was kept outside the MVP; this is superseded by D-037 for current V1
 - Consequence:
   - V1 does not need a separate reconciliation executable, script, or deployment path
   - reconciliation uses the same database and status lifecycle as sale-day operations
@@ -553,7 +555,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 - Status: accepted
 - Key drivers:
-  - VNext seller settlement must account for the EUR 2 registration fee per started block of 15 items
+  - V1 seller settlement must account for the EUR 2 registration fee per started block of 15 items
   - operators need to see whether the seller already paid the expected fee during intake
   - unpaid seller fees should reduce the reconciliation payout instead of being tracked on paper
 - Decision:
@@ -564,7 +566,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - include item subtotal, expected fee, paid fee, remaining fee, and final payout on reconciliation seller sheets
   - subtract the remaining unpaid fee from the seller payout, floored at zero
 - Consequence:
-  - `D-012` is superseded for VNext
+  - `D-012` is superseded for current V1
   - the expected fee remains derived and cannot drift from the item count
   - overpayment is visible as paid fee but never increases the seller payout
 
@@ -606,11 +608,13 @@ This file captures the main project decisions in a lightweight ADR format.
   - save manually entered or Excel-prefilled seller and item data through one normal intake action and one database transaction
   - redirect duplicate sellers to the existing seller detail page and prefill the parsed rows into the add-items form for review
   - use `UNKNOWN` for Excel-prefilled postal address and `EUR 0` for paid seller fee until those workbook fields are formally designed
+  - read Excel `CP VILLE` when present, but accept it only when the postal-code/city pair exactly matches the authoritative Isere city list used by the application
 - Consequence:
   - Excel parsing remains reversible because operators can correct the form before saving
   - the authoritative save path is shared by manual and Excel-assisted intake
   - imported rows do not need a staging table or stored workbook copy
   - existing seller details are not silently updated from Excel files
+  - the Excel template and the application must use the same city values; mismatches are visible during upload instead of being guessed silently
 
 ## D-040 Track Defective Items And Refunds
 
@@ -636,7 +640,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - the admin page covers phase changes, item correction, mistaken sale correction, rare buyer-return refunds, and refund cancellation for operator mistakes
   - read-only sale history shows refunded defective lines separately from corrected lines, then shows `Remboursements` and `Total corrigé` in the totals block
   - seller settlement remains based on payable sold and missing items only
-  - a future richer accounting model can promote refunds to a separate table if needed, but VNext keeps the lightweight sale-line correction pattern
+  - a future richer accounting model can promote refunds to a separate table if needed, but V1 keeps the lightweight sale-line correction pattern
 
 ## D-041 Use A General Administration Route
 

@@ -1,76 +1,100 @@
 # Scope And Phasing
 
-## V1 Scope
+## Current V1 State
 
-V1 is deliberately narrow and is now complete. Current development is VNext work layered on top of this completed V1 baseline.
+V1 is feature-complete but not live yet. It includes the original MVP baseline plus the operational hardening and organizer-facing workflows added before first live use.
 
 ### Included In V1
 
-- seller creation
+- seller creation and duplicate seller prevention
 - manual item entry by organizers
+- Excel-assisted seller and item prefill for one reviewed seller workbook
 - operator-managed preregistration from seller emails
 - in-person registration when toys are physically present
 - preregistration confirmation against physically delivered toys
 - one item record per toy
 - seller-aware reference generation
+- seller registration fee tracking and reconciliation deduction
+- event sale phases with server-side enforcement
 - sale-day lookup by live-filtered `reference + title` table
-- cart and total computation
-- sale persistence
-- optional receipt printing
-- post-sale seller sheet generation
-- marking an unsold item as missing
-- regenerating seller sheets after missing-item corrections
+- required buyer name or organization, postal code, and city on checkout
+- sale-level payment method tracking with cheque traceability
+- cart, checkout fee, total computation, and sale persistence
+- optional receipt printing from one `Adresse` field
+- read-only sales history from the checkout area
+- read-only operational data browser at `/donnees`
+- post-sale reconciliation dashboard and seller sheet generation
+- marking an unsold item as missing and restoring it when corrected
+- marking accepted items as defective
+- refunding defective sold items, including the 10 percent association fee
+- regenerating seller sheets after correction workflows
 - paper fallback process
+
+## MVP Baseline
+
+The former narrow "V1" scope is now called MVP. It covered the smallest useful event workflow:
+
+- seller and item entry
+- item reference generation
+- checkout lookup and cart sale save
+- optional receipt printing
+- seller sheet generation
+- missing-item handling during reconciliation
+- paper fallback
+
+The MVP terminology is historical. The software is now beyond MVP and should be described as current V1.
 
 ## Explicitly Out Of Scope For V1
 
 - seller self-service portal
-- spreadsheet import as a required workflow
+- spreadsheet import as a required workflow or direct persistence path
 - barcode scanner dependency
-- payment method tracking
+- integrated card-payment terminal flows
 - accounting integration
 - offline client logs and replay
 - multi-station sync conflicts
 - generic inventory or ERP breadth
+- individual user accounts and strong per-user audit logs
 
-## Stretch Goals
+## VNext Candidates
 
-These are known ideas beyond the completed V1 baseline:
+These are known ideas beyond the feature-complete V1:
 
-- seller pre-registration portal
-- more organizer-friendly reconciliation UI
+- seller self-service preregistration portal
 - automated formal statement generation beyond the seller sheet workflow
-- broader import tooling
+- broader import tooling beyond the reviewed one-seller Excel prefill
+- richer accounting and refund ledgers if the association later needs them
+- optional multi-event history or archive workflows
+- stronger user identity and audit logging
 
-Additional post-V1 feature requests are tracked in [VNext Backlog](./vnext-backlog.md).
+Additional post-V1 candidates are tracked in [VNext Backlog](./vnext-backlog.md).
 
-## Why V1 Is Intentionally Small
+## Why V1 Stays Focused
 
 - the event is yearly, not a daily retail business
 - the sale-day UI must be highly reliable for non-technical volunteers
 - the biggest historical pain is consolidation, not checkout complexity
-- a smaller first release reduces operational risk before the next event
+- a focused first live release reduces operational risk
 
 ## Likely Evolution Path
 
 ### Phase 1
 
-Get event operations stable and get reliable authoritative data into one system.
+Use the feature-complete V1 for the first live event and verify the full flow with real operators.
 
 ### Phase 2
 
-Strengthen reconciliation ergonomics and automate more of the seller-document generation.
+Fix any operational gaps found during first live use, especially around training, printing, reconciliation, and data inspection.
 
 ### Phase 3
 
-Optionally add seller pre-registration if it becomes worth the extra workflow complexity.
-
-This phase refers to seller self-service preregistration, not operator-managed preregistration, which is already part of V1.
+Optionally add seller self-service, broader import/export, richer accounting, or stronger identity features if they become worth the extra workflow complexity.
 
 ## Success Criteria For V1
 
 - volunteers can run checkout with minimal training
 - digital sales no longer require multi-file end-of-day consolidation
 - post-sale seller sheets are reproducible and correct
-- missing-item handling is supported without manual document rewriting
+- missing and defective item handling is supported without manual document rewriting
+- cheque and simple payment traceability are available for association follow-up
 - paper fallback is documented and operationally clear

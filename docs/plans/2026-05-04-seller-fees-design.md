@@ -2,7 +2,7 @@
 
 ## Goal
 
-Track the seller-facing registration fee inside the application for VNext, show payment status during seller intake, and deduct unpaid fees from reconciliation payouts.
+Track the seller-facing registration fee inside the application for current V1, show payment status during seller intake, and deduct unpaid fees from reconciliation payouts.
 
 ## Accepted Shape
 
@@ -49,7 +49,7 @@ The expected fee remains a derived value. It should be calculated from all items
 
 ## Docs And Decisions
 
-This VNext feature supersedes `D-012 Seller Fee Logic Stays Outside The System In V1`.
+This current V1 feature supersedes `D-012 Seller Fee Logic Stays Outside The System In MVP`.
 
 Add a new decision recording that seller fee tracking is now in-app and update reconciliation/database documentation that currently says the EUR 2 per 15 items fee stays outside the system.
 

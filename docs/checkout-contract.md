@@ -77,9 +77,9 @@ Rules:
 - fee rounding = nearest cent, with midpoint values rounded away from zero
 - final total = subtotal + checkout fee
 
-## Finalize Flow
+## Finalization Flow
 
-When the customer says they are done, the operator clicks `Finalize`.
+When the customer says they are done, the operator clicks `Finaliser`.
 
 This starts a two-step validation model.
 
@@ -109,36 +109,50 @@ The modal must show:
 - checkout fee
 - final total
 - number of items
+- payment method choice: `CB`, `Espèces`, or `Chèque`
+- cheque number and bank name fields when `Chèque` is selected
 
 The modal has exactly three actions:
 
-- `Go back`
-- `Save`
-- `Save and print receipt`
+- `Retour`
+- `Enregistrer la vente`
+- `Enregistrer et imprimer`
 
 ### Modal Action Rules
 
-`Go back`
+`Retour`
 
 - closes the modal
 - returns to the editable cart
 - does not save anything
 
-`Save`
+`Enregistrer la vente`
 
 - performs a second authoritative validation at save time
+- validates the sale-level payment method and cheque details
 - persists the sale if validation succeeds
 - returns to a fresh checkout state
 - reloads the in-memory catalog
 
-`Save and print receipt`
+`Enregistrer et imprimer`
 
 - is disabled unless the checkout `Adresse` field, stored internally as `buyer_address`, was filled on the checkout page
 - performs a second authoritative validation at save time
+- validates the sale-level payment method and cheque details
 - persists the sale if validation succeeds
 - opens the browser print dialog
 - returns to a fresh checkout state
 - reloads the in-memory catalog
+
+## Payment Details
+
+The checkout tracks a simple sale-level payment method.
+
+- the operator must choose `CB`, `Espèces`, or `Chèque` in the finalization modal
+- `Chèque` requires cheque number and bank name before save
+- non-cheque saves clear cheque number and bank name
+- payment method and cheque details are persisted on the sale
+- payment details are visible in read-only sales history and cheque data lists
 
 ## Second Validation
 
@@ -166,7 +180,7 @@ If save-time validation fails because the event is in `post_sale`, no cart line 
 
 - the checkout form has one optional operator-facing `Adresse` field, stored internally as `buyer_address`
 - if it is empty, no receipt action is available in the finalization modal
-- if it is filled, `Save and print receipt` becomes available
+- if it is filled, `Enregistrer et imprimer` becomes available
 - there is no separate receipt-requested flag
 - there is no separate receipt-print page required as a user-facing workflow step
 
@@ -176,5 +190,6 @@ If save-time validation fails because the event is in `post_sale`, no cart line 
 - no background sync loop for the catalog while the page stays open
 - no browser persistence of the catalog across reloads
 - no barcode scanner requirement
-- no payment method tracking
+- no integrated card-payment terminal or payment-provider workflow
+- no full accounting ledger
 - no silent automatic repair of conflicts

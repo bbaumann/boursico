@@ -9,7 +9,7 @@ Build checkout slice 3: let the operator optionally enter the buyer address, sav
 This slice implements the existing accepted docs:
 
 - `docs/features.md`: V1 receipt handling uses one optional address field.
-- `docs/checkout-contract.md`: `Save and print receipt` is only available when the buyer address is filled.
+- `docs/checkout-contract.md`: `Enregistrer et imprimer` is only available when the buyer address is filled.
 - `docs/decisions.md` D-025: printing must save first and must not create ambiguity about persistence.
 - `docs/architecture.md`: the operations UI owns optional receipt printing.
 

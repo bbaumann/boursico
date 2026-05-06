@@ -1,6 +1,6 @@
 # Physical SQL DDL
 
-This directory contains concrete SQL DDL for the agreed current VNext logical schema.
+This directory contains concrete SQL DDL for the agreed current V1 logical schema.
 
 Files:
 

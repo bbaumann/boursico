@@ -14,7 +14,7 @@ Le but n'est pas de créer un logiciel de caisse complet ni un ERP. Le but est d
 
 ### Simple pendant la vente
 
-Le jour de la vente, les bénévoles doivent pouvoir encaisser avec très peu de formation. L'écran de caisse ne montre pas les informations vendeurs, ne demande pas le mode de paiement, ne dépend pas d'un scanner, et ne demande pas de gérer des notions comptables.
+Le jour de la vente, les bénévoles doivent pouvoir encaisser avec très peu de formation. L'écran de caisse ne montre pas les informations vendeurs, limite le paiement à un choix simple au moment de finaliser, ne dépend pas d'un scanner, et ne demande pas de gérer des notions comptables.
 
 Le bénévole cherche un article, l'ajoute au panier, vérifie le total, puis enregistre la vente.
 
@@ -207,7 +207,9 @@ Quand le client a terminé :
 
 1. Cliquer sur `Finaliser`.
 2. Vérifier le nombre d'articles et les montants.
-3. Cliquer sur `Enregistrer la vente`.
+3. Choisir le mode de paiement : `CB`, `Espèces` ou `Chèque`.
+4. Pour un paiement par chèque, saisir le numéro du chèque et le nom de la banque.
+5. Cliquer sur `Enregistrer la vente`.
 
 L'application vérifie les articles avant d'afficher la fenêtre finale, puis revérifie au moment exact de l'enregistrement. Cela évite de vendre deux fois le même article si deux caisses travaillent en même temps.
 
@@ -409,7 +411,7 @@ L'outil ne couvre pas :
 - portail vendeur en libre-service ;
 - import Excel obligatoire ou persistance directe depuis un fichier Excel ;
 - scanner code-barres obligatoire ;
-- suivi du mode de paiement ;
+- encaissement automatique par terminal bancaire ;
 - intégration comptable ;
 - portail de paiement ou comptabilité complète des frais vendeurs ;
 - synchronisation hors ligne entre postes ;

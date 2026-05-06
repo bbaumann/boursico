@@ -26,18 +26,20 @@ During checkout:
 - seller and item master data are frozen for the event
 - only allowed status changes remain possible after this point
 
-1. Sale-day volunteer types part or all of a reference.
-2. The visible item table is filtered on each keystroke using `reference + title` matching from the in-memory checkout catalog.
-3. Volunteer selects the correct item from the filtered table.
-4. Item is added to the cart.
-5. When the customer is done, volunteer clicks `Finalize`.
-6. The cart is validated against the live database before the finalization modal is shown.
-7. If validation passes, the finalization modal shows the item count, total amount, and the actions `Go back`, `Save`, and `Save and print receipt`.
-8. If the volunteer chooses `Save` or `Save and print receipt`, the server re-validates that all cart items are still `in_stock` inside the save transaction.
-9. The server rejects the save if the event is already in `post_sale`.
-10. If validation passes, the sale is saved and those items become `sold`.
-11. If any item is no longer `in_stock`, the save is rejected, the conflicting item is highlighted prominently in red, and the operator must remove it and retry.
-12. After a successful save, checkout resets to a fresh state and reloads the in-memory catalog.
+1. Sale-day volunteer fills the required buyer name or organization, postal code, and city.
+2. Sale-day volunteer types part or all of a reference.
+3. The visible item table is filtered on each keystroke using `reference + title` matching from the in-memory checkout catalog.
+4. Volunteer selects the correct item from the filtered table.
+5. Item is added to the cart.
+6. When the customer is done, volunteer clicks `Finaliser`.
+7. The cart is validated against the live database before the finalization modal is shown.
+8. If validation passes, the finalization modal shows the item count, total amount, payment method choice, and the actions `Retour`, `Enregistrer la vente`, and `Enregistrer et imprimer`.
+9. If the volunteer chooses `Chèque`, cheque number and bank name are required.
+10. If the volunteer chooses `Enregistrer la vente` or `Enregistrer et imprimer`, the server re-validates that all cart items are still `in_stock` inside the save transaction.
+11. The server rejects the save if the event is already in `post_sale`.
+12. If validation passes, the sale, buyer details, payment method, and cheque details when relevant are saved and those items become `sold`.
+13. If any item is no longer `in_stock`, the save is rejected, the conflicting item is highlighted prominently in red, and the operator must remove it and retry.
+14. After a successful save, checkout resets to a fresh state and reloads the in-memory catalog.
 
 ### Mistaken Sale Correction
 

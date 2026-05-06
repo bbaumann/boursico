@@ -8,7 +8,7 @@ Excel parsing is an intake helper. It fills the existing editable seller and ite
 
 ## Scope
 
-This VNext slice includes:
+This current V1 slice includes:
 
 - a combined seller and item intake form for creating a seller with item rows in one save
 - an Excel upload button on that form
@@ -48,6 +48,7 @@ The browser asks for one `.xlsx` file. The server parses the single worksheet, t
 - seller name
 - phone when present
 - postal address set to `UNKNOWN` until address parsing is formally designed
+- postal code and city when the workbook `CP VILLE` value exactly matches the application's authoritative Isere city list
 - paid seller fee defaulted to `EUR 0`
 - item title and seller price rows
 - default intake mode `Enregistrement`
@@ -81,6 +82,7 @@ The parser should support the existing historical template shape:
 
 - seller name near the `NOM PRENOM` label
 - phone near the `TELEPHONE` label
+- postal code and city near the `CP VILLE` label, formatted as `38120 Saint-Égrève`
 - item rows in columns `B:C`, with title in column `B` and seller price in column `C`
 
 For seller information, the parser should find labels instead of hard-coding every cell. Product rows use the fixed template item area in columns `B:C`.
@@ -97,6 +99,8 @@ Seller fields:
 - phone maps to `Phone`
   - if Excel stores the phone as a number and drops the leading `0`, the parser restores that leading `0`
 - postal address maps to the temporary value `UNKNOWN` until workbook address handling is formally designed
+- `CP VILLE` maps to `PostalCode` and `City` only when the city exactly matches one of the canonical city values for that postal code in `wwwroot/data/isere-postal-cities.json`
+- if `CP VILLE` is present but does not match the authoritative list, the upload fails with a French validation message instead of guessing a closest city
 - email remains blank unless the workbook contains an obvious email cell in a future template
 - paid seller fee maps to `EUR 0`
 

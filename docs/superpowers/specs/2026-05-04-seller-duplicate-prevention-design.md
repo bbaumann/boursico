@@ -4,7 +4,7 @@
 
 Prevent operators from accidentally creating or editing a seller into a duplicate identity.
 
-This VNext slice keeps seller management focused on duplicate prevention. It does not broaden the seller workflow into cleanup tooling, seller fee management, merge/delete/archive operations, or live search UX.
+This current V1 slice keeps seller management focused on duplicate prevention. It does not broaden the seller workflow into cleanup tooling, seller fee management, merge/delete/archive operations, or live search UX.
 
 ## Scope
 
@@ -14,7 +14,7 @@ This slice includes:
 - blocking duplicate checks when editing seller identity fields
 - a reusable seller duplicate-check service
 - structured duplicate results that page models can render in French
-- a future integration contract for Excel seller/item prefill
+- an integration contract for Excel seller/item prefill
 - tests for normalization, matching, service behavior, and page behavior
 
 This slice does not include:
