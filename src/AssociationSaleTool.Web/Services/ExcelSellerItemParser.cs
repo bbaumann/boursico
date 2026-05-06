@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO.Compression;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services.Models;
@@ -15,6 +16,12 @@ public sealed class ExcelSellerItemParser
     private static readonly XNamespace RelationshipsNamespace = "http://schemas.openxmlformats.org/package/2006/relationships";
     private static readonly XNamespace OfficeRelationshipsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+    private readonly IserePostalCityLookup postalCityLookup;
+
+    public ExcelSellerItemParser(IserePostalCityLookup? postalCityLookup = null)
+    {
+        this.postalCityLookup = postalCityLookup ?? IserePostalCityLookup.Empty;
+    }
 
     public async Task<ExcelSellerItemParseResult> ParseAsync(
         IFormFile? file,
@@ -42,7 +49,7 @@ public sealed class ExcelSellerItemParser
         }
     }
 
-    private static ExcelSellerItemParseResult ParseArchive(ZipArchive archive)
+    private ExcelSellerItemParseResult ParseArchive(ZipArchive archive)
     {
         var workbook = LoadXml(archive, "xl/workbook.xml");
         if (workbook is null)
@@ -83,6 +90,14 @@ public sealed class ExcelSellerItemParser
         }
 
         var phone = NormalizePhoneCell(FindValueNearLabel(cells, ["TELEPHONE", "TÉLÉPHONE"]));
+        if (!TryReadPostalCodeAndCity(
+                FindValueNearLabel(cells, ["CP VILLE", "CODE POSTAL VILLE"]),
+                out var postalCode,
+                out var city,
+                out var postalCityError))
+        {
+            errors.Add(postalCityError!);
+        }
 
         if (!TryFindItemColumns(cells, out var titleColumn, out var priceColumn))
         {
@@ -109,6 +124,8 @@ public sealed class ExcelSellerItemParser
             null,
             phone,
             DefaultPostalAddress,
+            postalCode,
+            city,
             null,
             IntakeMode.EmailPreregistration,
             rows);
@@ -368,6 +385,42 @@ public sealed class ExcelSellerItemParser
         }
 
         return phone;
+    }
+
+    private bool TryReadPostalCodeAndCity(
+        string? rawPostalCity,
+        out string? postalCode,
+        out string? city,
+        out string? error)
+    {
+        postalCode = null;
+        city = null;
+        error = null;
+
+        var value = NormalizeOptionalCell(rawPostalCity);
+        if (value is null)
+        {
+            return true;
+        }
+
+        var match = Regex.Match(value, "^(?<postalCode>\\d{5})\\s+(?<city>.+)$");
+        if (!match.Success)
+        {
+            error = "Le code postal et la ville du fichier Excel sont illisibles.";
+            return false;
+        }
+
+        var parsedPostalCode = match.Groups["postalCode"].Value;
+        var parsedCity = match.Groups["city"].Value.Trim();
+        if (!postalCityLookup.TryFindCanonicalCity(parsedPostalCode, parsedCity, out var canonicalCity))
+        {
+            error = $"La ville \"{parsedCity}\" n'est pas connue pour le code postal {parsedPostalCode} dans la liste officielle de l'Isère.";
+            return false;
+        }
+
+        postalCode = parsedPostalCode;
+        city = canonicalCity;
+        return true;
     }
 
     private static bool IsPlaceholder(string? value)

@@ -43,6 +43,55 @@ public sealed class ExcelSellerItemParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_MapsCanonicalPostalCodeAndCity()
+    {
+        var file = CreateWorkbook(
+            strings:
+            [
+                ("C2", "NOM PRENOM"),
+                ("C3", "DURAND Marie"),
+                ("F2", "CP VILLE"),
+                ("F3", "38120 Saint-Égrève"),
+                ("B5", "libellé"),
+                ("C5", "prix"),
+                ("B7", "Puzzle")
+            ],
+            numbers: [("C7", 5m)]);
+        var parser = new ExcelSellerItemParser(CreateLookup("38120", "Saint-Égrève"));
+
+        var result = await parser.ParseAsync(file);
+
+        Assert.True(result.Succeeded, string.Join(Environment.NewLine, result.Errors));
+        Assert.Equal("38120", result.PostalCode);
+        Assert.Equal("Saint-Égrève", result.City);
+    }
+
+    [Fact]
+    public async Task ParseAsync_RejectsPostalCityOutsideAuthoritativeList()
+    {
+        var file = CreateWorkbook(
+            strings:
+            [
+                ("C2", "NOM PRENOM"),
+                ("C3", "DURAND Marie"),
+                ("F2", "CP VILLE"),
+                ("F3", "38120 ST EGREVE"),
+                ("B5", "libellé"),
+                ("C5", "prix"),
+                ("B7", "Puzzle")
+            ],
+            numbers: [("C7", 5m)]);
+        var parser = new ExcelSellerItemParser(CreateLookup("38120", "Saint-Égrève"));
+
+        var result = await parser.ParseAsync(file);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(
+            "La ville \"ST EGREVE\" n'est pas connue pour le code postal 38120 dans la liste officielle de l'Isère.",
+            result.Errors);
+    }
+
+    [Fact]
     public async Task ParseAsync_RestoresLeadingZeroWhenPhoneIsStoredAsNumber()
     {
         var file = CreateWorkbook(
@@ -207,6 +256,15 @@ public sealed class ExcelSellerItemParserTests
         var row = Assert.Single(result.Rows);
         Assert.Equal("Puzzle", row.Title);
         Assert.Equal(500, row.SellerPriceCents);
+    }
+
+    private static IserePostalCityLookup CreateLookup(string postalCode, params string[] cities)
+    {
+        return new IserePostalCityLookup(
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                [postalCode] = cities
+            });
     }
 
     private static IFormFile CreateWorkbook(

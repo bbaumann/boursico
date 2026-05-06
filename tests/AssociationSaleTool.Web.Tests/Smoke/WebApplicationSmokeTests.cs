@@ -2095,6 +2095,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("value=\"Durand\"", content);
         Assert.Contains("value=\"0600000000\"", content);
         Assert.Contains("UNKNOWN", content);
+        Assert.Contains("value=\"38120\"", content);
+        Assert.Contains("value=\"Saint-Égrève\"", content);
         Assert.Contains("Puzzle Excel", content);
         Assert.Contains("value=\"5\"", content);
         AssertCreateSellerFormPostsToCreatePage(content);
@@ -3485,8 +3487,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 <?xml version="1.0" encoding="UTF-8"?>
                 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
                   <sheetData>
-                    <row r="2">{{InlineCell("C2", "NOM PRENOM")}}{{InlineCell("H2", "TELEPHONE")}}</row>
-                    <row r="3">{{InlineCell("C3", "DURAND Marie")}}{{InlineCell("H3", "0600000000")}}</row>
+                    <row r="2">{{InlineCell("C2", "NOM PRENOM")}}{{InlineCell("F2", "CP VILLE")}}{{InlineCell("H2", "TELEPHONE")}}</row>
+                    <row r="3">{{InlineCell("C3", "DURAND Marie")}}{{InlineCell("F3", "38120 Saint-Égrève")}}{{InlineCell("H3", "0600000000")}}</row>
                     <row r="5">{{InlineCell("B5", "libellé")}}{{InlineCell("C5", "prix")}}</row>
                     <row r="7">{{InlineCell("B7", "Puzzle Excel")}}<c r="C7"><v>5</v></c></row>
                   </sheetData>
