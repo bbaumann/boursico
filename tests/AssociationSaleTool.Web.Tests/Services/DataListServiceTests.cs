@@ -56,15 +56,17 @@ public sealed class DataListServiceTests
             feePaidCents: 200);
         await SeedItemAsync(context, seller, "ZX001", 1, "Article vendu", 1000, "sold");
         await SeedItemAsync(context, seller, "ZX002", 2, "Article retour", 1500, "in_stock");
+        await SeedItemAsync(context, seller, "ZX003", 3, "Article defectueux", 500, "defective");
         var service = new DataListService(context);
 
         var row = Assert.Single(await service.ListSellersAsync());
 
         Assert.Equal("ZX", row.SellerCode);
         Assert.Equal("Zo\u00e9 Martin", row.SellerName);
-        Assert.Equal(2, row.ItemCount);
+        Assert.Equal(3, row.ItemCount);
         Assert.Equal(1, row.InStockCount);
         Assert.Equal(1, row.SoldCount);
+        Assert.Equal(1, row.DefectiveCount);
         Assert.Equal(200, row.ExpectedFeeCents);
         Assert.Equal(200, row.PaidFeeCents);
         Assert.Equal(0, row.RemainingFeeCents);

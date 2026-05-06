@@ -48,6 +48,7 @@
                         <option value="in_stock">En stock</option>
                         <option value="sold">Vendu</option>
                         <option value="missing">Manquant</option>
+                        <option value="defective">D&eacute;fectueux</option>
                     </select>
                 </div>
             </div>
@@ -121,6 +122,7 @@
                             <th class="data-list-size-xs data-list-count-column">En stock</th>
                             <th class="data-list-size-xs data-list-count-column">Vendus</th>
                             <th class="data-list-size-xs data-list-count-column">Manquants</th>
+                            <th class="data-list-size-xs data-list-count-column data-list-defective-count-column">D&eacute;fectueux</th>
                             <th class="data-list-size-xs data-list-fee-column">Frais</th>
                         </tr>
                     </thead>
@@ -137,6 +139,7 @@
                             <td class="data-list-size-xs data-list-count-column">@seller.InStockCount</td>
                             <td class="data-list-size-xs data-list-count-column">@seller.SoldCount</td>
                             <td class="data-list-size-xs data-list-count-column">@seller.MissingCount</td>
+                            <td class="data-list-size-xs data-list-count-column data-list-defective-count-column">@seller.DefectiveCount</td>
                             <td class="data-list-size-xs data-list-fee-column">@IndexModel.FormatSellerFeeProgress(seller.PaidFeeCents, seller.ExpectedFeeCents)</td>
                         </tr>
                     }

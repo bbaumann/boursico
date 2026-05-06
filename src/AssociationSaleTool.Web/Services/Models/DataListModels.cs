@@ -23,6 +23,7 @@ public sealed record DataListSellerRow(
     int InStockCount,
     int SoldCount,
     int MissingCount,
+    int DefectiveCount,
     int ExpectedFeeCents,
     int PaidFeeCents,
     int RemainingFeeCents,

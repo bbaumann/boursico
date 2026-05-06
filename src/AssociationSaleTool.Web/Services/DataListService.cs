@@ -66,6 +66,7 @@ public sealed class DataListService(AppDbContext dbContext)
                     seller.Items.Count(item => item.Status == "in_stock"),
                     seller.Items.Count(item => item.Status == "sold"),
                     seller.Items.Count(item => item.Status == "missing"),
+                    seller.Items.Count(item => item.Status == "defective"),
                     expectedFeeCents,
                     seller.FeePaidCents,
                     remainingFeeCents,
