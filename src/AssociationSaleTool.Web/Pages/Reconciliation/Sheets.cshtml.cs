@@ -46,7 +46,7 @@ public sealed class SheetsModel(
 
     public static string FormatPrice(int priceCents)
     {
-        return $"{priceCents / 100m:0.00} EUR";
+        return $"{priceCents / 100m:0.00} €";
     }
 
     private static string? NormalizeRequestedSellerCode(string? value)

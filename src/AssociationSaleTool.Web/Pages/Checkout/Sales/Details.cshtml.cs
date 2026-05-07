@@ -26,7 +26,7 @@ public sealed class DetailsModel(SalesViewService salesViewService) : PageModel
 
     public static string FormatPrice(int priceCents)
     {
-        return $"{priceCents / 100m:0.00} EUR";
+        return $"{priceCents / 100m:0.00} €";
     }
 
     public static string FormatSoldAt(DateTime soldAt)

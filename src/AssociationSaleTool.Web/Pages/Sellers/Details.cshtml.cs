@@ -140,7 +140,7 @@ public sealed class DetailsModel(IntakeService intakeService) : PageModel
 
     public static string FormatPrice(int priceCents)
     {
-        return $"{(priceCents / 100m).ToString("0.00", CultureInfo.InvariantCulture)} EUR";
+        return $"{(priceCents / 100m).ToString("0.00", CultureInfo.InvariantCulture)} €";
     }
 
     private void PopulateSellerState(SellerEntity seller)

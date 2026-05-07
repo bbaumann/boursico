@@ -55,7 +55,7 @@ document.addEventListener("click", event => {
 });
 
 function formatCheckoutPrice(cents) {
-  return `${(cents / 100).toFixed(2)} EUR`;
+  return `${(cents / 100).toFixed(2)} €`;
 }
 
 function createCheckoutCell(text) {

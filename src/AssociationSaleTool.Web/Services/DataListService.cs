@@ -147,7 +147,7 @@ public sealed class DataListService(AppDbContext dbContext)
                         sale.Id.ToString(FrenchCulture),
                         chequeNumber,
                         chequeBankName,
-                        $"{sale.TotalPaidCents / 100m:0.00} EUR"));
+                        $"{sale.TotalPaidCents / 100m:0.00} €"));
             })
             .ToList();
     }

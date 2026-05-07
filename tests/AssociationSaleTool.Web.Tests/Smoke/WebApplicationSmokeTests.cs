@@ -49,6 +49,37 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public void OperatorFacingUiSourceUsesEuroSymbolInsteadOfCurrencyCode()
+    {
+        var sourceDirectory = FindRepositoryDirectory("src", "AssociationSaleTool.Web");
+        var checkedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".cs",
+            ".cshtml",
+            ".js"
+        };
+
+        var uiDirectories = new[]
+        {
+            Path.Combine(sourceDirectory, "Pages"),
+            Path.Combine(sourceDirectory, "wwwroot", "js")
+        };
+
+        var sourceFiles = uiDirectories
+            .SelectMany(path => Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            .Append(Path.Combine(sourceDirectory, "Services", "DataListService.cs"))
+            .Where(path => checkedExtensions.Contains(Path.GetExtension(path)));
+
+        var filesStillUsingCurrencyCode = sourceFiles
+            .Where(path => Regex.IsMatch(File.ReadAllText(path), @"(?<![A-Za-z])EUR(?![A-Za-z])"))
+            .Select(path => Path.GetRelativePath(sourceDirectory, path))
+            .Order()
+            .ToList();
+
+        Assert.Empty(filesStillUsingCurrencyCode);
+    }
+
+    [Fact]
     public async Task SellersIndexLoadsSuccessfully()
     {
         var client = _factory.CreateClient();
@@ -619,9 +650,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains($">#{saleId}</a>", content);
         Assert.Contains($"href=\"/caisse/ventes/{saleId}\"", content);
         Assert.DoesNotContain($"#{saleId} -", content);
-        Assert.Contains("10.00 EUR", content);
-        Assert.Contains("1.00 EUR", content);
-        Assert.Contains("11.00 EUR", content);
+        Assert.Contains("10.00 €", content);
+        Assert.Contains("1.00 €", content);
+        Assert.Contains("11.00 €", content);
         Assert.Contains("Article remboursable", content);
         Assert.Contains("Article \u00e0 contr\u00f4ler", content);
         Assert.Contains("Article d\u00e9j\u00e0 d\u00e9fectueux", content);
@@ -1030,7 +1061,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("class=\"data-list-size-xs data-list-fee-column\">Frais", content);
         Assert.Contains($"href=\"/vendeurs/{scenario.SellerId}\">{scenario.SellerCode}</a>", content);
         Assert.Contains("0/2\u20ac", content);
-        Assert.DoesNotContain("0.00 EUR / 2.00 EUR", content);
+        Assert.DoesNotContain("0.00 € / 2.00 €", content);
         Assert.Contains($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste\"", content);
         Assert.DoesNotContain("diane.liste@example.test\"", content);
         Assert.DoesNotContain("0606060606\"", content);
@@ -1087,7 +1118,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains($"href=\"/caisse/ventes/{scenario.SaleId}\">#{scenario.SaleId}</a>", content);
         Assert.Contains("CH-123", content);
         Assert.Contains("banque cach\u00e9e", content);
-        Assert.Contains("9.90 EUR", content);
+        Assert.Contains("9.90 €", content);
     }
 
     [Fact]
@@ -1156,11 +1187,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("Prix rembours\u00e9", content);
         Assert.DoesNotContain("Frais rembours\u00e9s", content);
         Assert.DoesNotContain("Total rembours\u00e9", content);
-        Assert.Contains("10.00 EUR", content);
-        Assert.Contains("1.00 EUR", content);
-        Assert.Contains("11.00 EUR", content);
-        Assert.Contains("-11.00 EUR", content);
-        Assert.Contains("0.00 EUR", content);
+        Assert.Contains("10.00 €", content);
+        Assert.Contains("1.00 €", content);
+        Assert.Contains("11.00 €", content);
+        Assert.Contains("-11.00 €", content);
+        Assert.Contains("0.00 €", content);
     }
 
     [Fact]
@@ -1883,7 +1914,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Frais payés", content);
         Assert.Contains("Frais restant dus", content);
         Assert.Contains("Total à payer", content);
-        Assert.Contains("8.00 EUR", content);
+        Assert.Contains("8.00 €", content);
         }
         finally
         {
@@ -2196,8 +2227,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Frais", content);
-        Assert.Contains("4.00 EUR", content);
-        Assert.Contains("payés 2.00 EUR", content);
+        Assert.Contains("4.00 €", content);
+        Assert.Contains("payés 2.00 €", content);
     }
 
     [Fact]
@@ -3914,5 +3945,22 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.False(document.RootElement.GetProperty("saved").GetBoolean());
         Assert.Equal(itemId, document.RootElement.GetProperty("conflictItemIds")[0].GetInt64());
+    }
+
+    private static string FindRepositoryDirectory(params string[] relativePathParts)
+    {
+        var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (directory is not null)
+        {
+            var candidate = Path.Combine(new[] { directory.FullName }.Concat(relativePathParts).ToArray());
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException($"Could not find repository directory {Path.Combine(relativePathParts)}.");
     }
 }

@@ -91,7 +91,7 @@
                     <tr>
                         <td>@item.Reference</td>
                         <td>@item.Title</td>
-                        <td>@((item.SellerPriceCents / 100m).ToString("0.00")) EUR</td>
+                        <td>@((item.SellerPriceCents / 100m).ToString("0.00")) €</td>
                         <td>@AssociationSaleTool.Web.Infrastructure.ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
                         <td>
                             <div class="table-actions">
@@ -159,7 +159,7 @@
                 <thead>
                     <tr>
                         <th>Titre</th>
-                        <th>Prix vendeur (EUR entier)</th>
+                        <th>Prix vendeur (€ entier)</th>
                     </tr>
                 </thead>
                 <tbody>

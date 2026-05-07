@@ -216,7 +216,7 @@ public sealed class IndexModel(
 
     public static string FormatPrice(int priceCents)
     {
-        return $"{priceCents / 100m:0.00} EUR";
+        return $"{priceCents / 100m:0.00} €";
     }
 
     public static string BuildCorrectionFilterText(ItemCorrectionCandidate item)
