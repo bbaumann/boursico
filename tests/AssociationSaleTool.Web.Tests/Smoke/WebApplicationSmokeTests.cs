@@ -1055,9 +1055,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("class=\"data-list-size-l data-list-name-column\">Nom", content);
         Assert.Contains("class=\"data-list-size-l data-list-email-column\">E-mail", content);
         Assert.Contains("class=\"data-list-size-m data-list-phone-column\">T\u00e9l\u00e9phone", content);
-        Assert.Contains("class=\"data-list-size-xs data-list-count-column\">Enregistr\u00e9s", content);
-        Assert.Contains("class=\"data-list-size-xs data-list-count-column\">En stock", content);
-        Assert.Contains("class=\"data-list-size-xs data-list-count-column\">Manquants", content);
+        Assert.Contains("title=\"Total des articles\">Tot.</abbr>", content);
+        Assert.Contains("title=\"Enregistr\u00e9s\">Enr.</abbr>", content);
+        Assert.Contains("title=\"En stock\">Stock</abbr>", content);
+        Assert.Contains("title=\"Vendus\">Vend.</abbr>", content);
+        Assert.Contains("title=\"Manquants\">Manq.</abbr>", content);
+        Assert.Contains("title=\"D\u00e9fectueux\">D\u00e9f.</abbr>", content);
         Assert.Contains("class=\"data-list-size-xs data-list-fee-column\">Frais", content);
         Assert.Contains($"href=\"/vendeurs/{scenario.SellerId}\">{scenario.SellerCode}</a>", content);
         Assert.Contains("0/2\u20ac", content);
@@ -2515,7 +2518,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(".data-list-size-xxs", content);
         Assert.Contains("width: 2.3rem;", content);
         Assert.Contains(".data-list-size-xs", content);
-        Assert.Contains("width: 3.4rem;", content);
+        Assert.Contains("width: 2.6rem;", content);
+        Assert.Contains(".data-list-seller-table .data-list-count-column", content);
+        Assert.Contains("padding-left: 0.2rem;", content);
+        Assert.Contains("padding-right: 0.2rem;", content);
         Assert.Contains(".data-list-size-m", content);
         Assert.Contains("width: 5.75rem;", content);
         Assert.Contains(".data-list-size-l", content);

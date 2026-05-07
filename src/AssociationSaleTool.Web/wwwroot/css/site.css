@@ -449,7 +449,7 @@ textarea {
 }
 
 .data-list-seller-table .data-list-size-xs {
-  width: 3.4rem;
+  width: 2.6rem;
 }
 
 .data-list-seller-table .data-list-size-s {
@@ -472,6 +472,11 @@ textarea {
 .data-list-seller-table th.data-list-count-column {
   line-height: 1.05;
   white-space: normal;
+}
+
+.data-list-seller-table .data-list-count-column {
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
 }
 
 .data-list-seller-table td.data-list-count-column {
