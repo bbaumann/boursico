@@ -905,6 +905,75 @@ function initializeSalesView(root) {
 
 document.querySelectorAll("[data-sales-view-root]").forEach(initializeSalesView);
 
+const dataListTextCollator = new Intl.Collator("fr-FR", {
+  numeric: true,
+  sensitivity: "base"
+});
+
+function getDataListSortValue(row, columnIndex, sortType) {
+  const cell = row.cells[columnIndex];
+  const rawValue = cell?.dataset.dataListSortValue ?? cell?.textContent ?? "";
+  const value = rawValue.trim();
+
+  if (sortType === "number") {
+    const parsed = Number(value.replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return value.toLocaleLowerCase("fr-FR");
+}
+
+function compareDataListSortValues(left, right, sortType) {
+  if (sortType === "number") {
+    return left - right;
+  }
+
+  return dataListTextCollator.compare(left, right);
+}
+
+function initializeDataListSorting(root, renderRows) {
+  root.querySelectorAll("[data-data-list-sort]").forEach(button => {
+    button.addEventListener("click", () => {
+      const header = button.closest("th");
+      const table = button.closest("[data-data-list-table]");
+      const tbody = table?.tBodies?.[0];
+
+      if (!header || !table || !tbody) {
+        return;
+      }
+
+      const columnIndex = header.cellIndex;
+      const sortType = button.dataset.dataListSortType || "text";
+      const direction = header.getAttribute("aria-sort") === "ascending"
+        ? "descending"
+        : "ascending";
+      const directionMultiplier = direction === "ascending" ? 1 : -1;
+      const rows = Array.from(tbody.querySelectorAll("[data-data-list-row]"))
+        .map((row, index) => ({ row, index }));
+
+      table.querySelectorAll("th[aria-sort]").forEach(sortHeader => {
+        sortHeader.setAttribute("aria-sort", sortHeader === header ? direction : "none");
+      });
+
+      rows
+        .sort((leftRow, rightRow) => {
+          const left = getDataListSortValue(leftRow.row, columnIndex, sortType);
+          const right = getDataListSortValue(rightRow.row, columnIndex, sortType);
+          const comparison = compareDataListSortValues(left, right, sortType);
+
+          if (comparison !== 0) {
+            return comparison * directionMultiplier;
+          }
+
+          return leftRow.index - rightRow.index;
+        })
+        .forEach(({ row }) => tbody.appendChild(row));
+
+      renderRows();
+    });
+  });
+}
+
 function initializeDataList(root) {
   const searchInput = root.querySelector("[data-data-list-search]");
   const statusFilter = root.querySelector("[data-data-list-status-filter]");
@@ -940,6 +1009,7 @@ function initializeDataList(root) {
 
   searchInput.addEventListener("input", renderRows);
   statusFilter?.addEventListener("change", renderRows);
+  initializeDataListSorting(root, renderRows);
   renderRows();
 }
 

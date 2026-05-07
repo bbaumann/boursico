@@ -60,14 +60,14 @@
             }
             else
             {
-                <table class="data-table data-list-table">
+                <table class="data-table data-list-table" data-data-list-table>
                     <thead>
                         <tr>
-                            <th>REF</th>
-                            <th>Titre</th>
-                            <th>Vendeur</th>
-                            <th>Statut</th>
-                            <th>Prix</th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par REF">REF<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par titre">Titre<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par vendeur">Vendeur<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par statut">Statut<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par prix">Prix<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,11 +76,11 @@
                         <tr data-data-list-row
                             data-data-list-filter-text="@item.SearchText"
                             data-data-list-status="@item.Status">
-                            <td><a href="/vendeurs/@item.SellerId">@item.Reference</a></td>
-                            <td>@item.Title</td>
-                            <td>@item.SellerCode - @item.SellerName</td>
-                            <td>@item.StatusLabel</td>
-                            <td>@IndexModel.FormatPrice(item.SellerPriceCents)</td>
+                            <td data-data-list-sort-value="@item.Reference"><a href="/vendeurs/@item.SellerId">@item.Reference</a></td>
+                            <td data-data-list-sort-value="@item.Title">@item.Title</td>
+                            <td data-data-list-sort-value="@item.SellerCode @item.SellerName">@item.SellerCode - @item.SellerName</td>
+                            <td data-data-list-sort-value="@item.StatusLabel">@item.StatusLabel</td>
+                            <td data-data-list-sort-value="@item.SellerPriceCents">@IndexModel.FormatPrice(item.SellerPriceCents)</td>
                         </tr>
                     }
                     </tbody>
@@ -110,37 +110,37 @@
             }
             else
             {
-                <table class="data-table data-list-table data-list-seller-table">
+                <table class="data-table data-list-table data-list-seller-table" data-data-list-table>
                     <thead>
                         <tr>
-                            <th class="data-list-size-xxs data-list-code-column">Code</th>
-                            <th class="data-list-size-l data-list-name-column">Nom</th>
-                            <th class="data-list-size-l data-list-email-column">E-mail</th>
-                            <th class="data-list-size-m data-list-phone-column">T&eacute;l&eacute;phone</th>
-                            <th class="data-list-size-xs data-list-count-column"><abbr title="Total des articles">Tot.</abbr></th>
-                            <th class="data-list-size-xs data-list-count-column"><abbr title="Enregistr&eacute;s">Enr.</abbr></th>
-                            <th class="data-list-size-xs data-list-count-column"><abbr title="En stock">Stock</abbr></th>
-                            <th class="data-list-size-xs data-list-count-column"><abbr title="Vendus">Vend.</abbr></th>
-                            <th class="data-list-size-xs data-list-count-column"><abbr title="Manquants">Manq.</abbr></th>
-                            <th class="data-list-size-xs data-list-count-column data-list-defective-count-column"><abbr title="D&eacute;fectueux">D&eacute;f.</abbr></th>
-                            <th class="data-list-size-xs data-list-fee-column">Frais</th>
+                            <th class="data-list-size-xxs data-list-code-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par code">Code<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-l data-list-name-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par nom">Nom<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-l data-list-email-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par e-mail">E-mail<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-m data-list-phone-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par t&eacute;l&eacute;phone">T&eacute;l&eacute;phone<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-count-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par total des articles"><abbr title="Total des articles">Tot.</abbr><span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-count-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par enregistr&eacute;s"><abbr title="Enregistr&eacute;s">Enr.</abbr><span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-count-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par en stock"><abbr title="En stock">Stock</abbr><span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-count-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par vendus"><abbr title="Vendus">Vend.</abbr><span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-count-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par manquants"><abbr title="Manquants">Manq.</abbr><span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-count-column data-list-defective-count-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par d&eacute;fectueux"><abbr title="D&eacute;fectueux">D&eacute;f.</abbr><span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-fee-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par frais">Frais<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
                         </tr>
                     </thead>
                     <tbody>
                     @foreach (var seller in Model.Sellers)
                     {
                         <tr data-data-list-row data-data-list-filter-text="@seller.SearchText">
-                            <td class="data-list-size-xxs data-list-code-column"><a href="/vendeurs/@seller.SellerId">@seller.SellerCode</a></td>
-                            <td class="data-list-size-l data-list-name-column">@seller.SellerName</td>
-                            <td class="data-list-size-l data-list-email-column">@(seller.Email ?? "-")</td>
-                            <td class="data-list-size-m data-list-phone-column">@seller.Phone</td>
-                            <td class="data-list-size-xs data-list-count-column">@seller.ItemCount</td>
-                            <td class="data-list-size-xs data-list-count-column">@seller.RegisteredCount</td>
-                            <td class="data-list-size-xs data-list-count-column">@seller.InStockCount</td>
-                            <td class="data-list-size-xs data-list-count-column">@seller.SoldCount</td>
-                            <td class="data-list-size-xs data-list-count-column">@seller.MissingCount</td>
-                            <td class="data-list-size-xs data-list-count-column data-list-defective-count-column">@seller.DefectiveCount</td>
-                            <td class="data-list-size-xs data-list-fee-column">@IndexModel.FormatSellerFeeProgress(seller.PaidFeeCents, seller.ExpectedFeeCents)</td>
+                            <td class="data-list-size-xxs data-list-code-column" data-data-list-sort-value="@seller.SellerCode"><a href="/vendeurs/@seller.SellerId">@seller.SellerCode</a></td>
+                            <td class="data-list-size-l data-list-name-column" data-data-list-sort-value="@seller.SellerName">@seller.SellerName</td>
+                            <td class="data-list-size-l data-list-email-column" data-data-list-sort-value="@(seller.Email ?? string.Empty)">@(seller.Email ?? "-")</td>
+                            <td class="data-list-size-m data-list-phone-column" data-data-list-sort-value="@seller.Phone">@seller.Phone</td>
+                            <td class="data-list-size-xs data-list-count-column" data-data-list-sort-value="@seller.ItemCount">@seller.ItemCount</td>
+                            <td class="data-list-size-xs data-list-count-column" data-data-list-sort-value="@seller.RegisteredCount">@seller.RegisteredCount</td>
+                            <td class="data-list-size-xs data-list-count-column" data-data-list-sort-value="@seller.InStockCount">@seller.InStockCount</td>
+                            <td class="data-list-size-xs data-list-count-column" data-data-list-sort-value="@seller.SoldCount">@seller.SoldCount</td>
+                            <td class="data-list-size-xs data-list-count-column" data-data-list-sort-value="@seller.MissingCount">@seller.MissingCount</td>
+                            <td class="data-list-size-xs data-list-count-column data-list-defective-count-column" data-data-list-sort-value="@seller.DefectiveCount">@seller.DefectiveCount</td>
+                            <td class="data-list-size-xs data-list-fee-column" data-data-list-sort-value="@seller.ExpectedFeeCents">@IndexModel.FormatSellerFeeProgress(seller.PaidFeeCents, seller.ExpectedFeeCents)</td>
                         </tr>
                     }
                     </tbody>
@@ -170,29 +170,29 @@
             }
             else
             {
-                <table class="data-table data-list-table data-list-sale-table">
+                <table class="data-table data-list-table data-list-sale-table" data-data-list-table>
                     <thead>
                         <tr>
-                            <th class="data-list-size-xxs data-list-sale-id-column">Vente</th>
-                            <th class="data-list-size-m data-list-sale-date-column">Date</th>
-                            <th class="data-list-size-l data-list-sale-buyer-column">Acheteur</th>
-                            <th class="data-list-size-s data-list-sale-money-column">Sous-total</th>
-                            <th class="data-list-size-s data-list-sale-money-column">Total</th>
-                            <th class="data-list-size-s data-list-sale-payment-column">Paiement</th>
-                            <th class="data-list-size-xs data-list-sale-invoice-column">Facture</th>
+                            <th class="data-list-size-xxs data-list-sale-id-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par vente">Vente<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-m data-list-sale-date-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par date">Date<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-l data-list-sale-buyer-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par acheteur">Acheteur<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-s data-list-sale-money-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par sous-total">Sous-total<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-s data-list-sale-money-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par total">Total<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-s data-list-sale-payment-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par paiement">Paiement<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th class="data-list-size-xs data-list-sale-invoice-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par facture">Facture<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
                         </tr>
                     </thead>
                     <tbody>
                     @foreach (var sale in Model.Sales)
                     {
                         <tr data-data-list-row data-data-list-filter-text="@sale.SearchText">
-                            <td class="data-list-size-xxs data-list-sale-id-column"><a href="/caisse/ventes/@sale.SaleId">#@sale.SaleId</a></td>
-                            <td class="data-list-size-m data-list-sale-date-column">@IndexModel.FormatSoldAt(sale.SoldAt)</td>
-                            <td class="data-list-size-l data-list-sale-buyer-column">@(string.IsNullOrWhiteSpace(sale.BuyerDisplay) ? "-" : sale.BuyerDisplay)</td>
-                            <td class="data-list-size-s data-list-sale-money-column">@IndexModel.FormatPrice(sale.SubtotalSellerPriceCents)</td>
-                            <td class="data-list-size-s data-list-sale-money-column">@IndexModel.FormatPrice(sale.TotalPaidCents)</td>
-                            <td class="data-list-size-s data-list-sale-payment-column">@sale.PaymentMethodLabel</td>
-                            <td class="data-list-size-xs data-list-sale-invoice-column">@(sale.HasInvoice ? "Oui" : "Non")</td>
+                            <td class="data-list-size-xxs data-list-sale-id-column" data-data-list-sort-value="@sale.SaleId"><a href="/caisse/ventes/@sale.SaleId">#@sale.SaleId</a></td>
+                            <td class="data-list-size-m data-list-sale-date-column" data-data-list-sort-value="@sale.SoldAt.Ticks">@IndexModel.FormatSoldAt(sale.SoldAt)</td>
+                            <td class="data-list-size-l data-list-sale-buyer-column" data-data-list-sort-value="@(string.IsNullOrWhiteSpace(sale.BuyerDisplay) ? string.Empty : sale.BuyerDisplay)">@(string.IsNullOrWhiteSpace(sale.BuyerDisplay) ? "-" : sale.BuyerDisplay)</td>
+                            <td class="data-list-size-s data-list-sale-money-column" data-data-list-sort-value="@sale.SubtotalSellerPriceCents">@IndexModel.FormatPrice(sale.SubtotalSellerPriceCents)</td>
+                            <td class="data-list-size-s data-list-sale-money-column" data-data-list-sort-value="@sale.TotalPaidCents">@IndexModel.FormatPrice(sale.TotalPaidCents)</td>
+                            <td class="data-list-size-s data-list-sale-payment-column" data-data-list-sort-value="@sale.PaymentMethodLabel">@sale.PaymentMethodLabel</td>
+                            <td class="data-list-size-xs data-list-sale-invoice-column" data-data-list-sort-value="@(sale.HasInvoice ? 1 : 0)">@(sale.HasInvoice ? "Oui" : "Non")</td>
                         </tr>
                     }
                     </tbody>
@@ -222,23 +222,23 @@
             }
             else
             {
-                <table class="data-table data-list-table data-list-cheque-table">
+                <table class="data-table data-list-table data-list-cheque-table" data-data-list-table>
                     <thead>
                         <tr>
-                            <th class="data-list-size-xxs data-list-cheque-sale-column">Vente</th>
-                            <th>N&deg; ch&egrave;que</th>
-                            <th>Banque</th>
-                            <th>Montant</th>
+                            <th class="data-list-size-xxs data-list-cheque-sale-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par vente">Vente<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par num&eacute;ro de ch&egrave;que">N&deg; ch&egrave;que<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par banque">Banque<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
+                            <th aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="number" aria-label="Trier par montant">Montant<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
                         </tr>
                     </thead>
                     <tbody>
                     @foreach (var cheque in Model.Cheques)
                     {
                         <tr data-data-list-row data-data-list-filter-text="@cheque.SearchText">
-                            <td class="data-list-size-xxs data-list-cheque-sale-column"><a href="/caisse/ventes/@cheque.SaleId">#@cheque.SaleId</a></td>
-                            <td class="data-list-cheque-number-column">@cheque.ChequeNumber</td>
-                            <td class="data-list-cheque-bank-column">@cheque.ChequeBankName</td>
-                            <td class="data-list-cheque-amount-column">@IndexModel.FormatPrice(cheque.TotalPaidCents)</td>
+                            <td class="data-list-size-xxs data-list-cheque-sale-column" data-data-list-sort-value="@cheque.SaleId"><a href="/caisse/ventes/@cheque.SaleId">#@cheque.SaleId</a></td>
+                            <td class="data-list-cheque-number-column" data-data-list-sort-value="@cheque.ChequeNumber">@cheque.ChequeNumber</td>
+                            <td class="data-list-cheque-bank-column" data-data-list-sort-value="@cheque.ChequeBankName">@cheque.ChequeBankName</td>
+                            <td class="data-list-cheque-amount-column" data-data-list-sort-value="@cheque.TotalPaidCents">@IndexModel.FormatPrice(cheque.TotalPaidCents)</td>
                         </tr>
                     }
                     </tbody>

@@ -1002,11 +1002,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Donn\u00e9es", content);
         Assert.Contains("Consultation en lecture seule des donn\u00e9es de l'\u00e9v\u00e9nement.", content);
         Assert.Contains("data-data-list-root", content);
+        Assert.Contains("data-data-list-table", content);
         Assert.Contains("data-list-filter-bar", content);
         Assert.Contains("data-list-filter-field-search", content);
         Assert.Contains("data-list-filter-field-status", content);
         Assert.Contains("data-data-list-search", content);
         Assert.Contains("data-data-list-status-filter", content);
+        Assert.Equal(5, CountSortableDataListHeaders(content));
+        Assert.Contains("data-data-list-sort-value", content);
         Assert.Contains(scenario.RegisteredReference, content);
         Assert.Contains(scenario.InStockReference, content);
         Assert.Contains(scenario.SoldReference, content);
@@ -1051,24 +1054,25 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("diane.liste@example.test", content);
         Assert.Contains("0606060606", content);
         Assert.Contains("data-list-seller-table", content);
-        Assert.Contains("class=\"data-list-size-xxs data-list-code-column\">Code", content);
-        Assert.Contains("class=\"data-list-size-l data-list-name-column\">Nom", content);
-        Assert.Contains("class=\"data-list-size-l data-list-email-column\">E-mail", content);
-        Assert.Contains("class=\"data-list-size-m data-list-phone-column\">T\u00e9l\u00e9phone", content);
+        Assert.Equal(11, CountSortableDataListHeaders(content));
+        Assert.Contains("data-list-code-column", content);
+        Assert.Contains("data-list-name-column", content);
+        Assert.Contains("data-list-email-column", content);
+        Assert.Contains("data-list-phone-column", content);
         Assert.Contains("title=\"Total des articles\">Tot.</abbr>", content);
         Assert.Contains("title=\"Enregistr\u00e9s\">Enr.</abbr>", content);
         Assert.Contains("title=\"En stock\">Stock</abbr>", content);
         Assert.Contains("title=\"Vendus\">Vend.</abbr>", content);
         Assert.Contains("title=\"Manquants\">Manq.</abbr>", content);
         Assert.Contains("title=\"D\u00e9fectueux\">D\u00e9f.</abbr>", content);
-        Assert.Contains("class=\"data-list-size-xs data-list-fee-column\">Frais", content);
+        Assert.Contains("data-list-fee-column", content);
         Assert.Contains($"href=\"/vendeurs/{scenario.SellerId}\">{scenario.SellerCode}</a>", content);
         Assert.Contains("0/2\u20ac", content);
         Assert.DoesNotContain("0.00 € / 2.00 €", content);
         Assert.Contains($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste\"", content);
-        Assert.DoesNotContain("diane.liste@example.test\"", content);
-        Assert.DoesNotContain("0606060606\"", content);
-        Assert.DoesNotContain("rue lecture\"", content);
+        Assert.DoesNotContain($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste diane.liste@example.test", content);
+        Assert.DoesNotContain($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste 0606060606", content);
+        Assert.DoesNotContain($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste rue lecture", content);
     }
 
     [Fact]
@@ -1083,8 +1087,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Ventes", content);
         Assert.Contains("data-list-sale-table", content);
+        Assert.Equal(7, CountSortableDataListHeaders(content));
         Assert.DoesNotContain("sales-view-table", content);
-        Assert.Contains("class=\"data-list-size-xxs data-list-sale-id-column\">Vente", content);
+        Assert.Contains("data-list-sale-id-column", content);
         Assert.DoesNotContain("<th>Articles</th>", content);
         Assert.DoesNotContain("<th>Frais</th>", content);
         Assert.Contains($"#{scenario.SaleId}", content);
@@ -1114,10 +1119,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Ch\u00e8ques", content);
         Assert.Contains("data-list-cheque-table", content);
-        Assert.Contains("class=\"data-list-size-xxs data-list-cheque-sale-column\">Vente", content);
-        Assert.Contains("<th>N\u00b0 ch\u00e8que</th>", content);
-        Assert.Contains("<th>Banque</th>", content);
-        Assert.Contains("<th>Montant</th>", content);
+        Assert.Equal(4, CountSortableDataListHeaders(content));
+        Assert.Contains("data-list-cheque-sale-column", content);
+        Assert.Contains("N\u00b0 ch\u00e8que", content);
+        Assert.Contains("Banque", content);
+        Assert.Contains("Montant", content);
         Assert.Contains($"href=\"/caisse/ventes/{scenario.SaleId}\">#{scenario.SaleId}</a>", content);
         Assert.Contains("CH-123", content);
         Assert.Contains("banque cach\u00e9e", content);
@@ -2496,6 +2502,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-data-list-status-filter", content);
         Assert.Contains("data-data-list-row", content);
         Assert.Contains("dataListFilterText", content);
+        Assert.Contains("initializeDataListSorting", content);
+        Assert.Contains("data-data-list-sort", content);
+        Assert.Contains("dataListSortValue", content);
+        Assert.Contains("aria-sort", content);
+        Assert.Contains("appendChild", content);
     }
 
     [Fact]
@@ -2509,6 +2520,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains(".data-list-filter-bar", content);
         Assert.Contains(".data-list-filter-field", content);
+        Assert.Contains(".data-list-sort-button", content);
+        Assert.Contains("cursor: pointer;", content);
+        Assert.Contains("th[aria-sort=\"ascending\"]", content);
+        Assert.Contains("th[aria-sort=\"descending\"]", content);
         Assert.Contains("grid-template-columns: max-content minmax(0, 1fr);", content);
         Assert.Contains("align-items: center;", content);
         Assert.Contains("column-gap: 0.5rem;", content);
@@ -3199,6 +3214,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Matches(
             $"class=\"[^\"]*main-navigation-link-active[^\"]*\"\\s+href=\"{Regex.Escape(href)}\"\\s+aria-current=\"page\"",
             content);
+    }
+
+    private static int CountSortableDataListHeaders(string content)
+    {
+        return Regex.Matches(content, "<button[^>]*data-data-list-sort").Count;
     }
 
     private static void AssertPhaseButtonDisabled(string content, string label)

@@ -43,7 +43,7 @@ public sealed class DataListDefectiveStatusSmokeTests : IClassFixture<IntakeWebA
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Défectueux", content);
         Assert.Contains($"href=\"/vendeurs/{seller.SellerId}\">{seller.SellerCode}</a>", content);
-        Assert.Contains("data-list-defective-count-column\">1", content);
+        Assert.Matches("data-list-defective-count-column[^>]*>1", content);
     }
 
     private async Task<(long SellerId, string SellerCode, string DefectiveReference)> SeedSellerWithDefectiveItemAsync()
