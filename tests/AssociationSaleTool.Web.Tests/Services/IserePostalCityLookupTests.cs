@@ -35,6 +35,21 @@ public sealed class IserePostalCityLookupTests
     }
 
     [Fact]
+    public void TryFindCanonicalCity_RejectsShortenedQualifiedCity()
+    {
+        var lookup = new IserePostalCityLookup(
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["38250"] = ["Corrençon-en-Vercors"]
+            });
+
+        var matched = lookup.TryFindCanonicalCity("38250", "CORRENçON", out var city);
+
+        Assert.False(matched);
+        Assert.Null(city);
+    }
+
+    [Fact]
     public void LoadFromJsonFile_ReadsAuthoritativeIsereData()
     {
         var jsonPath = FindRepositoryFile(

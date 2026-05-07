@@ -253,7 +253,8 @@ Excel intake is an operator helper on `/vendeurs/creer`, not a direct import pat
 - final save creates the seller and item rows in one transaction
 - duplicate sellers redirect to the existing seller detail page with the parsed item rows prefilled in `Ajouter des articles`
 - until workbook address handling is formally designed, Excel prefill sets seller postal address to `UNKNOWN`
-- when the workbook has a `CP VILLE` value, Excel prefill accepts it only if the postal-code/city pair exactly matches the authoritative Isere city list used by the application
+- when the workbook has a `CP VILLE` value, Excel prefill accepts only canonical postal-code/city pairs from the authoritative Isere city list used by the application
+- the depot workbook's hidden `codes postaux` list is generated from the same JSON file used by the application
 - Excel prefill defaults the paid seller fee to `EUR 0`
 
 ## Post-Sale Reconciliation

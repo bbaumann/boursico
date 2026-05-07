@@ -48,7 +48,7 @@ The browser asks for one `.xlsx` file. The server parses the single worksheet, t
 - seller name
 - phone when present
 - postal address set to `UNKNOWN` until address parsing is formally designed
-- postal code and city when the workbook `CP VILLE` value exactly matches the application's authoritative Isere city list
+- postal code and city when the workbook `CP VILLE` value matches the application's authoritative Isere city list
 - paid seller fee defaulted to `EUR 0`
 - item title and seller price rows
 - default intake mode `Enregistrement`
@@ -99,7 +99,8 @@ Seller fields:
 - phone maps to `Phone`
   - if Excel stores the phone as a number and drops the leading `0`, the parser restores that leading `0`
 - postal address maps to the temporary value `UNKNOWN` until workbook address handling is formally designed
-- `CP VILLE` maps to `PostalCode` and `City` only when the city exactly matches one of the canonical city values for that postal code in `wwwroot/data/isere-postal-cities.json`
+- `CP VILLE` maps to `PostalCode` and `City` only when the city matches one of the canonical city values for that postal code in `wwwroot/data/isere-postal-cities.json`
+- the depot workbook's hidden `codes postaux` list is generated from `wwwroot/data/isere-postal-cities.json`
 - if `CP VILLE` is present but does not match the authoritative list, the upload fails with a French validation message instead of guessing a closest city
 - email remains blank unless the workbook contains an obvious email cell in a future template
 - paid seller fee maps to `EUR 0`

@@ -172,7 +172,6 @@ Postal-code rules:
 
 - for Isère postal codes, the app validates against `wwwroot/data/isere-postal-cities.json`
 - exact canonical matches are accepted
-- unambiguous normalized matches may be accepted and stored as the canonical city
 - invalid or ambiguous matches block import until corrected
 - non-Isère postal code/city values may remain free text unless a later decision narrows the seller geography
 

@@ -608,13 +608,14 @@ This file captures the main project decisions in a lightweight ADR format.
   - save manually entered or Excel-prefilled seller and item data through one normal intake action and one database transaction
   - redirect duplicate sellers to the existing seller detail page and prefill the parsed rows into the add-items form for review
   - use `UNKNOWN` for Excel-prefilled postal address and `EUR 0` for paid seller fee until those workbook fields are formally designed
-  - read Excel `CP VILLE` when present, but accept it only when the postal-code/city pair exactly matches the authoritative Isere city list used by the application
+  - read Excel `CP VILLE` when present, accepting only canonical postal-code/city pairs from the authoritative Isere city list used by the application
+  - generate the Excel workbook's hidden `codes postaux` list from `wwwroot/data/isere-postal-cities.json`
 - Consequence:
   - Excel parsing remains reversible because operators can correct the form before saving
   - the authoritative save path is shared by manual and Excel-assisted intake
   - imported rows do not need a staging table or stored workbook copy
   - existing seller details are not silently updated from Excel files
-  - the Excel template and the application must use the same city values; mismatches are visible during upload instead of being guessed silently
+  - the Excel template and the application share the same canonical city values; unsupported mismatches remain visible during upload instead of being guessed silently
 
 ## D-040 Track Defective Items And Refunds
 

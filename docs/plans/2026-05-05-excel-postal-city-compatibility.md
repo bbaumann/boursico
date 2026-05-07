@@ -4,13 +4,13 @@
 
 **Goal:** Make seller Excel prefill use postal code and city values that are compatible with the application's authoritative Isere city list.
 
-**Architecture:** Add a server-side lookup that reads the same `wwwroot/data/isere-postal-cities.json` file used by the browser. Extend Excel parsing to read the workbook `CP VILLE` value, accept only exact authoritative postal-code/city pairs, and prefill the normal seller form with the canonical values.
+**Architecture:** Add a server-side lookup that reads the same `wwwroot/data/isere-postal-cities.json` file used by the browser. Extend Excel parsing to read the workbook `CP VILLE` value, accept only canonical authoritative postal-code/city pairs, and prefill the normal seller form with the canonical values.
 
 **Tech Stack:** ASP.NET Core Razor Pages, C# XML-based `.xlsx` parsing, xUnit, static JSON city data.
 
 ---
 
-### Task 1: Add exact postal-code/city lookup
+### Task 1: Add postal-code/city lookup
 
 **Files:**
 - Create: `src/AssociationSaleTool.Web/Services/IserePostalCityLookup.cs`
@@ -18,7 +18,7 @@
 - Test: `tests/AssociationSaleTool.Web.Tests/Services/IserePostalCityLookupTests.cs`
 
 **Steps:**
-1. Write failing tests for loading the JSON and exact city validation.
+1. Write failing tests for loading the JSON and city validation.
 2. Run the lookup tests and verify they fail because the lookup does not exist.
 3. Implement the lookup and register it in DI from `wwwroot/data/isere-postal-cities.json`.
 4. Run the lookup tests and verify they pass.

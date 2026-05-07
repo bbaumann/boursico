@@ -27,7 +27,8 @@ Relevant docs:
 - item rows are read from columns `B:C`, including rows beyond the old 15-row template area
 - Excel upload saves nothing until the operator reviews and submits the normal form
 - duplicate seller detection blocks create/edit conflicts and redirects Excel-prefilled rows to the existing seller detail page for review
-- Excel prefill reads `CP VILLE` when present and accepts canonical postal-code/city pairs from the authoritative Isere city list, plus unambiguous shortened depot-template names that map to one canonical city
+- Excel prefill reads `CP VILLE` when present and accepts only canonical postal-code/city pairs from the authoritative Isere city list
+- `resources/depot-internet.xlsx` keeps its hidden `codes postaux` list generated from the same JSON file used by the application
 
 Relevant docs:
 
