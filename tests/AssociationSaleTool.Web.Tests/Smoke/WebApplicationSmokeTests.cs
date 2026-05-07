@@ -942,7 +942,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     public async Task SalesViewDetailPageShowsReadonlyCorrectedSale()
     {
         var client = _factory.CreateClient();
-        var sale = await SeedSalesViewSaleAsync("Client reçu", new DateTime(2026, 5, 4, 11, 15, 0, DateTimeKind.Utc));
+        var sale = await SeedSalesViewSaleAsync("Client facture", new DateTime(2026, 5, 4, 11, 15, 0, DateTimeKind.Utc));
 
         var response = await client.GetAsync($"/caisse/ventes/{sale.SaleId}");
 
@@ -952,7 +952,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(sale.FirstReference, content);
         Assert.Contains("Jeu corrigé", content);
         Assert.Contains("Corrigée", content);
-        Assert.Contains("Client reçu", content);
+        Assert.Contains("Client facture", content);
         Assert.Contains("Retour à la liste", content);
         Assert.DoesNotContain("Remettre en stock", content);
         Assert.DoesNotContain("Enregistrer la vente", content);
@@ -2431,6 +2431,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("/api/ventes", content);
         Assert.Contains("checkout-conflict-row", content);
         Assert.Contains("buyerAddress", content);
+        Assert.Contains("createInvoice", content);
         Assert.Contains("paymentMethod", content);
         Assert.Contains("chequeNumber", content);
         Assert.Contains("chequeBankName", content);
@@ -2440,7 +2441,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("buyerCity", content);
         Assert.Contains("checkoutCitiesByPostalCode", content);
         Assert.Contains("data-checkout-save-print", content);
-        Assert.Contains("data-checkout-receipt-lines", content);
+        Assert.Contains("data-checkout-invoice-lines", content);
+        Assert.Contains("data-checkout-invoice-customer-text", content);
+        Assert.Contains("join(\"\\n\")", content);
         Assert.Contains("window.print()", content);
     }
 
@@ -2516,9 +2519,15 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(".checkout-totals", content);
         Assert.Contains(".checkout-modal", content);
         Assert.Contains(".checkout-conflict-row", content);
-        Assert.Contains(".checkout-print-receipt", content);
+        Assert.Contains(".checkout-print-invoice", content);
+        Assert.Contains(".checkout-invoice-parties", content);
+        Assert.Contains("grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);", content);
+        Assert.Contains(".checkout-invoice-designation-column", content);
+        Assert.Contains("width: 56%;", content);
         Assert.Contains("@media print", content);
         Assert.Contains("body.checkout-printing", content);
+        Assert.Contains("body.checkout-printing .main-navigation", content);
+        Assert.Contains("body.checkout-printing .app-status-header", content);
     }
 
     [Fact]
@@ -2835,11 +2844,24 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-payment-method", content);
         Assert.Contains("data-checkout-cheque-number", content);
         Assert.Contains("data-checkout-cheque-bank-name", content);
-        Assert.Contains("data-checkout-receipt", content);
-        Assert.Contains("data-checkout-receipt-header", content);
-        Assert.Contains("Association Toy Sale", content);
-        Assert.Contains("data-checkout-receipt-lines", content);
-        Assert.Contains("data-checkout-receipt-total", content);
+        Assert.Contains("data-checkout-invoice", content);
+        Assert.DoesNotContain("data-checkout-invoice-header", content);
+        Assert.Contains("Facture <span data-checkout-invoice-number>", content);
+        Assert.Contains("/images/logo-afse.jpg", content);
+        Assert.Contains("TVA non applicable en vertu de l'article 293 B du CGI.", content);
+        Assert.Contains("Association Familiale", content);
+        Assert.Contains("SIRET : 306 041 997 00058", content);
+        Assert.Contains("Association loi 1901", content);
+        Assert.DoesNotContain("Statut :", content);
+        Assert.DoesNotContain("<h2>Acheteur</h2>", content);
+        Assert.DoesNotContain("<h2>Adresse client</h2>", content);
+        Assert.Contains("data-checkout-invoice-customer-text", content);
+        Assert.Contains("P.U. HT", content);
+        Assert.DoesNotContain("Prix unitaire HT", content);
+        Assert.Contains("checkout-invoice-designation-column", content);
+        Assert.Contains("data-checkout-invoice-lines", content);
+        Assert.Contains("data-checkout-invoice-total-including-vat", content);
+        Assert.DoesNotContain("Reçu de vente", content);
         Assert.Contains("checkout-results-frame", content);
         Assert.Contains("<th>REF</th>", content);
         Assert.Contains("CK-001-001", content);
@@ -3559,8 +3581,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerCode = "SV-003",
                 FirstName = "Sonia",
-                LastName = "Recu",
-                Email = "sonia.recu@example.test"
+                LastName = "Facture",
+                Email = "sonia.facture@example.test"
             };
 
             dbContext.Sellers.Add(seller);
@@ -3571,7 +3593,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerId = seller.Id,
                 Reference = "SV-003-001",
                 ItemNumber = 1,
-                Title = "Jeu avec recu",
+                Title = "Jeu avec facture",
                 SellerPriceCents = 1500,
                 Status = "in_stock"
             };

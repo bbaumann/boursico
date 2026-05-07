@@ -41,7 +41,14 @@ builder.Services
 builder.Services
     .AddOptions<PrintingOptions>()
     .Bind(builder.Configuration.GetSection(PrintingOptions.SectionName))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.ReceiptHeaderText), "Printing:ReceiptHeaderText is required")
+    .Validate(options => options.InvoicePeriod.Trim().Length == 4 && options.InvoicePeriod.Trim().All(char.IsDigit), "Printing:InvoicePeriod must use YYMM format")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.InvoiceCode), "Printing:InvoiceCode is required")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.SellerName), "Printing:SellerName is required")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.SellerAddress), "Printing:SellerAddress is required")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.SellerSiret), "Printing:SellerSiret is required")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.SellerLegalStatus), "Printing:SellerLegalStatus is required")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.VatExemptionText), "Printing:VatExemptionText is required")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.LogoPath), "Printing:LogoPath is required")
     .ValidateOnStart();
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {

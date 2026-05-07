@@ -57,6 +57,26 @@
         </section>
     }
 
+    @if (!string.IsNullOrWhiteSpace(Model.Sale.InvoiceNumber))
+    {
+        <section class="subsection">
+            <h2>Facture</h2>
+            <dl class="checkout-totals sales-view-totals">
+                <div>
+                    <dt>Numéro</dt>
+                    <dd>@Model.Sale.InvoiceNumber</dd>
+                </div>
+                @if (Model.Sale.InvoiceIssuedAt is { } invoiceIssuedAt)
+                {
+                    <div>
+                        <dt>Date d'émission</dt>
+                        <dd>@DetailsModel.FormatSoldAt(invoiceIssuedAt)</dd>
+                    </div>
+                }
+            </dl>
+        </section>
+    }
+
     <section class="subsection">
         <h2>Articles</h2>
         <table class="data-table sales-view-table">

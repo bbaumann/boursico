@@ -138,6 +138,14 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("cheque_number");
 
+                    b.Property<DateTime?>("InvoiceIssuedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("invoice_issued_at");
+
+                    b.Property<string>("InvoiceNumber")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("invoice_number");
+
                     b.Property<string>("PaymentMethod")
                         .HasColumnType("TEXT")
                         .HasColumnName("payment_method");
@@ -155,6 +163,10 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnName("total_paid_cents");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InvoiceNumber")
+                        .IsUnique()
+                        .HasFilter("invoice_number IS NOT NULL");
 
                     b.HasIndex("SoldAt");
 

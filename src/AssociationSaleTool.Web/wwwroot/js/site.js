@@ -169,6 +169,10 @@ async function postCheckoutCart(url, cart, options = {}) {
     body.buyerAddress = options.buyerAddress;
   }
 
+  if (options.createInvoice !== undefined) {
+    body.createInvoice = options.createInvoice;
+  }
+
   if (options.buyerName !== undefined) {
     body.buyerName = options.buyerName;
   }
@@ -234,16 +238,17 @@ function initializeCheckout(root) {
   const modalSubtotal = root.querySelector("[data-checkout-modal-subtotal]");
   const modalFee = root.querySelector("[data-checkout-modal-fee]");
   const modalTotal = root.querySelector("[data-checkout-modal-total]");
-  const receipt = document.querySelector("[data-checkout-receipt]");
-  const receiptSaleId = document.querySelector("[data-checkout-receipt-sale-id]");
-  const receiptDate = document.querySelector("[data-checkout-receipt-date]");
-  const receiptBuyerSection = document.querySelector("[data-checkout-receipt-buyer-section]");
-  const receiptBuyerText = document.querySelector("[data-checkout-receipt-buyer-text]");
-  const receiptAddressText = document.querySelector("[data-checkout-receipt-address-text]");
-  const receiptLines = document.querySelector("[data-checkout-receipt-lines]");
-  const receiptSubtotal = document.querySelector("[data-checkout-receipt-subtotal]");
-  const receiptFee = document.querySelector("[data-checkout-receipt-fee]");
-  const receiptTotal = document.querySelector("[data-checkout-receipt-total]");
+  const invoice = document.querySelector("[data-checkout-invoice]");
+  const invoiceNumber = document.querySelector("[data-checkout-invoice-number]");
+  const invoiceIssuedAt = document.querySelector("[data-checkout-invoice-issued-at]");
+  const invoiceCustomerSection = document.querySelector("[data-checkout-invoice-customer-section]");
+  const invoiceCustomerText = document.querySelector("[data-checkout-invoice-customer-text]");
+  const invoiceLines = document.querySelector("[data-checkout-invoice-lines]");
+  const invoiceSubtotal = document.querySelector("[data-checkout-invoice-subtotal]");
+  const invoiceFee = document.querySelector("[data-checkout-invoice-fee]");
+  const invoiceTotalExcludingVat = document.querySelector("[data-checkout-invoice-total-excluding-vat]");
+  const invoiceVat = document.querySelector("[data-checkout-invoice-vat]");
+  const invoiceTotalIncludingVat = document.querySelector("[data-checkout-invoice-total-including-vat]");
 
   if (!dataElement || !searchInput || !resultsBody || !cartBody) {
     return;
@@ -434,6 +439,16 @@ function initializeCheckout(root) {
       .join(" - ");
   }
 
+  function formatInvoiceCustomerDetails(saleDetails) {
+    const location = [saleDetails.buyerPostalCode, saleDetails.buyerCity]
+      .filter(value => value.length > 0)
+      .join(" ");
+
+    return [saleDetails.buyerName, saleDetails.buyerAddress, location]
+      .filter(value => value.length > 0)
+      .join("\n");
+  }
+
   function updateSavePrintButtonState() {
     if (savePrintButton) {
       savePrintButton.disabled = getBuyerAddress().length === 0;
@@ -471,57 +486,66 @@ function initializeCheckout(root) {
     updateSavePrintButtonState();
   }
 
-  function renderReceipt(payload, saleDetails) {
-    if (!receipt || !receiptLines) {
+  function formatInvoiceIssueDate(value) {
+    return value ? new Date(value).toLocaleDateString("fr-FR") : "";
+  }
+
+  function renderInvoice(payload, saleDetails) {
+    if (!invoice || !invoiceLines) {
       return;
     }
 
-    if (receiptSaleId) {
-      receiptSaleId.textContent = payload.saleId ? `#${payload.saleId}` : "";
+    if (invoiceNumber) {
+      invoiceNumber.textContent = payload.invoiceNumber || "";
     }
 
-    if (receiptDate) {
-      receiptDate.textContent = new Date().toLocaleString("fr-FR");
+    if (invoiceIssuedAt) {
+      invoiceIssuedAt.textContent = formatInvoiceIssueDate(payload.invoiceIssuedAt);
     }
 
-    const buyerDetails = formatBuyerDetails(saleDetails);
-    if (receiptBuyerSection) {
-      receiptBuyerSection.hidden = buyerDetails.length === 0;
+    const customerDetails = formatInvoiceCustomerDetails(saleDetails);
+    if (invoiceCustomerSection) {
+      invoiceCustomerSection.hidden = customerDetails.length === 0;
     }
 
-    if (receiptBuyerText) {
-      receiptBuyerText.textContent = buyerDetails;
+    if (invoiceCustomerText) {
+      invoiceCustomerText.textContent = customerDetails;
     }
 
-    if (receiptAddressText) {
-      receiptAddressText.textContent = saleDetails.buyerAddress;
-    }
-
-    receiptLines.replaceChildren();
+    invoiceLines.replaceChildren();
     for (const item of cart) {
       const row = document.createElement("tr");
-      row.appendChild(createCheckoutCell(item.reference));
-      row.appendChild(createCheckoutCell(item.title));
+      row.appendChild(createCheckoutCell("1"));
+      row.appendChild(createCheckoutCell(`${item.reference} - ${item.title}`));
       row.appendChild(createCheckoutCell(formatCheckoutPrice(item.sellerPriceCents)));
-      receiptLines.appendChild(row);
+      row.appendChild(createCheckoutCell(formatCheckoutPrice(item.sellerPriceCents)));
+      invoiceLines.appendChild(row);
     }
 
     if (payload.totals) {
-      if (receiptSubtotal) {
-        receiptSubtotal.textContent = formatCheckoutPrice(payload.totals.subtotalSellerPriceCents);
+      if (invoiceSubtotal) {
+        invoiceSubtotal.textContent = formatCheckoutPrice(payload.totals.subtotalSellerPriceCents);
       }
 
-      if (receiptFee) {
-        receiptFee.textContent = formatCheckoutPrice(payload.totals.checkoutFeeCents);
+      if (invoiceFee) {
+        invoiceFee.textContent = formatCheckoutPrice(payload.totals.checkoutFeeCents);
       }
 
-      if (receiptTotal) {
-        receiptTotal.textContent = formatCheckoutPrice(payload.totals.totalPaidCents);
+      if (invoiceTotalExcludingVat) {
+        invoiceTotalExcludingVat.textContent = formatCheckoutPrice(payload.totals.totalPaidCents);
+      }
+
+      if (invoiceVat) {
+        invoiceVat.textContent = formatCheckoutPrice(0);
+      }
+
+      if (invoiceTotalIncludingVat) {
+        invoiceTotalIncludingVat.textContent = formatCheckoutPrice(payload.totals.totalPaidCents);
       }
     }
   }
 
-  function printReceiptAndReload() {
+  function printInvoiceAndReload() {
     document.body.classList.add("checkout-printing");
     window.onafterprint = () => {
       window.location.reload();
@@ -742,10 +766,13 @@ function initializeCheckout(root) {
       return;
     }
 
-    const { response, payload } = await postCheckoutCart("/api/ventes", cart, saleDetails);
+    const { response, payload } = await postCheckoutCart("/api/ventes", cart, {
+      ...saleDetails,
+      createInvoice: true
+    });
     if (response.status === 201 && payload.saved) {
-      renderReceipt(payload, saleDetails);
-      printReceiptAndReload();
+      renderInvoice(payload, saleDetails);
+      printInvoiceAndReload();
       return;
     }
 

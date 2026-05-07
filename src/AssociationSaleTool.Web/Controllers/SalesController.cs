@@ -26,7 +26,8 @@ public sealed class SalesController(CheckoutService checkoutService) : Controlle
             request.BuyerPostalCode,
             request.BuyerCity,
             cancellationToken,
-            new CheckoutPaymentDetails(request.PaymentMethod, request.ChequeNumber, request.ChequeBankName));
+            new CheckoutPaymentDetails(request.PaymentMethod, request.ChequeNumber, request.ChequeBankName),
+            request.CreateInvoice);
 
         if (result.Saved)
         {

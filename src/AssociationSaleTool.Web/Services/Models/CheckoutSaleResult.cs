@@ -7,4 +7,6 @@ public sealed record CheckoutSaleResult(
     CheckoutCartTotals? Totals,
     int ItemCount,
     string? Message = null,
-    bool IsValidationError = false);
+    bool IsValidationError = false,
+    string? InvoiceNumber = null,
+    DateTime? InvoiceIssuedAt = null);

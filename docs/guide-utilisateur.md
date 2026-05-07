@@ -72,7 +72,7 @@ Il utilise uniquement l'écran `CAISSE` :
 - cherche les articles par référence ou par titre ;
 - ajoute les articles au panier ;
 - finalise la vente ;
-- imprime éventuellement un reçu si le client le demande.
+- imprime éventuellement une facture si le client la demande.
 
 ### Administrateur de vente
 
@@ -215,15 +215,17 @@ L'application vérifie les articles avant d'afficher la fenêtre finale, puis re
 
 Si un article n'est plus disponible, la vente est refusée clairement. Le bénévole doit retirer l'article en conflit du panier, puis recommencer la finalisation.
 
-### Imprimer un reçu
+### Imprimer une facture
 
-Le reçu est optionnel.
+La facture est optionnelle.
 
-Si le client demande un reçu ou une facture, remplir `Adresse` avec l'adresse à imprimer.
+Si le client demande une facture, remplir `Adresse` avec l'adresse client à imprimer.
 
-Ensuite, dans la fenêtre de finalisation, le bouton `Enregistrer et imprimer` devient disponible. L'application enregistre d'abord la vente, puis ouvre l'impression du navigateur.
+Ensuite, dans la fenêtre de finalisation, le bouton `Enregistrer et imprimer` devient disponible. L'application enregistre d'abord la vente, crée le numéro de facture, puis ouvre l'impression du navigateur.
 
-Si le champ de reçu est vide, l'option d'impression reste désactivée.
+Si le champ d'adresse est vide, l'option d'impression reste désactivée.
+
+La facture contient son numéro unique dans le titre, la date d'émission, le logo de l'Association Familiale, l'identité de l'Association Familiale, un bloc client avec le nom, l'adresse, le code postal et la ville, les lignes d'articles, les totaux HT/TTC et la mention `TVA non applicable en vertu de l'article 293 B du CGI.`
 
 ## Administration
 

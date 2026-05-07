@@ -44,7 +44,7 @@ The top of the checkout content includes required buyer information fields befor
 
 The postal code input is numeric. When the postal code is an Isère code (`38xxx`), the city input offers a dropdown of matching cities from local static data generated from the official French Geo API commune dataset for department 38. When one city matches the postal code, the city field is prefilled. For other French departments, the city input remains free text.
 
-Buyer details are persisted on the sale when the operator saves. The sale is rejected if buyer name, postal code, or city is blank. Buyer details are separate from the optional `buyer_address`; filling name, postal code, and city alone does not mean a receipt was requested.
+Buyer details are persisted on the sale when the operator saves. The sale is rejected if buyer name, postal code, or city is blank. Buyer details are separate from the optional `buyer_address`; filling name, postal code, and city alone does not mean an invoice was requested.
 
 The checkout lookup is not an autocomplete widget.
 
@@ -176,13 +176,19 @@ This error should look visually strong and difficult to miss.
 
 If save-time validation fails because the event is in `post_sale`, no cart line is highlighted. The message should explain that the sale is closed and an admin must move the event back to another phase before new sales can be saved.
 
-## Receipt Handling
+## Invoice Handling
 
 - the checkout form has one optional operator-facing `Adresse` field, stored internally as `buyer_address`
-- if it is empty, no receipt action is available in the finalization modal
+- if it is empty, no invoice print action is available in the finalization modal
 - if it is filled, `Enregistrer et imprimer` becomes available
-- there is no separate receipt-requested flag
-- there is no separate receipt-print page required as a user-facing workflow step
+- `Enregistrer et imprimer` creates a persisted invoice number and issue date only after the sale save succeeds
+- normal `Enregistrer la vente` saves do not create invoice numbers
+- invoice numbers use the configured event period and code, for example `2611AFBJ0001`
+- the printed invoice title is `Facture <invoice number>`
+- the printed invoice uses one customer block containing buyer name, address, postal code, and city beside the seller identity block
+- the printed invoice line table uses the compact `P.U. HT` unit-price label and gives the designation column the largest width
+- the application event header and navigation are hidden while printing the invoice
+- there is no separate invoice-print page required as a user-facing workflow step
 
 ## Non-Goals For V1 Checkout
 

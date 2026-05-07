@@ -129,19 +129,19 @@ This file captures the main project decisions in a lightweight ADR format.
   - the MVP checkout flow and data model stayed simpler
   - current V1 stores payment method and cheque traceability at sale level
 
-## D-011 Receipts Are Optional And Rare
+## D-011 Optional Print Output Was Secondary
 
-- Status: accepted
+- Status: superseded by D-042
 - Key drivers:
-  - most customers do not need receipts
-  - receipts are primarily for reimbursement cases
+  - most customers did not need printed sale documents under the original MVP assumptions
+  - printed sale documents were primarily expected for reimbursement cases
 - Decision:
-  - receipt printing is optional and secondary in the checkout flow
+  - printed sale output was optional and secondary in the checkout flow
   - use one optional `buyer_address` text field, empty by default
-  - if `buyer_address` is filled, that means a receipt was requested
+  - if `buyer_address` was filled, that meant a printed sale document was requested
 - Consequence:
-  - receipt logic should not complicate the main save-sale action
-  - V1 does not need separate `receipt_requested` or `receipt_printed` fields
+  - print logic did not complicate the main save-sale action
+  - V1 did not need separate print-requested or print-completed fields
 
 ## D-012 Seller Fee Logic Stays Outside The System In MVP
 
@@ -351,7 +351,7 @@ This file captures the main project decisions in a lightweight ADR format.
     - `Database`: SQLite file path only
     - `Event`: event name only
     - `Admin`: shared admin password only
-    - `Printing`: receipt header text only
+    - `Printing`: print header text only
 - Consequence:
   - the agent has one small and explicit configuration contract to implement
   - runtime behavior such as SQLite pragmas and retry policies should be handled in application code rather than as V1 config switches
@@ -462,13 +462,13 @@ This file captures the main project decisions in a lightweight ADR format.
   - checkout operators may need to inspect a saved sale during normal sale-day work
   - sale lookup should be reachable from the checkout area without turning the admin page into a general sales browser
   - saved sales are historical facts and should not be edited from a browse view
-  - receipt address details may be useful for lookup, but V1 already treats checkout operators as trusted event staff
+  - buyer address details may be useful for lookup, but V1 already treats checkout operators as trusted event staff
 - Decision:
   - keep `/caisse` as the default sale-creation page
   - expose a prominent `LISTE DES VENTES` action from `/caisse`
   - add `/caisse/ventes` for read-only sales history, visible to all operators without the shared admin password
   - add `/caisse/ventes/{id}` for read-only sale detail
-  - search the list by sale id, item reference, item title, buyer details, and receipt address details
+  - search the list by sale id, item reference, item title, buyer details, and buyer address details
   - show corrected sale lines as historical sale facts labeled `Corrigée`
   - keep sale-line correction actions only on `/administration`
 - Consequence:
@@ -535,14 +535,14 @@ This file captures the main project decisions in a lightweight ADR format.
 
 - Status: accepted
 - Key drivers:
-  - checkout operators need to associate a sale with a buyer name or structure without overloading the receipt free-text field
+  - checkout operators need to associate a sale with a buyer name or structure without overloading the buyer address field
   - buyer location should be searchable and visible in sales history
   - city suggestions should support the local Isère workflow without adding an internet dependency during the sale
 - Decision:
   - add `buyer_name`, `buyer_postal_code`, and `buyer_city` fields to `sale`
   - require buyer name, postal code, and city for new application-created checkout sales
   - render those fields at the top of `/caisse`, above item lookup
-  - keep `buyer_address` as a separate optional free-text field, labeled `Adresse` in the UI, whose presence still controls whether receipt printing is enabled
+  - keep `buyer_address` as a separate optional free-text field, labeled `Adresse` in the UI
   - generate local city suggestion data for Isère (`38xxx`) from the official French Geo API commune dataset
   - prefill city when an Isère postal code maps to exactly one known city
   - keep city entry free text for other French departments
@@ -589,7 +589,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - do not expose edit, correction, deletion, phase, or reconciliation actions from this page
 - Consequence:
   - the data browser complements the focused checkout, intake, and reconciliation pages instead of replacing them
-  - sale lookup in `/donnees` is intentionally narrower than `/caisse/ventes`, which can still search receipt and cheque traceability details
+  - sale lookup in `/donnees` is intentionally narrower than `/caisse/ventes`, which can still search invoice and cheque traceability details
   - future additions to the data browser should stay read-only unless a separate decision creates an admin workflow there
 
 ## D-039 Treat Seller Excel Files As Editable Intake Prefill
@@ -656,3 +656,26 @@ This file captures the main project decisions in a lightweight ADR format.
 - Consequence:
   - future exceptional item workflows should live under `/administration` when they require the shared admin unlock
   - docs and operator guidance should refer to `/administration`
+
+## D-042 Replace Optional Print Output With Invoice Output
+
+- Status: accepted
+- Key drivers:
+  - user feedback identified mandatory invoice fields for printed checkout documents
+  - the association is exempt from VAT under article 293 B of the CGI
+  - invoice numbers must be unique, chronological, and continuous for the event numbering period
+- Decision:
+  - use `Facture` for operator-facing wording and `Invoice` for new internal concepts
+  - create invoice data only from `Enregistrer et imprimer`; normal sale saves do not allocate an invoice number
+  - persist nullable `sale.invoice_number` and `sale.invoice_issued_at`
+  - use configured invoice numbering in the `YYMMAFBJNNNN` format, for example `2611AFBJ0001`
+  - treat `buyer_address` as the customer address printed on the invoice, with no separate billing address
+  - print the invoice title as `Facture <invoice number>` and use the AFSE logo asset
+  - print one customer block containing buyer identity, customer address, postal code, and city beside the seller identity block
+  - print the Association Familiale seller identity without a `Statut :` label
+  - print item quantities/designations, compact `P.U. HT` prices, TVA as zero, TTC total, and the VAT exemption text once per invoice
+  - hide the application event header and navigation while printing the invoice
+- Consequence:
+  - the former optional print output is superseded by invoice output
+  - invoice sequencing is server-side and happens inside the successful sale transaction
+  - reprint support, if added later, must reuse the persisted invoice number and issue date

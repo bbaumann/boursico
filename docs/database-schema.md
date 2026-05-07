@@ -96,6 +96,8 @@ Represents one completed checkout.
 - `buyer_postal_code`
 - `buyer_city`
 - `buyer_address`
+- `invoice_number`
+- `invoice_issued_at`
 - `payment_method`
 - `cheque_number`
 - `cheque_bank_name`
@@ -107,8 +109,10 @@ Represents one completed checkout.
 - `subtotal_seller_price_cents`, `checkout_fee_cents`, and `total_paid_cents` are stored as integer cents.
 - `buyer_name`, `buyer_postal_code`, and `buyer_city` are required by the application for new checkout sales.
 - `buyer_postal_code` is stored as text even though the UI input is numeric, so postal-code formatting is not treated as arithmetic.
-- `buyer_address` is an optional free-text address field used only when a receipt or invoice must be printed.
-- If `buyer_address` is null, no receipt was requested in V1.
+- `buyer_address` is an optional free-text customer address field used only when an invoice must be printed.
+- `invoice_number` is null for normal sale saves and unique when an invoice was created.
+- `invoice_issued_at` is null for normal sale saves and stores the server-side invoice issue timestamp when an invoice was created.
+- Invoice numbers use the configured `YYMMAFBJNNNN` sequence, for example `2611AFBJ0001`.
 - `payment_method` is set for new sales and uses `card`, `cash`, or `cheque`.
 - `cheque_number` and `cheque_bank_name` are required by the application only when `payment_method` is `cheque`.
 - Existing rows created before this feature may have null payment traceability fields.

@@ -38,7 +38,7 @@
                         <th>Frais</th>
                         <th>Total</th>
                         <th>Paiement</th>
-                        <th>Reçu</th>
+                        <th>Facture</th>
                     </tr>
                 </thead>
                 <tbody data-sales-view-results>
@@ -53,7 +53,7 @@
                         <td>@IndexModel.FormatPrice(sale.CheckoutFeeCents)</td>
                         <td>@IndexModel.FormatPrice(sale.TotalPaidCents)</td>
                         <td>@sale.PaymentMethodLabel</td>
-                        <td>@(sale.HasBuyerAddress ? "Oui" : "Non")</td>
+                        <td>@(sale.HasInvoice ? "Oui" : "Non")</td>
                     </tr>
                 }
                 </tbody>
