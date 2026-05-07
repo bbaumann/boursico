@@ -15,7 +15,8 @@ public class OptionsBindingTests
             ["Database:SqlitePath"] = "data/event.db",
             ["Event:Name"] = "2026 Toy Sale",
             ["Admin:SharedPassword"] = "secret",
-            ["Printing:ReceiptHeaderText"] = "Association Toy Sale"
+            ["Printing:InvoicePeriod"] = "2611",
+            ["Printing:InvoiceCode"] = "AFBJ"
         };
 
         var configuration = new ConfigurationBuilder()
@@ -25,7 +26,8 @@ public class OptionsBindingTests
         Assert.Equal("data/event.db", configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()!.SqlitePath);
         Assert.Equal("2026 Toy Sale", configuration.GetSection(EventOptions.SectionName).Get<EventOptions>()!.Name);
         Assert.Equal("secret", configuration.GetSection(AdminOptions.SectionName).Get<AdminOptions>()!.SharedPassword);
-        Assert.Equal("Association Toy Sale", configuration.GetSection(PrintingOptions.SectionName).Get<PrintingOptions>()!.ReceiptHeaderText);
+        var printingOptions = configuration.GetSection(PrintingOptions.SectionName).Get<PrintingOptions>()!;
+        Assert.Equal("2611AFBJ", printingOptions.InvoiceNumberPrefix);
     }
 
     [Theory]
@@ -47,8 +49,7 @@ public class OptionsBindingTests
                         {
                             ["Database:SqlitePath"] = databasePath,
                             ["Event:Name"] = "Association Toy Sale Tests",
-                            ["Admin:SharedPassword"] = sharedPassword,
-                            ["Printing:ReceiptHeaderText"] = "Association Toy Sale"
+                            ["Admin:SharedPassword"] = sharedPassword
                         };
 
                         configurationBuilder.AddInMemoryCollection(values);
@@ -85,8 +86,7 @@ public class OptionsBindingTests
                         {
                             ["Database:SqlitePath"] = databasePath,
                             ["Event:Name"] = "Association Toy Sale Tests",
-                            ["Admin:SharedPassword"] = sharedPassword,
-                            ["Printing:ReceiptHeaderText"] = "Association Toy Sale"
+                            ["Admin:SharedPassword"] = sharedPassword
                         };
 
                         configurationBuilder.AddInMemoryCollection(values);

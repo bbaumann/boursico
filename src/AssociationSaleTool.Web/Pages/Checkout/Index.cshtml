@@ -69,13 +69,13 @@
                 </div>
                 <p class="seller-meta">Pour l'Isère, les villes connues sont proposées. Hors Isère, saisissez la ville librement.</p>
                 <p class="validation" data-checkout-buyer-message role="status" aria-live="polite"></p>
-                <label class="receipt-details-field" for="checkout-buyer-address">
+                <label class="invoice-address-field" for="checkout-buyer-address">
                     Adresse
                     <textarea id="checkout-buyer-address"
                               rows="3"
                               data-checkout-buyer-address
-                              placeholder="Adresse à imprimer sur le reçu ou la facture"></textarea>
-                    <span class="seller-meta">À remplir uniquement si le client demande un reçu ou une facture.</span>
+                              placeholder="Adresse client à imprimer sur la facture"></textarea>
+                    <span class="seller-meta">À remplir uniquement si le client demande une facture.</span>
                 </label>
             </section>
 
@@ -246,48 +246,72 @@
 
 @if (Model.SaleAllowed)
 {
-<section class="checkout-print-receipt" data-checkout-receipt aria-hidden="true">
-    <header>
-        <h1 data-checkout-receipt-header>@Model.ReceiptHeaderText</h1>
-        <p>Reçu de vente <span data-checkout-receipt-sale-id></span></p>
-        <p>Date : <span data-checkout-receipt-date></span></p>
+<section class="checkout-print-invoice" data-checkout-invoice aria-hidden="true">
+    <header class="checkout-invoice-header">
+        <img class="checkout-invoice-logo" src="@Model.Printing.LogoPath" alt="Logo Association Familiale" />
+        <div>
+            <h1>Facture <span data-checkout-invoice-number></span></h1>
+            <p>Date d'émission : <span data-checkout-invoice-issued-at></span></p>
+        </div>
     </header>
 
-    <section data-checkout-receipt-buyer-section hidden>
-        <h2>Acheteur</h2>
-        <p data-checkout-receipt-buyer-text></p>
+    <section class="checkout-invoice-parties">
+        <div class="checkout-invoice-party">
+            <h2>Vendeur</h2>
+            <p>@Model.Printing.SellerName</p>
+            <p>@Model.Printing.SellerAddress</p>
+            <p>SIRET : @Model.Printing.SellerSiret</p>
+            <p>@Model.Printing.SellerLegalStatus</p>
+        </div>
+        <div class="checkout-invoice-party" data-checkout-invoice-customer-section hidden>
+            <h2>Client</h2>
+            <p class="checkout-invoice-customer-text" data-checkout-invoice-customer-text></p>
+        </div>
     </section>
 
-    <section>
-        <h2>Adresse</h2>
-        <p data-checkout-receipt-address-text></p>
-    </section>
-
-    <table class="data-table">
+    <table class="data-table checkout-invoice-table">
+        <colgroup>
+            <col class="checkout-invoice-quantity-column" />
+            <col class="checkout-invoice-designation-column" />
+            <col class="checkout-invoice-amount-column" />
+            <col class="checkout-invoice-amount-column" />
+        </colgroup>
         <thead>
             <tr>
-                <th>REF</th>
-                <th>Titre</th>
-                <th>Prix</th>
+                <th>Quantité</th>
+                <th>Désignation</th>
+                <th>P.U. HT</th>
+                <th>Total HT</th>
             </tr>
         </thead>
-        <tbody data-checkout-receipt-lines>
+        <tbody data-checkout-invoice-lines>
         </tbody>
     </table>
 
     <dl class="checkout-totals">
         <div>
-            <dt>Sous-total</dt>
-            <dd data-checkout-receipt-subtotal>0.00 EUR</dd>
+            <dt>Sous-total articles HT</dt>
+            <dd data-checkout-invoice-subtotal>0.00 EUR</dd>
         </div>
         <div>
-            <dt>Frais association familiale</dt>
-            <dd data-checkout-receipt-fee>0.00 EUR</dd>
+            <dt>Frais association familiale HT</dt>
+            <dd data-checkout-invoice-fee>0.00 EUR</dd>
         </div>
         <div class="checkout-total-row">
-            <dt>Total</dt>
-            <dd data-checkout-receipt-total>0.00 EUR</dd>
+            <dt>Total HT</dt>
+            <dd data-checkout-invoice-total-excluding-vat>0.00 EUR</dd>
+        </div>
+        <div>
+            <dt>TVA</dt>
+            <dd data-checkout-invoice-vat>0.00 EUR</dd>
+        </div>
+        <div class="checkout-total-row">
+            <dt>Total TTC</dt>
+            <dd data-checkout-invoice-total-including-vat>0.00 EUR</dd>
         </div>
     </dl>
+    <p class="checkout-invoice-vat-exemption" data-checkout-invoice-vat-exemption>
+        @Model.Printing.VatExemptionText
+    </p>
 </section>
 }

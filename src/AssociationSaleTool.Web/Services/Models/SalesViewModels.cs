@@ -10,7 +10,7 @@ public sealed record SalesListItem(
     string? BuyerName,
     string? BuyerPostalCode,
     string? BuyerCity,
-    bool HasBuyerAddress,
+    bool HasInvoice,
     string PaymentMethodLabel,
     string SearchText)
 {
@@ -32,6 +32,8 @@ public sealed record SaleDetail(
     string? BuyerPostalCode,
     string? BuyerCity,
     string? BuyerAddress,
+    string? InvoiceNumber,
+    DateTime? InvoiceIssuedAt,
     string PaymentMethodLabel,
     string? ChequeNumber,
     string? ChequeBankName,

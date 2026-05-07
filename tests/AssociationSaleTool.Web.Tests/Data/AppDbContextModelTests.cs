@@ -187,6 +187,26 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SaleStoresInvoiceColumnsWithUniqueInvoiceNumber()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var saleEntityType = context.Model.FindEntityType(typeof(SaleEntity));
+        Assert.NotNull(saleEntityType);
+        Assert.Contains(saleEntityType!.GetProperties(), property => property.GetColumnName() == "invoice_number");
+        Assert.Contains(saleEntityType.GetProperties(), property => property.GetColumnName() == "invoice_issued_at");
+        Assert.Contains(
+            saleEntityType.GetIndexes(),
+            index => index.IsUnique
+                && index.GetFilter() == "invoice_number IS NOT NULL"
+                && index.Properties.Select(property => property.Name).SequenceEqual([nameof(SaleEntity.InvoiceNumber)]));
+    }
+
+    [Fact]
     public void EventStateStoresSalePhase()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

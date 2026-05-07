@@ -31,6 +31,9 @@ public sealed class SalesViewServiceTests
             null,
             ("SV-002-001", "Camion rouge", 1200, null),
             ("SV-002-002", "Train bleu", 500, null));
+        olderSale.InvoiceNumber = "2611AFBJ0001";
+        olderSale.InvoiceIssuedAt = olderSale.SoldAt;
+        await context.SaveChangesAsync();
         var service = new SalesViewService(context);
 
         var sales = await service.ListSalesAsync();
@@ -44,7 +47,7 @@ public sealed class SalesViewServiceTests
                 Assert.Equal(1700, first.SubtotalSellerPriceCents);
                 Assert.Equal(170, first.CheckoutFeeCents);
                 Assert.Equal(1870, first.TotalPaidCents);
-                Assert.False(first.HasBuyerAddress);
+                Assert.False(first.HasInvoice);
                 Assert.Equal("Espèces", first.PaymentMethodLabel);
                 Assert.Contains(newerSale.Id.ToString(), first.SearchText);
                 Assert.Contains("espèces", first.SearchText);
@@ -56,9 +59,10 @@ public sealed class SalesViewServiceTests
             {
                 Assert.Equal(olderSale.Id, second.SaleId);
                 Assert.Equal(1, second.ItemCount);
-                Assert.True(second.HasBuyerAddress);
+                Assert.True(second.HasInvoice);
                 Assert.Equal("Chèque", second.PaymentMethodLabel);
                 Assert.Contains("association sportive", second.SearchText);
+                Assert.Contains("2611afbj0001", second.SearchText);
                 Assert.Contains("987654", second.SearchText);
                 Assert.Contains("crédit mutuel", second.SearchText);
             });
@@ -73,7 +77,7 @@ public sealed class SalesViewServiceTests
         var sale = await SeedSaleAsync(
             context,
             new DateTime(2026, 5, 4, 10, 0, 0, DateTimeKind.Utc),
-            "Client recu",
+            "Client facture",
             SalePaymentMethods.Cheque,
             "CH-42",
             "Banque Postale",
@@ -85,7 +89,7 @@ public sealed class SalesViewServiceTests
 
         Assert.NotNull(detail);
         Assert.Equal(sale.Id, detail!.SaleId);
-        Assert.Equal("Client recu", detail.BuyerAddress);
+        Assert.Equal("Client facture", detail.BuyerAddress);
         Assert.Equal(1500, detail.SubtotalSellerPriceCents);
         Assert.Equal(150, detail.CheckoutFeeCents);
         Assert.Equal(1650, detail.TotalPaidCents);

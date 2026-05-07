@@ -84,10 +84,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.BuyerPostalCode).HasColumnName("buyer_postal_code");
             entity.Property(x => x.BuyerCity).HasColumnName("buyer_city");
             entity.Property(x => x.BuyerAddress).HasColumnName("buyer_address");
+            entity.Property(x => x.InvoiceNumber).HasColumnName("invoice_number");
+            entity.Property(x => x.InvoiceIssuedAt).HasColumnName("invoice_issued_at");
             entity.Property(x => x.PaymentMethod).HasColumnName("payment_method");
             entity.Property(x => x.ChequeNumber).HasColumnName("cheque_number");
             entity.Property(x => x.ChequeBankName).HasColumnName("cheque_bank_name");
             entity.HasIndex(x => x.SoldAt);
+            entity.HasIndex(x => x.InvoiceNumber)
+                .IsUnique()
+                .HasFilter("invoice_number IS NOT NULL");
 
             entity.ToTable(table =>
             {

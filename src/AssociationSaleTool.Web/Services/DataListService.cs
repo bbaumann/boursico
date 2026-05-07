@@ -115,7 +115,7 @@ public sealed class DataListService(AppDbContext dbContext)
                     buyerDisplay,
                     itemSummary,
                     paymentMethodLabel,
-                    !string.IsNullOrWhiteSpace(sale.BuyerAddress),
+                    !string.IsNullOrWhiteSpace(sale.InvoiceNumber),
                     BuildSearchText(searchTerms.ToArray()));
             })
             .ToList();

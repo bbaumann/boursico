@@ -14,6 +14,8 @@ public sealed class CheckoutCartRequest
 
     public string? BuyerAddress { get; set; }
 
+    public bool CreateInvoice { get; set; }
+
     public string? PaymentMethod { get; set; } = SalePaymentMethods.Card;
 
     public string? ChequeNumber { get; set; }

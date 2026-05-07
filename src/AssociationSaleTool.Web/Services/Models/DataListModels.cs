@@ -39,7 +39,7 @@ public sealed record DataListSaleRow(
     string BuyerDisplay,
     string ItemSummary,
     string PaymentMethodLabel,
-    bool HasReceiptAddress,
+    bool HasInvoice,
     string SearchText);
 
 public sealed record DataListChequeRow(

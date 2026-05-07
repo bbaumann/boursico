@@ -35,7 +35,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Compute subtotal, checkout fee, and final bill total automatically
 - Save a sale as paid
 - Store sale subtotal, checkout fee, and total paid
-- Optionally print a receipt from one `Adresse` field
+- Optionally print a facture from one customer `Adresse` field
 - View saved sales in read-only mode from the checkout area
 - Mark accepted items as defective from the admin page
 - Refund defective sold items, including the 10 percent association fee
@@ -133,9 +133,9 @@ Operators can inspect saved sales from the checkout area without admin unlock:
 - `/caisse` remains the default sale-creation page
 - `/caisse` links to `/caisse/ventes` with a prominent `LISTE DES VENTES` action
 - `/caisse/ventes` lists saved sales newest first
-- the list supports client-side filtering by sale id, buyer details, item reference, item title, receipt address details, payment method, cheque number, and bank name
+- the list supports client-side filtering by sale id, buyer details, item reference, item title, invoice address details, invoice number, payment method, cheque number, and bank name
 - `/caisse/ventes/{id}` shows one sale in read-only detail mode
-- the detail view shows sale id, sold timestamp, buyer details, payment method, cheque traceability when present, receipt address details when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
+- the detail view shows sale id, sold timestamp, buyer details, payment method, cheque traceability when present, invoice address and number when present, sale lines, seller prices at sale time, subtotal, checkout fee, and total paid
 - corrected sale lines remain visible as historical sale facts and are labeled `Corrigée`
 - refunded defective sale lines remain visible as historical sale facts and are labeled `Remboursé` with the refund date
 - when a buyer refund exists, sale totals show the original total, then `Remboursements`, then `Total corrigé`
@@ -153,7 +153,7 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 - article text search matches item reference, title, seller code, seller name, and status
 - the `Vendeurs` tab supports live text search by seller code and seller name only
 - the `Ventes` tab supports live text search by sale id, buyer details, payment method, item reference, and item title
-- sale receipt address details, cheque number, and bank name stay visible in checkout sales history, but are not part of the general data-list sale search
+- invoice address details, cheque number, and bank name stay visible in checkout sales history, but are not part of the general data-list sale search
 - the `Chèques` tab lists only cheque-payment sales with stored cheque number and bank name
 - cheque rows show sale id, cheque number, bank name, and total paid amount, with the sale id linking to read-only sale detail
 
@@ -208,16 +208,20 @@ The refund workflow:
 
 If the refund was entered by mistake, an admin may use `Annuler le remboursement`. This clears the sale-line refund fields and restores the item to `sold`; it is not the normal path for returned defective items.
 
-### Receipt UX Rule
+### Invoice UX Rule
 
-V1 receipt handling is intentionally simple:
+V1 invoice handling is intentionally simple:
 
-- the checkout form shows one optional `Adresse` text field for receipt or invoice printing
+- the checkout form shows one optional customer `Adresse` text field for invoice printing
 - the field is empty by default
 - if the operator leaves it empty, `Enregistrer et imprimer` stays disabled in the finalization modal
 - if the operator fills it, `Enregistrer et imprimer` becomes available in the finalization modal
-- `Enregistrer et imprimer` saves first, then opens the browser print dialog
-- V1 does not track a separate receipt-requested flag or receipt-printed flag
+- `Enregistrer et imprimer` saves first, persists invoice number and issue date, then opens the browser print dialog
+- a normal sale save does not create an invoice number
+- invoice numbers use the configured `YYMMAFBJNNNN` sequence, for example `2611AFBJ0001`
+- the printed invoice title is `Facture <number>` and uses the AFSE logo
+- the printed invoice hides the application navigation/header while printing
+- the printed invoice shows seller identity beside one customer block with buyer name, address, postal code and city, item lines with a wide designation column and compact `P.U. HT` header, HT totals, TVA as `0,00 EUR`, TTC total, and the VAT exemption text once
 
 ### Intake Modes
 

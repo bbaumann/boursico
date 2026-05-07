@@ -179,7 +179,7 @@
                             <th class="data-list-size-s data-list-sale-money-column">Sous-total</th>
                             <th class="data-list-size-s data-list-sale-money-column">Total</th>
                             <th class="data-list-size-s data-list-sale-payment-column">Paiement</th>
-                            <th class="data-list-size-xs data-list-sale-receipt-column">Re&ccedil;u</th>
+                            <th class="data-list-size-xs data-list-sale-invoice-column">Facture</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -192,7 +192,7 @@
                             <td class="data-list-size-s data-list-sale-money-column">@IndexModel.FormatPrice(sale.SubtotalSellerPriceCents)</td>
                             <td class="data-list-size-s data-list-sale-money-column">@IndexModel.FormatPrice(sale.TotalPaidCents)</td>
                             <td class="data-list-size-s data-list-sale-payment-column">@sale.PaymentMethodLabel</td>
-                            <td class="data-list-size-xs data-list-sale-receipt-column">@(sale.HasReceiptAddress ? "Oui" : "Non")</td>
+                            <td class="data-list-size-xs data-list-sale-invoice-column">@(sale.HasInvoice ? "Oui" : "Non")</td>
                         </tr>
                     }
                     </tbody>

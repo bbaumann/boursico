@@ -235,6 +235,114 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task SaveSaleAsync_DoesNotCreateInvoiceForNormalSaleSave()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            buyerName: "Client sans facture",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble");
+
+        Assert.True(result.Saved);
+        Assert.Null(result.InvoiceNumber);
+        Assert.Null(result.InvoiceIssuedAt);
+        var sale = await context.Sales.SingleAsync();
+        Assert.Null(sale.InvoiceNumber);
+        Assert.Null(sale.InvoiceIssuedAt);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_CreatesChronologicalInvoiceNumbersForPrintSaves()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var firstResult = await service.SaveSaleAsync(
+            [firstItem.Id],
+            "Client facture\n33 avenue de l'Europe",
+            buyerName: "Client facture",
+            buyerPostalCode: "38120",
+            buyerCity: "Saint-Egreve",
+            createInvoice: true);
+        var secondResult = await service.SaveSaleAsync(
+            [secondItem.Id],
+            "Second client\n1 rue Centrale",
+            buyerName: "Second client",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
+            createInvoice: true);
+
+        Assert.True(firstResult.Saved);
+        Assert.True(secondResult.Saved);
+        Assert.Equal("2611AFBJ0001", firstResult.InvoiceNumber);
+        Assert.Equal("2611AFBJ0002", secondResult.InvoiceNumber);
+        Assert.NotNull(firstResult.InvoiceIssuedAt);
+        Assert.NotNull(secondResult.InvoiceIssuedAt);
+
+        var sales = await context.Sales.OrderBy(x => x.Id).ToListAsync();
+        Assert.Equal("2611AFBJ0001", sales[0].InvoiceNumber);
+        Assert.Equal("2611AFBJ0002", sales[1].InvoiceNumber);
+        Assert.NotNull(sales[0].InvoiceIssuedAt);
+        Assert.NotNull(sales[1].InvoiceIssuedAt);
+        Assert.Equal(DateTimeKind.Utc, sales[0].InvoiceIssuedAt!.Value.Kind);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_DoesNotConsumeInvoiceNumberWhenSaleIsRejected()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (soldItem, availableItem) = await SeedTwoItemsAsync(context, "sold", "in_stock");
+        var service = new CheckoutService(context);
+
+        var rejectedResult = await service.SaveSaleAsync(
+            [soldItem.Id],
+            "Client refuse\n1 rue Test",
+            buyerName: "Client refuse",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
+            createInvoice: true);
+        var savedResult = await service.SaveSaleAsync(
+            [availableItem.Id],
+            "Client accepte\n2 rue Test",
+            buyerName: "Client accepte",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
+            createInvoice: true);
+
+        Assert.False(rejectedResult.Saved);
+        Assert.Null(rejectedResult.InvoiceNumber);
+        Assert.Null(rejectedResult.InvoiceIssuedAt);
+        Assert.True(savedResult.Saved);
+        Assert.Equal("2611AFBJ0001", savedResult.InvoiceNumber);
+    }
+
+    [Fact]
     public async Task SaveSaleAsync_StoresCashPaymentMethod()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

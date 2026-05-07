@@ -17,8 +17,7 @@ public sealed class IntakeWebApplicationFactory : WebApplicationFactory<Program>
             {
                 ["Database:SqlitePath"] = _databasePath,
                 ["Event:Name"] = "Association Toy Sale Tests",
-                ["Admin:SharedPassword"] = "test-password",
-                ["Printing:ReceiptHeaderText"] = "Association Toy Sale"
+                ["Admin:SharedPassword"] = "test-password"
             };
 
             configurationBuilder.AddInMemoryCollection(values);

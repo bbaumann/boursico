@@ -505,7 +505,7 @@ textarea {
 }
 
 .data-list-sale-table .data-list-sale-money-column,
-.data-list-sale-table .data-list-sale-receipt-column {
+.data-list-sale-table .data-list-sale-invoice-column {
   text-align: right;
 }
 
@@ -895,7 +895,7 @@ textarea {
   justify-content: flex-end;
 }
 
-.receipt-details-field {
+.invoice-address-field {
   margin-top: 1.25rem;
 }
 
@@ -979,17 +979,61 @@ textarea {
   justify-content: flex-end;
 }
 
-.checkout-print-receipt {
+.checkout-print-invoice {
   display: none;
 }
 
-.checkout-print-receipt header {
+.checkout-print-invoice header {
   margin-bottom: 1.5rem;
 }
 
-.checkout-print-receipt h1,
-.checkout-print-receipt h2 {
+.checkout-print-invoice h1,
+.checkout-print-invoice h2 {
   margin: 0 0 0.75rem;
+}
+
+.checkout-invoice-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.checkout-invoice-logo {
+  width: 5rem;
+  height: auto;
+}
+
+.checkout-invoice-parties {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkout-invoice-parties p,
+.checkout-invoice-customer-text,
+.checkout-invoice-vat-exemption {
+  margin: 0 0 0.35rem;
+}
+
+.checkout-invoice-customer-text {
+  white-space: pre-line;
+}
+
+.checkout-invoice-table {
+  table-layout: fixed;
+}
+
+.checkout-invoice-quantity-column {
+  width: 10%;
+}
+
+.checkout-invoice-designation-column {
+  width: 56%;
+}
+
+.checkout-invoice-amount-column {
+  width: 17%;
 }
 
 .sales-view-table {
@@ -1239,6 +1283,8 @@ textarea {
   }
 
   body.checkout-printing .page-frame,
+  body.checkout-printing .app-status-header,
+  body.checkout-printing .main-navigation,
   body.checkout-printing .checkout-page {
     display: none !important;
   }
@@ -1248,7 +1294,7 @@ textarea {
     padding: 0;
   }
 
-  body.checkout-printing .checkout-print-receipt {
+  body.checkout-printing .checkout-print-invoice {
     display: block;
     color: #000;
     background: #fff;

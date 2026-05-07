@@ -14,7 +14,7 @@ public sealed class IndexModel(
 {
     public string CatalogJson { get; private set; } = "[]";
 
-    public string ReceiptHeaderText { get; } = printingOptions.Value.ReceiptHeaderText;
+    public PrintingOptions Printing { get; } = printingOptions.Value;
 
     public bool SaleAllowed { get; private set; }
 

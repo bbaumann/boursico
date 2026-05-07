@@ -1,8 +1,10 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Domain.Pricing;
+using AssociationSaleTool.Web.Configuration;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AssociationSaleTool.Web.Services;
 
@@ -10,13 +12,19 @@ public sealed class CheckoutService
 {
     private const string PostSaleMessage = "La vente est en après-vente. Aucune nouvelle vente ne peut être enregistrée.";
     private const string MissingBuyerDetailsMessage = "Le nom, le code postal et la ville de l'acheteur sont obligatoires.";
+    private const string MissingInvoiceAddressMessage = "L'adresse de l'acheteur est obligatoire pour imprimer une facture.";
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
+    private readonly PrintingOptions _printingOptions;
 
-    public CheckoutService(AppDbContext dbContext, SalePhaseService? salePhaseService = null)
+    public CheckoutService(
+        AppDbContext dbContext,
+        SalePhaseService? salePhaseService = null,
+        IOptions<PrintingOptions>? printingOptions = null)
     {
         _dbContext = dbContext;
         _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
+        _printingOptions = printingOptions?.Value ?? new PrintingOptions();
     }
 
     public async Task<List<CheckoutCatalogItem>> ListCatalogItemsAsync(CancellationToken cancellationToken = default)
@@ -53,7 +61,8 @@ public sealed class CheckoutService
         string? buyerPostalCode = null,
         string? buyerCity = null,
         CancellationToken cancellationToken = default,
-        CheckoutPaymentDetails? paymentDetails = null)
+        CheckoutPaymentDetails? paymentDetails = null,
+        bool createInvoice = false)
     {
         var normalizedBuyerDetails = NormalizeBuyerDetails(buyerName, buyerPostalCode, buyerCity);
         if (!normalizedBuyerDetails.IsValid)
@@ -65,6 +74,19 @@ public sealed class CheckoutService
                 null,
                 0,
                 normalizedBuyerDetails.Message,
+                IsValidationError: true);
+        }
+
+        var normalizedBuyerAddress = NormalizeOptionalText(buyerAddress);
+        if (createInvoice && normalizedBuyerAddress is null)
+        {
+            return new CheckoutSaleResult(
+                false,
+                null,
+                [],
+                null,
+                0,
+                MissingInvoiceAddressMessage,
                 IsValidationError: true);
         }
 
@@ -100,13 +122,14 @@ public sealed class CheckoutService
                 validation.ItemCount);
         }
 
+        var soldAt = DateTime.UtcNow;
         var sale = new SaleEntity
         {
-            SoldAt = DateTime.UtcNow,
+            SoldAt = soldAt,
             SubtotalSellerPriceCents = validation.Totals.SubtotalSellerPriceCents,
             CheckoutFeeCents = validation.Totals.CheckoutFeeCents,
             TotalPaidCents = validation.Totals.TotalPaidCents,
-            BuyerAddress = NormalizeOptionalText(buyerAddress),
+            BuyerAddress = normalizedBuyerAddress,
             BuyerName = normalizedBuyerDetails.BuyerName,
             BuyerPostalCode = normalizedBuyerDetails.BuyerPostalCode,
             BuyerCity = normalizedBuyerDetails.BuyerCity,
@@ -114,6 +137,12 @@ public sealed class CheckoutService
             ChequeNumber = normalizedPayment.ChequeNumber,
             ChequeBankName = normalizedPayment.ChequeBankName
         };
+
+        if (createInvoice)
+        {
+            sale.InvoiceIssuedAt = soldAt;
+            sale.InvoiceNumber = await CreateNextInvoiceNumberAsync(cancellationToken);
+        }
 
         foreach (var item in items)
         {
@@ -134,7 +163,30 @@ public sealed class CheckoutService
             sale.Id,
             [],
             validation.Totals,
-            validation.ItemCount);
+            validation.ItemCount,
+            InvoiceNumber: sale.InvoiceNumber,
+            InvoiceIssuedAt: sale.InvoiceIssuedAt);
+    }
+
+    private async Task<string> CreateNextInvoiceNumberAsync(CancellationToken cancellationToken)
+    {
+        var prefix = _printingOptions.InvoiceNumberPrefix;
+        var lastInvoiceNumber = await _dbContext.Sales
+            .AsNoTracking()
+            .Where(x => x.InvoiceNumber != null && x.InvoiceNumber.StartsWith(prefix))
+            .Select(x => x.InvoiceNumber!)
+            .OrderByDescending(x => x)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var nextSequence = 1;
+        if (lastInvoiceNumber is not null
+            && lastInvoiceNumber.Length > prefix.Length
+            && int.TryParse(lastInvoiceNumber[prefix.Length..], out var lastSequence))
+        {
+            nextSequence = lastSequence + 1;
+        }
+
+        return $"{prefix}{nextSequence:0000}";
     }
 
     private static BuyerDetailsNormalizationResult NormalizeBuyerDetails(

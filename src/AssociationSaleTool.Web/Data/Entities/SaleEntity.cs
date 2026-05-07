@@ -20,6 +20,10 @@ public sealed class SaleEntity
 
     public string? BuyerAddress { get; set; }
 
+    public string? InvoiceNumber { get; set; }
+
+    public DateTime? InvoiceIssuedAt { get; set; }
+
     public string? PaymentMethod { get; set; }
 
     public string? ChequeNumber { get; set; }

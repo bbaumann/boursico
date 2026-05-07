@@ -126,8 +126,6 @@ Persistence rule:
 - seller prices entered by operators are whole euros in V1, so newly created seller prices are stored as cent values divisible by `100`
 - the cents-based column remains intentional to preserve future cents support without changing the persisted model
 
-## Receipt Model
-
 ## Buyer Model
 
 A sale stores required structured buyer details:
@@ -140,23 +138,26 @@ These fields identify the person or structure associated with the checkout. They
 
 The checkout UI offers local city suggestions only for Isère postal codes (`38xxx`) and prefills the city when exactly one known city matches the postal code. Other French departments use free-text city entry.
 
-## Receipt Model
+## Invoice Model
 
-V1 uses one optional receipt address text field:
+V1 uses one optional customer address text field for invoice printing:
 
 - `buyer_address`
+- `invoice_number`
+- `invoice_issued_at`
 
 Meaning:
 
-- if `buyer_address` is null or empty, no receipt was requested
-- if `buyer_address` is filled, a receipt was requested for later reimbursement handling
+- if `invoice_number` is null, no invoice was created for the sale
+- if `invoice_number` is filled, the sale has a persisted invoice number and issue date
+- `buyer_address` is the customer address printed on the invoice
 
-The operator-facing field is labeled `Adresse`. It may contain the customer address or any other address text the operator needs to print on the receipt or invoice.
+The operator-facing field is labeled `Adresse`. It contains the customer address printed on the invoice.
 
 V1 does not track a separate:
 
-- receipt requested flag
-- receipt printed flag
+- invoice requested flag
+- invoice printed flag
 
 ## Reference Scheme
 
