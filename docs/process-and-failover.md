@@ -6,12 +6,12 @@
 
 1. Some sellers send their item lists outside the system, typically by email.
 2. Intake operator creates sellers in the system.
-3. For emailed preregistration, items are entered as `registered`.
-4. When preregistered sellers physically deliver toys, operator reviews the preregistered list and marks delivered items as `in_stock`. Items not brought yet may remain `registered`; deletion is only cleanup for mistakes or records the team wants to remove.
-5. Other sellers may register in person with toys physically present; those items are created directly as `in_stock`.
-6. If a defect is spotted before the association accepts the physical item, the item is not accepted. A preregistered `registered` item may be deleted; a `Dépôt` row should simply not be created.
+3. Items are entered as `registered`, whether they come from an emailed list, Excel prefill, or in-person operator entry.
+4. When the seller physically delivers toys, the operator reviews the seller record, removes or corrects incomplete items, prints the deposit contract, and gets it signed.
+5. The operator validates the seller deposit from the seller detail page. This sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
+6. If a defect is spotted before the seller signs the deposit contract, the item is not accepted and any corresponding `registered` row may be deleted.
 7. References are generated for each item.
-8. `in_stock` items are prepared for the event.
+8. `in_stock` items from validated seller deposits are prepared for the event.
 
 ### During The Sale
 
@@ -35,10 +35,10 @@ During checkout:
 7. The cart is validated against the live database before the finalization modal is shown.
 8. If validation passes, the finalization modal shows the item count, total amount, payment method choice, and the actions `Retour`, `Enregistrer la vente`, and `Enregistrer et imprimer`.
 9. If the volunteer chooses `Chèque`, cheque number and bank name are required.
-10. If the volunteer chooses `Enregistrer la vente` or `Enregistrer et imprimer`, the server re-validates that all cart items are still `in_stock` inside the save transaction.
+10. If the volunteer chooses `Enregistrer la vente` or `Enregistrer et imprimer`, the server re-validates that all cart items are still `in_stock` and belong to validated seller deposits inside the save transaction.
 11. The server rejects the save if the event is already in `post_sale`.
 12. If validation passes, the sale, buyer details, payment method, and cheque details when relevant are saved and those items become `sold`.
-13. If any item is no longer `in_stock`, the save is rejected, the conflicting item is highlighted prominently in red, and the operator must remove it and retry.
+13. If any item is no longer saleable, the save is rejected, the conflicting item is highlighted prominently in red, and the operator must remove it and retry.
 14. After a successful save, checkout resets to a fresh state and reloads the in-memory catalog.
 
 ### Mistaken Sale Correction
@@ -63,16 +63,21 @@ If a buyer returns a defective sold item, an admin uses `Rembourser` from `Corre
 10. Another operator writes the check based on the final amount to pay.
 11. Check, final seller sheet, and returned items are physically grouped for seller pickup.
 
-## Preregistration Confirmation Workflow
+## Seller Deposit Validation Workflow
 
-1. Seller preregistration is recorded from email.
+1. Seller item data is recorded from email, Excel prefill, or in-person entry.
 2. Preregistered items exist in `registered` status.
-3. When toys are physically delivered, the operator reviews the list line by line.
-4. Delivered items become `in_stock`.
-5. Preregistered items that were not physically brought may remain `registered`, especially if the seller may come back later. The operator may delete a `registered` item when it was entered by mistake or should be removed as cleanup.
-6. If an item was mistakenly entered as physically present, it may also be deleted while still `in_stock`.
-7. If a defect is found before acceptance, the item is not accepted and does not need a `defective` record.
-8. V1 does not use a `not_provided` status.
+3. When toys are physically delivered, the operator reviews the seller item list before signature.
+4. The seller detail page offers `Imprimer le contrat`.
+5. The printed contract includes the association name, address, SIRET, seller fee rule, paid fee status, legal mentions, item prices, and only the seller signature area.
+6. The signed paper contract is the proof of physical deposit and price agreement; the app does not store a contract number or snapshot.
+7. The operator clicks `Valider le dépôt` and confirms `Le contrat est signé`.
+8. Accepted `registered` items become `in_stock` together, and normal seller/item edits are locked for that seller.
+9. Items that were not physically brought may remain `registered` if the seller might come back later; otherwise the operator may delete them before validation.
+10. If validation was confirmed by mistake, an admin may cancel it from the seller page during `presale` by entering the shared admin password.
+11. Cancellation moves only items still `in_stock` back to `registered`; `sold`, `missing`, and `defective` items stay unchanged and read-only.
+12. Revalidating the deposit tolerates those historical item states and moves only current `registered` items back to `in_stock`.
+13. V1 does not use a `not_provided` status.
 
 ## Seller Sheet Workflow
 

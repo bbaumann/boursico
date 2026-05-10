@@ -14,9 +14,12 @@ CREATE TABLE seller (
     postal_code TEXT NOT NULL,
     city TEXT NOT NULL,
     fee_paid_cents INTEGER NOT NULL DEFAULT 0,
+    deposit_status TEXT NOT NULL DEFAULT 'deposit_pending',
     notes TEXT,
     CONSTRAINT ck_seller_fee_paid_cents
         CHECK (fee_paid_cents >= 0),
+    CONSTRAINT ck_seller_deposit_status
+        CHECK (deposit_status IN ('deposit_pending', 'deposit_validated')),
     CONSTRAINT uq_seller_code UNIQUE (seller_code)
 );
 

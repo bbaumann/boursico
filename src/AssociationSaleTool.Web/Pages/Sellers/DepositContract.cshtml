@@ -1,0 +1,119 @@
+@page "/vendeurs/{id:long}/contrat-depot"
+@model AssociationSaleTool.Web.Pages.Sellers.DepositContractModel
+@{
+    ViewData["Title"] = "Contrat de dépôt";
+}
+
+<span class="seller-sheets-print-root" hidden></span>
+
+<section class="page-card no-print">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Dépôt vendeur</p>
+            <h1 class="page-title">Contrat de dépôt</h1>
+        </div>
+        <div class="form-actions">
+            <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.Seller!.Id">Retour au vendeur</a>
+            <button type="button" class="button-link button-link-solid" onclick="window.print()">Imprimer</button>
+        </div>
+    </div>
+</section>
+
+<section class="page-card seller-sheet-print-page deposit-contract-print-page">
+    <header class="seller-sheet-header">
+        <div>
+            <p class="eyebrow">Contrat de dépôt</p>
+            <h1 class="page-title">@Model.Seller!.SellerCode - @Model.Seller.FirstName @Model.Seller.LastName</h1>
+        </div>
+        <section class="deposit-contract-parties">
+            <div class="deposit-contract-party">
+                <h2>Association</h2>
+                <p>@Model.Printing.SellerName</p>
+                <p>@Model.Printing.SellerAddress</p>
+                <p>SIRET : @Model.Printing.SellerSiret</p>
+                <p>@Model.Printing.SellerLegalStatus</p>
+            </div>
+            <div class="deposit-contract-party">
+                <h2>Vendeur</h2>
+                <dl class="seller-sheet-contact">
+                    @if (!string.IsNullOrWhiteSpace(Model.Seller.Email))
+                    {
+                        <div>
+                            <dt>E-mail</dt>
+                            <dd>@Model.Seller.Email</dd>
+                        </div>
+                    }
+                    <div>
+                        <dt>Téléphone</dt>
+                        <dd>@Model.Seller.Phone</dd>
+                    </div>
+                    <div>
+                        <dt>Adresse</dt>
+                        <dd>
+                            @Model.Seller.PostalAddress
+                            @if (!string.IsNullOrWhiteSpace(Model.Seller.PostalCode) || !string.IsNullOrWhiteSpace(Model.Seller.City))
+                            {
+                                <br />
+                                <span>@Model.Seller.PostalCode @Model.Seller.City</span>
+                            }
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+    </header>
+
+    <section class="subsection deposit-contract-legal">
+        <h2>Mentions</h2>
+        <p>Le vendeur dépose les articles listés ci-dessous à l'association pour mise en vente au prix vendeur indiqué.</p>
+        <p>La signature du vendeur confirme la remise physique des articles et l'accord sur les prix indiqués.</p>
+        <p>Ce document papier signé constitue la preuve du dépôt.</p>
+    </section>
+
+    <section class="subsection deposit-contract-fees">
+        <h2>Frais vendeur</h2>
+        <p>Frais vendeur : @DepositContractModel.FormatPrice(Model.FeePerBlockCents) par tranche commencée de @Model.ItemsPerFeeBlock articles</p>
+        <p>Frais attendus : @DepositContractModel.FormatPrice(Model.ExpectedFeeCents)</p>
+        <p>Frais payés : @DepositContractModel.FormatPrice(Model.PaidFeeCents)</p>
+        <p>Paiement : @Model.FeePaymentLabel</p>
+    </section>
+
+    <section class="subsection">
+        <h2>Articles déposés</h2>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="empty-state">Aucun article à imprimer.</p>
+        }
+        else
+        {
+            <table class="data-table deposit-contract-item-table">
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Titre</th>
+                        <th>Prix vendeur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Reference</td>
+                        <td>@item.Title</td>
+                        <td>@DepositContractModel.FormatPrice(item.SellerPriceCents)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="subsection deposit-contract-signatures">
+        <div>
+            <h2>Signature vendeur</h2>
+            <p>J'accepte le règlement de la bourse aux jouets</p>
+            <p>Date :</p>
+            <p>Signature :</p>
+        </div>
+    </section>
+</section>

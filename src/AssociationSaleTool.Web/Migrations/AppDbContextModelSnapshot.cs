@@ -257,6 +257,13 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("email");
 
+                    b.Property<string>("DepositStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("deposit_pending")
+                        .HasColumnName("deposit_status");
+
                     b.Property<int>("FeePaidCents")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -304,6 +311,8 @@ namespace AssociationSaleTool.Web.Migrations
 
                     b.ToTable("seller", null, t =>
                         {
+                            t.HasCheckConstraint("ck_seller_deposit_status", "deposit_status IN ('deposit_pending', 'deposit_validated')");
+
                             t.HasCheckConstraint("ck_seller_fee_paid_cents", "fee_paid_cents >= 0");
                         });
                 });

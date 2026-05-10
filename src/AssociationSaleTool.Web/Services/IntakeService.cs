@@ -52,6 +52,7 @@ public sealed class IntakeService
     {
         return await _dbContext.Items
             .AsNoTracking()
+            .Include(x => x.Seller)
             .SingleOrDefaultAsync(x => x.Id == itemId, cancellationToken);
     }
 
@@ -87,6 +88,7 @@ public sealed class IntakeService
             PostalCode = normalizedPostalCode,
             City = normalizedCity,
             FeePaidCents = request.FeePaidCents,
+            DepositStatus = SellerDepositStatuses.Pending,
             Notes = NormalizeOptional(request.Notes)
         };
 
@@ -146,11 +148,12 @@ public sealed class IntakeService
                     PostalCode = normalizedPostalCode,
                     City = normalizedCity,
                     FeePaidCents = request.FeePaidCents,
+                    DepositStatus = SellerDepositStatuses.Pending,
                     Notes = NormalizeOptional(request.Notes)
                 };
 
                 _dbContext.Sellers.Add(seller);
-                AddItemRows(seller, request.IntakeMode, request.Rows, 0);
+                AddItemRows(seller, request.Rows, 0);
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -176,11 +179,16 @@ public sealed class IntakeService
         EnsureRowsAreValid(request.Rows);
 
         var seller = await _dbContext.Sellers.SingleAsync(x => x.Id == request.SellerId, cancellationToken);
+        if (seller.DepositStatus != SellerDepositStatuses.Pending)
+        {
+            throw new InvalidOperationException("Seller deposit is already validated.");
+        }
+
         var nextItemNumber = await _dbContext.Items
             .Where(x => x.SellerId == request.SellerId)
             .Select(x => (int?)x.ItemNumber)
             .MaxAsync(cancellationToken) ?? 0;
-        var createdItems = AddItemRows(seller, request.IntakeMode, request.Rows, nextItemNumber);
+        var createdItems = AddItemRows(seller, request.Rows, nextItemNumber);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return createdItems;
@@ -195,6 +203,11 @@ public sealed class IntakeService
         }
 
         if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
+        {
+            return UpdateSellerResult.NotAllowed;
+        }
+
+        if (seller.DepositStatus != SellerDepositStatuses.Pending)
         {
             return UpdateSellerResult.NotAllowed;
         }
@@ -229,13 +242,16 @@ public sealed class IntakeService
 
     public async Task<UpdateItemResult> UpdateItemAsync(long itemId, UpdateItemRequest request, CancellationToken cancellationToken = default)
     {
-        var item = await _dbContext.Items.SingleOrDefaultAsync(x => x.Id == itemId, cancellationToken);
+        var item = await _dbContext.Items
+            .Include(x => x.Seller)
+            .SingleOrDefaultAsync(x => x.Id == itemId, cancellationToken);
         if (item is null)
         {
             return UpdateItemResult.NotFound;
         }
 
         if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
+            || item.Seller.DepositStatus != SellerDepositStatuses.Pending
             || item.Status is not ("registered" or "in_stock"))
         {
             return UpdateItemResult.NotAllowed;
@@ -255,6 +271,7 @@ public sealed class IntakeService
         CancellationToken cancellationToken = default)
     {
         var item = await _dbContext.Items
+            .Include(x => x.Seller)
             .SingleOrDefaultAsync(x => x.Id == itemId && x.SellerId == sellerId, cancellationToken);
 
         if (item is null)
@@ -262,7 +279,9 @@ public sealed class IntakeService
             return DeleteItemResult.NotFound;
         }
 
-        if (!ItemDeletionPolicy.CanDelete(item.Status) || !await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
+        if (!ItemDeletionPolicy.CanDelete(item.Status)
+            || item.Seller.DepositStatus != SellerDepositStatuses.Pending
+            || !await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
         {
             return DeleteItemResult.NotAllowed;
         }
@@ -279,27 +298,62 @@ public sealed class IntakeService
         return DeleteItemResult.Deleted;
     }
 
-    public async Task<ItemStatusChangeResult> MarkSellerItemInStockAsync(
+    public async Task<SellerDepositStatusChangeResult> ValidateSellerDepositAsync(
         long sellerId,
-        long itemId,
         CancellationToken cancellationToken = default)
     {
-        var item = await _dbContext.Items
-            .SingleOrDefaultAsync(x => x.Id == itemId && x.SellerId == sellerId, cancellationToken);
-
-        if (item is null)
+        var seller = await _dbContext.Sellers
+            .Include(x => x.Items)
+            .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
+        if (seller is null)
         {
-            return ItemStatusChangeResult.NotFound;
+            return SellerDepositStatusChangeResult.NotFound;
         }
 
-        if (item.Status != "registered" || !await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
+            || seller.DepositStatus != SellerDepositStatuses.Pending
+            || seller.Items.Count == 0
+            || !SellerCanBeValidated(seller))
         {
-            return ItemStatusChangeResult.NotAllowed;
+            return SellerDepositStatusChangeResult.NotAllowed;
         }
 
-        item.Status = "in_stock";
+        foreach (var item in seller.Items.Where(x => x.Status == "registered"))
+        {
+            item.Status = "in_stock";
+        }
+
+        seller.DepositStatus = SellerDepositStatuses.Validated;
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return ItemStatusChangeResult.Changed;
+        return SellerDepositStatusChangeResult.Changed;
+    }
+
+    public async Task<SellerDepositStatusChangeResult> CancelSellerDepositValidationAsync(
+        long sellerId,
+        CancellationToken cancellationToken = default)
+    {
+        var seller = await _dbContext.Sellers
+            .Include(x => x.Items)
+            .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
+        if (seller is null)
+        {
+            return SellerDepositStatusChangeResult.NotFound;
+        }
+
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
+            || seller.DepositStatus != SellerDepositStatuses.Validated)
+        {
+            return SellerDepositStatusChangeResult.NotAllowed;
+        }
+
+        foreach (var item in seller.Items.Where(x => x.Status == "in_stock"))
+        {
+            item.Status = "registered";
+        }
+
+        seller.DepositStatus = SellerDepositStatuses.Pending;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return SellerDepositStatusChangeResult.Changed;
     }
 
     public async Task<bool> CanEditItemMasterDataAsync(CancellationToken cancellationToken = default)
@@ -361,13 +415,25 @@ public sealed class IntakeService
         }
     }
 
+    private static bool SellerCanBeValidated(SellerEntity seller)
+    {
+        return !string.IsNullOrWhiteSpace(seller.FirstName)
+            && !string.IsNullOrWhiteSpace(seller.LastName)
+            && !string.IsNullOrWhiteSpace(seller.Phone)
+            && !string.IsNullOrWhiteSpace(seller.PostalAddress)
+            && !string.IsNullOrWhiteSpace(seller.PostalCode)
+            && !string.IsNullOrWhiteSpace(seller.City)
+            && seller.Items.All(item =>
+                (item.Status is "registered" or "in_stock" or "sold" or "missing" or "defective")
+                && !string.IsNullOrWhiteSpace(item.Title)
+                && item.SellerPriceCents >= 0);
+    }
+
     private List<ItemEntity> AddItemRows(
         SellerEntity seller,
-        IntakeMode intakeMode,
         IReadOnlyList<CreateItemRowRequest> rows,
         int currentMaxItemNumber)
     {
-        var status = intakeMode == IntakeMode.EmailPreregistration ? "registered" : "in_stock";
         var createdItems = new List<ItemEntity>();
         var nextItemNumber = currentMaxItemNumber;
 
@@ -382,7 +448,7 @@ public sealed class IntakeService
                 ItemNumber = nextItemNumber,
                 Title = row.Title.Trim(),
                 SellerPriceCents = row.SellerPriceCents,
-                Status = status
+                Status = "registered"
             };
 
             _dbContext.Items.Add(item);

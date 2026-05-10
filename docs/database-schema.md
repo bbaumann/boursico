@@ -47,6 +47,7 @@ Represents one seller.
 - `postal_code`
 - `city`
 - `fee_paid_cents`
+- `deposit_status`
 - `notes`
 
 ### Notes
@@ -55,6 +56,8 @@ Represents one seller.
 - No stored `display_name` is required; it can be derived when needed.
 - `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
 - The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
+- `deposit_status` stores the operational seller deposit gate and defaults to `deposit_pending`.
+- The signed paper deposit contract is the legal proof of deposit and price agreement; V1 does not store a contract number, signed timestamp, or contract snapshot.
 
 ## `item`
 
@@ -211,6 +214,7 @@ V1 uses a single row with `id = 1`.
 - `postal_address`: required
 - `postal_code`: required
 - `city`: required
+- `deposit_status`: required
 - `notes`: optional
 
 ## `item`
@@ -264,13 +268,25 @@ Allowed values:
 
 Business meaning:
 
-- `registered`: preregistered in the system but not yet physically delivered; it may remain pending if the seller might still bring the item later
-- `in_stock`: physically present and eligible for sale or return
+- `registered`: entered in the system but not yet accepted through a signed seller deposit; it may remain pending if the seller might still bring the item later
+- `in_stock`: accepted through a validated seller deposit, physically present, and eligible for sale or return
 - `sold`: the item was sold during the event
 - `missing`: the item was not found during post-sale gathering and is therefore payable to the seller
 - `defective`: the item cannot be sold, is returned to the seller, and is not payable
 
-V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, it may remain `registered`. It is deleted only when entered by mistake or when the seller record should be cleaned up.
+V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, it may remain `registered`. It is deleted only when entered by mistake or when the seller record should be cleaned up before deposit validation.
+
+## Seller Deposit Status
+
+Allowed values:
+
+- `deposit_pending`
+- `deposit_validated`
+
+Business meaning:
+
+- `deposit_pending`: the seller has not yet signed the printed deposit contract; normal seller and item edits remain possible during `presale`, and items stay `registered`
+- `deposit_validated`: the signed paper contract has been received; normal seller and item edits are locked for that seller, and accepted items are `in_stock`
 
 ## Sale Phase
 
@@ -300,6 +316,8 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - in `sale` and `post_sale`, item master data becomes read-only in normal operations
 - when item master data is locked, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
 - when item master data is locked, only workflow-driven status transitions remain allowed
+- after `seller.deposit_status = deposit_validated`, normal seller and item edits are locked for that seller even during `presale`
+- admin cancellation may set `seller.deposit_status` back to `deposit_pending` during `presale` after shared-password confirmation; it moves only current `in_stock` items back to `registered` and leaves `sold`, `missing`, and `defective` items unchanged
 - `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
 - `sale_line` price snapshots are immutable; correction status is represented by `corrected_at`, and defective buyer refunds are represented by the refund fields, which may only be cleared by the explicit admin refund-cancellation workflow
 
@@ -309,7 +327,7 @@ These are important invariants even if they are enforced first in application lo
 
 - adding an item to a cart does not reserve it in V1
 - a sale may only be persisted while `event_state.sale_phase` is `presale` or `sale`
-- a sale may only be persisted if every item in the cart is still `in_stock` at transaction time
+- a sale may only be persisted if every item in the cart is still `in_stock` and its seller has `deposit_status = deposit_validated` at transaction time
 - if an item has an active payable sale line where `corrected_at IS NULL AND refunded_at IS NULL`, its status must be `sold`
 - one item can only have one active payable sale line
 - corrected sale lines do not make an item unavailable for sale
@@ -319,6 +337,7 @@ These are important invariants even if they are enforced first in application lo
 - `sale.checkout_fee_cents` must equal 10 percent of `sale.subtotal_seller_price_cents`, rounded to the nearest cent with midpoint values rounded away from zero
 - `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
 - `item.reference` must match the event seller code and seller-local item number used to generate it
+- normal `registered -> in_stock` transition is seller-level: validating the signed seller deposit moves that seller's accepted `registered` items to `in_stock`
 
 ## Derived Business Meaning
 

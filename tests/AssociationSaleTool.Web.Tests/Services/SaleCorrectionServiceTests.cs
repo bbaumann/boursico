@@ -189,7 +189,8 @@ public sealed class SaleCorrectionServiceTests
         {
             SellerCode = "AA",
             FirstName = "Ada",
-            LastName = "Lovelace"
+            LastName = "Lovelace",
+            DepositStatus = "deposit_validated"
         };
 
         context.Sellers.Add(seller);

@@ -29,9 +29,9 @@
         </div>
     </div>
 
-    @if (!Model.CanEditSellerMasterData || !Model.CanEditItemMasterData)
+    @if (!string.IsNullOrWhiteSpace(Model.ReadOnlyMessage))
     {
-        <p class="validation">Les informations du vendeur et les articles sont en lecture seule dans le statut actuel de la vente.</p>
+        <p class="validation">@Model.ReadOnlyMessage</p>
     }
 
     <dl class="seller-contact-list">
@@ -59,6 +59,71 @@
     <p class="seller-fee-status @(Model.FeeStatus.IsFullyPaid ? "seller-fee-status-paid" : "seller-fee-status-due")">
         Frais : @DetailsModel.FormatPrice(Model.FeeStatus.ExpectedFeeCents) (payés @DetailsModel.FormatPrice(Model.FeeStatus.PaidFeeCents))
     </p>
+
+    <section class="subsection seller-deposit-panel">
+        <div>
+            <h2>Dépôt vendeur</h2>
+            <p class="seller-deposit-status @(Model.IsDepositValidated ? "seller-deposit-status-validated" : "seller-deposit-status-pending")">
+                @Model.DepositStatusLabel
+            </p>
+        </div>
+        <div class="form-actions seller-deposit-actions">
+            <a class="button-link" asp-page="/Sellers/DepositContract" asp-route-id="@Model.Seller.Id">Imprimer le contrat</a>
+            @if (Model.CanValidateDeposit)
+            {
+                <button type="button"
+                        class="button-link button-link-solid"
+                        onclick="document.getElementById('deposit-validation-dialog')?.showModal();">
+                    Valider le dépôt
+                </button>
+                <dialog id="deposit-validation-dialog" class="admin-dialog">
+                    <h3>Validation du dépôt</h3>
+                    <p>Confirmez uniquement si le contrat imprimé a été signé par le vendeur. Les articles du vendeur passeront en stock et ne seront plus modifiables.</p>
+                    <div class="form-actions">
+                        <form method="dialog" class="inline-form">
+                            <button type="submit" class="button-link">Retour</button>
+                        </form>
+                        <form method="post"
+                              asp-page-handler="ValidateDeposit"
+                              asp-route-id="@Model.Seller.Id"
+                              class="inline-form">
+                            <button type="submit" class="button-link button-link-solid">Le contrat est signé</button>
+                        </form>
+                    </div>
+                </dialog>
+            }
+            @if (Model.CanCancelDepositValidation)
+            {
+                <button type="button"
+                        class="button-link"
+                        onclick="document.getElementById('deposit-cancellation-dialog')?.showModal();">
+                    Annuler la validation du dépôt
+                </button>
+                <dialog id="deposit-cancellation-dialog" class="admin-dialog">
+                    <h3>Annulation de la validation du dépôt</h3>
+                    <p>Les articles encore en stock repasseront en enregistrés. Les articles déjà vendus, manquants ou défectueux resteront verrouillés.</p>
+                    <form method="post"
+                          asp-page-handler="CancelDepositValidation"
+                          asp-route-id="@Model.Seller.Id"
+                          class="stack-form">
+                        <label>
+                            <span>Mot de passe administrateur</span>
+                            <input asp-for="CancellationInput.AdminPassword" type="password" autocomplete="current-password" />
+                            <span asp-validation-for="CancellationInput.AdminPassword" class="validation"></span>
+                        </label>
+                        <div class="form-actions">
+                            <button type="submit" class="button-link button-link-solid">Annuler la validation</button>
+                            <button type="button"
+                                    class="button-link"
+                                    onclick="document.getElementById('deposit-cancellation-dialog')?.close();">
+                                Retour
+                            </button>
+                        </div>
+                    </form>
+                </dialog>
+            }
+        </div>
+    </section>
 
     <section class="subsection">
         <h2>Articles</h2>
@@ -91,23 +156,13 @@
                     <tr>
                         <td>@item.Reference</td>
                         <td>@item.Title</td>
-                        <td>@((item.SellerPriceCents / 100m).ToString("0.00")) €</td>
+                        <td>@DetailsModel.FormatPrice(item.SellerPriceCents)</td>
                         <td>@AssociationSaleTool.Web.Infrastructure.ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
                         <td>
                             <div class="table-actions">
                                 @if (Model.CanEditItemMasterData && item.Status is "registered" or "in_stock")
                                 {
                                     <a asp-page="/Items/Edit" asp-route-id="@item.Id">Modifier</a>
-                                }
-                                @if (Model.CanEditItemMasterData && item.Status == "registered")
-                                {
-                                    <form method="post"
-                                          class="inline-form"
-                                          asp-page-handler="MarkItemInStock"
-                                          asp-route-id="@Model.Seller.Id"
-                                          asp-route-itemId="@item.Id">
-                                        <button type="submit" class="table-action-button table-action-button-primary">Marquer en stock</button>
-                                    </form>
                                 }
                                 @if (Model.CanEditItemMasterData && ItemDeletionPolicy.CanDelete(item.Status))
                                 {
@@ -136,20 +191,6 @@
 
         <form method="post" class="stack-form">
             <div asp-validation-summary="All" class="validation"></div>
-
-            <fieldset class="mode-field">
-                <legend>Mode de saisie</legend>
-                <div class="radio-group">
-                    <label class="radio-option">
-                        <input asp-for="Input.IntakeMode" type="radio" value="InPerson" />
-                        <span>Dépot</span>
-                    </label>
-                    <label class="radio-option">
-                        <input asp-for="Input.IntakeMode" type="radio" value="EmailPreregistration" />
-                        <span>Enregistrement</span>
-                    </label>
-                </div>
-            </fieldset>
 
             <table class="data-table intake-table seller-intake-table" data-item-registration-table>
                 <colgroup>

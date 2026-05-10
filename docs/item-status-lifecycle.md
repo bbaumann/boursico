@@ -9,6 +9,7 @@ It also defines the operational mutability rule introduced by sale phases:
 - in `presale`, intake staff may still correct seller master data and unsold item master data
 - in `sale`, checkout remains open but seller and item master data become read-only in normal operations
 - in `post_sale`, checkout is closed and seller and item master data remain read-only
+- after a seller's deposit is validated, that seller and the deposited items become read-only in normal intake even during `presale`
 - after seller and item master data are locked, only the allowed status transitions below remain editable
 
 ## Item Master Data Frozen At Sale Start
@@ -36,18 +37,25 @@ If a buyer is refunded because an item is defective, the original sale totals st
 
 The status field remains editable only through the workflow transitions defined in this document.
 
+Seller deposits use a separate seller-level operational status:
+
+- `deposit_pending`: the seller has not yet signed a deposit contract; their items remain draft `registered` rows
+- `deposit_validated`: the seller has signed the paper deposit contract; accepted items have been moved to `in_stock`
+
+The signed paper contract is the legal proof of deposit and price agreement. The database status only gates normal app workflow.
+
 ## Status Summary
 
 ### `registered`
 
-- preregistered from an emailed seller list
-- not yet physically delivered
+- entered from an emailed list, Excel prefill, or in-person intake before deposit validation
+- not yet accepted into stock through a signed seller deposit
 - excluded from checkout and seller-sheet outputs
 - may remain in this state if the seller has not brought the item yet
 
 ### `in_stock`
 
-- physically delivered and present in association stock
+- accepted through a validated seller deposit and present in association stock
 - eligible for sale during the event
 - treated as a returned item after the sale unless later marked `missing`
 
@@ -72,12 +80,12 @@ The status field remains editable only through the workflow transitions defined 
 
 ### Before Sale Start
 
-- create item directly as `in_stock` during in-person intake
-- create item as `registered` from emailed preregistration
-- `registered -> in_stock` during physical delivery confirmation
+- create item as `registered`
+- `registered -> in_stock` only by validating the seller's signed deposit
 - optionally keep a `registered` item pending when the seller may still bring it later
 - delete a `registered` item when it was entered by mistake or the seller record should be cleaned up
-- delete an `in_stock` item when a physically present item was entered by mistake
+- cancel a validated deposit as an admin-password action during `presale`, which moves only current `in_stock` items back to `registered`
+- revalidate a reopened deposit, which moves current `registered` items to `in_stock` and tolerates historical `sold`, `missing`, and `defective` items
 
 ### During The Sale
 
@@ -88,7 +96,7 @@ The status field remains editable only through the workflow transitions defined 
 No reservation status exists in V1:
 
 - adding an item to a cart does not change its status
-- the server re-validates `in_stock` status when the sale is saved
+- the server re-validates `in_stock` status and seller deposit validation when the sale is saved
 - if validation fails, the sale is rejected and no partial status transition is applied
 
 ### After The Sale
@@ -112,13 +120,16 @@ No plain item-status transition back out of `sold` is defined. A mistaken sale u
 
 - `registered -> sold`
 - `registered -> missing`
+- manual item-level `registered -> in_stock`
+- deposit cancellation outside `presale` or without the shared admin password
+- deposit cancellation as a way to rewrite `sold`, `missing`, or `defective` items
 - ad hoc `sold -> in_stock`
 - `sold -> missing`
 - ad hoc `sold -> defective` without a refund record
 - ad hoc `defective -> sold` outside refund cancellation
 - `defective -> missing`
 
-V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, it can stay `registered` without affecting checkout or seller-sheet outputs. If the entry was created by mistake or the team wants a cleaner seller record, it may be deleted while still `registered`. If an item was mistakenly recorded as present, it may be removed while it is still `in_stock`.
+V1 does not use a `not_provided` status. If a preregistered item is not physically delivered, it can stay `registered` without affecting checkout or seller-sheet outputs. If the entry was created by mistake or the team wants a cleaner seller record, it may be deleted while still `registered`. Once a seller deposit is validated, normal item deletion stops for that seller; admin cancellation reopens only items that are still `in_stock`. Items already `sold`, `missing`, or `defective` remain unchanged and read-only.
 
 If an operator mistake or defect is discovered after an item has become `sold`, `missing`, or `defective`, correction must be handled by an explicit admin procedure rather than by ad hoc state changes in the standard UI. Restoring a mistakenly marked `missing` item to `in_stock` is allowed only through the reconciliation correction workflow. Restoring a mistakenly sold item to `in_stock` is allowed only by correcting the active sale line, which leaves the original sale stored and marks the sale line corrected. Refunding a defective sold item leaves the original sale stored, records the refund on the sale line, and marks the item `defective`. Canceling a refund is allowed only when the refund was entered by mistake; it clears the sale-line refund fields and restores the item to `sold`.
 
@@ -129,11 +140,11 @@ If an operator mistake or defect is discovered after an item has become `sold`, 
 Before sale start:
 
 - create `registered` items from emailed lists
-- create `in_stock` items when toys are physically present
-- confirm preregistered delivery by marking delivered items `in_stock`
+- create `registered` items when toys are physically present
+- print the seller deposit contract and validate it after signature
 - leave pending preregistered items as `registered` when the seller may still bring them later
 - delete preregistered items only when they were entered by mistake or should be removed as cleanup
-- delete `registered` or `in_stock` items that were entered by mistake
+- delete `registered` items that were entered by mistake before deposit validation
 - correct seller and item master data if needed
 
 ### Sale-Day Volunteer

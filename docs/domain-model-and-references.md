@@ -23,6 +23,7 @@ Suggested fields:
 - required postal address
 - required postal code
 - required city
+- deposit status
 
 ### Item
 
@@ -74,13 +75,18 @@ If a sale line is refunded because the sold item is defective, the original sale
 
 ## Item Status Model
 
-The current model uses one simple status field:
+The current item model uses one simple status field:
 
 - `registered`
 - `in_stock`
 - `sold`
 - `missing`
 - `defective`
+
+Seller deposit validation is represented separately on the seller:
+
+- `deposit_pending`
+- `deposit_validated`
 
 Derived meanings:
 
@@ -90,13 +96,13 @@ Derived meanings:
 
 Lifecycle meaning:
 
-- `registered`: preregistered in the system but not yet physically handed over; it may remain pending if the seller might still bring the item later
-- `in_stock`: physically present in association stock and eligible for sale or return
+- `registered`: entered in the system but not yet accepted through a signed seller deposit; it may remain pending if the seller might still bring the item later
+- `in_stock`: physically present in association stock after seller deposit validation and eligible for sale or return
 - `sold`: sold during the event
 - `missing`: expected to be returned after the event, but not found physically
 - `defective`: physically accepted but not suitable for sale; returned to the seller and not payable
 
-V1 does not use a `not_provided` status. Preregistered items that are not physically delivered may remain `registered`; they are deleted only when entered by mistake or when the seller record should be cleaned up. Items mistakenly entered as present may be deleted while still `in_stock`.
+V1 does not use a `not_provided` status. Preregistered items that are not physically delivered may remain `registered`; they are deleted only when entered by mistake or when the seller record should be cleaned up before deposit validation. Validating the seller's signed paper deposit moves that seller's accepted `registered` items to `in_stock` and locks normal seller/item edits. The signed paper contract is the legal proof; `seller.deposit_status` is only the operational gate.
 
 ## Sale Phase
 

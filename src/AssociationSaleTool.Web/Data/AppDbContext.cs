@@ -1,4 +1,5 @@
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Sellers;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssociationSaleTool.Web.Data;
@@ -30,6 +31,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.PostalCode).HasColumnName("postal_code").IsRequired();
             entity.Property(x => x.City).HasColumnName("city").IsRequired();
             entity.Property(x => x.FeePaidCents).HasColumnName("fee_paid_cents").HasDefaultValue(0).IsRequired();
+            entity.Property(x => x.DepositStatus).HasColumnName("deposit_status").HasDefaultValue(SellerDepositStatuses.Pending).IsRequired();
             entity.Property(x => x.Notes).HasColumnName("notes");
 
             entity.HasIndex(x => x.SellerCode)
@@ -38,6 +40,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable(table =>
             {
                 table.HasCheckConstraint("ck_seller_fee_paid_cents", "fee_paid_cents >= 0");
+                table.HasCheckConstraint("ck_seller_deposit_status", "deposit_status IN ('deposit_pending', 'deposit_validated')");
             });
         });
 

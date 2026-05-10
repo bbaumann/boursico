@@ -25,11 +25,13 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Create items manually from seller-provided lists
 - Prefill seller and item rows from a one-seller Excel workbook before reviewed save
 - Record seller preregistration received by email
-- Register sellers and items in person when toys are physically brought in
-- Confirm preregistered items against physically delivered toys
+- Record in-person seller item lists as `registered` until the signed deposit is validated
+- Print a seller deposit contract recap from the seller detail page
+- Validate one signed seller deposit, moving that seller's accepted `registered` items to `in_stock`
+- Allow admin cancellation of a validated deposit with a local admin-password confirmation, reopening only items still `in_stock`
 - Assign one unique reference per item
 - Store one seller-set printed price per item
-- Search items by `reference + title` using a live-filtered table
+- Search validated `in_stock` items by `reference + title` using a live-filtered table
 - Capture required buyer name or organization, postal code, and city on the checkout page
 - Add selected items to a cart
 - Compute subtotal, checkout fee, and final bill total automatically
@@ -104,6 +106,8 @@ When seller and item master data are locked, only workflow-driven status changes
 - refunding a defective sold item as an admin sale correction, which records the refund and moves the item to `defective`
 - canceling a mistaken defective refund as an admin correction, which clears the refund fields and restores the item to `sold`
 
+Normal UI no longer exposes a manual `registered -> in_stock` item action. That transition happens only when the operator validates the seller's signed deposit contract.
+
 ### Expected Checkout Flow
 
 1. Checkout loads a lightweight item catalog into page memory when the page opens.
@@ -120,10 +124,10 @@ When seller and item master data are locked, only workflow-driven status changes
 12. Operator chooses `CB`, `Espèces`, or `Chèque`.
 13. If `Chèque` is chosen, the operator must enter the cheque number and bank name before saving.
 14. Operator chooses `Retour`, `Enregistrer la vente`, or `Enregistrer et imprimer`.
-15. The server re-validates that every cart item is still `in_stock` at save time inside the save transaction.
+15. The server re-validates that every cart item is still `in_stock` and belongs to a seller with `deposit_status = deposit_validated` at save time inside the save transaction.
 16. The server rejects the sale if the phase is `post_sale`.
 17. If validation succeeds, the sale, buyer details, payment method, and cheque traceability fields are persisted and the items become `sold`.
-18. If any cart item is no longer `in_stock`, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
+18. If any cart item is no longer saleable, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
 19. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
 
 ### Read-Only Sales View
@@ -163,6 +167,7 @@ V1 does not use cart-level reservation.
 
 - adding an item to a cart does not reserve it
 - an item remains `in_stock` until a sale is successfully saved
+- checkout catalog and save validation require the item's seller to have a validated deposit
 - the app may validate the cart before showing the finalization modal for UX reasons
 - the server must re-check all cart items at save time inside the sale transaction
 - the server must reject cart validation and sale persistence when the event phase is `post_sale`
@@ -183,7 +188,7 @@ The correction:
 
 ### Defective Items And Buyer Refunds
 
-If a defective item is spotted during physical handover, the item is not accepted. If it was preregistered, the operator may delete the `registered` item; if it was being entered in `Dépôt` mode, the row is not created.
+If a defective item is spotted before the seller signs the deposit contract, the item is not accepted. If it was already entered, the operator may delete the `registered` item before validation.
 
 If a defect is spotted after the item is already `in_stock`, an admin uses `/administration` to mark it `défectueux`.
 
@@ -223,23 +228,27 @@ V1 invoice handling is intentionally simple:
 - the printed invoice hides the application navigation/header while printing
 - the printed invoice shows seller identity beside one customer block with buyer name, address, postal code and city, item lines with a wide designation column and compact `P.U. HT` header, HT totals, TVA as `0,00 EUR`, TTC total, and the VAT exemption text once
 
-### Intake Modes
+### Seller Deposit Validation
 
-#### Email Preregistration
+Items are entered in `registered` state whether they come from an email list, Excel prefill, or in-person operator entry.
 
-- Seller and items are entered from the emailed list.
-- Items start in `registered` state.
-- When the seller physically delivers toys, the operator reviews the preregistered list line by line.
-- Delivered items become `in_stock`.
-- Items not yet delivered may remain `registered`; they can be marked `in_stock` later if the seller returns with them.
-- A `registered` item may be deleted when it was entered by mistake or the operator wants to clean up the seller record.
-- If an item was mistakenly entered as physically present, it may also be deleted while still `in_stock`.
-- V1 does not use a `not_provided` status.
+Before validation:
 
-#### In-Person Registration
+- seller and item details remain editable during `presale`
+- items stay excluded from checkout and seller-sheet outputs
+- incomplete or mistaken `registered` items may be corrected or deleted
 
-- Seller and items are entered while the toys are physically present.
-- Items are created directly in `in_stock` state.
+When the seller physically gives the toys to the association:
+
+1. The operator opens the seller detail page.
+2. The operator prints `Imprimer le contrat`.
+3. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
+4. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
+5. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
+
+The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, and whether payment is still due. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
+
+After validation, normal seller and item edits are locked for that seller. The signed paper contract is the legal proof; the database status is only the operational gate. Admin cancellation is available from the seller detail page during `presale` after confirming the shared admin password. It moves only items still `in_stock` back to `registered`; `sold`, `missing`, and `defective` items remain unchanged and read-only. Revalidating the deposit later tolerates those historical item states and only moves current `registered` items back to `in_stock`.
 
 ### Excel Seller And Item Prefill
 

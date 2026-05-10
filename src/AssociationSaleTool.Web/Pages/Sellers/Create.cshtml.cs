@@ -44,6 +44,7 @@ public sealed class CreateModel(
             return Page();
         }
 
+        Input.IntakeMode = IntakeMode.EmailPreregistration;
         var feePaidCents = ParseFeePaid();
         var rowsToCreate = ValidateRows();
         EnsureDefaultRows();
@@ -60,7 +61,7 @@ public sealed class CreateModel(
                 Input.Phone,
                 Input.PostalAddress,
                 Input.Notes,
-                Input.IntakeMode,
+                IntakeMode.EmailPreregistration,
                 rowsToCreate,
                 feePaidCents,
                 Input.PostalCode,
@@ -70,7 +71,7 @@ public sealed class CreateModel(
         if (result.Outcome == CreateSellerWithItemsOutcome.ExistingSellerFound)
         {
             DuplicateMatches = result.DuplicateMatches;
-            if (TryStorePendingRowsAndRedirect(DuplicateMatches, Input.IntakeMode, rowsToCreate, out var redirect))
+            if (TryStorePendingRowsAndRedirect(DuplicateMatches, IntakeMode.EmailPreregistration, rowsToCreate, out var redirect))
             {
                 return redirect;
             }
@@ -115,7 +116,7 @@ public sealed class CreateModel(
             parseResult.LastName,
             parseResult.Phone,
             cancellationToken);
-        if (TryStorePendingRowsAndRedirect(duplicateMatches, parseResult.IntakeMode, parseResult.Rows, out var redirect))
+        if (TryStorePendingRowsAndRedirect(duplicateMatches, IntakeMode.EmailPreregistration, parseResult.Rows, out var redirect))
         {
             return redirect;
         }
@@ -131,7 +132,7 @@ public sealed class CreateModel(
             City = parseResult.City ?? "UNKNOWN",
             FeePaid = "0",
             Notes = parseResult.Notes,
-            IntakeMode = parseResult.IntakeMode,
+            IntakeMode = IntakeMode.EmailPreregistration,
             Rows = parseResult.Rows
                 .Select(row => new ItemRowInput
                 {

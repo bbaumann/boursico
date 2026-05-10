@@ -2,8 +2,8 @@ namespace AssociationSaleTool.Web.Domain.Sellers;
 
 public static class SellerFeeCalculator
 {
-    private const int ItemsPerFeeBlock = 15;
-    private const int FeePerBlockCents = 200;
+    public const int ItemsPerFeeBlock = 15;
+    public const int FeePerBlockCents = 200;
 
     public static int CalculateExpectedFeeCents(int itemCount)
     {

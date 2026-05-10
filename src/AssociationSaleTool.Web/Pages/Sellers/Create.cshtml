@@ -123,20 +123,6 @@
             <textarea asp-for="Input.Notes" rows="3" disabled="@(!Model.CanEditSellerMasterData)"></textarea>
         </label>
 
-        <fieldset class="mode-field">
-            <legend>Mode de saisie</legend>
-            <div class="radio-group">
-                <label class="radio-option">
-                    <input asp-for="Input.IntakeMode" type="radio" value="InPerson" disabled="@(!Model.CanEditSellerMasterData)" />
-                    <span>Dépôt</span>
-                </label>
-                <label class="radio-option">
-                    <input asp-for="Input.IntakeMode" type="radio" value="EmailPreregistration" disabled="@(!Model.CanEditSellerMasterData)" />
-                    <span>Enregistrement</span>
-                </label>
-            </div>
-        </fieldset>
-
         <table class="data-table intake-table seller-intake-table" data-item-registration-table>
             <colgroup>
                 <col class="seller-intake-title-column" />

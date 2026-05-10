@@ -1,5 +1,6 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Domain.Pricing;
 using AssociationSaleTool.Web.Configuration;
 using AssociationSaleTool.Web.Services.Models;
@@ -31,7 +32,7 @@ public sealed class CheckoutService
     {
         return await _dbContext.Items
             .AsNoTracking()
-            .Where(x => x.Status == "in_stock")
+            .Where(x => x.Status == "in_stock" && x.Seller.DepositStatus == SellerDepositStatuses.Validated)
             .OrderBy(x => x.Reference)
             .Select(x => new CheckoutCatalogItem(
                 x.Id,
@@ -246,7 +247,9 @@ public sealed class CheckoutService
         CancellationToken cancellationToken)
     {
         var distinctIds = itemIds.Distinct().ToList();
-        var query = _dbContext.Items.Where(x => distinctIds.Contains(x.Id));
+        var query = _dbContext.Items
+            .Include(x => x.Seller)
+            .Where(x => distinctIds.Contains(x.Id));
 
         if (!asTracking)
         {
@@ -264,7 +267,9 @@ public sealed class CheckoutService
     {
         var loadedById = loadedItems.ToDictionary(x => x.Id);
         var conflictItemIds = requestedItemIds
-            .Where(itemId => !loadedById.TryGetValue(itemId, out var item) || item.Status != "in_stock")
+            .Where(itemId => !loadedById.TryGetValue(itemId, out var item)
+                || item.Status != "in_stock"
+                || item.Seller.DepositStatus != SellerDepositStatuses.Validated)
             .Distinct()
             .ToList();
 

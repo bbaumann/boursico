@@ -10,8 +10,9 @@ V1 is feature-complete but not live yet. It includes the original MVP baseline p
 - manual item entry by organizers
 - Excel-assisted seller and item prefill for one reviewed seller workbook
 - operator-managed preregistration from seller emails
-- in-person registration when toys are physically present
-- preregistration confirmation against physically delivered toys
+- in-person seller and item entry as `registered` draft data
+- seller-level signed deposit validation and contract printing
+- seller deposit cancellation during `presale` with local admin-password confirmation, reopening only current stock items
 - one item record per toy
 - seller-aware reference generation
 - seller registration fee tracking and reconciliation deduction

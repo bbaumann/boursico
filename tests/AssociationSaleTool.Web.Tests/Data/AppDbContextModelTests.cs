@@ -45,6 +45,23 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SellerStoresDepositStatusColumn()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var entityType = context.Model.FindEntityType(typeof(SellerEntity));
+        Assert.NotNull(entityType);
+        var depositStatus = Assert.Single(entityType!.GetProperties(), property => property.Name == nameof(SellerEntity.DepositStatus));
+        Assert.Equal("deposit_status", depositStatus.GetColumnName());
+        Assert.False(depositStatus.IsNullable);
+        Assert.Equal("deposit_pending", depositStatus.GetDefaultValue());
+    }
+
+    [Fact]
     public void SellerTableRequiresContactFields()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
@@ -84,6 +101,26 @@ public class AppDbContextModelTests
         var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
         Assert.Contains("\"fee_paid_cents\" INTEGER NOT NULL DEFAULT 0", createTableSql);
         Assert.Contains("CHECK (fee_paid_cents >= 0)", createTableSql);
+    }
+
+    [Fact]
+    public void SellerTableRestrictsDepositStatusValues()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'seller'";
+        var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
+        Assert.Contains("\"deposit_status\" TEXT NOT NULL DEFAULT 'deposit_pending'", createTableSql);
+        Assert.Contains("CHECK (deposit_status IN ('deposit_pending', 'deposit_validated'))", createTableSql);
     }
 
     [Fact]

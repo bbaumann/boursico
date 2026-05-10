@@ -150,22 +150,26 @@ Pour chaque article, saisir :
 
 Le prix vendeur est aussi le prix imprimé vu par le client dans l'outil actuel. Il sert aussi au calcul du montant à reverser au vendeur si l'article est vendu ou marqué manquant.
 
-### Choisir le mode de saisie
+### Valider le dépôt vendeur
 
-Deux modes existent :
+Les articles ajoutés restent `enregistré` tant que le dépôt du vendeur n'est pas validé. Ils ne sont pas visibles en caisse.
 
-- `Dépôt` : les jouets sont physiquement présents. Les articles sont créés directement `en stock`.
-- `Enregistrement` : les articles viennent d'une liste reçue à l'avance, par exemple par e-mail. Les articles sont créés `enregistré`, car ils ne sont pas encore physiquement déposés.
-
-### Confirmer un dépôt après enregistrement
-
-Quand un vendeur avait envoyé une liste à l'avance puis apporte les jouets :
+Quand le vendeur apporte les jouets :
 
 1. Ouvrir sa fiche vendeur.
 2. Relire les articles un par un.
-3. Pour chaque article réellement apporté, cliquer sur `Marquer en stock`.
-4. Pour un article pas encore apporté, le laisser `enregistré` si le vendeur peut revenir plus tard. Le supprimer seulement si l'entrée a été créée par erreur ou si l'équipe veut nettoyer la fiche.
-5. Si un défaut est vu avant d'accepter physiquement l'article, ne pas l'accepter. Un article encore `enregistré` peut être supprimé ; en mode `Dépôt`, il suffit de ne pas créer la ligne.
+3. Corriger ou supprimer les lignes incomplètes avant signature.
+4. Cliquer sur `Imprimer le contrat`.
+5. Faire signer le contrat papier par le vendeur.
+6. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
+
+Le contrat imprimé affiche l'identité de l'association, son adresse, son SIRET, les frais vendeurs attendus, les frais déjà payés, les mentions légales, la liste des articles et les prix. Il ne contient qu'une signature vendeur, avec la phrase `J'accepte le règlement de la bourse aux jouets` juste avant la date de signature. Le statut de l'événement n'est pas imprimé sur le contrat.
+
+La validation du dépôt passe les articles acceptés `en stock` et verrouille les modifications normales du vendeur et de ses articles. Le contrat papier signé est la preuve du dépôt et de l'accord sur les prix.
+
+Si le dépôt doit être rouvert exceptionnellement, revenir en `Prévente`, ouvrir la fiche vendeur, cliquer sur `Annuler la validation du dépôt`, puis saisir le mot de passe administrateur. Les articles encore `en stock` repassent `enregistré` et redeviennent modifiables. Les articles déjà `vendu`, `manquant` ou `défectueux` restent inchangés et en lecture seule. Après correction, cliquer à nouveau sur `Valider le dépôt`.
+
+Si un article n'est pas apporté, le laisser `enregistré` si le vendeur peut revenir plus tard. Le supprimer seulement si l'entrée a été créée par erreur ou si l'équipe veut nettoyer la fiche. Si un défaut est vu avant la signature, ne pas accepter l'article et supprimer la ligne si elle existe.
 
 Un article `enregistré` n'apparaît ni en caisse ni dans les feuilles vendeurs finales. Il reste toutefois compté dans les articles du vendeur pour les frais d'inscription.
 
@@ -183,7 +187,7 @@ Pour les codes postaux de l'Isère, la ville est proposée automatiquement et pe
 
 Dans `Rechercher un article`, taper une partie de la référence ou du titre.
 
-La table se filtre immédiatement. Le bénévole choisit explicitement la bonne ligne. Il n'y a pas besoin de connaître le vendeur.
+La table se filtre immédiatement. Seuls les articles `en stock` dont le dépôt vendeur est validé apparaissent. Le bénévole choisit explicitement la bonne ligne. Il n'y a pas besoin de connaître le vendeur.
 
 ### Ajouter au panier
 
@@ -428,8 +432,8 @@ Pour présenter l'outil à des utilisateurs :
 
 1. Montrer le statut visible en haut de page.
 2. Ouvrir `VENDEURS`, créer ou ouvrir un vendeur.
-3. Ajouter quelques articles avec les modes `Dépôt` et `Enregistrement`.
-4. Montrer qu'un article `enregistré` peut être confirmé avec `Marquer en stock`, ou rester `enregistré` si le vendeur n'a pas encore apporté le jouet.
+3. Ajouter quelques articles : ils restent `enregistré`.
+4. Ouvrir `Imprimer le contrat`, puis montrer la confirmation `Valider le dépôt` / `Le contrat est signé`.
 5. Passer dans `CAISSE`, chercher un article, l'ajouter au panier et montrer le calcul du total.
 6. Ouvrir `ADMIN`, expliquer le mot de passe et les trois statuts.
 7. Passer en `Après-vente`.

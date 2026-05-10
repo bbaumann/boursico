@@ -22,6 +22,8 @@ public sealed class SellerEntity
 
     public int FeePaidCents { get; set; }
 
+    public string DepositStatus { get; set; } = "deposit_pending";
+
     public string? Notes { get; set; }
 
     public List<ItemEntity> Items { get; set; } = [];

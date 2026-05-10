@@ -625,6 +625,84 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   background: rgba(138, 31, 17, 0.08);
 }
 
+.seller-deposit-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-left: 0.35rem solid var(--accent);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.seller-deposit-panel h2 {
+  margin: 0 0 0.35rem;
+}
+
+.seller-deposit-status {
+  display: inline-flex;
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.seller-deposit-status-pending {
+  color: #6f4a09;
+  background: rgba(159, 109, 22, 0.12);
+}
+
+.seller-deposit-status-validated {
+  color: #1f6b3a;
+  background: rgba(31, 107, 58, 0.1);
+}
+
+.seller-deposit-actions {
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.deposit-contract-parties {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.deposit-contract-party p,
+.deposit-contract-fees p {
+  margin: 0.35rem 0 0;
+}
+
+.deposit-contract-party .seller-sheet-contact {
+  text-align: left;
+}
+
+.deposit-contract-legal {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-left: 0.35rem solid var(--accent);
+  background: rgba(90, 100, 88, 0.08);
+}
+
+.deposit-contract-legal p,
+.deposit-contract-signatures p {
+  margin: 0.35rem 0 0;
+}
+
+.deposit-contract-signatures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.deposit-contract-signatures div {
+  min-height: 8rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+}
+
 .form-card {
   max-width: 760px;
 }
@@ -1212,8 +1290,9 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
     line-height: 1.08;
   }
 
-  body:has(.seller-sheets-print-root) .main-navigation,
-  body:has(.seller-sheets-print-root) .page-frame {
+body:has(.seller-sheets-print-root) .main-navigation,
+body:has(.seller-sheets-print-root) .app-status-header,
+body:has(.seller-sheets-print-root) .page-frame {
     display: none !important;
   }
 
@@ -1324,6 +1403,35 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
     margin-top: 2mm;
     padding-top: 1.5mm;
     border-top: 0.3mm solid #000;
+  }
+
+  .deposit-contract-print-page .deposit-contract-legal {
+    padding: 1.5mm;
+    border: 0.25mm solid #999;
+    border-left: 1mm solid #000;
+    background: #f2f2f2;
+  }
+
+  .deposit-contract-print-page .deposit-contract-parties {
+    gap: 4mm;
+    margin-top: 2mm;
+  }
+
+  .deposit-contract-print-page .deposit-contract-legal p,
+  .deposit-contract-print-page .deposit-contract-fees p,
+  .deposit-contract-print-page .deposit-contract-signatures p {
+    margin: 0.8mm 0 0;
+  }
+
+  .deposit-contract-print-page .deposit-contract-signatures {
+    gap: 4mm;
+    margin-top: 4mm;
+  }
+
+  .deposit-contract-print-page .deposit-contract-signatures div {
+    min-height: 25mm;
+    padding: 2mm;
+    border: 0.25mm solid #999;
   }
 
   body.checkout-printing {

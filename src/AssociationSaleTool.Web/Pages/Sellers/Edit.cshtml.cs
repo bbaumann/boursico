@@ -1,4 +1,5 @@
 using AssociationSaleTool.Web.Infrastructure;
+using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             return NotFound();
         }
 
-        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken)
+            && seller.DepositStatus == SellerDepositStatuses.Pending;
         SellerId = seller.Id;
         PopulateInput(seller);
 
@@ -36,15 +38,16 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
     public async Task<IActionResult> OnPostAsync(long id, CancellationToken cancellationToken)
     {
         SellerId = id;
-        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
+        var seller = await intakeService.GetSellerAsync(id, cancellationToken);
+        if (seller is null)
+        {
+            return NotFound();
+        }
+
+        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken)
+            && seller.DepositStatus == SellerDepositStatuses.Pending;
         if (!CanEditSellerMasterData)
         {
-            var seller = await intakeService.GetSellerAsync(id, cancellationToken);
-            if (seller is null)
-            {
-                return NotFound();
-            }
-
             ModelState.Clear();
             PopulateInput(seller);
             ModelState.AddModelError(string.Empty, "Les informations du vendeur ne peuvent pas être modifiées dans le statut actuel de la vente.");

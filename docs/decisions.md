@@ -680,3 +680,28 @@ This file captures the main project decisions in a lightweight ADR format.
   - the former optional print output is superseded by invoice output
   - invoice sequencing is server-side and happens inside the successful sale transaction
   - reprint support, if added later, must reuse the persisted invoice number and issue date
+
+## D-043 Validate Deposits At Seller Level
+
+- Status: accepted
+- Key drivers:
+  - physical handover is proven by a printed paper contract signed by the seller
+  - operators need one obvious action for the whole seller deposit, not per-item stock toggles
+  - item data may be incomplete before signature, but normal seller/item edits must stop after the signed contract is accepted
+  - the paper contract is sufficient legal proof for V1; the database only needs an operational gate
+- Decision:
+  - add `seller.deposit_status` with `deposit_pending` and `deposit_validated`
+  - create normal intake and Excel-prefilled items as `registered`, including in-person entry
+  - print the seller contract recap from the seller detail page with association identity, legal mentions, seller fee status, current item prices, and only the seller signature area
+  - validate the seller deposit only after the operator confirms `Le contrat est signé`
+  - on validation, move the seller's accepted `registered` items to `in_stock` and lock normal seller/item edits for that seller
+  - remove the normal UI path for manual item-level `registered -> in_stock`
+  - gate checkout catalog and sale save on both `item.status = in_stock` and `seller.deposit_status = deposit_validated`
+  - allow an admin to cancel a seller deposit validation from the seller page during `presale` after entering the shared admin password
+  - cancellation sets the seller back to `deposit_pending` and moves only items still `in_stock` back to `registered`
+  - cancellation and revalidation tolerate historical `sold`, `missing`, and `defective` items, which stay unchanged and read-only
+  - do not store a contract number, signed timestamp, or database snapshot in V1
+- Consequence:
+  - one signed deposit corresponds to one seller-level validation
+  - the signed paper remains the legal artifact; the app status prevents premature checkout and later accidental edits
+  - sellers can remain partially entered as `deposit_pending` until the operator is ready to print and sign the contract

@@ -182,6 +182,7 @@ public sealed class IntakeServiceTests
         Assert.Equal("BB", seller.SellerCode);
         Assert.Equal("UNKNOWN", seller.PostalAddress);
         Assert.Equal(0, seller.FeePaidCents);
+        Assert.Equal("deposit_pending", seller.DepositStatus);
         Assert.Collection(
             seller.Items.OrderBy(x => x.ItemNumber),
             first =>
@@ -199,7 +200,7 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
-    public async Task CreateSellerWithItemsAsync_CreatesInStockItemsForInPersonIntake()
+    public async Task CreateSellerWithItemsAsync_CreatesRegisteredItemsForInPersonIntake()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -225,7 +226,7 @@ public sealed class IntakeServiceTests
 
         Assert.Equal(CreateSellerWithItemsOutcome.Created, result.Outcome);
         var item = await context.Items.SingleAsync();
-        Assert.Equal("in_stock", item.Status);
+        Assert.Equal("registered", item.Status);
     }
 
     [Fact]
@@ -325,7 +326,7 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
-    public async Task CreateItemBatchAsync_CreatesMultipleItemsForSellerWithSequentialReferences()
+    public async Task CreateItemBatchAsync_CreatesMultipleRegisteredItemsForSellerWithSequentialReferences()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -354,14 +355,14 @@ public sealed class IntakeServiceTests
                 Assert.Equal(1, first.ItemNumber);
                 Assert.Equal("BB001", first.Reference);
                 Assert.Equal(500, first.SellerPriceCents);
-                Assert.Equal("in_stock", first.Status);
+                Assert.Equal("registered", first.Status);
             },
             second =>
             {
                 Assert.Equal(2, second.ItemNumber);
                 Assert.Equal("BB002", second.Reference);
                 Assert.Equal(600, second.SellerPriceCents);
-                Assert.Equal("in_stock", second.Status);
+                Assert.Equal("registered", second.Status);
             });
     }
 
@@ -626,7 +627,7 @@ public sealed class IntakeServiceTests
         Assert.Equal("Large toy piano", updatedItem.Title);
         Assert.Equal(1200, updatedItem.SellerPriceCents);
         Assert.Equal("BB001", updatedItem.Reference);
-        Assert.Equal("in_stock", updatedItem.Status);
+        Assert.Equal("registered", updatedItem.Status);
     }
 
     [Fact]
@@ -816,7 +817,7 @@ public sealed class IntakeServiceTests
         var result = await service.DeleteSellerItemAsync(seller.Id, item.Id);
 
         Assert.Equal(DeleteItemResult.NotAllowed, result);
-        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+        Assert.Equal("registered", (await context.Items.SingleAsync()).Status);
     }
 
     [Fact]
@@ -868,7 +869,7 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
-    public async Task MarkSellerItemInStockAsync_ChangesRegisteredItemToInStock()
+    public async Task ValidateSellerDepositAsync_MovesRegisteredItemsToStockAndLocksSeller()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -880,23 +881,25 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
-        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+            [
+                new CreateItemRowRequest("Toy piano", 1000),
+                new CreateItemRowRequest("Wooden train", 1200)
+            ]));
 
-        var result = await service.MarkSellerItemInStockAsync(seller.Id, item.Id);
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
 
-        Assert.Equal(ItemStatusChangeResult.Changed, result);
-        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var validatedSeller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("deposit_validated", validatedSeller.DepositStatus);
+        Assert.All(validatedSeller.Items, item => Assert.Equal("in_stock", item.Status));
     }
 
-    [Theory]
-    [InlineData("in_stock")]
-    [InlineData("sold")]
-    [InlineData("missing")]
-    public async Task MarkSellerItemInStockAsync_RejectsItemsThatAreNotRegistered(string status)
+    [Fact]
+    public async Task ValidateSellerDepositAsync_ToleratesHistoricalItemStatuses()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -908,24 +911,234 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
-        var item = new ItemEntity
-        {
-            SellerId = seller.Id,
-            Reference = "AA-001",
-            ItemNumber = 1,
-            Title = "Toy piano",
-            SellerPriceCents = 1000,
-            Status = status
-        };
-
-        context.Items.Add(item);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        context.Items.AddRange(
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-001",
+                ItemNumber = 1,
+                Title = "Toy piano",
+                SellerPriceCents = 1000,
+                Status = "registered"
+            },
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-002",
+                ItemNumber = 2,
+                Title = "Sold train",
+                SellerPriceCents = 1200,
+                Status = "sold"
+            },
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-003",
+                ItemNumber = 3,
+                Title = "Missing puzzle",
+                SellerPriceCents = 800,
+                Status = "missing"
+            },
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-004",
+                ItemNumber = 4,
+                Title = "Defective game",
+                SellerPriceCents = 600,
+                Status = "defective"
+            });
         await context.SaveChangesAsync();
 
-        var result = await service.MarkSellerItemInStockAsync(seller.Id, item.Id);
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
 
-        Assert.Equal(ItemStatusChangeResult.NotAllowed, result);
-        Assert.Equal(status, (await context.Items.SingleAsync()).Status);
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var statusesByReference = await context.Items
+            .OrderBy(x => x.Reference)
+            .ToDictionaryAsync(x => x.Reference, x => x.Status);
+        Assert.Equal("in_stock", statusesByReference["AA-001"]);
+        Assert.Equal("sold", statusesByReference["AA-002"]);
+        Assert.Equal("missing", statusesByReference["AA-003"]);
+        Assert.Equal("defective", statusesByReference["AA-004"]);
+        Assert.Equal("deposit_validated", (await context.Sellers.SingleAsync()).DepositStatus);
+    }
+
+    [Fact]
+    public async Task ValidateSellerDepositAsync_RejectsSellerWithoutItems()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.NotAllowed, result);
+        Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
+    }
+
+    [Fact]
+    public async Task UpdateSellerAsync_RejectsValidatedSeller()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]));
+        await service.ValidateSellerDepositAsync(seller.Id);
+
+        var result = await service.UpdateSellerAsync(
+            seller.Id,
+            new UpdateSellerRequest("Augusta", "King", null, "0456", "2 rue des Tests", null));
+
+        Assert.Equal(UpdateSellerResult.NotAllowed, result);
+        var unchangedSeller = await context.Sellers.SingleAsync();
+        Assert.Equal("Ada", unchangedSeller.FirstName);
+        Assert.Equal("deposit_validated", unchangedSeller.DepositStatus);
+    }
+
+    [Fact]
+    public async Task CreateItemBatchAsync_RejectsValidatedSeller()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]));
+        await service.ValidateSellerDepositAsync(seller.Id);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateItemBatchAsync(new CreateItemBatchRequest(
+                seller.Id,
+                IntakeMode.EmailPreregistration,
+                [new CreateItemRowRequest("Extra toy", 500)])));
+
+        Assert.Equal("Seller deposit is already validated.", exception.Message);
+        Assert.Single(await context.Items.ToListAsync());
+    }
+
+    [Fact]
+    public async Task CancelSellerDepositValidationAsync_ReopensSellerAndMovesUnsoldStockItemsToRegistered()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]));
+        await service.ValidateSellerDepositAsync(seller.Id);
+
+        var result = await service.CancelSellerDepositValidationAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var reopenedSeller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("deposit_pending", reopenedSeller.DepositStatus);
+        Assert.Equal("registered", Assert.Single(reopenedSeller.Items).Status);
+    }
+
+    [Fact]
+    public async Task CancelSellerDepositValidationAsync_ReopensSellerAndLeavesHistoricalItemsReadOnly()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        context.Items.AddRange(
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-001",
+                ItemNumber = 1,
+                Title = "Toy piano",
+                SellerPriceCents = 1000,
+                Status = "in_stock"
+            },
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-002",
+                ItemNumber = 2,
+                Title = "Sold train",
+                SellerPriceCents = 1200,
+                Status = "sold"
+            },
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-003",
+                ItemNumber = 3,
+                Title = "Missing puzzle",
+                SellerPriceCents = 800,
+                Status = "missing"
+            },
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "AA-004",
+                ItemNumber = 4,
+                Title = "Defective game",
+                SellerPriceCents = 600,
+                Status = "defective"
+            });
+        (await context.Sellers.SingleAsync()).DepositStatus = "deposit_validated";
+        await context.SaveChangesAsync();
+
+        var result = await service.CancelSellerDepositValidationAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var reopenedSeller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("deposit_pending", reopenedSeller.DepositStatus);
+        var statusesByReference = reopenedSeller.Items
+            .OrderBy(x => x.Reference)
+            .ToDictionary(x => x.Reference, x => x.Status);
+        Assert.Equal("registered", statusesByReference["AA-001"]);
+        Assert.Equal("sold", statusesByReference["AA-002"]);
+        Assert.Equal("missing", statusesByReference["AA-003"]);
+        Assert.Equal("defective", statusesByReference["AA-004"]);
     }
 }
 

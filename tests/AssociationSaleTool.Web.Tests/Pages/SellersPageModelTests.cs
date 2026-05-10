@@ -85,7 +85,7 @@ public sealed class SellersPageModelTests
         Assert.Equal("BB", (await context.Sellers.SingleAsync()).SellerCode);
         var item = await context.Items.SingleAsync();
         Assert.Equal("BB001", item.Reference);
-        Assert.Equal("in_stock", item.Status);
+        Assert.Equal("registered", item.Status);
     }
 
     [Fact]
@@ -663,7 +663,35 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
-    public async Task SellerDetailsPage_PostMarkItemInStock_ChangesRegisteredItemAndRedirectsToSelf()
+    public async Task SellerDetailsPage_PostValidateDeposit_ChangesRegisteredItemsAndRedirectsToSelf()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnPostValidateDepositAsync(seller.Id, CancellationToken.None);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("/Sellers/Details", redirect.PageName);
+        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+        Assert.Equal("deposit_validated", (await context.Sellers.SingleAsync()).DepositStatus);
+    }
+
+    [Fact]
+    public async Task SellerDetailsPage_PostValidateDeposit_ReturnsPageForInvalidSeller()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -682,38 +710,12 @@ public sealed class SellersPageModelTests
 
         var pageModel = new DetailsModel(service);
 
-        var result = await pageModel.OnPostMarkItemInStockAsync(seller.Id, item.Id, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Sellers/Details", redirect.PageName);
-        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
-    }
-
-    [Fact]
-    public async Task SellerDetailsPage_PostMarkItemInStock_ReturnsPageForDisallowedStatus()
-    {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        await using var context = new AppDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-        var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
-        var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
-            seller.Id,
-            IntakeMode.InPerson,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
-
-        var pageModel = new DetailsModel(service);
-
-        var result = await pageModel.OnPostMarkItemInStockAsync(seller.Id, item.Id, CancellationToken.None);
+        var result = await pageModel.OnPostValidateDepositAsync(seller.Id, CancellationToken.None);
 
         Assert.IsType<PageResult>(result);
         Assert.False(pageModel.ModelState.IsValid);
-        Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
+        Assert.Equal("registered", (await context.Items.SingleAsync()).Status);
+        Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
     }
 
     private static void AssertRequiredContactMessages(object input)

@@ -2051,6 +2051,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains(".no-print", content);
         Assert.Contains("body:has(.seller-sheets-print-root) .main-navigation", content);
+        Assert.Contains("body:has(.seller-sheets-print-root) .app-status-header", content);
         Assert.Contains("body:has(.seller-sheets-print-root) .page-frame", content);
         Assert.Contains("body:has(.seller-sheets-print-root) .page-shell", content);
         Assert.Contains(".seller-sheet-print-page", content);
@@ -2094,7 +2095,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("Pr\u00c3", content);
         Assert.DoesNotContain("<h2>Importer depuis Excel</h2>", content);
         Assert.Contains("Enregistrer le vendeur et les articles", content);
-        Assert.Contains("Mode de saisie", content);
+        Assert.DoesNotContain("Mode de saisie", content);
+        Assert.DoesNotContain("value=\"InPerson\"", content);
+        Assert.DoesNotContain("name=\"Input.IntakeMode\"", content);
         Assert.Contains("name=\"Input.Rows[9].Title\"", content);
         Assert.DoesNotContain("name=\"Input.Rows[10].Title\"", content);
         Assert.Contains("data-item-registration-table", content);
@@ -2241,7 +2244,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerDetailsDisplaysFrenchIntakeModeLabels()
+    public async Task SellerDetailsDisplaysDepositValidationActions()
     {
         var client = _factory.CreateClient();
         long sellerId;
@@ -2254,11 +2257,24 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "BK-002",
                 FirstName = "Nina",
                 LastName = "Robert",
-                Email = "nina@example.test"
+                Email = "nina@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                PostalCode = "38000",
+                City = "Grenoble"
             };
 
             dbContext.Sellers.Add(seller);
-
+            await dbContext.SaveChangesAsync();
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-002-001",
+                ItemNumber = 1,
+                Title = "Puzzle",
+                SellerPriceCents = 500,
+                Status = "registered"
+            });
             await dbContext.SaveChangesAsync();
             sellerId = seller.Id;
         }
@@ -2268,10 +2284,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains(">Dépot<", content);
-        Assert.Contains(">Enregistrement<", content);
-        Assert.DoesNotContain(">InPerson<", content);
-        Assert.DoesNotContain(">EmailPreregistration<", content);
+        Assert.Contains("Dépôt à valider", content);
+        Assert.Contains("Imprimer le contrat", content);
+        Assert.Contains("Valider le dépôt", content);
+        Assert.Contains("Validation du dépôt", content);
+        Assert.Contains("Le contrat est signé", content);
+        Assert.Contains("Retour", content);
+        Assert.DoesNotContain("Marquer en stock", content);
+        Assert.DoesNotContain("handler=MarkItemInStock", content);
     }
 
     [Fact]
@@ -2313,7 +2333,53 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerDetailsDisplaysIntakeModeAsRadioButtons()
+    public async Task SellerDetailsExplainsReadOnlyStateWhenContractIsSigned()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-LOCK",
+                FirstName = "Claire",
+                LastName = "Contrat",
+                Email = "claire.contrat@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                PostalCode = "38000",
+                City = "Grenoble",
+                DepositStatus = "deposit_validated"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-LOCK-001",
+                ItemNumber = 1,
+                Title = "Puzzle verrouillé",
+                SellerPriceCents = 500,
+                Status = "in_stock"
+            });
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Le contrat de dépôt signé rend le vendeur et ses articles en lecture seule.", content);
+        Assert.DoesNotContain("Les informations du vendeur et les articles sont en lecture seule dans le statut actuel de la vente.", content);
+        Assert.DoesNotContain("Modifier le vendeur", content);
+        Assert.DoesNotContain("Ajouter des articles", content);
+    }
+
+    [Fact]
+    public async Task SellerDetailsDoesNotDisplayIntakeModeControls()
     {
         var client = _factory.CreateClient();
         long sellerId;
@@ -2326,7 +2392,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "BK-004",
                 FirstName = "Marie",
                 LastName = "Petit",
-                Email = "marie@example.test"
+                Email = "marie@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests"
             };
 
             dbContext.Sellers.Add(seller);
@@ -2340,10 +2408,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("type=\"radio\"", content);
-        Assert.Contains("name=\"Input.IntakeMode\"", content);
-        Assert.Contains("value=\"InPerson\"", content);
-        Assert.Contains("value=\"EmailPreregistration\"", content);
+        Assert.DoesNotContain("Mode de saisie", content);
+        Assert.DoesNotContain("name=\"Input.IntakeMode\"", content);
+        Assert.DoesNotContain("value=\"InPerson\"", content);
+        Assert.DoesNotContain("value=\"EmailPreregistration\"", content);
         Assert.DoesNotContain("<select", content);
     }
 
@@ -2659,12 +2727,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerDetailsDisplaysMarkInStockActionForRegisteredItemsOnly()
+    public async Task SellerDetailsValidatesSignedDepositAndMovesItemsToStock()
     {
         var client = _factory.CreateClient();
         long sellerId;
-        long registeredItemId;
-        long inStockItemId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -2674,13 +2740,17 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "BK-008",
                 FirstName = "Laura",
                 LastName = "Girard",
-                Email = "laura@example.test"
+                Email = "laura@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                PostalCode = "38000",
+                City = "Grenoble"
             };
 
             dbContext.Sellers.Add(seller);
             await dbContext.SaveChangesAsync();
 
-            var registeredItem = new ItemEntity
+            dbContext.Items.Add(new ItemEntity
             {
                 SellerId = seller.Id,
                 Reference = "BK-008-001",
@@ -2688,23 +2758,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 Title = "Puzzle",
                 SellerPriceCents = 450,
                 Status = "registered"
-            };
-            var inStockItem = new ItemEntity
-            {
-                SellerId = seller.Id,
-                Reference = "BK-008-002",
-                ItemNumber = 2,
-                Title = "Camion",
-                SellerPriceCents = 700,
-                Status = "in_stock"
-            };
-
-            dbContext.Items.AddRange(registeredItem, inStockItem);
+            });
             await dbContext.SaveChangesAsync();
 
             sellerId = seller.Id;
-            registeredItemId = registeredItem.Id;
-            inStockItemId = inStockItem.Id;
         }
 
         var response = await client.GetAsync($"/vendeurs/{sellerId}");
@@ -2712,10 +2769,194 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Marquer en stock", content);
-        Assert.Contains("handler=MarkItemInStock", content);
-        Assert.Contains($"itemId={registeredItemId}", content);
-        Assert.DoesNotContain($"handler=MarkItemInStock&amp;itemId={inStockItemId}", content);
+        Assert.Contains("Valider le dépôt", content);
+        Assert.Contains("Le contrat est signé", content);
+        Assert.DoesNotContain("handler=MarkItemInStock", content);
+
+        var postResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=ValidateDeposit",
+            BuildFormContent(content));
+
+        postResponse.EnsureSuccessStatusCode();
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+        Assert.Equal("deposit_validated", verifiedSeller.DepositStatus);
+        Assert.Equal("in_stock", Assert.Single(verifiedSeller.Items).Status);
+    }
+
+    [Fact]
+    public async Task SellerDepositContractPagePrintsSellerAndItemRecap()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-CON",
+                FirstName = "Alice",
+                LastName = "Contrat",
+                Email = "alice@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue du Contrat",
+                PostalCode = "38000",
+                City = "Grenoble"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            dbContext.Items.AddRange(
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "BK-CON-001",
+                    ItemNumber = 1,
+                    Title = "Puzzle contrat",
+                    SellerPriceCents = 500,
+                    Status = "registered"
+                },
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "BK-CON-002",
+                    ItemNumber = 2,
+                    Title = "Camion contrat",
+                    SellerPriceCents = 700,
+                    Status = "registered"
+                });
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}/contrat-depot");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Contrat de dépôt", content);
+        Assert.Contains("Imprimer", content);
+        Assert.Contains("Association Familiale", content);
+        Assert.Contains("33 Av. de l'Europe, 38120 Saint-Égrève", content);
+        Assert.Contains("SIRET : 306 041 997 00058", content);
+        Assert.Contains("Ce document papier signé constitue la preuve du dépôt.", content);
+        Assert.Contains("Frais vendeur : 2.00 € par tranche commencée de 15 articles", content);
+        Assert.Contains("Frais attendus : 2.00 €", content);
+        Assert.Contains("Frais payés : 0.00 €", content);
+        Assert.Contains("Paiement : à régler", content);
+        Assert.Contains("BK-CON-001", content);
+        Assert.Contains("Puzzle contrat", content);
+        Assert.Contains("5.00 €", content);
+        Assert.Contains("J'accepte le règlement de la bourse aux jouets", content);
+        Assert.Contains("Signature vendeur", content);
+        Assert.DoesNotContain("Signature association", content);
+    }
+
+    [Fact]
+    public async Task SellerDetailsCancelsDepositValidationWithLocalAdminPassword()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-CAN",
+                FirstName = "Aline",
+                LastName = "Annule",
+                Email = "aline@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                PostalCode = "38000",
+                City = "Grenoble",
+                DepositStatus = "deposit_validated"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            dbContext.Items.AddRange(
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "BK-CAN-001",
+                    ItemNumber = 1,
+                    Title = "Puzzle",
+                    SellerPriceCents = 500,
+                    Status = "in_stock"
+                },
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "BK-CAN-002",
+                    ItemNumber = 2,
+                    Title = "Train vendu",
+                    SellerPriceCents = 700,
+                    Status = "sold"
+                },
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "BK-CAN-003",
+                    ItemNumber = 3,
+                    Title = "Jeu manquant",
+                    SellerPriceCents = 600,
+                    Status = "missing"
+                },
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "BK-CAN-004",
+                    ItemNumber = 4,
+                    Title = "Camion défectueux",
+                    SellerPriceCents = 800,
+                    Status = "defective"
+                });
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var pageResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        pageResponse.EnsureSuccessStatusCode();
+        var pageContent = WebUtility.HtmlDecode(await pageResponse.Content.ReadAsStringAsync());
+        Assert.Contains("Annuler la validation du dépôt", pageContent);
+        Assert.Contains("Mot de passe administrateur", pageContent);
+
+        var rejectedResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=CancelDepositValidation",
+            BuildFormContent(pageContent, ("CancellationInput.AdminPassword", "wrong-password")));
+
+        rejectedResponse.EnsureSuccessStatusCode();
+        var rejectedContent = WebUtility.HtmlDecode(await rejectedResponse.Content.ReadAsStringAsync());
+        Assert.Contains("Mot de passe administrateur incorrect.", rejectedContent);
+
+        using (var rejectedScope = _factory.Services.CreateScope())
+        {
+            var rejectedContext = rejectedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var rejectedSeller = await rejectedContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+            Assert.Equal("deposit_validated", rejectedSeller.DepositStatus);
+            Assert.Contains(rejectedSeller.Items, item => item.Reference == "BK-CAN-001" && item.Status == "in_stock");
+        }
+
+        var postResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=CancelDepositValidation",
+            BuildFormContent(pageContent, ("CancellationInput.AdminPassword", "test-password")));
+
+        postResponse.EnsureSuccessStatusCode();
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+        Assert.Equal("deposit_pending", verifiedSeller.DepositStatus);
+        var statusesByReference = verifiedSeller.Items.ToDictionary(x => x.Reference, x => x.Status);
+        Assert.Equal("registered", statusesByReference["BK-CAN-001"]);
+        Assert.Equal("sold", statusesByReference["BK-CAN-002"]);
+        Assert.Equal("missing", statusesByReference["BK-CAN-003"]);
+        Assert.Equal("defective", statusesByReference["BK-CAN-004"]);
     }
 
     [Fact]
@@ -2830,7 +3071,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "CK-001",
                 FirstName = "Nora",
                 LastName = "Bernier",
-                Email = "nora@example.test"
+                Email = "nora@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -2954,7 +3196,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 FirstName = "Noelle",
                 LastName = "Secret",
                 Email = "noelle.secret@example.test",
-                Phone = "0601020304"
+                Phone = "0601020304",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -2999,7 +3242,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "CV-001",
                 FirstName = "Claire",
                 LastName = "Valide",
-                Email = "claire.valide@example.test"
+                Email = "claire.valide@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -3090,7 +3334,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "SV-001",
                 FirstName = "Sonia",
                 LastName = "Vente",
-                Email = "sonia.vente@example.test"
+                Email = "sonia.vente@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -3639,7 +3884,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "SV-003",
                 FirstName = "Sonia",
                 LastName = "Facture",
-                Email = "sonia.facture@example.test"
+                Email = "sonia.facture@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -3695,7 +3941,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "SV-004",
                 FirstName = "Sonia",
                 LastName = "Cheque",
-                Email = "sonia.cheque@example.test"
+                Email = "sonia.cheque@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -3755,7 +4002,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "SV-005",
                 FirstName = "Sonia",
                 LastName = "ChequeIncomplet",
-                Email = "sonia.cheque.incomplet@example.test"
+                Email = "sonia.cheque.incomplet@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -3818,7 +4066,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "SV-007",
                 FirstName = "Sonia",
                 LastName = "AcheteurObligatoire",
-                Email = "sonia.acheteur.obligatoire@example.test"
+                Email = "sonia.acheteur.obligatoire@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);
@@ -3878,7 +4127,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerCode = "SV-006",
                 FirstName = "Sonia",
                 LastName = "Acheteur",
-                Email = "sonia.acheteur@example.test"
+                Email = "sonia.acheteur@example.test",
+                DepositStatus = "deposit_validated"
             };
 
             dbContext.Sellers.Add(seller);

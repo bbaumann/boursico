@@ -1,4 +1,5 @@
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Infrastructure;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
@@ -27,6 +28,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
         Item = item;
         CanEditItem = await intakeService.CanEditItemMasterDataAsync(cancellationToken)
+            && item.Seller.DepositStatus == SellerDepositStatuses.Pending
             && item.Status is "registered" or "in_stock";
         Input = new InputModel
         {
@@ -47,6 +49,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
         Item = item;
         CanEditItem = await intakeService.CanEditItemMasterDataAsync(cancellationToken)
+            && item.Seller.DepositStatus == SellerDepositStatuses.Pending
             && item.Status is "registered" or "in_stock";
 
         if (!ModelState.IsValid)
