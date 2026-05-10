@@ -663,6 +663,56 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SaleStatusItemCorrectionLoadsAllRowsForClientSideFiltering()
+    {
+        var client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "AF-001",
+                FirstName = "Aline",
+                LastName = "Filtre"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            for (var index = 1; index <= 15; index++)
+            {
+                dbContext.Items.Add(new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = $"AF-001-{index:000}",
+                    ItemNumber = index,
+                    Title = $"Article vendu {index}",
+                    SellerPriceCents = 500 + index,
+                    Status = "sold"
+                });
+            }
+
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "ZZ-001-999",
+                ItemNumber = 16,
+                Title = "Article tardif à contrôler",
+                SellerPriceCents = 900,
+                Status = "in_stock"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var content = await UnlockSaleStatusPageAsync(client);
+
+        Assert.Contains("Article tardif à contrôler", content);
+        Assert.Contains("Marquer défectueux", content);
+        Assert.Contains("Saisissez une recherche pour filtrer les articles.", content);
+        Assert.DoesNotContain("Les 15 premiers articles non enregistrés sont affichés.", content);
+    }
+
+    [Fact]
     public async Task SaleStatusPageRefundsDefectiveSaleLineWhenUnlocked()
     {
         var client = _factory.CreateClient();

@@ -630,7 +630,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - keep defects found before physical acceptance outside the database, except that a preregistered `registered` row may be deleted
   - keep `in_stock -> defective` as an admin task from `Correction des articles` on `/administration`, not from the seller item list
   - let admins restore `defective -> in_stock` only when no buyer refund history exists
-  - repurpose the admin correction section as `Correction des articles`, listing the first 15 non-`registered` items with a status column
+  - repurpose the admin correction section as `Correction des articles`, loading non-`registered` items into the page and filtering them client-side by the operator's search text
   - handle buyer-return defects from `/administration` with a `Rembourser` action on sold items only
   - record defective refunds directly on `sale_line` with `refunded_at`, refunded item price, refunded checkout fee, total refund, and `refund_reason = defective`
   - allow admins to cancel a defective refund that was entered by mistake, clearing the sale-line refund fields and restoring the item to `sold`

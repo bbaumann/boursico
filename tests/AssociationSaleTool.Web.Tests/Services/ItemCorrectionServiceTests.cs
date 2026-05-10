@@ -9,7 +9,7 @@ namespace AssociationSaleTool.Web.Tests.Services;
 public sealed class ItemCorrectionServiceTests
 {
     [Fact]
-    public async Task ListCandidatesAsync_ReturnsNonRegisteredItemsLimitedToFifteen()
+    public async Task ListCandidatesAsync_ReturnsAllNonRegisteredItems()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
@@ -26,10 +26,10 @@ public sealed class ItemCorrectionServiceTests
 
         var candidates = await service.ListCandidatesAsync();
 
-        Assert.Equal(15, candidates.Count);
+        Assert.Equal(16, candidates.Count);
         Assert.DoesNotContain(candidates, item => item.Reference == "AA-000");
         Assert.Equal("AA-001", candidates.First().Reference);
-        Assert.Equal("AA-015", candidates.Last().Reference);
+        Assert.Equal("AA-016", candidates.Last().Reference);
     }
 
     [Fact]

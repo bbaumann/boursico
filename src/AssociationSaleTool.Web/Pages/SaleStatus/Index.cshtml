@@ -89,7 +89,7 @@ else
                    type="search"
                    autocomplete="off"
                    data-item-correction-search />
-            <p class="seller-meta">Les 15 premiers articles non enregistrés sont affichés.</p>
+            <p class="seller-meta" data-item-correction-prompt-message>Saisissez une recherche pour filtrer les articles.</p>
             <p class="empty-state" data-item-correction-empty-message hidden>Aucun article ne correspond à cette recherche.</p>
 
             @if (Model.ItemCorrectionCandidates.Count > 0)

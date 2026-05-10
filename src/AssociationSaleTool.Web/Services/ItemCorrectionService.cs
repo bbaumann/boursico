@@ -6,27 +6,12 @@ namespace AssociationSaleTool.Web.Services;
 
 public sealed class ItemCorrectionService(AppDbContext dbContext)
 {
-    private const int DefaultLimit = 15;
-
     public async Task<List<ItemCorrectionCandidate>> ListCandidatesAsync(CancellationToken cancellationToken = default)
     {
-        return await ListCandidatesAsync(DefaultLimit, cancellationToken);
-    }
-
-    public async Task<List<ItemCorrectionCandidate>> ListCandidatesAsync(
-        int limit,
-        CancellationToken cancellationToken = default)
-    {
-        if (limit <= 0)
-        {
-            return [];
-        }
-
         return await dbContext.Items
             .AsNoTracking()
             .Where(x => x.Status != "registered")
             .OrderBy(x => x.Reference)
-            .Take(limit)
             .Select(x => new ItemCorrectionCandidate(
                 x.Id,
                 x.SaleLines

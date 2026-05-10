@@ -840,6 +840,7 @@ document.querySelectorAll("[data-reconciliation-root]").forEach(initializeReconc
 function initializeItemCorrection(root) {
   const searchInput = root.querySelector("[data-item-correction-search]");
   const rows = Array.from(root.querySelectorAll("[data-item-correction-row]"));
+  const promptMessage = root.querySelector("[data-item-correction-prompt-message]");
   const emptyMessage = root.querySelector("[data-item-correction-empty-message]");
 
   if (!searchInput || rows.length === 0) {
@@ -850,9 +851,29 @@ function initializeItemCorrection(root) {
     const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
     let visibleRows = 0;
 
+    if (!query) {
+      for (const row of rows) {
+        row.hidden = true;
+      }
+
+      if (promptMessage) {
+        promptMessage.hidden = false;
+      }
+
+      if (emptyMessage) {
+        emptyMessage.hidden = true;
+      }
+
+      return;
+    }
+
+    if (promptMessage) {
+      promptMessage.hidden = true;
+    }
+
     for (const row of rows) {
       const filterText = row.dataset.itemCorrectionFilterText || "";
-      const isVisible = !query || filterText.includes(query);
+      const isVisible = filterText.includes(query);
       row.hidden = !isVisible;
 
       if (isVisible) {
@@ -861,7 +882,7 @@ function initializeItemCorrection(root) {
     }
 
     if (emptyMessage) {
-      emptyMessage.hidden = visibleRows > 0 || !query;
+      emptyMessage.hidden = visibleRows > 0;
     }
   }
 
