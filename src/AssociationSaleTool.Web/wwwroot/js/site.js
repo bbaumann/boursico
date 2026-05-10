@@ -75,6 +75,7 @@ function createCheckoutEmptyRow(message, columnCount) {
 }
 
 let checkoutCitiesByPostalCode = null;
+const checkoutCodeStorageKey = "association-sale-tool.checkout-code";
 
 async function loadCheckoutCitiesByPostalCode() {
   if (checkoutCitiesByPostalCode !== null) {
@@ -169,6 +170,10 @@ async function postCheckoutCart(url, cart, options = {}) {
     body.buyerAddress = options.buyerAddress;
   }
 
+  if (options.checkoutCode !== undefined) {
+    body.checkoutCode = options.checkoutCode;
+  }
+
   if (options.createInvoice !== undefined) {
     body.createInvoice = options.createInvoice;
   }
@@ -229,6 +234,11 @@ function initializeCheckout(root) {
   const modalBackButton = root.querySelector("[data-checkout-modal-back]");
   const saveSaleButton = root.querySelector("[data-checkout-save-sale]");
   const savePrintButton = root.querySelector("[data-checkout-save-print]");
+  const checkoutCodeSetup = root.querySelector("[data-checkout-code-setup]");
+  const checkoutWorkflow = root.querySelector("[data-checkout-workflow]");
+  const checkoutCodeInput = root.querySelector("[data-checkout-code-input]");
+  const checkoutCodeSaveButton = root.querySelector("[data-checkout-code-save]");
+  const checkoutCodeMessage = root.querySelector("[data-checkout-code-message]");
   const paymentMethodInputs = root.querySelectorAll("[data-checkout-payment-method]");
   const chequeDetails = root.querySelector("[data-checkout-cheque-details]");
   const chequeNumberInput = root.querySelector("[data-checkout-cheque-number]");
@@ -262,6 +272,35 @@ function initializeCheckout(root) {
     chequeBankName: false
   };
   let paymentSubmitAttempted = false;
+
+  function setCheckoutCodeMessage(text) {
+    if (checkoutCodeMessage) {
+      checkoutCodeMessage.textContent = text;
+    }
+  }
+
+  function getCheckoutCode() {
+    return localStorage.getItem(checkoutCodeStorageKey)?.trim() || "";
+  }
+
+  function refreshCheckoutCodeState() {
+    const checkoutCode = getCheckoutCode();
+    if (checkoutCodeInput) {
+      checkoutCodeInput.value = checkoutCode;
+    }
+
+    if (checkoutWorkflow) {
+      checkoutWorkflow.hidden = checkoutCode.length === 0;
+    }
+
+    if (checkoutCode.length === 0) {
+      setCheckoutCodeMessage("Renseignez le nom de la caisse avant d'enregistrer une vente.");
+      checkoutCodeInput?.focus();
+      return;
+    }
+
+    setCheckoutCodeMessage(`Caisse active : ${checkoutCode}`);
+  }
 
   function findCatalogItem(itemId) {
     return catalog.find(item => String(item.id) === String(itemId));
@@ -423,6 +462,7 @@ function initializeCheckout(root) {
 
   function getSaleDetails() {
     return {
+      checkoutCode: getCheckoutCode(),
       buyerAddress: getBuyerAddress(),
       ...getBuyerDetails(),
       ...getPaymentDetails()
@@ -725,6 +765,11 @@ function initializeCheckout(root) {
       return;
     }
 
+    if (getCheckoutCode().length === 0) {
+      refreshCheckoutCodeState();
+      return;
+    }
+
     const { response, payload } = await postCheckoutCart("/api/ventes", cart, getSaleDetails());
     if (response.status === 201 && payload.saved) {
       cart.splice(0, cart.length);
@@ -766,6 +811,11 @@ function initializeCheckout(root) {
       return;
     }
 
+    if (getCheckoutCode().length === 0) {
+      refreshCheckoutCodeState();
+      return;
+    }
+
     const { response, payload } = await postCheckoutCart("/api/ventes", cart, {
       ...saleDetails,
       createInvoice: true
@@ -797,6 +847,18 @@ function initializeCheckout(root) {
   renderCart();
   updateChequeDetailsVisibility();
   updateSavePrintButtonState();
+  checkoutCodeSaveButton?.addEventListener("click", () => {
+    const normalizedCode = checkoutCodeInput?.value.trim() || "";
+    if (normalizedCode.length === 0) {
+      setCheckoutCodeMessage("Le nom de la caisse est obligatoire.");
+      checkoutCodeInput?.focus();
+      return;
+    }
+
+    localStorage.setItem(checkoutCodeStorageKey, normalizedCode);
+    refreshCheckoutCodeState();
+  });
+  refreshCheckoutCodeState();
 }
 
 document.querySelectorAll("[data-postal-city-root]").forEach(initializePostalCityRoot);

@@ -188,6 +188,18 @@ else
                                                   asp-page-handler="RefundDefectiveSaleLine"
                                                   asp-route-saleLineId="@refundSaleLineId"
                                                   class="inline-form">
+                                                <label for="refund-checkout-code-@refundSaleLineId">
+                                                    Caisse de remboursement
+                                                    <select id="refund-checkout-code-@refundSaleLineId"
+                                                            name="refundCheckoutCode"
+                                                            required>
+                                                        <option value="">Choisir une caisse</option>
+                                                        @foreach (var checkoutCode in Model.CheckoutCodes)
+                                                        {
+                                                            <option value="@checkoutCode">@checkoutCode</option>
+                                                        }
+                                                    </select>
+                                                </label>
                                                 <button type="submit" class="button-link button-link-solid">
                                                     Confirmer le remboursement
                                                 </button>

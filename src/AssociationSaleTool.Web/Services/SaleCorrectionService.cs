@@ -7,6 +7,17 @@ namespace AssociationSaleTool.Web.Services;
 
 public sealed class SaleCorrectionService(AppDbContext dbContext)
 {
+    public async Task<List<string>> ListCheckoutCodesAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Sales
+            .AsNoTracking()
+            .Select(x => x.CheckoutCode)
+            .Where(x => x != string.Empty)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<SaleCorrectionItem>> ListActiveSoldItemsAsync(CancellationToken cancellationToken = default)
     {
         return await dbContext.SaleLines
@@ -58,8 +69,23 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
 
     public async Task<SaleCorrectionResult> RefundDefectiveSaleLineAsync(
         long saleLineId,
+        string? refundCheckoutCode,
         CancellationToken cancellationToken = default)
     {
+        var normalizedRefundCheckoutCode = NormalizeOptionalText(refundCheckoutCode);
+        if (normalizedRefundCheckoutCode is null)
+        {
+            return SaleCorrectionResult.InvalidCheckoutCode;
+        }
+
+        var checkoutCodeExists = await dbContext.Sales
+            .AsNoTracking()
+            .AnyAsync(x => x.CheckoutCode == normalizedRefundCheckoutCode, cancellationToken);
+        if (!checkoutCodeExists)
+        {
+            return SaleCorrectionResult.InvalidCheckoutCode;
+        }
+
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         var saleLine = await dbContext.SaleLines
             .Include(x => x.Item)
@@ -85,6 +111,7 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
         saleLine.RefundCheckoutFeeCents = refundTotals.CheckoutFeeCents;
         saleLine.RefundTotalCents = saleLine.SellerPriceAtSaleCents + refundTotals.CheckoutFeeCents;
         saleLine.RefundReason = "defective";
+        saleLine.RefundCheckoutCode = normalizedRefundCheckoutCode;
         saleLine.Item.Status = "defective";
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -137,10 +164,17 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
         saleLine.RefundCheckoutFeeCents = null;
         saleLine.RefundTotalCents = null;
         saleLine.RefundReason = null;
+        saleLine.RefundCheckoutCode = null;
         saleLine.Item.Status = "sold";
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return SaleCorrectionResult.RefundCanceled;
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        var normalized = value?.Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 }

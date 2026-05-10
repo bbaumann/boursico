@@ -14,6 +14,7 @@ public sealed class CheckoutService
     private const string PostSaleMessage = "La vente est en après-vente. Aucune nouvelle vente ne peut être enregistrée.";
     private const string MissingBuyerDetailsMessage = "Le nom, le code postal et la ville de l'acheteur sont obligatoires.";
     private const string MissingInvoiceAddressMessage = "L'adresse de l'acheteur est obligatoire pour imprimer une facture.";
+    private const string MissingCheckoutCodeMessage = "Le nom de la caisse est obligatoire.";
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
     private readonly InvoiceNumberService _invoiceNumberService;
@@ -64,8 +65,22 @@ public sealed class CheckoutService
         string? buyerCity = null,
         CancellationToken cancellationToken = default,
         CheckoutPaymentDetails? paymentDetails = null,
-        bool createInvoice = false)
+        bool createInvoice = false,
+        string? checkoutCode = null)
     {
+        var normalizedCheckoutCode = NormalizeOptionalText(checkoutCode);
+        if (normalizedCheckoutCode is null)
+        {
+            return new CheckoutSaleResult(
+                false,
+                null,
+                [],
+                null,
+                0,
+                MissingCheckoutCodeMessage,
+                IsValidationError: true);
+        }
+
         var normalizedBuyerDetails = NormalizeBuyerDetails(buyerName, buyerPostalCode, buyerCity);
         if (!normalizedBuyerDetails.IsValid)
         {
@@ -131,6 +146,7 @@ public sealed class CheckoutService
             SubtotalSellerPriceCents = validation.Totals.SubtotalSellerPriceCents,
             CheckoutFeeCents = validation.Totals.CheckoutFeeCents,
             TotalPaidCents = validation.Totals.TotalPaidCents,
+            CheckoutCode = normalizedCheckoutCode,
             BuyerAddress = normalizedBuyerAddress,
             BuyerName = normalizedBuyerDetails.BuyerName,
             BuyerPostalCode = normalizedBuyerDetails.BuyerPostalCode,

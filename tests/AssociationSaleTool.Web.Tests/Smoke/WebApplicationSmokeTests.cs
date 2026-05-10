@@ -749,6 +749,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SubtotalSellerPriceCents = 1500,
                 CheckoutFeeCents = 150,
                 TotalPaidCents = 1650,
+                CheckoutCode = "CAISSE-RET",
                 SaleLines =
                 [
                     new SaleLineEntity
@@ -767,7 +768,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var dashboardContent = await UnlockSaleStatusPageAsync(client);
         var response = await client.PostAsync(
             $"{AdminPath}?handler=RefundDefectiveSaleLine&saleLineId={saleLineId}",
-            BuildFormContent(dashboardContent));
+            BuildFormContent(dashboardContent, ("refundCheckoutCode", "CAISSE-RET")));
 
         response.EnsureSuccessStatusCode();
 
@@ -781,6 +782,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Equal(150, saleLine.RefundCheckoutFeeCents);
             Assert.Equal(1650, saleLine.RefundTotalCents);
             Assert.Equal("defective", saleLine.RefundReason);
+            Assert.Equal("CAISSE-RET", saleLine.RefundCheckoutCode);
         }
     }
 
@@ -1222,6 +1224,24 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("CH-123", content);
         Assert.Contains("banque cach\u00e9e", content);
         Assert.Contains("9.90 €", content);
+    }
+
+    [Fact]
+    public async Task DataListsClosingTabShowsGlobalAndCheckoutTotals()
+    {
+        var client = _factory.CreateClient();
+        var scenario = await SeedDataListScenarioAsync();
+
+        var response = await client.GetAsync("/donnees?onglet=cloture");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Cl\u00f4ture", content);
+        Assert.Contains("data-list-closing-table", content);
+        Assert.Contains("Toutes les caisses", content);
+        Assert.Contains(scenario.CheckoutCode, content);
+        Assert.Contains("9.90 \u20ac", content);
+        Assert.Contains("0.00 \u20ac", content);
     }
 
     [Fact]
@@ -3455,6 +3475,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                checkoutCode = "CAISSE-SV-001",
                 buyerName = "Client vente",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble",
@@ -3470,6 +3491,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Equal(1500, sale.SubtotalSellerPriceCents);
             Assert.Equal(150, sale.CheckoutFeeCents);
             Assert.Equal(1650, sale.TotalPaidCents);
+            Assert.Equal("CAISSE-SV-001", sale.CheckoutCode);
             Assert.Equal("cash", sale.PaymentMethod);
             Assert.Null(sale.ChequeNumber);
             Assert.Null(sale.ChequeBankName);
@@ -3760,12 +3782,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         string RegisteredReference,
         string InStockReference,
         string SoldReference,
-        string MissingReference)> SeedDataListScenarioAsync()
+        string MissingReference,
+        string CheckoutCode)> SeedDataListScenarioAsync()
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var suffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
         var sellerCode = $"DL{suffix}";
+        var checkoutCode = $"CAISSE-DL-{suffix}";
         var seller = new SellerEntity
         {
             SellerCode = sellerCode,
@@ -3826,6 +3850,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             SubtotalSellerPriceCents = 900,
             CheckoutFeeCents = 90,
             TotalPaidCents = 990,
+            CheckoutCode = checkoutCode,
             BuyerName = "MJC Centre",
             BuyerPostalCode = "38100",
             BuyerCity = "Grenoble",
@@ -3846,7 +3871,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         dbContext.Sales.Add(sale);
         await dbContext.SaveChangesAsync();
 
-        return (seller.Id, sellerCode, sale.Id, registeredItem.Reference, inStockItem.Reference, soldItem.Reference, missingItem.Reference);
+        return (seller.Id, sellerCode, sale.Id, registeredItem.Reference, inStockItem.Reference, soldItem.Reference, missingItem.Reference, checkoutCode);
     }
 
     private async Task SetSalePhaseAsync(SalePhase phase)
@@ -4060,6 +4085,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                checkoutCode = "CAISSE-SV-003",
                 buyerName = "  Association sportive  ",
                 buyerPostalCode = "  38100  ",
                 buyerCity = " Grenoble ",
@@ -4117,6 +4143,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                checkoutCode = "CAISSE-SV-004",
                 buyerName = "Sonia Cheque",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble",
@@ -4178,6 +4205,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                checkoutCode = "CAISSE-SV-005",
                 buyerName = "Sonia Cheque",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble",
@@ -4242,6 +4270,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                checkoutCode = "CAISSE-SV-007",
                 buyerName = "Sonia",
                 buyerPostalCode = "38100",
                 buyerCity = " "
@@ -4303,6 +4332,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                checkoutCode = "CAISSE-SV-006",
                 buyerName = "  Ecole du centre  ",
                 buyerPostalCode = "  38100  ",
                 buyerCity = " Grenoble "
@@ -4360,6 +4390,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
+                checkoutCode = "CAISSE-SV-002",
                 buyerName = "Client conflit",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble"

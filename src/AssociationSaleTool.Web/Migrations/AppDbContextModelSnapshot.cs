@@ -126,6 +126,13 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("buyer_postal_code");
 
+                    b.Property<string>("CheckoutCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("")
+                        .HasColumnName("checkout_code");
+
                     b.Property<int>("CheckoutFeeCents")
                         .HasColumnType("INTEGER")
                         .HasColumnName("checkout_fee_cents");
@@ -164,6 +171,8 @@ namespace AssociationSaleTool.Web.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CheckoutCode");
+
                     b.HasIndex("InvoiceNumber")
                         .IsUnique()
                         .HasFilter("invoice_number IS NOT NULL");
@@ -193,6 +202,10 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Property<long>("ItemId")
                         .HasColumnType("INTEGER")
                         .HasColumnName("item_id");
+
+                    b.Property<string>("RefundCheckoutCode")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("refund_checkout_code");
 
                     b.Property<int?>("RefundCheckoutFeeCents")
                         .HasColumnType("INTEGER")
@@ -228,6 +241,8 @@ namespace AssociationSaleTool.Web.Migrations
                         .IsUnique()
                         .HasFilter("corrected_at IS NULL AND refunded_at IS NULL");
 
+                    b.HasIndex("RefundCheckoutCode");
+
                     b.HasIndex("SaleId");
 
                     b.ToTable("sale_line", null, t =>
@@ -253,16 +268,16 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("city");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("email");
-
                     b.Property<string>("DepositStatus")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
                         .HasDefaultValue("deposit_pending")
                         .HasColumnName("deposit_status");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("email");
 
                     b.Property<int>("FeePaidCents")
                         .ValueGeneratedOnAdd()

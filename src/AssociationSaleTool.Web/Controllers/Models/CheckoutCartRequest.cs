@@ -6,6 +6,8 @@ public sealed class CheckoutCartRequest
 {
     public List<long> ItemIds { get; set; } = [];
 
+    public string? CheckoutCode { get; set; }
+
     public string? BuyerName { get; set; }
 
     public string? BuyerPostalCode { get; set; }

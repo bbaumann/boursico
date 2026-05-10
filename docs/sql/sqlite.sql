@@ -47,6 +47,7 @@ CREATE TABLE item (
 CREATE TABLE sale (
     id INTEGER PRIMARY KEY,
     sold_at TEXT NOT NULL,
+    checkout_code TEXT NOT NULL,
     subtotal_seller_price_cents INTEGER NOT NULL,
     checkout_fee_cents INTEGER NOT NULL,
     total_paid_cents INTEGER NOT NULL,
@@ -76,6 +77,7 @@ CREATE TABLE sale_line (
     refund_checkout_fee_cents INTEGER,
     refund_total_cents INTEGER,
     refund_reason TEXT,
+    refund_checkout_code TEXT,
     CONSTRAINT fk_sale_line_sale
         FOREIGN KEY (sale_id)
         REFERENCES sale(id)
@@ -110,7 +112,9 @@ CREATE INDEX idx_item_title ON item(title);
 CREATE INDEX idx_item_seller_id ON item(seller_id);
 CREATE INDEX idx_item_status ON item(status);
 CREATE INDEX idx_sale_sold_at ON sale(sold_at);
+CREATE INDEX idx_sale_checkout_code ON sale(checkout_code);
 CREATE INDEX idx_sale_line_sale_id ON sale_line(sale_id);
+CREATE INDEX idx_sale_line_refund_checkout_code ON sale_line(refund_checkout_code);
 CREATE UNIQUE INDEX idx_sale_line_active_item_id ON sale_line(item_id) WHERE corrected_at IS NULL AND refunded_at IS NULL;
 
 INSERT INTO event_state (id, sale_phase, updated_at)
