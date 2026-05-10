@@ -1033,6 +1033,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(sale.FirstReference, content);
         Assert.Contains("Jeu corrigé", content);
         Assert.Contains("Corrigée", content);
+        Assert.Contains(sale.SecondReference, content);
+        Assert.DoesNotContain("Vente active", content);
         Assert.Contains("Client facture", content);
         Assert.Contains("Retour à la liste", content);
         Assert.DoesNotContain("Remettre en stock", content);
