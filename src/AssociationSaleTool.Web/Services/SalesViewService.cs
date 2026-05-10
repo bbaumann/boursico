@@ -6,13 +6,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AssociationSaleTool.Web.Services;
 
-public sealed class SalesViewService(AppDbContext dbContext)
+public sealed class SalesViewService
 {
+    private readonly AppDbContext _dbContext;
+    private readonly InvoiceNumberService _invoiceNumberService;
+
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+
+    public SalesViewService(AppDbContext dbContext, InvoiceNumberService? invoiceNumberService = null)
+    {
+        _dbContext = dbContext;
+        _invoiceNumberService = invoiceNumberService ?? new InvoiceNumberService(dbContext);
+    }
 
     public async Task<IReadOnlyList<SalesListItem>> ListSalesAsync(CancellationToken cancellationToken = default)
     {
-        var sales = await dbContext.Sales
+        var sales = await _dbContext.Sales
             .AsNoTracking()
             .Include(x => x.SaleLines)
             .ThenInclude(x => x.Item)
@@ -27,13 +36,45 @@ public sealed class SalesViewService(AppDbContext dbContext)
 
     public async Task<SaleDetail?> GetSaleAsync(long saleId, CancellationToken cancellationToken = default)
     {
-        var sale = await dbContext.Sales
+        var sale = await _dbContext.Sales
             .AsNoTracking()
             .Include(x => x.SaleLines)
             .ThenInclude(x => x.Item)
             .SingleOrDefaultAsync(x => x.Id == saleId, cancellationToken);
 
         return sale is null ? null : BuildDetail(sale);
+    }
+
+    public async Task<SaleInvoicePrintResult> EnsureInvoiceAsync(long saleId, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var sale = await _dbContext.Sales
+            .SingleOrDefaultAsync(x => x.Id == saleId, cancellationToken);
+
+        if (sale is null)
+        {
+            return SaleInvoicePrintResult.NotFound;
+        }
+
+        if (string.IsNullOrWhiteSpace(sale.BuyerAddress))
+        {
+            return SaleInvoicePrintResult.MissingBuyerAddress;
+        }
+
+        if (string.IsNullOrWhiteSpace(sale.InvoiceNumber))
+        {
+            sale.InvoiceNumber = await _invoiceNumberService.CreateNextInvoiceNumberAsync(cancellationToken);
+            sale.InvoiceIssuedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        else if (sale.InvoiceIssuedAt is null)
+        {
+            sale.InvoiceIssuedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return SaleInvoicePrintResult.Ready;
     }
 
     private static SalesListItem BuildListItem(SaleEntity sale)

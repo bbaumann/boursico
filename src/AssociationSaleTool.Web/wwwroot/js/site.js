@@ -926,6 +926,22 @@ function initializeSalesView(root) {
 
 document.querySelectorAll("[data-sales-view-root]").forEach(initializeSalesView);
 
+function initializeSalesViewInvoicePrint() {
+  const printMarker = document.querySelector("[data-sales-view-print-on-load]");
+  if (!printMarker) {
+    return;
+  }
+
+  document.body.classList.add("checkout-printing");
+  window.onafterprint = () => {
+    document.body.classList.remove("checkout-printing");
+    window.history.replaceState(null, "", window.location.pathname);
+  };
+  window.print();
+}
+
+initializeSalesViewInvoicePrint();
+
 const dataListTextCollator = new Intl.Collator("fr-FR", {
   numeric: true,
   sensitivity: "base"

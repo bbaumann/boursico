@@ -223,6 +223,8 @@ V1 invoice handling is intentionally simple:
 - if the operator fills it, `Enregistrer et imprimer` becomes available in the finalization modal
 - `Enregistrer et imprimer` saves first, persists invoice number and issue date, then opens the browser print dialog
 - a normal sale save does not create an invoice number
+- an already saved sale can print an invoice from `/caisse/ventes/{id}` only when the address was captured on the original sale
+- read-only invoice printing reuses an existing invoice number or allocates the next number once for an addressed sale that has not been invoiced yet
 - invoice numbers use the configured `YYMMAFBJNNNN` sequence, for example `2611AFBJ0001`
 - the printed invoice title is `Facture <number>` and uses the AFSE logo
 - the printed invoice hides the application navigation/header while printing

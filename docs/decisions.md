@@ -705,3 +705,22 @@ This file captures the main project decisions in a lightweight ADR format.
   - one signed deposit corresponds to one seller-level validation
   - the signed paper remains the legal artifact; the app status prevents premature checkout and later accidental edits
   - sellers can remain partially entered as `deposit_pending` until the operator is ready to print and sign the contract
+
+## D-044 Print Invoices From Read-Only Sales
+
+- Status: accepted
+- Key drivers:
+  - operators may need to print a facture after the sale has already been saved
+  - invoice printing must not introduce a new customer address after the sale
+  - reprints must not consume additional invoice numbers
+  - the existing read-only sale route should remain the single sale-detail URL
+- Decision:
+  - keep `/caisse/ventes/{id}` as the single read-only sale detail route
+  - show `Imprimer la facture` on `/caisse/ventes/{id}` only when `sale.buyer_address` was captured on the original sale
+  - if the sale already has `invoice_number` and `invoice_issued_at`, reuse them for printing
+  - if the sale has `buyer_address` but no invoice number yet, allocate the next configured invoice number server-side, persist `invoice_issued_at`, then open the print dialog
+  - use the same print-only invoice structure as checkout: AFSE logo, seller/client blocks, compact line table, HT/TVA/TTC totals, and one VAT exemption mention
+- Consequence:
+  - past-sale invoice printing stays tied to data captured at sale time
+  - a saved sale can receive its first invoice number after checkout, but only once and only when the address already exists
+  - `/vente/{id}` is not added as a second route, avoiding duplicate sale-detail URLs

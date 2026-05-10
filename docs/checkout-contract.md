@@ -183,6 +183,10 @@ If save-time validation fails because the event is in `post_sale`, no cart line 
 - if it is filled, `Enregistrer et imprimer` becomes available
 - `Enregistrer et imprimer` creates a persisted invoice number and issue date only after the sale save succeeds
 - normal `Enregistrer la vente` saves do not create invoice numbers
+- `/caisse/ventes/{id}` opens the read-only sale detail for an already saved sale
+- from the read-only sale detail, `Imprimer la facture` is available only if `buyer_address` was captured when the sale was saved
+- if that sale already has invoice data, read-only printing reuses the persisted invoice number and issue date
+- if that sale has `buyer_address` but no invoice number yet, the print action allocates the next server-side invoice number, persists the issue date, then opens the print dialog
 - invoice numbers use the configured event period and code, for example `2611AFBJ0001`
 - the printed invoice title is `Facture <invoice number>`
 - the printed invoice uses one customer block containing buyer name, address, postal code, and city beside the seller identity block

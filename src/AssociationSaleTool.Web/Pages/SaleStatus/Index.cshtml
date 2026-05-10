@@ -127,7 +127,7 @@ else
                             <td>
                                 @if (item.SaleId is { } saleId)
                                 {
-                                    <a asp-page="/Checkout/Sales/Details" asp-route-id="@saleId">#@saleId</a>
+                                    <a href="/caisse/ventes/@saleId">#@saleId</a>
                                 }
                                 else
                                 {

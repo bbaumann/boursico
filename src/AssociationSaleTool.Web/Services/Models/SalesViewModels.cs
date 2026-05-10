@@ -51,6 +51,10 @@ public sealed record SaleDetail(
     public int CorrectedTotalPaidCents => Math.Max(0, TotalPaidCents - RefundTotalCents);
 
     public string BuyerDisplay => SaleBuyerDisplay.Format(BuyerName, BuyerPostalCode, BuyerCity);
+
+    public bool CanPrintInvoice => !string.IsNullOrWhiteSpace(BuyerAddress);
+
+    public bool HasInvoice => !string.IsNullOrWhiteSpace(InvoiceNumber);
 }
 
 public sealed record SaleDetailLine(
@@ -84,4 +88,11 @@ internal static class SaleBuyerDisplay
             " - ",
             new[] { buyerName, location }.Where(value => !string.IsNullOrWhiteSpace(value)));
     }
+}
+
+public enum SaleInvoicePrintResult
+{
+    Ready,
+    MissingBuyerAddress,
+    NotFound
 }

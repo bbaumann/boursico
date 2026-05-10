@@ -12,10 +12,29 @@
             <p class="seller-meta">Enregistrée le @DetailsModel.FormatSoldAt(Model.Sale.SoldAt).</p>
         </div>
         <div class="header-actions">
+            @if (Model.Sale.CanPrintInvoice)
+            {
+                <form method="post" action="/caisse/ventes/@Model.Sale.SaleId?handler=PrintInvoice" class="inline-form">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="button-link button-link-solid" data-sales-view-print-invoice>
+                        Imprimer la facture
+                    </button>
+                </form>
+            }
             <a class="button-link" href="/caisse/ventes">Retour à la liste</a>
             <a class="button-link button-link-solid" href="/caisse">NOUVELLE VENTE</a>
         </div>
     </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="validation" role="alert">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(value => value.Errors))
+            {
+                <p>@error.ErrorMessage</p>
+            }
+        </div>
+    }
 
     @if (Model.Sale.HasBuyerDetails)
     {
@@ -74,6 +93,13 @@
                     </div>
                 }
             </dl>
+        </section>
+    }
+    else if (!Model.Sale.CanPrintInvoice)
+    {
+        <section class="subsection">
+            <h2>Facture</h2>
+            <p class="seller-meta">La facture ne peut pas être imprimée : aucune adresse n'a été saisie au moment de la vente.</p>
         </section>
     }
 
@@ -149,3 +175,93 @@
         </dl>
     </section>
 </section>
+
+@if (Model.Sale.CanPrintInvoice && Model.Sale.HasInvoice)
+{
+<section class="checkout-print-invoice sales-view-print-invoice" data-sales-view-print-document aria-hidden="true">
+    @if (Model.ShouldPrintInvoice)
+    {
+        <span data-sales-view-print-on-load hidden></span>
+    }
+    <header class="checkout-invoice-header">
+        <img class="checkout-invoice-logo" src="@Model.Printing.LogoPath" alt="Logo Association Familiale" />
+        <div>
+            <h1>Facture @Model.Sale.InvoiceNumber</h1>
+            @if (Model.Sale.InvoiceIssuedAt is { } invoiceIssuedAt)
+            {
+                <p>Date d'émission : @DetailsModel.FormatInvoiceIssuedAt(invoiceIssuedAt)</p>
+            }
+        </div>
+    </header>
+
+    <section class="checkout-invoice-parties">
+        <div class="checkout-invoice-party">
+            <h2>Vendeur</h2>
+            <p>@Model.Printing.SellerName</p>
+            <p>@Model.Printing.SellerAddress</p>
+            <p>SIRET : @Model.Printing.SellerSiret</p>
+            <p>@Model.Printing.SellerLegalStatus</p>
+        </div>
+        <div class="checkout-invoice-party">
+            <h2>Client</h2>
+            <p class="checkout-invoice-customer-text">@Model.Sale.BuyerName
+@Model.Sale.BuyerAddress
+@($"{Model.Sale.BuyerPostalCode} {Model.Sale.BuyerCity}".Trim())</p>
+        </div>
+    </section>
+
+    <table class="data-table checkout-invoice-table">
+        <colgroup>
+            <col class="checkout-invoice-quantity-column" />
+            <col class="checkout-invoice-designation-column" />
+            <col class="checkout-invoice-amount-column" />
+            <col class="checkout-invoice-amount-column" />
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Quantité</th>
+                <th>Désignation</th>
+                <th>P.U. HT</th>
+                <th>Total HT</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var line in Model.Sale.Lines)
+        {
+            <tr>
+                <td>1</td>
+                <td>@line.Reference - @line.Title</td>
+                <td>@DetailsModel.FormatPrice(line.SellerPriceAtSaleCents)</td>
+                <td>@DetailsModel.FormatPrice(line.SellerPriceAtSaleCents)</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <dl class="checkout-totals">
+        <div>
+            <dt>Sous-total articles HT</dt>
+            <dd>@DetailsModel.FormatPrice(Model.Sale.SubtotalSellerPriceCents)</dd>
+        </div>
+        <div>
+            <dt>Frais association familiale HT</dt>
+            <dd>@DetailsModel.FormatPrice(Model.Sale.CheckoutFeeCents)</dd>
+        </div>
+        <div class="checkout-total-row">
+            <dt>Total HT</dt>
+            <dd>@DetailsModel.FormatPrice(Model.Sale.TotalPaidCents)</dd>
+        </div>
+        <div>
+            <dt>TVA</dt>
+            <dd>@DetailsModel.FormatPrice(0)</dd>
+        </div>
+        <div class="checkout-total-row">
+            <dt>Total TTC</dt>
+            <dd>@DetailsModel.FormatPrice(Model.Sale.TotalPaidCents)</dd>
+        </div>
+    </dl>
+    <p class="checkout-invoice-vat-exemption">
+        @Model.Printing.VatExemptionText
+    </p>
+</section>
+}

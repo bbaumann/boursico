@@ -215,8 +215,12 @@ Expected behavior:
 - sale save with printing creates and persists invoice data in the same successful transaction as the sale
 - if sale validation fails, no invoice number is assigned
 - after a successful invoice save, the browser can open the print dialog
+- an already saved sale may print an invoice from the read-only sale detail only if the customer address was captured on the original sale
+- read-only sale detail printing must reuse an existing persisted invoice number and issue date
+- if an addressed saved sale has no invoice number yet, the read-only print action may allocate the next invoice number once and persist its issue date before printing
+- if the saved sale has no customer address, the read-only detail must not offer invoice printing
 
-If future reprint support is added, it must reuse the persisted invoice number and issue date. It must not create a new invoice number for the same invoice.
+Reprint support must reuse the persisted invoice number and issue date. It must not create a new invoice number for the same invoice.
 
 ## Configuration
 

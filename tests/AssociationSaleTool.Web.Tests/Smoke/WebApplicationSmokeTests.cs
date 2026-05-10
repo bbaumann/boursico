@@ -1040,6 +1040,48 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SalesViewDetailPageCreatesPrintableInvoiceOnReadonlySaleRouteWhenAddressWasCaptured()
+    {
+        var client = _factory.CreateClient();
+        var sale = await SeedSalesViewInvoiceCandidateAsync();
+
+        var response = await client.GetAsync($"/caisse/ventes/{sale.SaleId}");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Imprimer la facture", content);
+        Assert.Contains("data-sales-view-print-invoice", content);
+        Assert.Contains("12 rue des Lilas", content);
+        Assert.DoesNotContain($"/vente/{sale.SaleId}", content);
+
+        var printResponse = await client.PostAsync(
+            $"/caisse/ventes/{sale.SaleId}?handler=PrintInvoice",
+            BuildFormContent(content));
+
+        printResponse.EnsureSuccessStatusCode();
+        var printContent = WebUtility.HtmlDecode(await printResponse.Content.ReadAsStringAsync());
+        Assert.Contains("data-sales-view-print-on-load", printContent);
+        Assert.Matches(@"Facture 2611AFBJ\d{4}", printContent);
+        Assert.Contains("Association Familiale", printContent);
+        Assert.Contains("MJC Centre", printContent);
+        Assert.Contains("12 rue des Lilas", printContent);
+        Assert.Contains("38100 Grenoble", printContent);
+        Assert.Contains(sale.FirstReference, printContent);
+        Assert.Contains("P.U. HT", printContent);
+        Assert.Contains("TVA non applicable en vertu de l'article 293 B du CGI.", printContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var storedSale = await dbContext.Sales.SingleAsync(x => x.Id == sale.SaleId);
+        Assert.NotNull(storedSale.InvoiceNumber);
+        Assert.StartsWith("2611AFBJ", storedSale.InvoiceNumber);
+        Assert.NotNull(storedSale.InvoiceIssuedAt);
+
+        var aliasResponse = await client.GetAsync($"/vente/{sale.SaleId}");
+        Assert.Equal(HttpStatusCode.NotFound, aliasResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task DataListsPageLoadsWithoutAdminGateAndShowsArticlesByDefault()
     {
         var client = _factory.CreateClient();
@@ -3652,6 +3694,61 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         await dbContext.SaveChangesAsync();
 
         return (sale.Id, firstItem.Reference, secondItem.Reference);
+    }
+
+    private async Task<(long SaleId, string FirstReference)> SeedSalesViewInvoiceCandidateAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var seller = new SellerEntity
+        {
+            SellerCode = $"IV-{suffix}",
+            FirstName = "Irene",
+            LastName = "Facture"
+        };
+
+        dbContext.Sellers.Add(seller);
+        await dbContext.SaveChangesAsync();
+
+        var item = new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = $"{seller.SellerCode}-001",
+            ItemNumber = 1,
+            Title = "Jeu facture apres vente",
+            SellerPriceCents = 1200,
+            Status = "sold"
+        };
+
+        dbContext.Items.Add(item);
+        await dbContext.SaveChangesAsync();
+
+        var sale = new SaleEntity
+        {
+            SoldAt = new DateTime(2026, 5, 4, 10, 0, 0, DateTimeKind.Utc),
+            SubtotalSellerPriceCents = 1200,
+            CheckoutFeeCents = 120,
+            TotalPaidCents = 1320,
+            BuyerName = "MJC Centre",
+            BuyerPostalCode = "38100",
+            BuyerCity = "Grenoble",
+            BuyerAddress = "12 rue des Lilas",
+            PaymentMethod = "card",
+            SaleLines =
+            [
+                new SaleLineEntity
+                {
+                    ItemId = item.Id,
+                    SellerPriceAtSaleCents = item.SellerPriceCents
+                }
+            ]
+        };
+
+        dbContext.Sales.Add(sale);
+        await dbContext.SaveChangesAsync();
+
+        return (sale.Id, item.Reference);
     }
 
     private async Task<(

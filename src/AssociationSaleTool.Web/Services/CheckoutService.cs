@@ -16,16 +16,17 @@ public sealed class CheckoutService
     private const string MissingInvoiceAddressMessage = "L'adresse de l'acheteur est obligatoire pour imprimer une facture.";
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
-    private readonly PrintingOptions _printingOptions;
+    private readonly InvoiceNumberService _invoiceNumberService;
 
     public CheckoutService(
         AppDbContext dbContext,
         SalePhaseService? salePhaseService = null,
-        IOptions<PrintingOptions>? printingOptions = null)
+        IOptions<PrintingOptions>? printingOptions = null,
+        InvoiceNumberService? invoiceNumberService = null)
     {
         _dbContext = dbContext;
         _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
-        _printingOptions = printingOptions?.Value ?? new PrintingOptions();
+        _invoiceNumberService = invoiceNumberService ?? new InvoiceNumberService(dbContext, printingOptions);
     }
 
     public async Task<List<CheckoutCatalogItem>> ListCatalogItemsAsync(CancellationToken cancellationToken = default)
@@ -142,7 +143,7 @@ public sealed class CheckoutService
         if (createInvoice)
         {
             sale.InvoiceIssuedAt = soldAt;
-            sale.InvoiceNumber = await CreateNextInvoiceNumberAsync(cancellationToken);
+            sale.InvoiceNumber = await _invoiceNumberService.CreateNextInvoiceNumberAsync(cancellationToken);
         }
 
         foreach (var item in items)
@@ -167,27 +168,6 @@ public sealed class CheckoutService
             validation.ItemCount,
             InvoiceNumber: sale.InvoiceNumber,
             InvoiceIssuedAt: sale.InvoiceIssuedAt);
-    }
-
-    private async Task<string> CreateNextInvoiceNumberAsync(CancellationToken cancellationToken)
-    {
-        var prefix = _printingOptions.InvoiceNumberPrefix;
-        var lastInvoiceNumber = await _dbContext.Sales
-            .AsNoTracking()
-            .Where(x => x.InvoiceNumber != null && x.InvoiceNumber.StartsWith(prefix))
-            .Select(x => x.InvoiceNumber!)
-            .OrderByDescending(x => x)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var nextSequence = 1;
-        if (lastInvoiceNumber is not null
-            && lastInvoiceNumber.Length > prefix.Length
-            && int.TryParse(lastInvoiceNumber[prefix.Length..], out var lastSequence))
-        {
-            nextSequence = lastSequence + 1;
-        }
-
-        return $"{prefix}{nextSequence:0000}";
     }
 
     private static BuyerDetailsNormalizationResult NormalizeBuyerDetails(
