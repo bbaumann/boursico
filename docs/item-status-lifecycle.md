@@ -21,6 +21,8 @@ When the event phase is `sale` or `post_sale`, the following seller fields becom
 - `email`
 - `phone`
 - `postal_address`
+- `postal_code`
+- `city`
 - `notes`
 
 The following item fields also become read-only in normal operations:
@@ -39,7 +41,7 @@ The status field remains editable only through the workflow transitions defined 
 
 Seller deposits use a separate seller-level operational status:
 
-- `deposit_pending`: the seller has not yet signed a deposit contract; their items remain draft `registered` rows
+- `deposit_pending`: the seller has not yet signed a deposit contract; contact fields may still be incomplete, and their items remain draft `registered` rows
 - `deposit_validated`: the seller has signed the paper deposit contract; accepted items have been moved to `in_stock`
 
 The signed paper contract is the legal proof of deposit and price agreement. The database status only gates normal app workflow.

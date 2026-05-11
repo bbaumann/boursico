@@ -53,11 +53,8 @@ public sealed class IntakeServiceTests
         Assert.Empty(await context.Sellers.ToListAsync());
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task CreateSellerAsync_RejectsBlankPhone(string? phone)
+    [Fact]
+    public async Task CreateSellerAsync_AllowsBlankPendingSellerContactInformation()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -70,35 +67,15 @@ public sealed class IntakeServiceTests
 
         var service = new IntakeService(context);
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, phone, "1 rue des Tests", null)));
+        var result = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, "   ", null));
 
-        Assert.Equal("Phone", exception.ParamName);
-        Assert.Empty(await context.Sellers.ToListAsync());
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task CreateSellerAsync_RejectsBlankPostalAddress(string? postalAddress)
-    {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        await using var context = new AppDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-
-        var service = new IntakeService(context);
-
-        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", postalAddress, null)));
-
-        Assert.Equal("PostalAddress", exception.ParamName);
-        Assert.Empty(await context.Sellers.ToListAsync());
+        Assert.Equal(CreateSellerOutcome.Created, result.Outcome);
+        var seller = await context.Sellers.SingleAsync();
+        Assert.Equal(string.Empty, seller.Phone);
+        Assert.Equal(string.Empty, seller.PostalAddress);
+        Assert.Equal(string.Empty, seller.PostalCode);
+        Assert.Equal(string.Empty, seller.City);
+        Assert.Equal("deposit_pending", seller.DepositStatus);
     }
 
 
@@ -128,7 +105,7 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
-    public async Task CreateSellerAsync_RejectsBlankPhoneBeforeDuplicateCheck()
+    public async Task CreateSellerAsync_ReturnsDuplicateResultForSameNameWhenSubmittedPhoneIsBlank()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -140,12 +117,14 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null))).Seller!;
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, "1 rue des Tests", null)));
+        var result = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, "1 rue des Tests", null));
 
-        Assert.Equal("Phone", exception.ParamName);
+        Assert.Equal(CreateSellerOutcome.DuplicateFound, result.Outcome);
+        var match = Assert.Single(result.DuplicateMatches);
+        Assert.Equal(existing.Id, match.SellerId);
+        Assert.Equal(SellerDuplicateMatchReason.NameOnlySubmittedPhoneMissing, match.Reason);
         Assert.Equal(1, await context.Sellers.CountAsync());
     }
 
@@ -197,6 +176,41 @@ public sealed class IntakeServiceTests
                 Assert.Equal("registered", second.Status);
                 Assert.Equal(1200, second.SellerPriceCents);
             });
+    }
+
+    [Fact]
+    public async Task CreateSellerWithItemsAsync_AllowsBlankPendingSellerContactInformation()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+
+        var result = await service.CreateSellerWithItemsAsync(
+            new CreateSellerWithItemsRequest(
+                "Marie",
+                "Durand",
+                null,
+                null,
+                null,
+                null,
+                IntakeMode.EmailPreregistration,
+                [new CreateItemRowRequest("Puzzle bois", 500)]));
+
+        Assert.Equal(CreateSellerWithItemsOutcome.Created, result.Outcome);
+        var seller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal(string.Empty, seller.Phone);
+        Assert.Equal(string.Empty, seller.PostalAddress);
+        Assert.Equal(string.Empty, seller.PostalCode);
+        Assert.Equal(string.Empty, seller.City);
+        Assert.Equal("deposit_pending", seller.DepositStatus);
+        Assert.Equal("registered", Assert.Single(seller.Items).Status);
     }
 
     [Fact]
@@ -518,11 +532,8 @@ public sealed class IntakeServiceTests
         Assert.Equal("ada@example.com", (await context.Sellers.SingleAsync()).Email);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task UpdateSellerAsync_RejectsBlankPhone(string? phone)
+    [Fact]
+    public async Task UpdateSellerAsync_AllowsClearingPendingSellerContactInformation()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -536,36 +547,17 @@ public sealed class IntakeServiceTests
         var service = new IntakeService(context);
         var seller = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null))).Seller!;
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.UpdateSellerAsync(seller.Id, new UpdateSellerRequest("Ada", "Lovelace", null, phone, "10 avenue des Jouets", "Updated")));
+        var result = await service.UpdateSellerAsync(
+            seller.Id,
+            new UpdateSellerRequest("Ada", "Lovelace", null, null, "   ", "Updated"));
 
-        Assert.Equal("Phone", exception.ParamName);
-        Assert.Equal("0123", (await context.Sellers.SingleAsync()).Phone);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task UpdateSellerAsync_RejectsBlankPostalAddress(string? postalAddress)
-    {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        await using var context = new AppDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-
-        var service = new IntakeService(context);
-        var seller = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null))).Seller!;
-
-        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.UpdateSellerAsync(seller.Id, new UpdateSellerRequest("Ada", "Lovelace", null, "0123", postalAddress, "Updated")));
-
-        Assert.Equal("PostalAddress", exception.ParamName);
-        Assert.Equal("1 rue des Tests", (await context.Sellers.SingleAsync()).PostalAddress);
+        Assert.Equal(UpdateSellerResult.Updated, result);
+        var updatedSeller = await context.Sellers.SingleAsync();
+        Assert.Equal(string.Empty, updatedSeller.Phone);
+        Assert.Equal(string.Empty, updatedSeller.PostalAddress);
+        Assert.Equal(string.Empty, updatedSeller.PostalCode);
+        Assert.Equal(string.Empty, updatedSeller.City);
+        Assert.Equal("Updated", updatedSeller.Notes);
     }
 
 
@@ -983,6 +975,33 @@ public sealed class IntakeServiceTests
 
         Assert.Equal(SellerDepositStatusChangeResult.NotAllowed, result);
         Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
+    }
+
+    [Fact]
+    public async Task ValidateSellerDepositAsync_RejectsSellerWithIncompleteContactInformation()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, null, null, null));
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]));
+
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.NotAllowed, result);
+        var unchangedSeller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("deposit_pending", unchangedSeller.DepositStatus);
+        Assert.Equal("registered", Assert.Single(unchangedSeller.Items).Status);
     }
 
     [Fact]

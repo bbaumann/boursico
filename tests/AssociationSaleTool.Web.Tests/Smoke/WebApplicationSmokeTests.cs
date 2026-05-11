@@ -2231,7 +2231,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("value=\"Marie\"", content);
         Assert.Contains("value=\"Durand\"", content);
         Assert.Contains("value=\"0600000000\"", content);
-        Assert.Contains("UNKNOWN", content);
+        Assert.DoesNotContain("UNKNOWN", content);
         Assert.Contains("value=\"38120\"", content);
         Assert.Contains("value=\"Saint-Égrève\"", content);
         Assert.Contains("Puzzle Excel", content);

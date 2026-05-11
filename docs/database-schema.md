@@ -57,6 +57,7 @@ Represents one seller.
 - `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
 - The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
 - `deposit_status` stores the operational seller deposit gate and defaults to `deposit_pending`.
+- Phone, postal address, postal code, and city may be blank while `deposit_status = deposit_pending`; the application requires them before deposit validation.
 - The signed paper deposit contract is the legal proof of deposit and price agreement; V1 does not store a contract number, signed timestamp, or contract snapshot.
 
 ## `item`
@@ -210,10 +211,10 @@ V1 uses a single row with `id = 1`.
 - `first_name`: required
 - `last_name`: required
 - `email`: optional
-- `phone`: required
-- `postal_address`: required
-- `postal_code`: required
-- `city`: required
+- `phone`: required column; may be blank while the seller is `deposit_pending`
+- `postal_address`: required column; may be blank while the seller is `deposit_pending`
+- `postal_code`: required column; may be blank while the seller is `deposit_pending`
+- `city`: required column; may be blank while the seller is `deposit_pending`
 - `deposit_status`: required
 - `notes`: optional
 
@@ -285,7 +286,7 @@ Allowed values:
 
 Business meaning:
 
-- `deposit_pending`: the seller has not yet signed the printed deposit contract; normal seller and item edits remain possible during `presale`, and items stay `registered`
+- `deposit_pending`: the seller has not yet signed the printed deposit contract; normal seller and item edits remain possible during `presale`, contact fields may still be incomplete, and items stay `registered`
 - `deposit_validated`: the signed paper contract has been received; normal seller and item edits are locked for that seller, and accepted items are `in_stock`
 
 ## Sale Phase

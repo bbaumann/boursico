@@ -63,8 +63,8 @@ public sealed class IntakeService
             throw new InvalidOperationException("Seller master data is locked outside presale.");
         }
 
-        var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
-        var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        var normalizedPhone = NormalizeOptional(request.Phone) ?? string.Empty;
+        var normalizedPostalAddress = NormalizeOptional(request.PostalAddress) ?? string.Empty;
         var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
         var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
@@ -117,8 +117,8 @@ public sealed class IntakeService
             throw new InvalidOperationException("Seller master data is locked outside presale.");
         }
 
-        var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
-        var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        var normalizedPhone = NormalizeOptional(request.Phone) ?? string.Empty;
+        var normalizedPostalAddress = NormalizeOptional(request.PostalAddress) ?? string.Empty;
         var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
         var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
@@ -212,8 +212,8 @@ public sealed class IntakeService
             return UpdateSellerResult.NotAllowed;
         }
 
-        var normalizedPhone = NormalizeRequired(request.Phone, nameof(request.Phone));
-        var normalizedPostalAddress = NormalizeRequired(request.PostalAddress, nameof(request.PostalAddress));
+        var normalizedPhone = NormalizeOptional(request.Phone) ?? string.Empty;
+        var normalizedPostalAddress = NormalizeOptional(request.PostalAddress) ?? string.Empty;
         var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
         var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
@@ -369,16 +369,6 @@ public sealed class IntakeService
     private static string? NormalizeOptional(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    }
-
-    private static string NormalizeRequired(string? value, string paramName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException("Required seller contact information is missing.", paramName);
-        }
-
-        return value.Trim();
     }
 
     private static void EnsureSellerPriceIsWholeEuro(int sellerPriceCents)

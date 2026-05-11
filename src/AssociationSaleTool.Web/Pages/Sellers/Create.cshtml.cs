@@ -128,8 +128,8 @@ public sealed class CreateModel(
             Email = parseResult.Email,
             Phone = parseResult.Phone ?? string.Empty,
             PostalAddress = parseResult.PostalAddress,
-            PostalCode = parseResult.PostalCode ?? "00000",
-            City = parseResult.City ?? "UNKNOWN",
+            PostalCode = parseResult.PostalCode ?? string.Empty,
+            City = parseResult.City ?? string.Empty,
             FeePaid = "0",
             Notes = parseResult.Notes,
             IntakeMode = IntakeMode.EmailPreregistration,
@@ -147,6 +147,11 @@ public sealed class CreateModel(
 
     private static string BuildDuplicateMessage(IReadOnlyList<SellerDuplicateMatch> matches)
     {
+        if (matches.Any(match => match.Reason == SellerDuplicateMatchReason.NameOnlySubmittedPhoneMissing))
+        {
+            return "Un vendeur existe déjà avec les mêmes nom et prénom. Aucun téléphone n'a été saisi : ouvrez le vendeur existant ou saisissez un téléphone distinct avant de continuer.";
+        }
+
         return "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
     }
 
@@ -276,16 +281,12 @@ public sealed class CreateModel(
         [EmailAddress(ErrorMessage = "L'adresse e-mail doit être valide.")]
         public string? Email { get; set; }
 
-        [Required(ErrorMessage = "Le téléphone est obligatoire.")]
         public string Phone { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "L'adresse postale est obligatoire.")]
         public string PostalAddress { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Le code postal est obligatoire.")]
         public string PostalCode { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "La ville est obligatoire.")]
         public string City { get; set; } = string.Empty;
 
         public string? FeePaid { get; set; } = "0";

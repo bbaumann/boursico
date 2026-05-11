@@ -46,10 +46,10 @@ The public form should ask for:
 
 - first name
 - last name
-- phone
-- postal address
-- postal code
-- city
+- phone, when available
+- postal address, when available
+- postal code, when available
+- city, when available
 - email, optional
 - notes, optional
 - articles, as one multiline text answer
@@ -87,6 +87,7 @@ Each row shows:
 - seller name
 - phone
 - postal code and city
+- missing contact fields, if any
 - valid item count
 - ignored item-line count
 - status
@@ -101,19 +102,19 @@ This imports all rows that can be imported without organizer judgment. Rows that
 ## Review Statuses
 
 `Prêt`
-: Seller data is valid, postal code/city is accepted or safely normalized, no duplicate action is required, and the row can be bulk imported.
+: Seller name and item data are valid, any submitted postal code/city is accepted or safely normalized, no duplicate action is required, and the row can be bulk imported as a `deposit_pending` draft even if contact fields must be completed later.
 
 `Prêt avec avertissements`
 : Seller data can be imported, but some item lines will be ignored. Bulk import is allowed. The ignored lines are shown in the row detail.
 
 `Ville à corriger`
-: The postal code/city pair is invalid, ambiguous, or unsupported. The organizer must fix it before import.
+: A submitted postal code/city pair is invalid, ambiguous, or unsupported. The organizer must fix it before import.
 
 `Doublon possible`
 : The submitted seller matches an existing seller. The organizer must choose whether to append valid items to the existing seller or ignore the submission.
 
 `Erreur vendeur`
-: Required seller data is missing or invalid. The organizer must fix the row before import.
+: Required draft seller data is missing or invalid, such as name data or the absence of any valid item line. The organizer must fix the row before import.
 
 `Importé`
 : The row was imported during the current review session.

@@ -113,16 +113,16 @@ La page `/` redirige automatiquement vers le bon workflow selon le statut :
 
 Aller dans `VENDEURS`, puis cliquer sur `Créer un vendeur`.
 
-Renseigner :
+Renseigner au minimum le prénom et le nom. Ajouter les informations disponibles :
 
 - prénom ;
 - nom ;
 - e-mail si disponible ;
-- téléphone ;
-- adresse postale ;
+- téléphone si disponible ;
+- adresse postale, code postal et ville si disponibles ;
 - notes si nécessaire.
 
-À l'enregistrement, l'outil attribue un code vendeur. Ce code sert ensuite à construire les références des articles.
+À l'enregistrement, l'outil attribue un code vendeur. Ce code sert ensuite à construire les références des articles. Les coordonnées manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
 
 ### Éviter les doublons vendeurs
 
@@ -138,6 +138,8 @@ Si un vendeur similaire existe déjà, la page affiche la liste des vendeurs exi
 - lien pour ouvrir le vendeur existant.
 
 Dans ce cas, il faut ouvrir le vendeur existant au lieu d'en créer un second, sauf si l'organisateur confirme qu'il s'agit bien d'une personne différente.
+
+Si aucun téléphone n'est saisi, le doublon est bloqué sur le prénom et le nom seuls.
 
 ### Ajouter des articles
 
@@ -158,10 +160,11 @@ Quand le vendeur apporte les jouets :
 
 1. Ouvrir sa fiche vendeur.
 2. Relire les articles un par un.
-3. Corriger ou supprimer les lignes incomplètes avant signature.
-4. Cliquer sur `Imprimer le contrat`.
-5. Faire signer le contrat papier par le vendeur.
-6. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
+3. Compléter le téléphone, l'adresse postale, le code postal et la ville du vendeur.
+4. Corriger ou supprimer les lignes incomplètes avant signature.
+5. Cliquer sur `Imprimer le contrat`.
+6. Faire signer le contrat papier par le vendeur.
+7. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
 
 Le contrat imprimé affiche l'identité de l'association, son adresse, son SIRET, les frais vendeurs attendus, les frais déjà payés, les mentions légales, la liste des articles et les prix. Il ne contient qu'une signature vendeur, avec la phrase `J'accepte le règlement de la bourse aux jouets` juste avant la date de signature. Le statut de l'événement n'est pas imprimé sur le contrat.
 

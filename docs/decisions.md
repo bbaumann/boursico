@@ -479,7 +479,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-033 Require Seller Phone And Postal Address
 
-- Status: accepted
+- Status: superseded by D-045
 - Key drivers:
   - event owners need reliable seller contact details before accepting items
   - phone-only contact is not enough for seller settlement and post-event follow-up
@@ -607,7 +607,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - fill the editable seller and item form during upload but do not persist seller or item data
   - save manually entered or Excel-prefilled seller and item data through one normal intake action and one database transaction
   - redirect duplicate sellers to the existing seller detail page and prefill the parsed rows into the add-items form for review
-  - use `UNKNOWN` for Excel-prefilled postal address and `EUR 0` for paid seller fee until those workbook fields are formally designed
+  - leave Excel-prefilled seller contact fields blank when the workbook does not provide them, and use `EUR 0` for paid seller fee until those workbook fields are formally designed
   - read Excel `CP VILLE` when present, accepting only canonical postal-code/city pairs from the authoritative Isere city list used by the application
   - generate the Excel workbook's hidden `codes postaux` list from `wwwroot/data/isere-postal-cities.json`
 - Consequence:
@@ -693,6 +693,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - add `seller.deposit_status` with `deposit_pending` and `deposit_validated`
   - create normal intake and Excel-prefilled items as `registered`, including in-person entry
   - print the seller contract recap from the seller detail page with association identity, legal mentions, seller fee status, current item prices, and only the seller signature area
+  - require complete seller contact information before deposit validation, not before draft seller creation or edit
   - validate the seller deposit only after the operator confirms `Le contrat est signé`
   - on validation, move the seller's accepted `registered` items to `in_stock` and lock normal seller/item edits for that seller
   - remove the normal UI path for manual item-level `registered -> in_stock`
@@ -724,3 +725,22 @@ This file captures the main project decisions in a lightweight ADR format.
   - past-sale invoice printing stays tied to data captured at sale time
   - a saved sale can receive its first invoice number after checkout, but only once and only when the address already exists
   - `/vente/{id}` is not added as a second route, avoiding duplicate sale-detail URLs
+
+## D-045 Relax Draft Seller Contact Requirements
+
+- Status: accepted
+- Key drivers:
+  - Excel and CSV prefill can contain useful seller and item data even when contact details are incomplete
+  - organizers can complete missing seller details more efficiently when the seller physically deposits items
+  - the signed deposit validation is already the operational gate that moves items into stock and locks normal edits
+  - a seller without a phone cannot be reliably distinguished from another seller with the same name
+- Decision:
+  - allow `deposit_pending` sellers to be created and edited with blank phone, postal address, postal code, and city
+  - keep first name and last name required for seller creation and duplicate detection
+  - when the submitted phone is blank, block duplicate sellers on normalized first name and last name only
+  - do not use placeholder contact values such as `UNKNOWN` for new Excel-prefilled data
+  - require phone, postal address, postal code, city, and complete item rows before seller deposit validation
+- Consequence:
+  - incomplete imported seller records can be saved as drafts instead of being rejected or filled with fake data
+  - checkout remains protected because only validated deposits move items to `in_stock`
+  - operators must complete missing contact information before confirming `Le contrat est signé`

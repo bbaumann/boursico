@@ -34,7 +34,7 @@ public sealed class ExcelSellerItemParserTests
         Assert.Equal("Marie", result.FirstName);
         Assert.Equal("Durand", result.LastName);
         Assert.Equal("0600000000", result.Phone);
-        Assert.Equal("UNKNOWN", result.PostalAddress);
+        Assert.Equal(string.Empty, result.PostalAddress);
         Assert.Equal(17, result.Rows.Count);
         Assert.Equal("Jouet 7", result.Rows[0].Title);
         Assert.Equal(100, result.Rows[0].SellerPriceCents);

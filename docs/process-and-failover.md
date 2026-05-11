@@ -7,7 +7,7 @@
 1. Some sellers send their item lists outside the system, typically by email.
 2. Intake operator creates sellers in the system.
 3. Items are entered as `registered`, whether they come from an emailed list, Excel prefill, or in-person operator entry.
-4. When the seller physically delivers toys, the operator reviews the seller record, removes or corrects incomplete items, prints the deposit contract, and gets it signed.
+4. When the seller physically delivers toys, the operator completes missing seller contact details, reviews the seller record, removes or corrects incomplete items, prints the deposit contract, and gets it signed.
 5. The operator validates the seller deposit from the seller detail page. This sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
 6. If a defect is spotted before the seller signs the deposit contract, the item is not accepted and any corresponding `registered` row may be deleted.
 7. References are generated for each item.
@@ -68,16 +68,17 @@ If a buyer returns a defective sold item, an admin uses `Rembourser` from `Corre
 1. Seller item data is recorded from email, Excel prefill, or in-person entry.
 2. Preregistered items exist in `registered` status.
 3. When toys are physically delivered, the operator reviews the seller item list before signature.
-4. The seller detail page offers `Imprimer le contrat`.
-5. The printed contract includes the association name, address, SIRET, seller fee rule, paid fee status, legal mentions, item prices, and only the seller signature area.
-6. The signed paper contract is the proof of physical deposit and price agreement; the app does not store a contract number or snapshot.
-7. The operator clicks `Valider le dépôt` and confirms `Le contrat est signé`.
-8. Accepted `registered` items become `in_stock` together, and normal seller/item edits are locked for that seller.
-9. Items that were not physically brought may remain `registered` if the seller might come back later; otherwise the operator may delete them before validation.
-10. If validation was confirmed by mistake, an admin may cancel it from the seller page during `presale` by entering the shared admin password.
-11. Cancellation moves only items still `in_stock` back to `registered`; `sold`, `missing`, and `defective` items stay unchanged and read-only.
-12. Revalidating the deposit tolerates those historical item states and moves only current `registered` items back to `in_stock`.
-13. V1 does not use a `not_provided` status.
+4. The operator completes phone, postal address, postal code, and city before validation.
+5. The seller detail page offers `Imprimer le contrat`.
+6. The printed contract includes the association name, address, SIRET, seller fee rule, paid fee status, legal mentions, item prices, and only the seller signature area.
+7. The signed paper contract is the proof of physical deposit and price agreement; the app does not store a contract number or snapshot.
+8. The operator clicks `Valider le dépôt` and confirms `Le contrat est signé`.
+9. Accepted `registered` items become `in_stock` together, and normal seller/item edits are locked for that seller.
+10. Items that were not physically brought may remain `registered` if the seller might come back later; otherwise the operator may delete them before validation.
+11. If validation was confirmed by mistake, an admin may cancel it from the seller page during `presale` by entering the shared admin password.
+12. Cancellation moves only items still `in_stock` back to `registered`; `sold`, `missing`, and `defective` items stay unchanged and read-only.
+13. Revalidating the deposit tolerates those historical item states and moves only current `registered` items back to `in_stock`.
+14. V1 does not use a `not_provided` status.
 
 ## Seller Sheet Workflow
 

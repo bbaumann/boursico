@@ -11,7 +11,7 @@ namespace AssociationSaleTool.Web.Services;
 
 public sealed class ExcelSellerItemParser
 {
-    private const string DefaultPostalAddress = "UNKNOWN";
+    private const string DefaultPostalAddress = "";
     private static readonly XNamespace SpreadsheetNamespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
     private static readonly XNamespace RelationshipsNamespace = "http://schemas.openxmlformats.org/package/2006/relationships";
     private static readonly XNamespace OfficeRelationshipsNamespace = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";

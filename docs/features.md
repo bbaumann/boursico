@@ -237,16 +237,18 @@ Items are entered in `registered` state whether they come from an email list, Ex
 Before validation:
 
 - seller and item details remain editable during `presale`
+- seller contact fields may be blank while the record is still a draft
 - items stay excluded from checkout and seller-sheet outputs
 - incomplete or mistaken `registered` items may be corrected or deleted
 
 When the seller physically gives the toys to the association:
 
 1. The operator opens the seller detail page.
-2. The operator prints `Imprimer le contrat`.
-3. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
-4. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
-5. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
+2. The operator completes any missing phone, postal address, postal code, or city.
+3. The operator prints `Imprimer le contrat`.
+4. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
+5. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
+6. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
 
 The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, and whether payment is still due. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
 
@@ -263,7 +265,7 @@ Excel intake is an operator helper on `/vendeurs/creer`, not a direct import pat
 - the operator reviews the prefilled form, then saves through the normal intake action
 - final save creates the seller and item rows in one transaction
 - duplicate sellers redirect to the existing seller detail page with the parsed item rows prefilled in `Ajouter des articles`
-- until workbook address handling is formally designed, Excel prefill sets seller postal address to `UNKNOWN`
+- missing seller contact fields stay blank until the operator completes them before deposit validation
 - when the workbook has a `CP VILLE` value, Excel prefill accepts only canonical postal-code/city pairs from the authoritative Isere city list used by the application
 - the depot workbook's hidden `codes postaux` list is generated from the same JSON file used by the application
 - Excel prefill defaults the paid seller fee to `EUR 0`

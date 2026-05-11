@@ -36,15 +36,15 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
-    public void SellerCreateAndEditInputsRequirePhoneAddressPostalCodeAndCity()
+    public void SellerCreateAndEditInputsAllowMissingContactFieldsBeforeDepositValidation()
     {
-        AssertRequiredContactMessages(new CreateModel.InputModel
+        AssertContactFieldsAreOptional(new CreateModel.InputModel
         {
             FirstName = "Ada",
             LastName = "Lovelace"
         });
 
-        AssertRequiredContactMessages(new SellerEditModel.InputModel
+        AssertContactFieldsAreOptional(new SellerEditModel.InputModel
         {
             FirstName = "Ada",
             LastName = "Lovelace"
@@ -161,6 +161,43 @@ public sealed class SellersPageModelTests
         var row = Assert.Single(pendingRows.Rows);
         Assert.Equal("Toy train", row.Title);
         Assert.Equal(400, row.SellerPriceCents);
+        Assert.Equal(1, await context.Sellers.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateSellerPage_Post_BlocksNameOnlyDuplicateWhenPhoneIsMissing()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", "1 rue des Tests", null))).Seller!;
+
+        var pageModel = new CreateModel(service)
+        {
+            Input = new CreateModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Phone = string.Empty,
+                PostalAddress = string.Empty,
+                IntakeMode = IntakeMode.EmailPreregistration,
+                Rows = [new CreateModel.ItemRowInput { Title = "Toy train", SellerPrice = "4" }]
+            }
+        };
+        var session = new TestSession();
+        pageModel.PageContext = new PageContext { HttpContext = CreateHttpContextWithSession(session) };
+
+        var result = await pageModel.OnPostAsync(CancellationToken.None);
+
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("/Sellers/Details", redirect.PageName);
+        Assert.Equal(existing.Id, redirect.RouteValues!["id"]);
         Assert.Equal(1, await context.Sellers.CountAsync());
     }
 
@@ -425,6 +462,43 @@ public sealed class SellersPageModelTests
         Assert.False(pageModel.ModelState.IsValid);
         var match = Assert.Single(pageModel.DuplicateMatches);
         Assert.Equal(existing.Id, match.SellerId);
+    }
+
+    [Fact]
+    public async Task SellerEditPage_Post_BlocksNameOnlyDuplicateWhenPhoneIsMissing()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var existing = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", "1 rue des Tests", null))).Seller!;
+        var edited = (await service.CreateSellerAsync(new CreateSellerRequest("Grace", "Hopper", null, "9999", "2 rue des Tests", null))).Seller!;
+
+        var pageModel = new SellerEditModel(service)
+        {
+            Input = new SellerEditModel.InputModel
+            {
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Phone = string.Empty,
+                PostalAddress = "3 rue des Tests"
+            }
+        };
+
+        var result = await pageModel.OnPostAsync(edited.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.Equal(existing.Id, Assert.Single(pageModel.DuplicateMatches).SellerId);
+        var message = Assert.Single(pageModel.ModelState[string.Empty]!.Errors).ErrorMessage;
+        Assert.Contains("mêmes nom et prénom", message);
+        Assert.Contains("Aucun téléphone n'a été saisi", message);
+        Assert.Equal("Grace", (await context.Sellers.SingleAsync(x => x.Id == edited.Id)).FirstName);
     }
 
     [Fact]
@@ -718,7 +792,7 @@ public sealed class SellersPageModelTests
         Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
     }
 
-    private static void AssertRequiredContactMessages(object input)
+    private static void AssertContactFieldsAreOptional(object input)
     {
         var validationResults = new List<ValidationResult>();
 
@@ -728,10 +802,10 @@ public sealed class SellersPageModelTests
             validationResults,
             validateAllProperties: true);
 
-        Assert.Contains(validationResults, result => result.ErrorMessage == "Le téléphone est obligatoire.");
-        Assert.Contains(validationResults, result => result.ErrorMessage == "L'adresse postale est obligatoire.");
-        Assert.Contains(validationResults, result => result.ErrorMessage == "Le code postal est obligatoire.");
-        Assert.Contains(validationResults, result => result.ErrorMessage == "La ville est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "Le téléphone est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "L'adresse postale est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "Le code postal est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "La ville est obligatoire.");
     }
 
     private static DefaultHttpContext CreateHttpContextWithSession(ISession session)
