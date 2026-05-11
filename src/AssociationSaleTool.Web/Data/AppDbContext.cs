@@ -33,6 +33,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.FeePaidCents).HasColumnName("fee_paid_cents").HasDefaultValue(0).IsRequired();
             entity.Property(x => x.DepositStatus).HasColumnName("deposit_status").HasDefaultValue(SellerDepositStatuses.Pending).IsRequired();
             entity.Property(x => x.Notes).HasColumnName("notes");
+            entity.Property(x => x.ImportNotes).HasColumnName("import_notes");
 
             entity.HasIndex(x => x.SellerCode)
                 .IsUnique();

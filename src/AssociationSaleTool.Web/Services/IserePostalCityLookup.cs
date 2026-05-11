@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 
 namespace AssociationSaleTool.Web.Services;
@@ -57,5 +59,66 @@ public sealed class IserePostalCityLookup
         }
 
         return false;
+    }
+
+    public bool TryFindCanonicalCityLenient(string? postalCode, string? city, out string? canonicalCity)
+    {
+        canonicalCity = null;
+
+        var normalizedPostalCode = postalCode?.Trim();
+        var normalizedCity = NormalizeCityForMatching(city);
+        if (string.IsNullOrWhiteSpace(normalizedPostalCode) || string.IsNullOrWhiteSpace(normalizedCity))
+        {
+            return false;
+        }
+
+        if (!citiesByPostalCode.TryGetValue(normalizedPostalCode, out var cities))
+        {
+            return false;
+        }
+
+        foreach (var candidate in cities)
+        {
+            if (NormalizeCityForMatching(candidate) == normalizedCity)
+            {
+                canonicalCity = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string NormalizeCityForMatching(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var upper = value.Trim().ToUpperInvariant().Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(upper.Length);
+        foreach (var character in upper)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.NonSpacingMark)
+            {
+                continue;
+            }
+
+            builder.Append(char.IsLetterOrDigit(character) ? character : ' ');
+        }
+
+        var tokens = builder
+            .ToString()
+            .Normalize(NormalizationForm.FormC)
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+            .Select(token => token switch
+            {
+                "ST" => "SAINT",
+                "STE" => "SAINTE",
+                _ => token
+            });
+
+        return string.Join(' ', tokens);
     }
 }

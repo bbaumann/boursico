@@ -62,6 +62,22 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SellerStoresImportNotesColumn()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var entityType = context.Model.FindEntityType(typeof(SellerEntity));
+        Assert.NotNull(entityType);
+        var importNotes = Assert.Single(entityType!.GetProperties(), property => property.Name == nameof(SellerEntity.ImportNotes));
+        Assert.Equal("import_notes", importNotes.GetColumnName());
+        Assert.True(importNotes.IsNullable);
+    }
+
+    [Fact]
     public void SellerTableRequiresContactFields()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");

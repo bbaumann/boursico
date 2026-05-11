@@ -275,6 +275,10 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("first_name");
 
+                    b.Property<string>("ImportNotes")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("import_notes");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("TEXT")

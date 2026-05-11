@@ -76,7 +76,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
                 Input.Notes,
                 feePaidCents,
                 Input.PostalCode,
-                Input.City),
+                Input.City,
+                Input.ImportNotes),
             cancellationToken);
 
         if (result == UpdateSellerResult.NotFound)
@@ -144,7 +145,8 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             PostalCode = seller.PostalCode,
             City = seller.City,
             FeePaid = EuroPriceInput.FormatFromCents(seller.FeePaidCents),
-            Notes = seller.Notes
+            Notes = seller.Notes,
+            ImportNotes = seller.ImportNotes
         };
     }
 
@@ -170,5 +172,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         public string? FeePaid { get; set; } = "0";
 
         public string? Notes { get; set; }
+
+        public string? ImportNotes { get; set; }
     }
 }

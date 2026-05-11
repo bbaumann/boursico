@@ -49,6 +49,7 @@ Represents one seller.
 - `fee_paid_cents`
 - `deposit_status`
 - `notes`
+- `import_notes`
 
 ### Notes
 
@@ -57,6 +58,7 @@ Represents one seller.
 - `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
 - The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
 - `deposit_status` stores the operational seller deposit gate and defaults to `deposit_pending`.
+- `import_notes` stores durable warnings from the external form import, such as ignored item lines or a submitted city that could not be reconciled.
 - Phone, postal address, postal code, and city may be blank while `deposit_status = deposit_pending`; the application requires them before deposit validation.
 - The signed paper deposit contract is the legal proof of deposit and price agreement; V1 does not store a contract number, signed timestamp, or contract snapshot.
 
@@ -217,6 +219,7 @@ V1 uses a single row with `id = 1`.
 - `city`: required column; may be blank while the seller is `deposit_pending`
 - `deposit_status`: required
 - `notes`: optional
+- `import_notes`: optional
 
 ## `item`
 

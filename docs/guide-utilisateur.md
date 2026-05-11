@@ -124,6 +124,20 @@ Renseigner au minimum le prénom et le nom. Ajouter les informations disponibles
 
 À l'enregistrement, l'outil attribue un code vendeur. Ce code sert ensuite à construire les références des articles. Les coordonnées manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
 
+### Importer des soumissions de formulaire
+
+Si les vendeurs ont rempli un formulaire en ligne externe, exporter les réponses au format CSV ou TSV, puis aller dans `VENDEURS` et cliquer sur `Importer des soumissions`.
+
+Cliquer sur `Fichier CSV ou TSV`, choisir l'export, puis cliquer sur `Importer les nouvelles soumissions`.
+
+L'import crée des fiches vendeurs en `Dépôt à valider` quand la soumission contient au moins un prénom et un nom. Les coordonnées incomplètes ne bloquent pas l'import : elles seront complétées avec le vendeur avant la signature du contrat.
+
+Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`. Les lignes d'articles invalides sont ignorées et notées sur la fiche vendeur dans `Import à vérifier`.
+
+Si une ville reçue ne peut pas être reconnue, le code postal est conservé, la ville reste vide, et la ville reçue est notée dans `Import à vérifier`.
+
+Si une soumission correspond à un vendeur existant, elle n'est pas importée automatiquement. Quand un seul vendeur existant correspond, cliquer sur `Ajouter les articles au vendeur existant` si les articles doivent être ajoutés à cette fiche. Les coordonnées du vendeur existant ne sont pas remplacées. Les articles déjà présents avec le même titre et le même prix sont ignorés. Quand plusieurs vendeurs existants correspondent, cliquer sur `Ignorer cette soumission`.
+
 ### Éviter les doublons vendeurs
 
 Quand on crée ou modifie un vendeur, l'outil bloque les doublons évidents.

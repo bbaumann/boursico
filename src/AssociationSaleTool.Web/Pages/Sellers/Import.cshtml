@@ -1,0 +1,141 @@
+@page "/vendeurs/importer"
+@model AssociationSaleTool.Web.Pages.Sellers.ImportModel
+@using AssociationSaleTool.Web.Services.Models
+@{
+    ViewData["Title"] = "Importer des soumissions";
+    var importedCount = Model.ImportResult?.Rows.Count(row => row.Outcome == SellerFormImportRowOutcome.Imported) ?? 0;
+    var duplicateCount = Model.ImportResult?.Rows.Count(row => row.Outcome == SellerFormImportRowOutcome.Duplicate) ?? 0;
+    var sellerErrorCount = Model.ImportResult?.Rows.Count(row => row.Outcome == SellerFormImportRowOutcome.SellerError) ?? 0;
+}
+
+<section class="page-card form-card">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Saisie</p>
+            <h1 class="page-title">Importer des soumissions</h1>
+        </div>
+        <a class="button-link" asp-page="/Sellers/Index">Retour aux vendeurs</a>
+    </div>
+
+    @if (!Model.CanImportSellerData)
+    {
+        <p class="validation">Les soumissions ne peuvent pas être importées dans le statut actuel de la vente.</p>
+    }
+
+    <form method="post"
+          enctype="multipart/form-data"
+          class="stack-form"
+          asp-page="/Sellers/Import"
+          asp-page-handler="Import">
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
+        <label>
+            <span>Fichier CSV ou TSV</span>
+            <input asp-for="FormFile" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" disabled="@(!Model.CanImportSellerData)" />
+        </label>
+        <div class="form-actions">
+            @if (Model.CanImportSellerData)
+            {
+                <button type="submit" class="button-link button-link-solid">Importer les nouvelles soumissions</button>
+            }
+        </div>
+    </form>
+
+    @if (Model.AppendResult is not null && Model.AppendResult.Outcome == SellerFormDuplicateAppendOutcome.Appended)
+    {
+        <section class="subsection existing-seller-alert" role="status">
+            <h2>Soumission ajoutée au vendeur existant</h2>
+            <p>@Model.AppendResult.CreatedItemCount article@(Model.AppendResult.CreatedItemCount > 1 ? "s" : "") ajouté@(Model.AppendResult.CreatedItemCount > 1 ? "s" : ""). @Model.AppendResult.IgnoredExistingItemCount article@(Model.AppendResult.IgnoredExistingItemCount > 1 ? "s" : "") déjà présent@(Model.AppendResult.IgnoredExistingItemCount > 1 ? "s" : "") ignoré@(Model.AppendResult.IgnoredExistingItemCount > 1 ? "s" : "").</p>
+            @if (Model.AppendResult.Seller is not null)
+            {
+                <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.AppendResult.Seller.Id">Ouvrir le vendeur</a>
+            }
+        </section>
+    }
+
+    @if (Model.ImportResult is not null)
+    {
+        <section class="subsection">
+            <h2>Résultat de l'import</h2>
+            <p class="seller-meta">
+                @importedCount dossier@(importedCount > 1 ? "s" : "") importé@(importedCount > 1 ? "s" : "").
+                @duplicateCount doublon@(duplicateCount > 1 ? "s" : "") possible@(duplicateCount > 1 ? "s" : "").
+                @sellerErrorCount dossier@(sellerErrorCount > 1 ? "s" : "") sans prénom ou nom.
+            </p>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Soumission</th>
+                        <th>Contact</th>
+                        <th>Articles</th>
+                        <th>Résultat</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model.ImportResult.Rows)
+                {
+                    <tr>
+                        <td>
+                            <strong>@row.Submission.FirstName @row.Submission.LastName</strong>
+                            @if (!string.IsNullOrWhiteSpace(row.Submission.ImportNotes))
+                            {
+                                <div class="existing-seller-alert">
+                                    <p class="existing-seller-alert-title">Import à vérifier</p>
+                                    <pre>@row.Submission.ImportNotes</pre>
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <div>@(row.Submission.Phone ?? "Téléphone à compléter")</div>
+                            <div>@(row.Submission.Email ?? "Sans e-mail")</div>
+                            <div>@row.Submission.PostalCode @row.Submission.City</div>
+                        </td>
+                        <td>
+                            <div>@row.Submission.ValidRows.Count article@(row.Submission.ValidRows.Count > 1 ? "s" : "") prêt@(row.Submission.ValidRows.Count > 1 ? "s" : "")</div>
+                            <div>@row.Submission.IgnoredItemLines.Count ligne@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "") ignorée@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "")</div>
+                        </td>
+                        <td>@ImportModel.FormatOutcome(row.Outcome)</td>
+                        <td>
+                            <div class="table-actions">
+                                @if (row.Outcome == SellerFormImportRowOutcome.Imported && row.SellerId is not null)
+                                {
+                                    <a asp-page="/Sellers/Details" asp-route-id="@row.SellerId">Ouvrir</a>
+                                }
+                                @if (row.Outcome == SellerFormImportRowOutcome.Duplicate)
+                                {
+                                    <div>
+                                        @foreach (var match in row.DuplicateMatches)
+                                        {
+                                            <p>
+                                                <strong>@match.SellerCode - @match.FirstName @match.LastName</strong><br />
+                                                @(string.IsNullOrWhiteSpace(match.Phone) ? "Téléphone à compléter" : match.Phone) -
+                                                @match.ItemCount article@(match.ItemCount > 1 ? "s" : "")
+                                            </p>
+                                        }
+                                    </div>
+                                    @if (row.CanAppendToExistingSeller && row.Submission.ValidRows.Count > 0)
+                                    {
+                                        var match = row.DuplicateMatches[0];
+                                        <form method="post" class="inline-form" asp-page-handler="AppendDuplicate">
+                                            <input type="hidden" asp-for="DuplicateInput.SellerId" value="@match.SellerId" />
+                                            <input type="hidden" asp-for="DuplicateInput.ImportNotes" value="@row.Submission.ImportNotes" />
+                                            @for (var i = 0; i < row.Submission.ValidRows.Count; i++)
+                                            {
+                                                <input type="hidden" name="DuplicateInput.Rows[@i].Title" value="@row.Submission.ValidRows[i].Title" />
+                                                <input type="hidden" name="DuplicateInput.Rows[@i].SellerPriceCents" value="@row.Submission.ValidRows[i].SellerPriceCents" />
+                                            }
+                                            <button type="submit" class="table-action-button">Ajouter les articles au vendeur existant</button>
+                                        </form>
+                                    }
+                                    <button type="button" class="table-action-button" onclick="this.closest('tr')?.remove();">Ignorer cette soumission</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </section>
+    }
+</section>

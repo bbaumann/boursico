@@ -744,3 +744,27 @@ This file captures the main project decisions in a lightweight ADR format.
   - incomplete imported seller records can be saved as drafts instead of being rejected or filled with fake data
   - checkout remains protected because only validated deposits move items to `in_stock`
   - operators must complete missing contact information before confirming `Le contrat est signé`
+
+## D-046 Import External Seller Form Exports As Drafts
+
+- Status: accepted
+- Key drivers:
+  - organizers can collect preregistration data through an external no-paid-third-party form while keeping the sale tool private on the local network
+  - form exports can contain useful seller and item data even when contact details, city spelling, or item lines are incomplete
+  - the seller deposit validation gate already prevents incomplete imported sellers from reaching checkout stock
+  - non-technical operators need a direct import result, not a complex row-by-row correction center
+- Decision:
+  - expose `/vendeurs/importer` for CSV and TSV seller form exports
+  - detect provider metadata rows before the real header row, including Framaforms-style exports
+  - import non-duplicate rows with first name and last name as `deposit_pending` sellers
+  - create valid parsed item lines as `registered` items and ignore invalid item lines
+  - add nullable `seller.import_notes` for durable import warnings
+  - when a submitted city cannot be reconciled, keep the submitted postal code, leave `seller.city` blank, and record the submitted city in `seller.import_notes`
+  - do not auto-import duplicate seller rows
+  - when exactly one duplicate seller matches, allow the operator to append valid new item lines to that existing seller without overwriting seller contact fields
+  - when appending to an existing seller, ignore imported item lines whose trimmed title and seller price exactly match an existing item for that seller
+  - when several duplicate seller matches exist, expose only `Ignorer cette soumission`
+- Consequence:
+  - external form import becomes a bulk draft creation tool, not an authoritative validation workflow
+  - import notes must be reviewed on the seller detail page and can be cleared or edited from seller edit
+  - seller identity/contact corrections still happen through the normal seller page before contract signing

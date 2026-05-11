@@ -29,10 +29,14 @@ Relevant docs:
 - duplicate seller detection blocks create/edit conflicts and redirects Excel-prefilled rows to the existing seller detail page for review
 - Excel prefill reads `CP VILLE` when present and accepts only canonical postal-code/city pairs from the authoritative Isere city list
 - `resources/depot-internet.xlsx` keeps its hidden `codes postaux` list generated from the same JSON file used by the application
+- `/vendeurs/importer` imports CSV/TSV exports from an external seller form into permissive `deposit_pending` seller drafts
+- external form import preserves unresolved city and bad-item details in seller-level import notes
+- duplicate external-form submissions are not auto-imported; single-match duplicates can append valid new item lines to the existing seller
 
 Relevant docs:
 
 - [Excel Seller And Item Prefill Design](./plans/2026-05-04-excel-seller-item-prefill-design.md)
+- [Seller Self-Service Form Import](./seller-self-service-form-import.md)
 - [D-039 Treat Seller Excel Files As Editable Intake Prefill](./decisions.md#d-039-treat-seller-excel-files-as-editable-intake-prefill)
 
 ### Seller Settlement
@@ -62,25 +66,17 @@ Relevant docs:
 
 These are optional post-V1 directions. They should stay out of the first live release unless a new decision makes one of them necessary.
 
-### Seller Self-Service
+### Further Seller Self-Service
 
-A seller-facing intake flow could let sellers preregister themselves, enter items, and reduce organizer typing. The preferred VNext shape is not a hosted portal inside this application; the app should remain private on the local network.
+The current file-export/import version is implemented in V1. Future seller self-service work should stay optional and should still keep the sale tool private on the local network unless a new decision changes that constraint.
 
-The current feature request is a file-based form import workflow:
+Possible later slices:
 
-- sellers fill an external no-paid-third-party form, such as Google Forms or Framaforms/Yakforms
-- organizers export responses as CSV, TSV, or spreadsheet files
-- organizers upload the export into the local app
-- the app shows an import preview and imports non-duplicate seller drafts with first name and last name
-- missing or suspicious contact data is deferred to the seller deposit validation gate
-- unreconciled city values are blanked on the seller and preserved in seller-level import notes
-- duplicate submissions are not auto-imported; a single matched seller can receive valid new item lines, while ambiguous duplicates can only be ignored
-- duplicate item lines on an existing seller are ignored when title and price match exactly
-- invalid item lines are ignored rather than blocking seller import and remain visible through seller-level import notes
-
-Relevant design:
-
-- [Seller Self-Service Form Import](./seller-self-service-form-import.md)
+- provider-specific column mapping templates
+- better CSV/TSV delimiter detection
+- import preview export or printout
+- stronger duplicate resolution if real operations need it
+- optional API integration if file export proves too manual
 
 ### Broader Import And Export Tooling
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document captures the VNext feature request for seller self-service intake through an external online form provider.
+This document captures the implemented seller self-service intake shape through an external online form provider.
 
 The application must remain private on the local network. The online form provider is only a seller-facing collection surface. Data enters the local application through a file export/import workflow controlled by organizers.
 

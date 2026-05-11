@@ -24,6 +24,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Search sellers by code or name using a live-filtered sellers table
 - Create items manually from seller-provided lists
 - Prefill seller and item rows from a one-seller Excel workbook before reviewed save
+- Import seller drafts and item rows from CSV/TSV exports of an external seller form
 - Record seller preregistration received by email
 - Record in-person seller item lists as `registered` until the signed deposit is validated
 - Print a seller deposit contract recap from the seller detail page
@@ -232,7 +233,7 @@ V1 invoice handling is intentionally simple:
 
 ### Seller Deposit Validation
 
-Items are entered in `registered` state whether they come from an email list, Excel prefill, or in-person operator entry.
+Items are entered in `registered` state whether they come from an email list, Excel prefill, external form import, or in-person operator entry.
 
 Before validation:
 
@@ -269,6 +270,24 @@ Excel intake is an operator helper on `/vendeurs/creer`, not a direct import pat
 - when the workbook has a `CP VILLE` value, Excel prefill accepts only canonical postal-code/city pairs from the authoritative Isere city list used by the application
 - the depot workbook's hidden `codes postaux` list is generated from the same JSON file used by the application
 - Excel prefill defaults the paid seller fee to `EUR 0`
+
+### External Seller Form Import
+
+External form import is an operator helper on `/vendeurs/importer`.
+
+- the upload accepts CSV and TSV exports from an external seller form provider
+- the importer detects the form header row, including Framaforms exports with metadata rows before the real header
+- seller drafts are imported when first name and last name are present
+- phone, address, postal code, city, email, notes, and valid item lines may be missing at import time
+- item data comes from one multiline `Jouet,Prix` field with one item per line, title first and whole-euro price last
+- valid item lines become `registered` items and invalid item lines are ignored
+- unreconciled city values leave the seller city blank while keeping the submitted postal code and recording the submitted city in `seller.import_notes`
+- import notes show `Import à vérifier` on the seller detail page and can be edited or cleared from seller edit
+- duplicate sellers are not auto-imported
+- when exactly one existing duplicate seller matches, the operator may append valid new item lines to that seller
+- when appending duplicate submissions, an item line is ignored if the existing seller already has the exact same title and seller price
+- when several duplicate seller matches exist, the only supported action is to ignore the submission
+- imported sellers default the paid seller fee to `EUR 0`
 
 ## Post-Sale Reconciliation
 

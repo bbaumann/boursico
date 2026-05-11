@@ -26,5 +26,7 @@ public sealed class SellerEntity
 
     public string? Notes { get; set; }
 
+    public string? ImportNotes { get; set; }
+
     public List<ItemEntity> Items { get; set; } = [];
 }

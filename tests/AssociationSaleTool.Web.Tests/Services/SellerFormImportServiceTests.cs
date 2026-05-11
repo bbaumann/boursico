@@ -1,0 +1,211 @@
+using System.Text;
+using AssociationSaleTool.Web.Data;
+using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Services;
+using AssociationSaleTool.Web.Services.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+
+namespace AssociationSaleTool.Web.Tests.Services;
+
+public sealed class SellerFormImportServiceTests
+{
+    [Fact]
+    public async Task ImportAsync_CreatesPermissiveSellerDraftsAndImportNotes()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new SellerFormImportService(
+            context,
+            new SellerFormImportParser(CreateLookup("38120", "Saint-Égrève")));
+
+        var result = await service.ImportAsync(CreateCsv(SampleCsv));
+
+        Assert.Equal(2, result.Rows.Count);
+        Assert.All(result.Rows, row => Assert.Equal(SellerFormImportRowOutcome.Imported, row.Outcome));
+        var sellers = await context.Sellers.Include(x => x.Items).OrderBy(x => x.SellerCode).ToListAsync();
+        Assert.Collection(
+            sellers,
+            first =>
+            {
+                Assert.Equal("Benjamin", first.FirstName);
+                Assert.Equal("Baumann", first.LastName);
+                Assert.Equal("92500", first.PostalCode);
+                Assert.Equal(string.Empty, first.City);
+                Assert.Contains("Rueil Malmaison", first.ImportNotes);
+                Assert.Equal("deposit_pending", first.DepositStatus);
+                Assert.Equal(0, first.FeePaidCents);
+                Assert.Single(first.Items);
+            },
+            second =>
+            {
+                Assert.Equal("Sarah", second.FirstName);
+                Assert.Equal("Bulteau", second.LastName);
+                Assert.Equal("38120", second.PostalCode);
+                Assert.Equal("Saint-Égrève", second.City);
+                Assert.Null(second.ImportNotes);
+                Assert.Equal(2, second.Items.Count);
+            });
+    }
+
+    [Fact]
+    public async Task ImportAsync_FlagsSingleDuplicateWithoutAutoImportingIt()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        context.Sellers.Add(new SellerEntity
+        {
+            SellerCode = "AA",
+            FirstName = "Sarah",
+            LastName = "Bulteau",
+            Phone = "0600000000",
+            PostalAddress = "12 Rue Adolphe Muguet",
+            PostalCode = "38120",
+            City = "Saint-Égrève"
+        });
+        await context.SaveChangesAsync();
+        var service = new SellerFormImportService(
+            context,
+            new SellerFormImportParser(CreateLookup("38120", "Saint-Égrève")));
+
+        var result = await service.ImportAsync(CreateCsv(SingleDuplicateCsv));
+
+        var row = Assert.Single(result.Rows);
+        Assert.Equal(SellerFormImportRowOutcome.Duplicate, row.Outcome);
+        Assert.True(row.CanAppendToExistingSeller);
+        Assert.Equal("AA", Assert.Single(row.DuplicateMatches).SellerCode);
+        Assert.Equal(1, await context.Sellers.CountAsync());
+        Assert.Empty(await context.Items.ToListAsync());
+    }
+
+    [Fact]
+    public async Task AppendDuplicateItemsAsync_IgnoresExistingExactTitleAndPrice()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var seller = new SellerEntity
+        {
+            SellerCode = "AA",
+            FirstName = "Sarah",
+            LastName = "Bulteau",
+            Phone = "0600000000",
+            PostalAddress = "12 Rue Adolphe Muguet",
+            PostalCode = "38120",
+            City = "Saint-Égrève"
+        };
+        seller.Items.Add(new ItemEntity
+        {
+            Reference = "AA001",
+            ItemNumber = 1,
+            Title = "Lego Pirate",
+            SellerPriceCents = 500,
+            Status = "registered"
+        });
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+        var service = new SellerFormImportService(context, new SellerFormImportParser());
+
+        var result = await service.AppendDuplicateItemsAsync(
+            seller.Id,
+            [
+                new CreateItemRowRequest("Lego Pirate", 500),
+                new CreateItemRowRequest("Jeu PS5", 500)
+            ],
+            "Import formulaire : ligne ignorée.");
+
+        Assert.Equal(SellerFormDuplicateAppendOutcome.Appended, result.Outcome);
+        Assert.Equal(1, result.CreatedItemCount);
+        Assert.Equal(1, result.IgnoredExistingItemCount);
+        var updated = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal(2, updated.Items.Count);
+        Assert.Contains(updated.Items, item => item.Reference == "AA002" && item.Title == "Jeu PS5");
+        Assert.Contains("ligne ignorée", updated.ImportNotes);
+        Assert.Contains("article déjà présent ignoré - Lego Pirate - 5 €", updated.ImportNotes);
+    }
+
+    [Fact]
+    public async Task ImportAsync_ExposesOnlyIgnoreForSeveralDuplicateMatches()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        context.Sellers.AddRange(
+            new SellerEntity { SellerCode = "AA", FirstName = "Sarah", LastName = "Bulteau", Phone = "0600000000" },
+            new SellerEntity { SellerCode = "BB", FirstName = "Sarah", LastName = "Bulteau", Phone = "0600000000" });
+        await context.SaveChangesAsync();
+        var service = new SellerFormImportService(
+            context,
+            new SellerFormImportParser(CreateLookup("38120", "Saint-Égrève")));
+
+        var result = await service.ImportAsync(CreateCsv(SingleDuplicateCsv));
+
+        var row = Assert.Single(result.Rows);
+        Assert.Equal(SellerFormImportRowOutcome.Duplicate, row.Outcome);
+        Assert.False(row.CanAppendToExistingSeller);
+        Assert.Equal(2, row.DuplicateMatches.Count);
+        Assert.Equal(2, await context.Sellers.CountAsync());
+    }
+
+    private const string SampleCsv =
+        """
+        "Bourse aux jouets Test","","","","","","","","","","","","","","","",""
+        "Détails de la soumission","","","","","","","","","","","","","","","",""
+        "Séquentiel","SID","Heure de soumission","Heure de complétion","Heure de modification","Brouillon","Adresse IP","UID","Nom d'utilisateur","Nom","Prénom","Téléphone","Email","Adresse","Code Postal","Ville","Jouet,Prix"
+        "1","33792452","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Zentiltoutou","Baumann","Benjamin","0609710985","Zentiltoutou@Gmail.com","29 avenue du mont Valérien","92500","Rueil Malmaison","Lego Pirate, 5"
+        "2","33792475","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Zentiltoutou","Bulteau","Sarah","0600000000","sarah.bulteau@example.test","12 Rue Adolphe Muguet","38120","St Egreve","Lot 3 livres Monsieur Madame, 2
+        Chateau Playmobil, 10"
+        """;
+
+    private const string SingleDuplicateCsv =
+        """
+        "Bourse aux jouets Test","","","","","","","","","","","","","","","",""
+        "Détails de la soumission","","","","","","","","","","","","","","","",""
+        "Séquentiel","SID","Heure de soumission","Heure de complétion","Heure de modification","Brouillon","Adresse IP","UID","Nom d'utilisateur","Nom","Prénom","Téléphone","Email","Adresse","Code Postal","Ville","Jouet,Prix"
+        "1","33792475","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Zentiltoutou","Bulteau","Sarah","0600000000","sarah.bulteau@example.test","12 Rue Adolphe Muguet","38120","St Egreve","Lego Pirate, 5
+        Jeu PS5, 5"
+        """;
+
+    private static FormFile CreateCsv(string contents)
+    {
+        var bytes = Encoding.UTF8.GetBytes(contents);
+        var stream = new MemoryStream(bytes);
+        return new FormFile(stream, 0, bytes.Length, "FormFile", "export.csv")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "text/csv"
+        };
+    }
+
+    private static IserePostalCityLookup CreateLookup(string postalCode, string city)
+    {
+        return new IserePostalCityLookup(
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                [postalCode] = [city]
+            });
+    }
+}

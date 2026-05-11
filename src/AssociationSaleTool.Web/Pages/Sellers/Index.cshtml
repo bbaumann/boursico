@@ -12,7 +12,10 @@
         </div>
         @if (Model.CanEditSellerMasterData)
         {
-            <a class="button-link" asp-page="/Sellers/Create">Créer un vendeur</a>
+            <div class="header-actions">
+                <a class="button-link" asp-page="/Sellers/Import">Importer des soumissions</a>
+                <a class="button-link" asp-page="/Sellers/Create">Créer un vendeur</a>
+            </div>
         }
     </div>
 

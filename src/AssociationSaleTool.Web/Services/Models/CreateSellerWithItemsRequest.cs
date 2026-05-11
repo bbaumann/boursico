@@ -11,4 +11,5 @@ public sealed record CreateSellerWithItemsRequest(
     IReadOnlyList<CreateItemRowRequest> Rows,
     int FeePaidCents = 0,
     string? PostalCode = null,
-    string? City = null);
+    string? City = null,
+    string? ImportNotes = null);

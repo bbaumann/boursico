@@ -89,7 +89,8 @@ public sealed class IntakeService
             City = normalizedCity,
             FeePaidCents = request.FeePaidCents,
             DepositStatus = SellerDepositStatuses.Pending,
-            Notes = NormalizeOptional(request.Notes)
+            Notes = NormalizeOptional(request.Notes),
+            ImportNotes = NormalizeOptional(request.ImportNotes)
         };
 
         _dbContext.Sellers.Add(seller);
@@ -149,7 +150,8 @@ public sealed class IntakeService
                     City = normalizedCity,
                     FeePaidCents = request.FeePaidCents,
                     DepositStatus = SellerDepositStatuses.Pending,
-                    Notes = NormalizeOptional(request.Notes)
+                    Notes = NormalizeOptional(request.Notes),
+                    ImportNotes = NormalizeOptional(request.ImportNotes)
                 };
 
                 _dbContext.Sellers.Add(seller);
@@ -235,6 +237,7 @@ public sealed class IntakeService
         seller.City = normalizedCity;
         seller.FeePaidCents = request.FeePaidCents;
         seller.Notes = NormalizeOptional(request.Notes);
+        seller.ImportNotes = NormalizeOptional(request.ImportNotes);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return UpdateSellerResult.Updated;

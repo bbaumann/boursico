@@ -9,4 +9,5 @@ public sealed record UpdateSellerRequest(
     string? Notes,
     int FeePaidCents = 0,
     string? PostalCode = null,
-    string? City = null);
+    string? City = null,
+    string? ImportNotes = null);

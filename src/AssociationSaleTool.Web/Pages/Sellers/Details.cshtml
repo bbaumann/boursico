@@ -60,6 +60,14 @@
         Frais : @DetailsModel.FormatPrice(Model.FeeStatus.ExpectedFeeCents) (payés @DetailsModel.FormatPrice(Model.FeeStatus.PaidFeeCents))
     </p>
 
+    @if (!string.IsNullOrWhiteSpace(Model.Seller.ImportNotes))
+    {
+        <section class="subsection existing-seller-alert">
+            <h2>Import à vérifier</h2>
+            <pre>@Model.Seller.ImportNotes</pre>
+        </section>
+    }
+
     <section class="subsection seller-deposit-panel">
         <div>
             <h2>Dépôt vendeur</h2>

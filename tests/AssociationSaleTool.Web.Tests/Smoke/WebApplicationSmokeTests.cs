@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -2243,6 +2244,54 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Equal(sellerCountBefore, await dbContext.Sellers.CountAsync());
         Assert.Equal(itemCountBefore, await dbContext.Items.CountAsync());
     }
+
+    [Fact]
+    public async Task SellerFormImportPageImportsFramaformsCsv()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+
+        var form = await client.GetAsync("/vendeurs/importer");
+        form.EnsureSuccessStatusCode();
+        var formContent = await form.Content.ReadAsStringAsync();
+        var decodedForm = WebUtility.HtmlDecode(formContent);
+        Assert.Contains("Importer des soumissions", decodedForm);
+        Assert.Contains("Fichier CSV ou TSV", decodedForm);
+        Assert.Contains("Importer les nouvelles soumissions", decodedForm);
+
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StringContent(ExtractRequestVerificationToken(formContent)), "__RequestVerificationToken");
+        multipart.Add(
+            new ByteArrayContent(Encoding.UTF8.GetBytes(SellerFormImportCsv)),
+            "FormFile",
+            "soumissions.csv");
+
+        var response = await client.PostAsync("/vendeurs/importer?handler=Import", multipart);
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("2 dossiers importés", content);
+        Assert.Contains("Import à vérifier", content);
+        Assert.Contains("Rueil Malmaison", content);
+        Assert.Contains("Saint-Égrève", content);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var sellers = await dbContext.Sellers.Include(x => x.Items).Where(x => x.LastName == "Baumann" || x.LastName == "Bulteau").ToListAsync();
+        Assert.Equal(2, sellers.Count);
+        Assert.Contains(sellers, seller => seller.LastName == "Baumann" && seller.PostalCode == "92500" && seller.City == string.Empty && seller.ImportNotes!.Contains("Rueil Malmaison"));
+        Assert.Contains(sellers, seller => seller.LastName == "Bulteau" && seller.City == "Saint-Égrève" && seller.Items.Count == 2);
+    }
+
+    private const string SellerFormImportCsv =
+        """
+        "Bourse aux jouets Test","","","","","","","","","","","","","","","",""
+        "Détails de la soumission","","","","","","","","","","","","","","","",""
+        "Séquentiel","SID","Heure de soumission","Heure de complétion","Heure de modification","Brouillon","Adresse IP","UID","Nom d'utilisateur","Nom","Prénom","Téléphone","Email","Adresse","Code Postal","Ville","Jouet,Prix"
+        "1","33792452","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Zentiltoutou","Baumann","Benjamin","0609710985","benjamin@example.test","29 avenue du mont Valérien","92500","Rueil Malmaison","Lego Pirate, 5"
+        "2","33792475","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Zentiltoutou","Bulteau","Sarah","0600000000","sarah.bulteau@example.test","12 Rue Adolphe Muguet","38120","St Egreve","Lot 3 livres Monsieur Madame, 2
+        Chateau Playmobil, 10"
+        """;
 
     [Fact]
     public async Task SellerDetailsDisplaysFrenchItemStatusLabels()
