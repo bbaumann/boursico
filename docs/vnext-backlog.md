@@ -71,11 +71,12 @@ The current feature request is a file-based form import workflow:
 - sellers fill an external no-paid-third-party form, such as Google Forms or Framaforms/Yakforms
 - organizers export responses as CSV, TSV, or spreadsheet files
 - organizers upload the export into the local app
-- the app shows a batch review table
-- organizers bulk-import ready submissions
-- city corrections and duplicate handling are resolved row by row
-- invalid item lines are ignored rather than blocking seller import
-- a later slice may add seller-level import notes so ignored item lines remain visible until an organizer clears them
+- the app shows an import preview and imports non-duplicate seller drafts with first name and last name
+- missing or suspicious contact data is deferred to the seller deposit validation gate
+- unreconciled city values are blanked on the seller and preserved in seller-level import notes
+- duplicate submissions are not auto-imported; a single matched seller can receive valid new item lines, while ambiguous duplicates can only be ignored
+- duplicate item lines on an existing seller are ignored when title and price match exactly
+- invalid item lines are ignored rather than blocking seller import and remain visible through seller-level import notes
 
 Relevant design:
 
