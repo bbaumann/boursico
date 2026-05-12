@@ -101,6 +101,31 @@
         </div>
         <p class="seller-meta">Pour l'Isère, les villes connues sont proposées. Hors Isère, saisissez la ville librement.</p>
 
+        <div class="field-grid">
+            <label>
+                <span>Nature de la pièce d'identité</span>
+                <input asp-for="Input.IdentityDocumentType" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span asp-validation-for="Input.IdentityDocumentType" class="validation"></span>
+            </label>
+            <label>
+                <span>Numéro de la pièce d'identité</span>
+                <input asp-for="Input.IdentityDocumentNumber" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span asp-validation-for="Input.IdentityDocumentNumber" class="validation"></span>
+            </label>
+            <label>
+                <span>Date de délivrance</span>
+                <input asp-for="Input.IdentityDocumentIssuedOn"
+                       type="date"
+                       disabled="@(!Model.CanEditSellerMasterData)" />
+                <span asp-validation-for="Input.IdentityDocumentIssuedOn" class="validation"></span>
+            </label>
+            <label>
+                <span>Autorité de délivrance</span>
+                <input asp-for="Input.IdentityDocumentIssuer" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span asp-validation-for="Input.IdentityDocumentIssuer" class="validation"></span>
+            </label>
+        </div>
+
         <label>
             <span>Notes</span>
             <textarea asp-for="Input.Notes" rows="3" disabled="@(!Model.CanEditSellerMasterData)"></textarea>

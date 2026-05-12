@@ -220,6 +220,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-city-options", createContent);
         Assert.Contains("Code postal", createContent);
         Assert.Contains("Ville", createContent);
+        Assert.Contains("Nature de la pièce d'identité", createContent);
+        Assert.Contains("name=\"Input.IdentityDocumentType\"", createContent);
+        Assert.Contains("Numéro de la pièce d'identité", createContent);
+        Assert.Contains("name=\"Input.IdentityDocumentNumber\"", createContent);
+        Assert.Contains("Date de délivrance", createContent);
+        Assert.Contains("name=\"Input.IdentityDocumentIssuedOn\"", createContent);
+        Assert.Contains("Autorité de délivrance", createContent);
+        Assert.Contains("name=\"Input.IdentityDocumentIssuer\"", createContent);
 
         var sellerId = await GetSellerIdByCodeAsync("SF-001");
         var editResponse = await client.GetAsync($"/vendeurs/{sellerId}/modifier");
@@ -228,6 +236,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("name=\"Input.PostalCode\"", editContent);
         Assert.Contains("name=\"Input.City\"", editContent);
         Assert.Contains("data-postal-city-root", editContent);
+        Assert.Contains("Nature de la pièce d'identité", editContent);
+        Assert.Contains("name=\"Input.IdentityDocumentType\"", editContent);
+        Assert.Contains("Numéro de la pièce d'identité", editContent);
+        Assert.Contains("name=\"Input.IdentityDocumentNumber\"", editContent);
+        Assert.Contains("Date de délivrance", editContent);
+        Assert.Contains("name=\"Input.IdentityDocumentIssuedOn\"", editContent);
+        Assert.Contains("Autorité de délivrance", editContent);
+        Assert.Contains("name=\"Input.IdentityDocumentIssuer\"", editContent);
     }
 
     [Fact]
@@ -2404,7 +2420,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 Phone = "0123",
                 PostalAddress = "1 rue des Tests",
                 PostalCode = "38000",
-                City = "Grenoble"
+                City = "Grenoble",
+                IdentityDocumentType = "CNI",
+                IdentityDocumentNumber = "123456789",
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                IdentityDocumentIssuer = "Préfecture 38"
             };
 
             dbContext.Sellers.Add(seller);
@@ -2427,6 +2447,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Nature de la pièce d'identité", content);
+        Assert.Contains("CNI", content);
+        Assert.Contains("Numéro de la pièce d'identité", content);
+        Assert.Contains("123456789", content);
+        Assert.Contains("Date de délivrance", content);
+        Assert.Contains("15/01/2020", content);
+        Assert.Contains("Autorité de délivrance", content);
+        Assert.Contains("Préfecture 38", content);
         Assert.Contains("Dépôt à valider", content);
         Assert.Contains("Imprimer le contrat", content);
         Assert.Contains("Valider le dépôt", content);
@@ -2887,7 +2915,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 Phone = "0123",
                 PostalAddress = "1 rue des Tests",
                 PostalCode = "38000",
-                City = "Grenoble"
+                City = "Grenoble",
+                IdentityDocumentType = "CNI",
+                IdentityDocumentNumber = "123456789",
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                IdentityDocumentIssuer = "Préfecture 38"
             };
 
             dbContext.Sellers.Add(seller);
@@ -2947,7 +2979,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 Phone = "0123",
                 PostalAddress = "1 rue du Contrat",
                 PostalCode = "38000",
-                City = "Grenoble"
+                City = "Grenoble",
+                IdentityDocumentType = "Passeport",
+                IdentityDocumentNumber = "P123456789",
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                IdentityDocumentIssuer = "Préfecture 38"
             };
 
             dbContext.Sellers.Add(seller);
@@ -2985,6 +3021,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Association Familiale", content);
         Assert.Contains("33 Av. de l'Europe, 38120 Saint-Égrève", content);
         Assert.Contains("SIRET : 306 041 997 00058", content);
+        Assert.Contains("Nature de la pièce d'identité", content);
+        Assert.Contains("Passeport", content);
+        Assert.Contains("Numéro de la pièce d'identité", content);
+        Assert.Contains("P123456789", content);
+        Assert.Contains("Date de délivrance", content);
+        Assert.Contains("15/01/2020", content);
+        Assert.Contains("Autorité de délivrance", content);
+        Assert.Contains("Préfecture 38", content);
         Assert.Contains("Ce document papier signé constitue la preuve du dépôt.", content);
         Assert.Contains("Frais vendeur : 2.00 € par tranche commencée de 15 articles", content);
         Assert.Contains("Frais attendus : 2.00 €", content);

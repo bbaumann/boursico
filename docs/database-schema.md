@@ -46,6 +46,10 @@ Represents one seller.
 - `postal_address`
 - `postal_code`
 - `city`
+- `identity_document_type`
+- `identity_document_number`
+- `identity_document_issued_on`
+- `identity_document_issuer`
 - `fee_paid_cents`
 - `deposit_status`
 - `notes`
@@ -59,7 +63,7 @@ Represents one seller.
 - The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
 - `deposit_status` stores the operational seller deposit gate and defaults to `deposit_pending`.
 - `import_notes` stores durable warnings from the external form import, such as ignored item lines or a submitted city that could not be reconciled.
-- Phone, postal address, postal code, and city may be blank while `deposit_status = deposit_pending`; the application requires them before deposit validation.
+- Phone, postal address, postal code, city, and identity document fields may be blank while `deposit_status = deposit_pending`; the application requires them before deposit validation.
 - The signed paper deposit contract is the legal proof of deposit and price agreement; V1 does not store a contract number, signed timestamp, or contract snapshot.
 
 ## `item`
@@ -217,6 +221,10 @@ V1 uses a single row with `id = 1`.
 - `postal_address`: required column; may be blank while the seller is `deposit_pending`
 - `postal_code`: required column; may be blank while the seller is `deposit_pending`
 - `city`: required column; may be blank while the seller is `deposit_pending`
+- `identity_document_type`: optional column; required by the application before deposit validation
+- `identity_document_number`: optional column; required by the application before deposit validation
+- `identity_document_issued_on`: optional date-only column; required by the application before deposit validation
+- `identity_document_issuer`: optional column; required by the application before deposit validation
 - `deposit_status`: required
 - `notes`: optional
 - `import_notes`: optional
@@ -289,7 +297,7 @@ Allowed values:
 
 Business meaning:
 
-- `deposit_pending`: the seller has not yet signed the printed deposit contract; normal seller and item edits remain possible during `presale`, contact fields may still be incomplete, and items stay `registered`
+- `deposit_pending`: the seller has not yet signed the printed deposit contract; normal seller and item edits remain possible during `presale`, contact and identity document fields may still be incomplete, and items stay `registered`
 - `deposit_validated`: the signed paper contract has been received; normal seller and item edits are locked for that seller, and accepted items are `in_stock`
 
 ## Sale Phase
@@ -342,6 +350,7 @@ These are important invariants even if they are enforced first in application lo
 - `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
 - `item.reference` must match the event seller code and seller-local item number used to generate it
 - normal `registered -> in_stock` transition is seller-level: validating the signed seller deposit moves that seller's accepted `registered` items to `in_stock`
+- seller deposit validation requires complete seller contact fields, complete identity document fields, and at least one complete item row
 
 ## Derived Business Meaning
 

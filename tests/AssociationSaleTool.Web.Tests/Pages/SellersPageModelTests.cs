@@ -41,13 +41,21 @@ public sealed class SellersPageModelTests
         AssertContactFieldsAreOptional(new CreateModel.InputModel
         {
             FirstName = "Ada",
-            LastName = "Lovelace"
+            LastName = "Lovelace",
+            IdentityDocumentType = string.Empty,
+            IdentityDocumentNumber = string.Empty,
+            IdentityDocumentIssuedOn = null,
+            IdentityDocumentIssuer = string.Empty
         });
 
         AssertContactFieldsAreOptional(new SellerEditModel.InputModel
         {
             FirstName = "Ada",
-            LastName = "Lovelace"
+            LastName = "Lovelace",
+            IdentityDocumentType = string.Empty,
+            IdentityDocumentNumber = string.Empty,
+            IdentityDocumentIssuedOn = null,
+            IdentityDocumentIssuer = string.Empty
         });
     }
 
@@ -748,7 +756,19 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -806,6 +826,10 @@ public sealed class SellersPageModelTests
         Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "L'adresse postale est obligatoire.");
         Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "Le code postal est obligatoire.");
         Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "La ville est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "La nature de la pièce d'identité est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "Le numéro de la pièce d'identité est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "La date de délivrance est obligatoire.");
+        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "L'autorité de délivrance est obligatoire.");
     }
 
     private static DefaultHttpContext CreateHttpContextWithSession(ISession session)

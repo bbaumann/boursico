@@ -199,6 +199,11 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         return $"{(priceCents / 100m).ToString("0.00", CultureInfo.InvariantCulture)} €";
     }
 
+    public static string FormatDate(DateOnly? date)
+    {
+        return date?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "À compléter";
+    }
+
     private void PopulateSellerState(SellerEntity seller)
     {
         Seller = seller;

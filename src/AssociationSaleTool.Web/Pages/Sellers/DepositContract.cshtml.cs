@@ -49,4 +49,9 @@ public sealed class DepositContractModel(IntakeService intakeService, IOptions<P
     {
         return $"{(priceCents / 100m).ToString("0.00", CultureInfo.InvariantCulture)} €";
     }
+
+    public static string FormatDate(DateOnly? date)
+    {
+        return date?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "À compléter";
+    }
 }

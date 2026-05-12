@@ -20,6 +20,14 @@ public sealed class SellerEntity
 
     public string City { get; set; } = string.Empty;
 
+    public string? IdentityDocumentType { get; set; }
+
+    public string? IdentityDocumentNumber { get; set; }
+
+    public DateOnly? IdentityDocumentIssuedOn { get; set; }
+
+    public string? IdentityDocumentIssuer { get; set; }
+
     public int FeePaidCents { get; set; }
 
     public string DepositStatus { get; set; } = "deposit_pending";

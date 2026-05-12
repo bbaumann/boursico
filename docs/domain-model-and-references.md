@@ -23,6 +23,10 @@ Suggested fields:
 - required postal address
 - required postal code
 - required city
+- identity document nature
+- identity document number
+- identity document issue date
+- identity document issuing authority
 - deposit status
 
 ### Item
@@ -102,7 +106,7 @@ Lifecycle meaning:
 - `missing`: expected to be returned after the event, but not found physically
 - `defective`: physically accepted but not suitable for sale; returned to the seller and not payable
 
-V1 does not use a `not_provided` status. Preregistered items that are not physically delivered may remain `registered`; they are deleted only when entered by mistake or when the seller record should be cleaned up before deposit validation. Validating the seller's signed paper deposit moves that seller's accepted `registered` items to `in_stock` and locks normal seller/item edits. The signed paper contract is the legal proof; `seller.deposit_status` is only the operational gate.
+V1 does not use a `not_provided` status. Preregistered items that are not physically delivered may remain `registered`; they are deleted only when entered by mistake or when the seller record should be cleaned up before deposit validation. Validating the seller's signed paper deposit requires complete seller contact and identity document fields, moves that seller's accepted `registered` items to `in_stock`, and locks normal seller/item edits. The signed paper contract is the legal proof; `seller.deposit_status` is only the operational gate.
 
 ## Sale Phase
 

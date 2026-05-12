@@ -77,7 +77,11 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
                 feePaidCents,
                 Input.PostalCode,
                 Input.City,
-                Input.ImportNotes),
+                Input.ImportNotes,
+                Input.IdentityDocumentType,
+                Input.IdentityDocumentNumber,
+                Input.IdentityDocumentIssuedOn,
+                Input.IdentityDocumentIssuer),
             cancellationToken);
 
         if (result == UpdateSellerResult.NotFound)
@@ -144,6 +148,10 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             PostalAddress = seller.PostalAddress,
             PostalCode = seller.PostalCode,
             City = seller.City,
+            IdentityDocumentType = seller.IdentityDocumentType,
+            IdentityDocumentNumber = seller.IdentityDocumentNumber,
+            IdentityDocumentIssuedOn = seller.IdentityDocumentIssuedOn,
+            IdentityDocumentIssuer = seller.IdentityDocumentIssuer,
             FeePaid = EuroPriceInput.FormatFromCents(seller.FeePaidCents),
             Notes = seller.Notes,
             ImportNotes = seller.ImportNotes
@@ -168,6 +176,14 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         public string PostalCode { get; set; } = string.Empty;
 
         public string City { get; set; } = string.Empty;
+
+        public string? IdentityDocumentType { get; set; }
+
+        public string? IdentityDocumentNumber { get; set; }
+
+        public DateOnly? IdentityDocumentIssuedOn { get; set; }
+
+        public string? IdentityDocumentIssuer { get; set; }
 
         public string? FeePaid { get; set; } = "0";
 

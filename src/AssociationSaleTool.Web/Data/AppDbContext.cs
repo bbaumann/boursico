@@ -30,6 +30,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.PostalAddress).HasColumnName("postal_address").IsRequired();
             entity.Property(x => x.PostalCode).HasColumnName("postal_code").IsRequired();
             entity.Property(x => x.City).HasColumnName("city").IsRequired();
+            entity.Property(x => x.IdentityDocumentType).HasColumnName("identity_document_type");
+            entity.Property(x => x.IdentityDocumentNumber).HasColumnName("identity_document_number");
+            entity.Property(x => x.IdentityDocumentIssuedOn).HasColumnName("identity_document_issued_on");
+            entity.Property(x => x.IdentityDocumentIssuer).HasColumnName("identity_document_issuer");
             entity.Property(x => x.FeePaidCents).HasColumnName("fee_paid_cents").HasDefaultValue(0).IsRequired();
             entity.Property(x => x.DepositStatus).HasColumnName("deposit_status").HasDefaultValue(SellerDepositStatuses.Pending).IsRequired();
             entity.Property(x => x.Notes).HasColumnName("notes");

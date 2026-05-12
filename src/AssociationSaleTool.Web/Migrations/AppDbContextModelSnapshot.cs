@@ -253,16 +253,16 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("city");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("email");
-
                     b.Property<string>("DepositStatus")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
                         .HasDefaultValue("deposit_pending")
                         .HasColumnName("deposit_status");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("email");
 
                     b.Property<int>("FeePaidCents")
                         .ValueGeneratedOnAdd()
@@ -278,6 +278,22 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Property<string>("ImportNotes")
                         .HasColumnType("TEXT")
                         .HasColumnName("import_notes");
+
+                    b.Property<DateOnly?>("IdentityDocumentIssuedOn")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("identity_document_issued_on");
+
+                    b.Property<string>("IdentityDocumentIssuer")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("identity_document_issuer");
+
+                    b.Property<string>("IdentityDocumentNumber")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("identity_document_number");
+
+                    b.Property<string>("IdentityDocumentType")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("identity_document_type");
 
                     b.Property<string>("LastName")
                         .IsRequired()

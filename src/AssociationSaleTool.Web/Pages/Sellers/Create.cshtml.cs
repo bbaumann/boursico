@@ -65,7 +65,11 @@ public sealed class CreateModel(
                 rowsToCreate,
                 feePaidCents,
                 Input.PostalCode,
-                Input.City),
+                Input.City,
+                IdentityDocumentType: Input.IdentityDocumentType,
+                IdentityDocumentNumber: Input.IdentityDocumentNumber,
+                IdentityDocumentIssuedOn: Input.IdentityDocumentIssuedOn,
+                IdentityDocumentIssuer: Input.IdentityDocumentIssuer),
             cancellationToken);
 
         if (result.Outcome == CreateSellerWithItemsOutcome.ExistingSellerFound)
@@ -288,6 +292,14 @@ public sealed class CreateModel(
         public string PostalCode { get; set; } = string.Empty;
 
         public string City { get; set; } = string.Empty;
+
+        public string? IdentityDocumentType { get; set; }
+
+        public string? IdentityDocumentNumber { get; set; }
+
+        public DateOnly? IdentityDocumentIssuedOn { get; set; }
+
+        public string? IdentityDocumentIssuer { get; set; }
 
         public string? FeePaid { get; set; } = "0";
 

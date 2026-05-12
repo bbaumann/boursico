@@ -78,6 +78,31 @@ public sealed class IntakeServiceTests
         Assert.Equal("deposit_pending", seller.DepositStatus);
     }
 
+    [Fact]
+    public async Task CreateSellerAsync_AllowsBlankPendingSellerIdentityDocumentInformation()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+
+        var result = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+
+        Assert.Equal(CreateSellerOutcome.Created, result.Outcome);
+        var seller = await context.Sellers.SingleAsync();
+        Assert.Null(seller.IdentityDocumentType);
+        Assert.Null(seller.IdentityDocumentNumber);
+        Assert.Null(seller.IdentityDocumentIssuedOn);
+        Assert.Null(seller.IdentityDocumentIssuer);
+        Assert.Equal("deposit_pending", seller.DepositStatus);
+    }
+
 
     [Fact]
     public async Task CreateSellerAsync_ReturnsDuplicateResultAndDoesNotCreateSellerForSameNameAndPhone()
@@ -873,7 +898,19 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -903,7 +940,19 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
         context.Items.AddRange(
             new ItemEntity
             {
@@ -969,7 +1018,19 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
 
         var result = await service.ValidateSellerDepositAsync(seller.Id);
 
@@ -1004,6 +1065,49 @@ public sealed class IntakeServiceTests
         Assert.Equal("registered", Assert.Single(unchangedSeller.Items).Status);
     }
 
+    [Theory]
+    [InlineData("identity_document_type")]
+    [InlineData("identity_document_number")]
+    [InlineData("identity_document_issued_on")]
+    [InlineData("identity_document_issuer")]
+    public async Task ValidateSellerDepositAsync_RejectsSellerWithIncompleteIdentityDocumentInformation(string missingField)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: missingField == "identity_document_type" ? null : "CNI",
+            IdentityDocumentNumber: missingField == "identity_document_number" ? null : "123456789",
+            IdentityDocumentIssuedOn: missingField == "identity_document_issued_on" ? null : new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: missingField == "identity_document_issuer" ? null : "Préfecture 38"));
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]));
+
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.NotAllowed, result);
+        var unchangedSeller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("deposit_pending", unchangedSeller.DepositStatus);
+        Assert.Equal("registered", Assert.Single(unchangedSeller.Items).Status);
+    }
+
     [Fact]
     public async Task UpdateSellerAsync_RejectsValidatedSeller()
     {
@@ -1017,7 +1121,19 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -1047,7 +1163,19 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -1077,7 +1205,19 @@ public sealed class IntakeServiceTests
         await context.Database.EnsureCreatedAsync();
 
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, PostalCode: "38000", City: "Grenoble"));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,

@@ -739,11 +739,11 @@ This file captures the main project decisions in a lightweight ADR format.
   - keep first name and last name required for seller creation and duplicate detection
   - when the submitted phone is blank, block duplicate sellers on normalized first name and last name only
   - do not use placeholder contact values such as `UNKNOWN` for new Excel-prefilled data
-  - require phone, postal address, postal code, city, and complete item rows before seller deposit validation
+  - require phone, postal address, postal code, city, identity document fields, and complete item rows before seller deposit validation
 - Consequence:
   - incomplete imported seller records can be saved as drafts instead of being rejected or filled with fake data
   - checkout remains protected because only validated deposits move items to `in_stock`
-  - operators must complete missing contact information before confirming `Le contrat est signé`
+  - operators must complete missing contact and identity document information before confirming `Le contrat est signé`
 
 ## D-046 Import External Seller Form Exports As Drafts
 
@@ -768,3 +768,21 @@ This file captures the main project decisions in a lightweight ADR format.
   - external form import becomes a bulk draft creation tool, not an authoritative validation workflow
   - import notes must be reviewed on the seller detail page and can be cleared or edited from seller edit
   - seller identity/contact corrections still happen through the normal seller page before contract signing
+
+## D-047 Require Seller Identity Document Fields Before Deposit Validation
+
+- Status: accepted
+- Key drivers:
+  - the signed deposit contract is the legal artifact for accepting a seller's items
+  - organizers need identity document details on that contract before items become sellable stock
+  - draft seller intake, Excel prefill, and external form import may not have those details yet
+- Decision:
+  - store nullable seller identity document fields: document nature, document number, issue date, and issuing authority
+  - keep those fields optional while the seller remains `deposit_pending`
+  - require all four identity document fields before `Valider le dépôt` can set `seller.deposit_status = deposit_validated`
+  - show the fields on seller create, edit, detail, and printed deposit contract surfaces
+  - keep the requirement in application validation rather than a database `CHECK`, because incomplete drafts are valid records
+- Consequence:
+  - imported and partially entered sellers can still be saved as drafts
+  - checkout remains protected because incomplete sellers cannot pass the deposit gate
+  - the printed contract includes the legal identity-document details collected at deposit time

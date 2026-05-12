@@ -120,9 +120,10 @@ Renseigner au minimum le prénom et le nom. Ajouter les informations disponibles
 - e-mail si disponible ;
 - téléphone si disponible ;
 - adresse postale, code postal et ville si disponibles ;
+- nature, numéro, date de délivrance et autorité de délivrance de la pièce d'identité si disponibles ;
 - notes si nécessaire.
 
-À l'enregistrement, l'outil attribue un code vendeur. Ce code sert ensuite à construire les références des articles. Les coordonnées manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
+À l'enregistrement, l'outil attribue un code vendeur. Ce code sert ensuite à construire les références des articles. Les coordonnées et les informations de pièce d'identité manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
 
 ### Importer des soumissions de formulaire
 
@@ -130,7 +131,7 @@ Si les vendeurs ont rempli un formulaire en ligne externe, exporter les réponse
 
 Cliquer sur `Fichier CSV ou TSV`, choisir l'export, puis cliquer sur `Importer les nouvelles soumissions`.
 
-L'import crée des fiches vendeurs en `Dépôt à valider` quand la soumission contient au moins un prénom et un nom. Les coordonnées incomplètes ne bloquent pas l'import : elles seront complétées avec le vendeur avant la signature du contrat.
+L'import crée des fiches vendeurs en `Dépôt à valider` quand la soumission contient au moins un prénom et un nom. Les coordonnées et informations de pièce d'identité incomplètes ne bloquent pas l'import : elles seront complétées avec le vendeur avant la signature du contrat.
 
 Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`. Les lignes d'articles invalides sont ignorées et notées sur la fiche vendeur dans `Import à vérifier`.
 
@@ -174,13 +175,13 @@ Quand le vendeur apporte les jouets :
 
 1. Ouvrir sa fiche vendeur.
 2. Relire les articles un par un.
-3. Compléter le téléphone, l'adresse postale, le code postal et la ville du vendeur.
+3. Compléter le téléphone, l'adresse postale, le code postal, la ville et les informations de pièce d'identité du vendeur : nature de la pièce, numéro, date de délivrance et autorité de délivrance.
 4. Corriger ou supprimer les lignes incomplètes avant signature.
 5. Cliquer sur `Imprimer le contrat`.
 6. Faire signer le contrat papier par le vendeur.
 7. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
 
-Le contrat imprimé affiche l'identité de l'association, son adresse, son SIRET, les frais vendeurs attendus, les frais déjà payés, les mentions légales, la liste des articles et les prix. Il ne contient qu'une signature vendeur, avec la phrase `J'accepte le règlement de la bourse aux jouets` juste avant la date de signature. Le statut de l'événement n'est pas imprimé sur le contrat.
+Le contrat imprimé affiche l'identité de l'association, son adresse, son SIRET, les informations de pièce d'identité du vendeur, les frais vendeurs attendus, les frais déjà payés, les mentions légales, la liste des articles et les prix. Il ne contient qu'une signature vendeur, avec la phrase `J'accepte le règlement de la bourse aux jouets` juste avant la date de signature. Le statut de l'événement n'est pas imprimé sur le contrat.
 
 La validation du dépôt passe les articles acceptés `en stock` et verrouille les modifications normales du vendeur et de ses articles. Le contrat papier signé est la preuve du dépôt et de l'accord sur les prix.
 

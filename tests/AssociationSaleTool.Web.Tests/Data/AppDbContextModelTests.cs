@@ -78,6 +78,31 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SellerStoresNullableIdentityDocumentColumns()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var entityType = context.Model.FindEntityType(typeof(SellerEntity));
+        Assert.NotNull(entityType);
+        var documentType = Assert.Single(entityType!.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentType));
+        var documentNumber = Assert.Single(entityType.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentNumber));
+        var issuedOn = Assert.Single(entityType.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentIssuedOn));
+        var issuer = Assert.Single(entityType.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentIssuer));
+        Assert.Equal("identity_document_type", documentType.GetColumnName());
+        Assert.Equal("identity_document_number", documentNumber.GetColumnName());
+        Assert.Equal("identity_document_issued_on", issuedOn.GetColumnName());
+        Assert.Equal("identity_document_issuer", issuer.GetColumnName());
+        Assert.True(documentType.IsNullable);
+        Assert.True(documentNumber.IsNullable);
+        Assert.True(issuedOn.IsNullable);
+        Assert.True(issuer.IsNullable);
+    }
+
+    [Fact]
     public void SellerTableRequiresContactFields()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
@@ -97,6 +122,10 @@ public class AppDbContextModelTests
         Assert.Contains("\"postal_address\" TEXT NOT NULL", createTableSql);
         Assert.Contains("\"postal_code\" TEXT NOT NULL", createTableSql);
         Assert.Contains("\"city\" TEXT NOT NULL", createTableSql);
+        Assert.Contains("\"identity_document_type\" TEXT NULL", createTableSql);
+        Assert.Contains("\"identity_document_number\" TEXT NULL", createTableSql);
+        Assert.Contains("\"identity_document_issued_on\" TEXT NULL", createTableSql);
+        Assert.Contains("\"identity_document_issuer\" TEXT NULL", createTableSql);
     }
 
     [Fact]
