@@ -238,7 +238,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id, secondItem.Id],
             buyerName: "Client caisse",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.True(result.Saved);
         Assert.NotNull(result.SaleId);
@@ -254,6 +255,7 @@ public sealed class CheckoutServiceTests
         Assert.Equal(150, sale.CheckoutFeeCents);
         Assert.Equal(1650, sale.TotalPaidCents);
         Assert.Equal(SalePaymentMethods.Card, sale.PaymentMethod);
+        Assert.Equal("CAISSE-1", sale.CheckoutCode);
         Assert.Null(sale.ChequeNumber);
         Assert.Null(sale.ChequeBankName);
         Assert.Null(sale.BuyerAddress);
@@ -276,6 +278,60 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task SaveSaleAsync_StoresTrimmedCheckoutCode()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            buyerName: "Client caisse",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
+            checkoutCode: "  CAISSE-2  ");
+
+        Assert.True(result.Saved);
+        var sale = await context.Sales.SingleAsync();
+        Assert.Equal("CAISSE-2", sale.CheckoutCode);
+    }
+
+    [Fact]
+    public async Task SaveSaleAsync_RejectsBlankCheckoutCode()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, _) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        var service = new CheckoutService(context);
+
+        var result = await service.SaveSaleAsync(
+            [firstItem.Id],
+            buyerName: "Client caisse",
+            buyerPostalCode: "38000",
+            buyerCity: "Grenoble",
+            checkoutCode: " ");
+
+        Assert.False(result.Saved);
+        Assert.True(result.IsValidationError);
+        Assert.Equal("Le nom de la caisse est obligatoire.", result.Message);
+        Assert.Empty(await context.Sales.ToListAsync());
+        Assert.Equal("in_stock", (await context.Items.SingleAsync(x => x.Id == firstItem.Id)).Status);
+    }
+
+    [Fact]
     public async Task SaveSaleAsync_StoresTrimmedBuyerAddress()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -294,7 +350,8 @@ public sealed class CheckoutServiceTests
             "  Association sportive\n12 rue des Lilas  ",
             buyerName: "Association sportive",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
@@ -319,7 +376,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id],
             buyerName: "Client sans facture",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.True(result.Saved);
         Assert.Null(result.InvoiceNumber);
@@ -349,14 +407,16 @@ public sealed class CheckoutServiceTests
             buyerName: "Client facture",
             buyerPostalCode: "38120",
             buyerCity: "Saint-Egreve",
-            createInvoice: true);
+            createInvoice: true,
+            checkoutCode: "CAISSE-1");
         var secondResult = await service.SaveSaleAsync(
             [secondItem.Id],
             "Second client\n1 rue Centrale",
             buyerName: "Second client",
             buyerPostalCode: "38000",
             buyerCity: "Grenoble",
-            createInvoice: true);
+            createInvoice: true,
+            checkoutCode: "CAISSE-1");
 
         Assert.True(firstResult.Saved);
         Assert.True(secondResult.Saved);
@@ -393,14 +453,16 @@ public sealed class CheckoutServiceTests
             buyerName: "Client refuse",
             buyerPostalCode: "38000",
             buyerCity: "Grenoble",
-            createInvoice: true);
+            createInvoice: true,
+            checkoutCode: "CAISSE-1");
         var savedResult = await service.SaveSaleAsync(
             [availableItem.Id],
             "Client accepte\n2 rue Test",
             buyerName: "Client accepte",
             buyerPostalCode: "38000",
             buyerCity: "Grenoble",
-            createInvoice: true);
+            createInvoice: true,
+            checkoutCode: "CAISSE-1");
 
         Assert.False(rejectedResult.Saved);
         Assert.Null(rejectedResult.InvoiceNumber);
@@ -428,7 +490,8 @@ public sealed class CheckoutServiceTests
             buyerName: "Client especes",
             buyerPostalCode: "38000",
             buyerCity: "Grenoble",
-            paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cash));
+            paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cash),
+            checkoutCode: "CAISSE-1");
 
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
@@ -459,7 +522,8 @@ public sealed class CheckoutServiceTests
             paymentDetails: new CheckoutPaymentDetails(
                 SalePaymentMethods.Cheque,
                 "  1234567  ",
-                "  Banque Populaire  "));
+                "  Banque Populaire  "),
+            checkoutCode: "CAISSE-1");
 
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
@@ -487,7 +551,8 @@ public sealed class CheckoutServiceTests
             buyerName: "Client cheque",
             buyerPostalCode: "38000",
             buyerCity: "Grenoble",
-            paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cheque, "1234567", " "));
+            paymentDetails: new CheckoutPaymentDetails(SalePaymentMethods.Cheque, "1234567", " "),
+            checkoutCode: "CAISSE-1");
 
         Assert.False(result.Saved);
         Assert.True(result.IsValidationError);
@@ -515,7 +580,8 @@ public sealed class CheckoutServiceTests
             " \r\n ",
             buyerName: "Client sans adresse",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
@@ -540,7 +606,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id],
             buyerName: "  Association sportive  ",
             buyerPostalCode: "  38000 ",
-            buyerCity: " Grenoble  ");
+            buyerCity: " Grenoble  ",
+            checkoutCode: "CAISSE-1");
 
         Assert.True(result.Saved);
         var sale = await context.Sales.SingleAsync();
@@ -567,7 +634,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id],
             buyerName: "Client incomplet",
             buyerPostalCode: "38000",
-            buyerCity: " ");
+            buyerCity: " ",
+            checkoutCode: "CAISSE-1");
 
         Assert.False(result.Saved);
         Assert.True(result.IsValidationError);
@@ -594,7 +662,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id, secondItem.Id],
             buyerName: "Client conflit",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.False(result.Saved);
         Assert.Null(result.SaleId);
@@ -624,7 +693,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id, secondItem.Id],
             buyerName: "Client conflit",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.False(result.Saved);
         Assert.Null(result.SaleId);
@@ -657,7 +727,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id],
             buyerName: "Client conflit",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.False(result.Saved);
         Assert.Null(result.SaleId);
@@ -686,7 +757,8 @@ public sealed class CheckoutServiceTests
             [firstItem.Id],
             buyerName: "Client fermeture",
             buyerPostalCode: "38000",
-            buyerCity: "Grenoble");
+            buyerCity: "Grenoble",
+            checkoutCode: "CAISSE-1");
 
         Assert.False(result.Saved);
         Assert.Null(result.SaleId);

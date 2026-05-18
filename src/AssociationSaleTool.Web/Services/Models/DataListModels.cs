@@ -48,3 +48,18 @@ public sealed record DataListChequeRow(
     string ChequeBankName,
     int TotalPaidCents,
     string SearchText);
+
+public sealed record DataListClosingRow(
+    string Label,
+    string? CheckoutCode,
+    bool IsGlobal,
+    int SaleCount,
+    int ItemCount,
+    int SubtotalSellerPriceCents,
+    int CheckoutFeeCents,
+    int TotalCollectedCents,
+    int RefundTotalCents,
+    int NetCollectedCents,
+    int CardTotalCents,
+    int CashTotalCents,
+    int ChequeTotalCents);

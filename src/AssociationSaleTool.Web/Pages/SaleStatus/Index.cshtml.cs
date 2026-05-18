@@ -37,6 +37,8 @@ public sealed class IndexModel(
 
     public IReadOnlyList<ItemCorrectionCandidate> ItemCorrectionCandidates { get; private set; } = [];
 
+    public IReadOnlyList<string> CheckoutCodes { get; private set; } = [];
+
     [BindProperty]
     public PhaseInputModel Input { get; set; } = new();
 
@@ -116,6 +118,7 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostRefundDefectiveSaleLineAsync(
         long saleLineId,
+        string? refundCheckoutCode,
         CancellationToken cancellationToken)
     {
         if (!UnlockPageIfSessionAllows())
@@ -123,16 +126,19 @@ public sealed class IndexModel(
             return Page();
         }
 
-        var result = await saleCorrectionService.RefundDefectiveSaleLineAsync(saleLineId, cancellationToken);
+        var result = await saleCorrectionService.RefundDefectiveSaleLineAsync(saleLineId, refundCheckoutCode, cancellationToken);
         if (result == SaleCorrectionResult.Refunded)
         {
             SuccessMessage = "L'article est marqué défectueux. Remboursez l'acheteur du montant indiqué et rendez l'article au vendeur en fin de vente.";
             return RedirectToPage();
         }
 
-        var message = result == SaleCorrectionResult.NotFound
-            ? "Ligne de vente introuvable."
-            : "Cette ligne de vente ne peut pas être remboursée dans son état actuel.";
+        var message = result switch
+        {
+            SaleCorrectionResult.NotFound => "Ligne de vente introuvable.",
+            SaleCorrectionResult.InvalidCheckoutCode => "Choisissez une caisse de remboursement existante.",
+            _ => "Cette ligne de vente ne peut pas être remboursée dans son état actuel."
+        };
 
         ModelState.AddModelError(string.Empty, message);
         await LoadPageAsync(cancellationToken);
@@ -228,6 +234,7 @@ public sealed class IndexModel(
     {
         CurrentPhase = await salePhaseService.GetCurrentPhaseAsync(cancellationToken);
         ItemCorrectionCandidates = await itemCorrectionService.ListCandidatesAsync(cancellationToken);
+        CheckoutCodes = await saleCorrectionService.ListCheckoutCodesAsync(cancellationToken);
     }
 
     private bool UnlockPageIfSessionAllows()

@@ -581,7 +581,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - expose a French read-only data browser at `/donnees`
   - add a top-level `DONNÉES` navigation entry
   - keep the feature available to operators without the shared admin password
-  - use four tabs: `Articles`, `Vendeurs`, `Ventes`, and `Chèques`
+  - use initial tabs `Articles`, `Vendeurs`, `Ventes`, and `Chèques`; D-045 later adds the read-only `Clôture` tab
   - list all item statuses on the `Articles` tab and provide a status filter
   - search sellers only by seller code and seller name
   - search sales only by sale id, buyer details, payment method, item reference, and item title
@@ -786,3 +786,25 @@ This file captures the main project decisions in a lightweight ADR format.
   - imported and partially entered sellers can still be saved as drafts
   - checkout remains protected because incomplete sellers cannot pass the deposit gate
   - the printed contract includes the legal identity-document details collected at deposit time
+
+## D-048 Track Physical Checkout Codes For Closing
+
+- Status: accepted
+- Key drivers:
+  - sale-day operations may use multiple physical checkout stations
+  - offline validation compares cash/card/cheque reality with system totals after the event
+  - refunding a defective sold item can happen at a different checkout from the original sale
+  - checkout-code uniqueness can be handled operationally by organizers
+- Decision:
+  - store a required text `sale.checkout_code` on every new sale
+  - let the checkout page keep the station code in browser `localStorage` so one physical station can keep using the same code across reloads
+  - do not add a checkout-station table or enforce code uniqueness in the database
+  - when refunding a defective sale line from `/administration`, require the admin to choose the refund checkout code from distinct non-empty `sale.checkout_code` values already present in the database
+  - store the selected refund station on `sale_line.refund_checkout_code`
+  - add a read-only `/donnees?onglet=cloture` tab named `Clôture`
+  - show one global row and one row per checkout code with sales, item count, subtotal, association fee, payment-method totals, collected total, refunded total, and net total
+  - group per-checkout sales by `sale.checkout_code` and per-checkout refunds by `sale_line.refund_checkout_code`
+- Consequence:
+  - organizers can close each physical checkout independently while still seeing the global event total
+  - refund attribution follows the physical checkout that paid the refund, not the original sale checkout
+  - the feature stays a read-only reporting aid rather than a full accounting ledger or payment-provider reconciliation system

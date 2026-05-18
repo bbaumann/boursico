@@ -33,6 +33,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Assign one unique reference per item
 - Store one seller-set printed price per item
 - Search validated `in_stock` items by `reference + title` using a live-filtered table
+- Store a simple physical checkout code on every sale
 - Capture required buyer name or organization, postal code, and city on the checkout page
 - Add selected items to a cart
 - Compute subtotal, checkout fee, and final bill total automatically
@@ -43,6 +44,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Mark accepted items as defective from the admin page
 - Refund defective sold items, including the 10 percent association fee
 - Cancel a mistaken defective refund from the admin page
+- Inspect read-only financial closing totals globally and per checkout from `/donnees`
 
 ### Sale-Day UX Constraints
 
@@ -52,6 +54,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - All operator-facing UI labels and URLs must be in French
 - Search must support partial `reference + title` filtering with immediate updates on each keystroke
 - The operator selects an item explicitly from the filtered table before it is added to the cart
+- Checkout code uniqueness is handled operationally by organizers; the app stores the text code but does not maintain a station registry
 
 ### Checkout Pricing Rule
 
@@ -116,24 +119,25 @@ Normal UI no longer exposes a manual `registered -> in_stock` item action. That 
 ### Expected Checkout Flow
 
 1. Checkout loads a lightweight item catalog into page memory when the page opens.
-2. Operator fills the required buyer name or organization, postal code, and city.
-3. When the postal code is in Isère (`38xxx`), the city field offers known city suggestions from the local city lookup data and is prefilled when the postal code has exactly one known city. For other French departments, the city remains free text.
-4. Operator types in the item lookup field.
-5. The item table is filtered on each keystroke using `reference + title` matching.
-6. Operator selects the correct item from the filtered table.
-7. Item is added to the current cart.
-8. Operator repeats until the customer is done.
-9. Operator clicks `Finaliser`.
-10. The app validates the cart against the live database before showing the finalization modal.
-11. If validation succeeds, a finalization modal shows the subtotal, checkout fee, final total, item count, and payment method choice.
-12. Operator chooses `CB`, `Espèces`, or `Chèque`.
-13. If `Chèque` is chosen, the operator must enter the cheque number and bank name before saving.
-14. Operator chooses `Retour`, `Enregistrer la vente`, or `Enregistrer et imprimer`.
-15. The server re-validates that every cart item is still `in_stock` and belongs to a seller with `deposit_status = deposit_validated` at save time inside the save transaction.
-16. The server rejects the sale if the phase is `post_sale`.
-17. If validation succeeds, the sale, buyer details, payment method, and cheque traceability fields are persisted and the items become `sold`.
-18. If any cart item is no longer saleable, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
-19. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
+2. If the browser has no saved checkout code, the operator enters a non-empty physical checkout name before sale entry is available.
+3. Operator fills the required buyer name or organization, postal code, and city.
+4. When the postal code is in Isère (`38xxx`), the city field offers known city suggestions from the local city lookup data and is prefilled when the postal code has exactly one known city. For other French departments, the city remains free text.
+5. Operator types in the item lookup field.
+6. The item table is filtered on each keystroke using `reference + title` matching.
+7. Operator selects the correct item from the filtered table.
+8. Item is added to the current cart.
+9. Operator repeats until the customer is done.
+10. Operator clicks `Finaliser`.
+11. The app validates the cart against the live database before showing the finalization modal.
+12. If validation succeeds, a finalization modal shows the subtotal, checkout fee, final total, item count, and payment method choice.
+13. Operator chooses `CB`, `Espèces`, or `Chèque`.
+14. If `Chèque` is chosen, the operator must enter the cheque number and bank name before saving.
+15. Operator chooses `Retour`, `Enregistrer la vente`, or `Enregistrer et imprimer`.
+16. The server re-validates that every cart item is still `in_stock` and belongs to a seller with `deposit_status = deposit_validated` at save time inside the save transaction.
+17. The server rejects the sale if the phase is `post_sale`.
+18. If validation succeeds, the sale, checkout code, buyer details, payment method, and cheque traceability fields are persisted and the items become `sold`.
+19. If any cart item is no longer saleable, the sale is rejected, the conflicting item is highlighted very prominently in red, and the operator must remove it before retrying.
+20. After a successful save, checkout returns to a fresh state and reloads the in-memory catalog.
 
 ### Read-Only Sales View
 
@@ -157,7 +161,7 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 
 - the main navigation exposes a `DONNÉES` entry
 - the page is read-only and does not expose edit, correction, or workflow actions
-- the page uses four tabs: `Articles`, `Vendeurs`, `Ventes`, and `Chèques`
+- the page uses five tabs: `Articles`, `Vendeurs`, `Ventes`, `Chèques`, and `Clôture`
 - the `Articles` tab lists all item statuses and supports a status filter in addition to live text search
 - article text search matches item reference, title, seller code, seller name, and status
 - the `Vendeurs` tab supports live text search by seller code and seller name only
@@ -165,6 +169,9 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 - invoice address details, cheque number, and bank name stay visible in checkout sales history, but are not part of the general data-list sale search
 - the `Chèques` tab lists only cheque-payment sales with stored cheque number and bank name
 - cheque rows show sale id, cheque number, bank name, and total paid amount, with the sale id linking to read-only sale detail
+- the `Clôture` tab shows a global financial row and one row per checkout code
+- closing rows include sale count, item count, subtotal, association fee, payment-method totals, total collected, refunds paid, and net collected
+- per-checkout sale totals group by `sale.checkout_code`; per-checkout refunds group by `sale_line.refund_checkout_code`
 
 ### Concurrent Checkout Rule
 
@@ -210,6 +217,7 @@ If a buyer returns a defective sold item, an admin uses `Rembourser` from `Corre
 The refund workflow:
 
 - records refund fields on the sale line
+- requires the admin to choose the physical checkout that paid the refund from existing sale checkout codes
 - reimburses the buyer the item price plus the 10 percent association fee for that item
 - keeps the original sale and original sale totals unchanged
 - changes the item from `sold` to `defective`

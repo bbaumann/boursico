@@ -170,6 +170,99 @@ public sealed class DataListServiceTests
         Assert.DoesNotContain("banque incompl\u00e8te", row.SearchText);
     }
 
+    [Fact]
+    public async Task ListClosingAsync_ReturnsGlobalAndPerCheckoutMoneyTotals()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var seller = await SeedSellerAsync(context, "CL", "Claire", "Cloture");
+        var firstItem = await SeedItemAsync(context, seller, "CL001", 1, "Jeu carte", 1000, "defective");
+        var secondItem = await SeedItemAsync(context, seller, "CL002", 2, "Jeu especes", 2000, "sold");
+        var thirdItem = await SeedItemAsync(context, seller, "CL003", 3, "Jeu cheque", 3000, "sold");
+        context.Sales.AddRange(
+            new SaleEntity
+            {
+                SoldAt = new DateTime(2026, 5, 5, 10, 0, 0, DateTimeKind.Utc),
+                CheckoutCode = "CAISSE-1",
+                SubtotalSellerPriceCents = 3000,
+                CheckoutFeeCents = 300,
+                TotalPaidCents = 3300,
+                PaymentMethod = SalePaymentMethods.Card,
+                SaleLines =
+                [
+                    new SaleLineEntity
+                    {
+                        ItemId = firstItem.Id,
+                        SellerPriceAtSaleCents = firstItem.SellerPriceCents,
+                        RefundedAt = new DateTime(2026, 5, 5, 12, 0, 0, DateTimeKind.Utc),
+                        RefundItemPriceCents = 1000,
+                        RefundCheckoutFeeCents = 100,
+                        RefundTotalCents = 1100,
+                        RefundReason = "defective",
+                        RefundCheckoutCode = "CAISSE-2"
+                    },
+                    new SaleLineEntity { ItemId = secondItem.Id, SellerPriceAtSaleCents = secondItem.SellerPriceCents }
+                ]
+            },
+            new SaleEntity
+            {
+                SoldAt = new DateTime(2026, 5, 5, 11, 0, 0, DateTimeKind.Utc),
+                CheckoutCode = "CAISSE-2",
+                SubtotalSellerPriceCents = 3000,
+                CheckoutFeeCents = 300,
+                TotalPaidCents = 3300,
+                PaymentMethod = SalePaymentMethods.Cheque,
+                SaleLines =
+                [
+                    new SaleLineEntity { ItemId = thirdItem.Id, SellerPriceAtSaleCents = thirdItem.SellerPriceCents }
+                ]
+            });
+        await context.SaveChangesAsync();
+        var service = new DataListService(context);
+
+        var rows = await service.ListClosingAsync();
+
+        Assert.Collection(
+            rows,
+            global =>
+            {
+                Assert.True(global.IsGlobal);
+                Assert.Equal("Toutes les caisses", global.Label);
+                Assert.Equal(2, global.SaleCount);
+                Assert.Equal(3, global.ItemCount);
+                Assert.Equal(6000, global.SubtotalSellerPriceCents);
+                Assert.Equal(600, global.CheckoutFeeCents);
+                Assert.Equal(6600, global.TotalCollectedCents);
+                Assert.Equal(1100, global.RefundTotalCents);
+                Assert.Equal(5500, global.NetCollectedCents);
+                Assert.Equal(3300, global.CardTotalCents);
+                Assert.Equal(0, global.CashTotalCents);
+                Assert.Equal(3300, global.ChequeTotalCents);
+            },
+            firstCheckout =>
+            {
+                Assert.False(firstCheckout.IsGlobal);
+                Assert.Equal("CAISSE-1", firstCheckout.CheckoutCode);
+                Assert.Equal(1, firstCheckout.SaleCount);
+                Assert.Equal(2, firstCheckout.ItemCount);
+                Assert.Equal(3300, firstCheckout.TotalCollectedCents);
+                Assert.Equal(0, firstCheckout.RefundTotalCents);
+                Assert.Equal(3300, firstCheckout.NetCollectedCents);
+                Assert.Equal(3300, firstCheckout.CardTotalCents);
+            },
+            secondCheckout =>
+            {
+                Assert.False(secondCheckout.IsGlobal);
+                Assert.Equal("CAISSE-2", secondCheckout.CheckoutCode);
+                Assert.Equal(1, secondCheckout.SaleCount);
+                Assert.Equal(1, secondCheckout.ItemCount);
+                Assert.Equal(3300, secondCheckout.TotalCollectedCents);
+                Assert.Equal(1100, secondCheckout.RefundTotalCents);
+                Assert.Equal(2200, secondCheckout.NetCollectedCents);
+                Assert.Equal(3300, secondCheckout.ChequeTotalCents);
+            });
+    }
+
     private static async Task<SellerEntity> SeedSellerAsync(
         AppDbContext context,
         string sellerCode,

@@ -26,6 +26,9 @@
         <a class="@Model.TabClass("cheques")"
            href="/donnees?onglet=cheques"
            aria-current="@Model.TabAriaCurrent("cheques")">Ch&egrave;ques</a>
+        <a class="@Model.TabClass("cloture")"
+           href="/donnees?onglet=cloture"
+           aria-current="@Model.TabAriaCurrent("cloture")">Cl&ocirc;ture</a>
     </nav>
 
     @if (Model.IsActiveTab("articles"))
@@ -239,6 +242,54 @@
                             <td class="data-list-cheque-number-column" data-data-list-sort-value="@cheque.ChequeNumber">@cheque.ChequeNumber</td>
                             <td class="data-list-cheque-bank-column" data-data-list-sort-value="@cheque.ChequeBankName">@cheque.ChequeBankName</td>
                             <td class="data-list-cheque-amount-column" data-data-list-sort-value="@cheque.TotalPaidCents">@IndexModel.FormatPrice(cheque.TotalPaidCents)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
+
+    @if (Model.IsActiveTab("cloture"))
+    {
+        <section class="subsection">
+            @if (Model.ClosingRows.Count == 0)
+            {
+                <p class="empty-state">Aucune vente enregistr&eacute;e.</p>
+            }
+            else
+            {
+                <table class="data-table data-list-table data-list-closing-table" data-list-closing-table>
+                    <thead>
+                        <tr>
+                            <th>Caisse</th>
+                            <th>Ventes</th>
+                            <th>Articles</th>
+                            <th>Sous-total</th>
+                            <th>Frais</th>
+                            <th>CB</th>
+                            <th>Esp&egrave;ces</th>
+                            <th>Ch&egrave;ques</th>
+                            <th>Encaiss&eacute;</th>
+                            <th>Rembours&eacute;</th>
+                            <th>Net</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.ClosingRows)
+                    {
+                        <tr class="@(row.IsGlobal ? "data-list-closing-global-row" : null)">
+                            <td>@row.Label</td>
+                            <td>@row.SaleCount</td>
+                            <td>@row.ItemCount</td>
+                            <td>@IndexModel.FormatPrice(row.SubtotalSellerPriceCents)</td>
+                            <td>@IndexModel.FormatPrice(row.CheckoutFeeCents)</td>
+                            <td>@IndexModel.FormatPrice(row.CardTotalCents)</td>
+                            <td>@IndexModel.FormatPrice(row.CashTotalCents)</td>
+                            <td>@IndexModel.FormatPrice(row.ChequeTotalCents)</td>
+                            <td>@IndexModel.FormatPrice(row.TotalCollectedCents)</td>
+                            <td>@IndexModel.FormatPrice(row.RefundTotalCents)</td>
+                            <td>@IndexModel.FormatPrice(row.NetCollectedCents)</td>
                         </tr>
                     }
                     </tbody>

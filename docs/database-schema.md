@@ -99,6 +99,7 @@ Represents one completed checkout.
 
 - `id`
 - `sold_at`
+- `checkout_code`
 - `subtotal_seller_price_cents`
 - `checkout_fee_cents`
 - `total_paid_cents`
@@ -116,6 +117,8 @@ Represents one completed checkout.
 
 - There is no `is_paid` field in V1; persisting the sale means the checkout is complete.
 - `sold_at` should be stored in UTC.
+- `checkout_code` stores the physical checkout station code used for the sale.
+- `checkout_code` is required by the application for new checkout sales, but uniqueness is handled operationally and is not a database constraint.
 - `subtotal_seller_price_cents`, `checkout_fee_cents`, and `total_paid_cents` are stored as integer cents.
 - `buyer_name`, `buyer_postal_code`, and `buyer_city` are required by the application for new checkout sales.
 - `buyer_postal_code` is stored as text even though the UI input is numeric, so postal-code formatting is not treated as arithmetic.
@@ -143,6 +146,7 @@ Represents one sold item inside one sale.
 - `refund_checkout_fee_cents`
 - `refund_total_cents`
 - `refund_reason`
+- `refund_checkout_code`
 
 ### Notes
 
@@ -157,6 +161,7 @@ Represents one sold item inside one sale.
 - `refund_checkout_fee_cents` stores the reimbursed 10 percent association fee.
 - `refund_total_cents = refund_item_price_cents + refund_checkout_fee_cents`.
 - `refund_reason` is `defective` for the current refund workflow.
+- `refund_checkout_code` stores the physical checkout station that paid the refund.
 - Original sale totals are not recalculated when a sale line is corrected.
 - Original sale totals are not recalculated when a sale line is refunded.
 - If an admin cancels a defective refund that was entered by mistake, the refund fields are cleared and the original sale totals still remain unchanged.
@@ -244,6 +249,7 @@ V1 uses a single row with `id = 1`.
 - `subtotal_seller_price_cents`: required
 - `checkout_fee_cents`: required
 - `total_paid_cents`: required
+- `checkout_code`: required for new application-created rows
 - `buyer_name`: required for new application-created rows
 - `buyer_postal_code`: required for new application-created rows
 - `buyer_city`: required for new application-created rows
@@ -260,6 +266,7 @@ V1 uses a single row with `id = 1`.
 - `refund_checkout_fee_cents`: optional
 - `refund_total_cents`: optional
 - `refund_reason`: optional
+- `refund_checkout_code`: optional
 
 ## `event_state`
 
@@ -330,7 +337,7 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - when item master data is locked, only workflow-driven status transitions remain allowed
 - after `seller.deposit_status = deposit_validated`, normal seller and item edits are locked for that seller even during `presale`
 - admin cancellation may set `seller.deposit_status` back to `deposit_pending` during `presale` after shared-password confirmation; it moves only current `in_stock` items back to `registered` and leaves `sold`, `missing`, and `defective` items unchanged
-- `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
+- `sale.checkout_code`, `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
 - `sale_line` price snapshots are immutable; correction status is represented by `corrected_at`, and defective buyer refunds are represented by the refund fields, which may only be cleared by the explicit admin refund-cancellation workflow
 
 ## Business Invariants
@@ -344,7 +351,7 @@ These are important invariants even if they are enforced first in application lo
 - one item can only have one active payable sale line
 - corrected sale lines do not make an item unavailable for sale
 - refunded sale lines do not make an item payable to the seller
-- if a sale line has `refunded_at`, then `refund_reason`, `refund_item_price_cents`, `refund_checkout_fee_cents`, and `refund_total_cents` should be filled
+- if a sale line has `refunded_at`, then `refund_reason`, `refund_item_price_cents`, `refund_checkout_fee_cents`, `refund_total_cents`, and `refund_checkout_code` should be filled
 - `sale.subtotal_seller_price_cents` must equal the sum of its sale lines' `seller_price_at_sale_cents`
 - `sale.checkout_fee_cents` must equal 10 percent of `sale.subtotal_seller_price_cents`, rounded to the nearest cent with midpoint values rounded away from zero
 - `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
@@ -404,7 +411,9 @@ Recommended indexes:
 - index on `item.seller_id`
 - index on `item.status`
 - index on `sale.sold_at`
+- index on `sale.checkout_code`
 - index on `sale_line.sale_id`
+- index on `sale_line.refund_checkout_code`
 
 These support:
 
@@ -412,6 +421,7 @@ These support:
 - seller sheet generation
 - post-sale filtering by item status
 - event-level sale listing and export
+- financial closing totals by physical checkout
 
 ## Reference Generation
 

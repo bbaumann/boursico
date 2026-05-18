@@ -6,5 +6,6 @@ public enum SaleCorrectionResult
     Refunded,
     RefundCanceled,
     NotFound,
-    NotAllowed
+    NotAllowed,
+    InvalidCheckoutCode
 }

@@ -29,6 +29,25 @@
 
     @if (Model.SaleAllowed)
     {
+    <section class="subsection checkout-code-setup" data-checkout-code-setup>
+        <h2>Caisse</h2>
+        <label for="checkout-code-input">
+            Nom de la caisse
+            <input id="checkout-code-input"
+                   type="text"
+                   autocomplete="off"
+                   maxlength="80"
+                   data-checkout-code-input />
+        </label>
+        <div class="form-actions">
+            <button type="button" class="button-link button-link-solid" data-checkout-code-save>
+                Enregistrer la caisse
+            </button>
+        </div>
+        <p class="validation" data-checkout-code-message role="status" aria-live="polite"></p>
+    </section>
+
+    <div data-checkout-workflow hidden>
     <div class="checkout-grid">
         <section class="subsection checkout-lookup">
             <section class="checkout-buyer-fields" aria-labelledby="checkout-buyer-title">
@@ -240,6 +259,7 @@
                 </button>
             </div>
         </div>
+    </div>
     </div>
     }
 </section>

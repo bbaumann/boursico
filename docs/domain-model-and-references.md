@@ -51,6 +51,7 @@ Suggested fields:
 
 - sale id
 - timestamp
+- physical checkout code
 - subtotal seller price
 - checkout fee
 - total paid
@@ -71,11 +72,11 @@ Suggested fields:
 - seller price at time of sale
 - corrected at timestamp, when an admin corrected a mistaken sale line
 - refunded at timestamp, when an admin refunded a defective sold item
-- refund item price, refunded checkout fee, total refunded amount, and refund reason
+- refund item price, refunded checkout fee, total refunded amount, refund reason, and refund checkout code
 
 If a sale line is corrected, the original sale and sale totals remain stored. The corrected line no longer makes the item unavailable for sale and is ignored by seller-sheet payable output.
 
-If a sale line is refunded because the sold item is defective, the original sale and sale totals remain stored. The refunded line is ignored by seller-sheet payable output, and the item becomes `defective` so it is returned to the seller.
+If a sale line is refunded because the sold item is defective, the original sale and sale totals remain stored. The refunded line is ignored by seller-sheet payable output, records the physical checkout that paid the refund, and the item becomes `defective` so it is returned to the seller.
 
 ## Item Status Model
 
@@ -129,6 +130,8 @@ Each sale stores the transaction-level customer payment values:
 - total paid: subtotal + checkout fee
 
 Seller settlement uses seller price only. A defective-item buyer refund reimburses the buyer the item price plus the 10 percent checkout fee for that item; it does not change the original sale totals.
+
+Financial closing groups collected money by `sale.checkout_code` and refunds by `sale_line.refund_checkout_code`. Per-checkout net collected is collected money for that checkout minus refunds physically paid by that checkout.
 
 Persistence rule:
 

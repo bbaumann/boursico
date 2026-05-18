@@ -11,6 +11,7 @@ namespace AssociationSaleTool.Web.Services;
 public sealed class DataListService(AppDbContext dbContext)
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+    private const string GlobalClosingLabel = "Toutes les caisses";
 
     public async Task<IReadOnlyList<DataListItemRow>> ListItemsAsync(CancellationToken cancellationToken = default)
     {
@@ -152,6 +153,43 @@ public sealed class DataListService(AppDbContext dbContext)
             .ToList();
     }
 
+    public async Task<IReadOnlyList<DataListClosingRow>> ListClosingAsync(CancellationToken cancellationToken = default)
+    {
+        var sales = await dbContext.Sales
+            .AsNoTracking()
+            .Include(x => x.SaleLines)
+            .OrderBy(x => x.CheckoutCode)
+            .ThenBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var refundedLines = sales
+            .SelectMany(sale => sale.SaleLines)
+            .Where(line => line.RefundedAt is not null && line.RefundTotalCents is not null)
+            .ToList();
+
+        var checkoutCodes = sales
+            .Select(sale => sale.CheckoutCode)
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(code => code, StringComparer.Ordinal)
+            .ToList();
+
+        var rows = new List<DataListClosingRow>
+        {
+            BuildClosingRow(GlobalClosingLabel, null, isGlobal: true, sales, refundedLines)
+        };
+
+        rows.AddRange(checkoutCodes.Select(code =>
+            BuildClosingRow(
+                code,
+                code,
+                isGlobal: false,
+                sales.Where(sale => sale.CheckoutCode == code),
+                refundedLines.Where(line => line.RefundCheckoutCode == code))));
+
+        return rows;
+    }
+
     private static string FormatSellerName(SellerEntity seller)
     {
         return $"{seller.FirstName} {seller.LastName}".Trim();
@@ -161,5 +199,32 @@ public sealed class DataListService(AppDbContext dbContext)
     {
         return string.Join(' ', terms.Where(term => !string.IsNullOrWhiteSpace(term)))
             .ToLower(FrenchCulture);
+    }
+
+    private static DataListClosingRow BuildClosingRow(
+        string label,
+        string? checkoutCode,
+        bool isGlobal,
+        IEnumerable<SaleEntity> sales,
+        IEnumerable<SaleLineEntity> refundedLines)
+    {
+        var saleList = sales.ToList();
+        var refundTotalCents = refundedLines.Sum(line => line.RefundTotalCents ?? 0);
+        var totalCollectedCents = saleList.Sum(sale => sale.TotalPaidCents);
+
+        return new DataListClosingRow(
+            label,
+            checkoutCode,
+            isGlobal,
+            saleList.Count,
+            saleList.Sum(sale => sale.SaleLines.Count),
+            saleList.Sum(sale => sale.SubtotalSellerPriceCents),
+            saleList.Sum(sale => sale.CheckoutFeeCents),
+            totalCollectedCents,
+            refundTotalCents,
+            totalCollectedCents - refundTotalCents,
+            saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Card).Sum(sale => sale.TotalPaidCents),
+            saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Cash).Sum(sale => sale.TotalPaidCents),
+            saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Cheque).Sum(sale => sale.TotalPaidCents));
     }
 }

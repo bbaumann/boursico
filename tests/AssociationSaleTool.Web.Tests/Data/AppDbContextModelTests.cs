@@ -251,6 +251,20 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void SaleStoresCheckoutCodeColumn()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options;
+
+        using var context = new AppDbContext(options);
+
+        var saleEntityType = context.Model.FindEntityType(typeof(SaleEntity));
+        Assert.NotNull(saleEntityType);
+        Assert.Contains(saleEntityType!.GetProperties(), property => property.GetColumnName() == "checkout_code");
+    }
+
+    [Fact]
     public void SaleStoresBuyerIdentityColumns()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -332,6 +346,7 @@ public class AppDbContextModelTests
         Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_checkout_fee_cents");
         Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_total_cents");
         Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_reason");
+        Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_checkout_code");
     }
 
     [Fact]

@@ -12,6 +12,7 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
     private const string SellersTab = "vendeurs";
     private const string SalesTab = "ventes";
     private const string ChequesTab = "cheques";
+    private const string ClosingTab = "cloture";
 
     public string ActiveTab { get; private set; } = ArticlesTab;
 
@@ -22,6 +23,8 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
     public IReadOnlyList<DataListSaleRow> Sales { get; private set; } = [];
 
     public IReadOnlyList<DataListChequeRow> Cheques { get; private set; } = [];
+
+    public IReadOnlyList<DataListClosingRow> ClosingRows { get; private set; } = [];
 
     public async Task OnGetAsync(string? onglet, CancellationToken cancellationToken)
     {
@@ -40,6 +43,9 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
                 break;
             case ChequesTab:
                 Cheques = await dataListService.ListChequesAsync(cancellationToken);
+                break;
+            case ClosingTab:
+                ClosingRows = await dataListService.ListClosingAsync(cancellationToken);
                 break;
         }
     }
@@ -83,6 +89,7 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
             SellersTab => SellersTab,
             SalesTab => SalesTab,
             ChequesTab => ChequesTab,
+            ClosingTab => ClosingTab,
             _ => ArticlesTab
         };
     }

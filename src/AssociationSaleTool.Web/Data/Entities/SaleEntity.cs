@@ -12,6 +12,8 @@ public sealed class SaleEntity
 
     public int TotalPaidCents { get; set; }
 
+    public string CheckoutCode { get; set; } = string.Empty;
+
     public string? BuyerName { get; set; }
 
     public string? BuyerPostalCode { get; set; }

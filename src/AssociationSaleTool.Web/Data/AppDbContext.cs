@@ -88,6 +88,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.SubtotalSellerPriceCents).HasColumnName("subtotal_seller_price_cents").IsRequired();
             entity.Property(x => x.CheckoutFeeCents).HasColumnName("checkout_fee_cents").IsRequired();
             entity.Property(x => x.TotalPaidCents).HasColumnName("total_paid_cents").IsRequired();
+            entity.Property(x => x.CheckoutCode).HasColumnName("checkout_code").HasDefaultValue(string.Empty).IsRequired();
             entity.Property(x => x.BuyerName).HasColumnName("buyer_name");
             entity.Property(x => x.BuyerPostalCode).HasColumnName("buyer_postal_code");
             entity.Property(x => x.BuyerCity).HasColumnName("buyer_city");
@@ -98,6 +99,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.ChequeNumber).HasColumnName("cheque_number");
             entity.Property(x => x.ChequeBankName).HasColumnName("cheque_bank_name");
             entity.HasIndex(x => x.SoldAt);
+            entity.HasIndex(x => x.CheckoutCode);
             entity.HasIndex(x => x.InvoiceNumber)
                 .IsUnique()
                 .HasFilter("invoice_number IS NOT NULL");
@@ -123,6 +125,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.RefundCheckoutFeeCents).HasColumnName("refund_checkout_fee_cents");
             entity.Property(x => x.RefundTotalCents).HasColumnName("refund_total_cents");
             entity.Property(x => x.RefundReason).HasColumnName("refund_reason");
+            entity.Property(x => x.RefundCheckoutCode).HasColumnName("refund_checkout_code");
 
             entity.HasOne(x => x.Sale)
                 .WithMany(x => x.SaleLines)
@@ -137,6 +140,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .IsUnique()
                 .HasFilter("corrected_at IS NULL AND refunded_at IS NULL");
             entity.HasIndex(x => x.SaleId);
+            entity.HasIndex(x => x.RefundCheckoutCode);
 
             entity.ToTable(table =>
             {
