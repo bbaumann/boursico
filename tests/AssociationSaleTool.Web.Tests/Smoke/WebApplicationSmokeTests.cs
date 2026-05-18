@@ -2982,6 +2982,71 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellerDetailsShowsMissingFieldsWhenDepositValidationIsRejected()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-MISS",
+                FirstName = "Marie",
+                LastName = "Incomplete",
+                Email = "marie@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-MISS-001",
+                ItemNumber = 1,
+                Title = "Puzzle",
+                SellerPriceCents = 450,
+                Status = "registered"
+            });
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Le contrat est signé", content);
+
+        var postResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=ValidateDeposit",
+            BuildFormContent(content));
+
+        postResponse.EnsureSuccessStatusCode();
+
+        var rejectedContent = WebUtility.HtmlDecode(await postResponse.Content.ReadAsStringAsync());
+        Assert.Contains("Complétez les informations obligatoires avant de valider le dépôt.", rejectedContent);
+        Assert.Contains("Le code postal est obligatoire.", rejectedContent);
+        Assert.Contains("La ville est obligatoire.", rejectedContent);
+        Assert.Contains("La nature de la pièce d'identité est obligatoire.", rejectedContent);
+        Assert.Contains("Le numéro de la pièce d'identité est obligatoire.", rejectedContent);
+        Assert.Contains("La date de délivrance est obligatoire.", rejectedContent);
+        Assert.Contains("L'autorité de délivrance est obligatoire.", rejectedContent);
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+        Assert.Equal("deposit_pending", verifiedSeller.DepositStatus);
+        Assert.Equal("registered", Assert.Single(verifiedSeller.Items).Status);
+    }
+
+    [Fact]
     public async Task SellerDepositContractPagePrintsSellerAndItemRecap()
     {
         var client = _factory.CreateClient();

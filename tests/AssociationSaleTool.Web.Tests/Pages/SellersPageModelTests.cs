@@ -808,6 +808,16 @@ public sealed class SellersPageModelTests
 
         Assert.IsType<PageResult>(result);
         Assert.False(pageModel.ModelState.IsValid);
+        var errors = pageModel.ModelState.Values
+            .SelectMany(entry => entry.Errors)
+            .Select(error => error.ErrorMessage)
+            .ToList();
+        Assert.Contains("Le code postal est obligatoire.", errors);
+        Assert.Contains("La ville est obligatoire.", errors);
+        Assert.Contains("La nature de la pièce d'identité est obligatoire.", errors);
+        Assert.Contains("Le numéro de la pièce d'identité est obligatoire.", errors);
+        Assert.Contains("La date de délivrance est obligatoire.", errors);
+        Assert.Contains("L'autorité de délivrance est obligatoire.", errors);
         Assert.Equal("registered", (await context.Items.SingleAsync()).Status);
         Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
     }

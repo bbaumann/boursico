@@ -91,6 +91,18 @@
                 @Model.DepositStatusLabel
             </p>
         </div>
+        @if (Model.DepositValidationMessages.Count > 0)
+        {
+            <div class="validation" role="alert">
+                <p>Complétez les informations obligatoires avant de valider le dépôt.</p>
+                <ul>
+                    @foreach (var message in Model.DepositValidationMessages)
+                    {
+                        <li>@message</li>
+                    }
+                </ul>
+            </div>
+        }
         <div class="form-actions seller-deposit-actions">
             <a class="button-link" asp-page="/Sellers/DepositContract" asp-route-id="@Model.Seller.Id">Imprimer le contrat</a>
             @if (Model.CanValidateDeposit)

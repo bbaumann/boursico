@@ -48,6 +48,8 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
 
     public string? PendingRowsAlert { get; private set; }
 
+    public IReadOnlyList<string> DepositValidationMessages { get; private set; } = [];
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
@@ -147,9 +149,19 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             return NotFound();
         }
 
-        ModelState.AddModelError(
-            string.Empty,
-            "Le dépôt ne peut pas être validé : vérifiez les informations du vendeur et les articles avant de signer le contrat.");
+        DepositValidationMessages = BuildDepositValidationMessages(loaded);
+        if (DepositValidationMessages.Count == 0)
+        {
+            DepositValidationMessages = [
+                "Le dépôt ne peut pas être validé : vérifiez les informations du vendeur et les articles avant de signer le contrat."
+            ];
+        }
+
+        foreach (var message in DepositValidationMessages)
+        {
+            ModelState.AddModelError(string.Empty, message);
+        }
+
         return Page();
     }
 
@@ -335,6 +347,56 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
                 .Select(_ => new ItemRowInput())
                 .ToList()
         };
+    }
+
+    private static IReadOnlyList<string> BuildDepositValidationMessages(SellerEntity seller)
+    {
+        var messages = new List<string>();
+
+        AddRequiredMessage(messages, seller.FirstName, "Le prénom est obligatoire.");
+        AddRequiredMessage(messages, seller.LastName, "Le nom est obligatoire.");
+        AddRequiredMessage(messages, seller.Phone, "Le téléphone est obligatoire.");
+        AddRequiredMessage(messages, seller.PostalAddress, "L'adresse postale est obligatoire.");
+        AddRequiredMessage(messages, seller.PostalCode, "Le code postal est obligatoire.");
+        AddRequiredMessage(messages, seller.City, "La ville est obligatoire.");
+        AddRequiredMessage(messages, seller.IdentityDocumentType, "La nature de la pièce d'identité est obligatoire.");
+        AddRequiredMessage(messages, seller.IdentityDocumentNumber, "Le numéro de la pièce d'identité est obligatoire.");
+        if (seller.IdentityDocumentIssuedOn is null)
+        {
+            messages.Add("La date de délivrance est obligatoire.");
+        }
+
+        AddRequiredMessage(messages, seller.IdentityDocumentIssuer, "L'autorité de délivrance est obligatoire.");
+
+        if (seller.Items.Count == 0)
+        {
+            messages.Add("Ajoutez au moins un article avant de valider le dépôt.");
+        }
+
+        if (seller.Items.Any(item => item.Status is not ("registered" or "in_stock" or "sold" or "missing" or "defective")))
+        {
+            messages.Add("Tous les articles doivent avoir un statut valide avant de valider le dépôt.");
+        }
+
+        if (seller.Items.Any(item => string.IsNullOrWhiteSpace(item.Title)))
+        {
+            messages.Add("Tous les articles doivent avoir un titre avant de valider le dépôt.");
+        }
+
+        if (seller.Items.Any(item => item.SellerPriceCents < 0))
+        {
+            messages.Add("Tous les prix vendeur doivent être supérieurs ou égaux à zéro.");
+        }
+
+        return messages;
+    }
+
+    private static void AddRequiredMessage(List<string> messages, string? value, string message)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            messages.Add(message);
+        }
     }
 
     public sealed class ItemBatchInput
