@@ -3038,12 +3038,74 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Le numéro de la pièce d'identité est obligatoire.", rejectedContent);
         Assert.Contains("La date de délivrance est obligatoire.", rejectedContent);
         Assert.Contains("L'autorité de délivrance est obligatoire.", rejectedContent);
+        Assert.Contains("Corriger le vendeur", rejectedContent);
+        Assert.Contains($"href=\"/vendeurs/{sellerId}/modifier\"", rejectedContent);
 
         using var verificationScope = _factory.Services.CreateScope();
         var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
         Assert.Equal("deposit_pending", verifiedSeller.DepositStatus);
         Assert.Equal("registered", Assert.Single(verifiedSeller.Items).Status);
+    }
+
+    [Fact]
+    public async Task SellerDetailsShowsArticleCorrectionActionWhenDepositValidationRejectsItems()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "BK-ITEM",
+                FirstName = "Alice",
+                LastName = "Article",
+                Email = "alice.article@example.test",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                PostalCode = "38000",
+                City = "Grenoble",
+                IdentityDocumentType = "CNI",
+                IdentityDocumentNumber = "123456789",
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                IdentityDocumentIssuer = "Préfecture 38"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.Add(new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "BK-ITEM-001",
+                ItemNumber = 1,
+                Title = "",
+                SellerPriceCents = 450,
+                Status = "registered"
+            });
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+        }
+
+        var response = await client.GetAsync($"/vendeurs/{sellerId}");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        var postResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=ValidateDeposit",
+            BuildFormContent(content));
+
+        postResponse.EnsureSuccessStatusCode();
+
+        var rejectedContent = WebUtility.HtmlDecode(await postResponse.Content.ReadAsStringAsync());
+        Assert.Contains("Tous les articles doivent avoir un titre avant de valider le dépôt.", rejectedContent);
+        Assert.Contains("Corriger les articles", rejectedContent);
+        Assert.Contains("href=\"#articles\"", rejectedContent);
+        Assert.DoesNotContain("Corriger le vendeur", rejectedContent);
     }
 
     [Fact]

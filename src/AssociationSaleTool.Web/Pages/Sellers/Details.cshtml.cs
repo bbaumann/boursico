@@ -50,6 +50,10 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
 
     public IReadOnlyList<string> DepositValidationMessages { get; private set; } = [];
 
+    public bool HasSellerDepositValidationMessages { get; private set; }
+
+    public bool HasItemDepositValidationMessages { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
@@ -149,12 +153,17 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             return NotFound();
         }
 
-        DepositValidationMessages = BuildDepositValidationMessages(loaded);
+        var validationState = BuildDepositValidationState(loaded);
+        DepositValidationMessages = validationState.Messages;
+        HasSellerDepositValidationMessages = validationState.HasSellerMessages;
+        HasItemDepositValidationMessages = validationState.HasItemMessages;
         if (DepositValidationMessages.Count == 0)
         {
             DepositValidationMessages = [
                 "Le dépôt ne peut pas être validé : vérifiez les informations du vendeur et les articles avant de signer le contrat."
             ];
+            HasSellerDepositValidationMessages = true;
+            HasItemDepositValidationMessages = true;
         }
 
         foreach (var message in DepositValidationMessages)
@@ -349,55 +358,68 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         };
     }
 
-    private static IReadOnlyList<string> BuildDepositValidationMessages(SellerEntity seller)
+    private static DepositValidationState BuildDepositValidationState(SellerEntity seller)
     {
         var messages = new List<string>();
+        var hasSellerMessages = false;
+        var hasItemMessages = false;
 
-        AddRequiredMessage(messages, seller.FirstName, "Le prénom est obligatoire.");
-        AddRequiredMessage(messages, seller.LastName, "Le nom est obligatoire.");
-        AddRequiredMessage(messages, seller.Phone, "Le téléphone est obligatoire.");
-        AddRequiredMessage(messages, seller.PostalAddress, "L'adresse postale est obligatoire.");
-        AddRequiredMessage(messages, seller.PostalCode, "Le code postal est obligatoire.");
-        AddRequiredMessage(messages, seller.City, "La ville est obligatoire.");
-        AddRequiredMessage(messages, seller.IdentityDocumentType, "La nature de la pièce d'identité est obligatoire.");
-        AddRequiredMessage(messages, seller.IdentityDocumentNumber, "Le numéro de la pièce d'identité est obligatoire.");
+        AddRequiredMessage(messages, seller.FirstName, "Le prénom est obligatoire.", ref hasSellerMessages);
+        AddRequiredMessage(messages, seller.LastName, "Le nom est obligatoire.", ref hasSellerMessages);
+        AddRequiredMessage(messages, seller.Phone, "Le téléphone est obligatoire.", ref hasSellerMessages);
+        AddRequiredMessage(messages, seller.PostalAddress, "L'adresse postale est obligatoire.", ref hasSellerMessages);
+        AddRequiredMessage(messages, seller.PostalCode, "Le code postal est obligatoire.", ref hasSellerMessages);
+        AddRequiredMessage(messages, seller.City, "La ville est obligatoire.", ref hasSellerMessages);
+        AddRequiredMessage(messages, seller.IdentityDocumentType, "La nature de la pièce d'identité est obligatoire.", ref hasSellerMessages);
+        AddRequiredMessage(messages, seller.IdentityDocumentNumber, "Le numéro de la pièce d'identité est obligatoire.", ref hasSellerMessages);
         if (seller.IdentityDocumentIssuedOn is null)
         {
             messages.Add("La date de délivrance est obligatoire.");
+            hasSellerMessages = true;
         }
 
-        AddRequiredMessage(messages, seller.IdentityDocumentIssuer, "L'autorité de délivrance est obligatoire.");
+        AddRequiredMessage(messages, seller.IdentityDocumentIssuer, "L'autorité de délivrance est obligatoire.", ref hasSellerMessages);
 
         if (seller.Items.Count == 0)
         {
             messages.Add("Ajoutez au moins un article avant de valider le dépôt.");
+            hasItemMessages = true;
         }
 
         if (seller.Items.Any(item => item.Status is not ("registered" or "in_stock" or "sold" or "missing" or "defective")))
         {
             messages.Add("Tous les articles doivent avoir un statut valide avant de valider le dépôt.");
+            hasItemMessages = true;
         }
 
         if (seller.Items.Any(item => string.IsNullOrWhiteSpace(item.Title)))
         {
             messages.Add("Tous les articles doivent avoir un titre avant de valider le dépôt.");
+            hasItemMessages = true;
         }
 
         if (seller.Items.Any(item => item.SellerPriceCents < 0))
         {
             messages.Add("Tous les prix vendeur doivent être supérieurs ou égaux à zéro.");
+            hasItemMessages = true;
         }
 
-        return messages;
+        return new DepositValidationState(messages, hasSellerMessages, hasItemMessages);
     }
 
-    private static void AddRequiredMessage(List<string> messages, string? value, string message)
+    private static void AddRequiredMessage(List<string> messages, string? value, string message, ref bool hasMessages)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             messages.Add(message);
+            hasMessages = true;
         }
     }
+
+    private sealed record DepositValidationState(
+        IReadOnlyList<string> Messages,
+        bool HasSellerMessages,
+        bool HasItemMessages);
 
     public sealed class ItemBatchInput
     {
