@@ -96,16 +96,110 @@ function initializePostalCityRoot(root) {
   const postalCodeInput = root.querySelector("[data-postal-code-input]");
   const cityInput = root.querySelector("[data-city-input]");
   const cityOptions = root.querySelector("[data-city-options]");
+  const citySelect = root.querySelector("[data-city-select]");
 
-  if (!postalCodeInput || !cityInput || !cityOptions) {
+  if (!postalCodeInput || !cityInput || (!cityOptions && !citySelect)) {
     return;
   }
 
+  const canEditCity = !cityInput.disabled;
   let lastPrefilledCity = "";
+
+  function normalizeCityForMatching(value) {
+    return (value || "")
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => {
+        if (token === "ST") {
+          return "SAINT";
+        }
+
+        if (token === "STE") {
+          return "SAINTE";
+        }
+
+        return token;
+      })
+      .join(" ");
+  }
+
+  function findCanonicalCity(cities, value) {
+    const trimmed = (value || "").trim();
+    const exactMatch = cities.find((city) => city === trimmed);
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    const normalized = normalizeCityForMatching(trimmed);
+    if (!normalized) {
+      return "";
+    }
+
+    return cities.find((city) => normalizeCityForMatching(city) === normalized) || "";
+  }
+
+  function updateCitySelect(cities) {
+    if (!citySelect || !canEditCity) {
+      return;
+    }
+
+    const currentCity = cityInput.value || citySelect.value;
+    citySelect.replaceChildren();
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Sélectionnez une ville";
+    citySelect.appendChild(placeholder);
+
+    for (const city of cities) {
+      const option = document.createElement("option");
+      option.value = city;
+      option.textContent = city;
+      citySelect.appendChild(option);
+    }
+
+    const selectedCity = cities.length === 1
+      ? cities[0]
+      : findCanonicalCity(cities, currentCity);
+    citySelect.value = selectedCity;
+    cityInput.value = selectedCity;
+    cityInput.hidden = true;
+    cityInput.disabled = true;
+    citySelect.hidden = false;
+    citySelect.disabled = false;
+    lastPrefilledCity = selectedCity;
+  }
+
+  function showFreeTextCity() {
+    if (citySelect) {
+      if (!cityInput.value && citySelect.value) {
+        cityInput.value = citySelect.value;
+      }
+
+      citySelect.hidden = true;
+      citySelect.disabled = true;
+    }
+
+    cityInput.hidden = false;
+    cityInput.disabled = !canEditCity;
+  }
+
+  if (citySelect) {
+    citySelect.addEventListener("change", () => {
+      cityInput.value = citySelect.value;
+      lastPrefilledCity = citySelect.value;
+      cityInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
 
   async function updateCityOptions() {
     const postalCode = postalCodeInput.value.trim();
-    cityOptions.replaceChildren();
+    cityOptions?.replaceChildren();
 
     if (!/^38\d{3}$/.test(postalCode)) {
       if (cityInput.value === lastPrefilledCity) {
@@ -113,6 +207,7 @@ function initializePostalCityRoot(root) {
       }
 
       lastPrefilledCity = "";
+      showFreeTextCity();
       return;
     }
 
@@ -122,6 +217,17 @@ function initializePostalCityRoot(root) {
     }
 
     const cities = cityMap[postalCode] || [];
+    if (citySelect && cities.length > 0) {
+      updateCitySelect(cities);
+      return;
+    }
+
+    showFreeTextCity();
+
+    if (!cityOptions) {
+      return;
+    }
+
     for (const city of cities) {
       const option = document.createElement("option");
       option.value = city;

@@ -92,14 +92,13 @@
                        type="text"
                        maxlength="200"
                        autocomplete="address-level2"
-                       list="seller-edit-city-options"
                        data-city-input
                        disabled="@(!Model.CanEditSellerMasterData)" />
-                <datalist id="seller-edit-city-options" data-city-options></datalist>
+                <select name="Input.City" data-city-select hidden disabled></select>
                 <span asp-validation-for="Input.City" class="validation"></span>
             </label>
         </div>
-        <p class="seller-meta">Pour l'Isère, les villes connues sont proposées. Hors Isère, saisissez la ville librement.</p>
+        <p class="seller-meta">Pour l'Isère, choisissez une ville connue. Hors Isère, saisissez la ville librement.</p>
 
         <div class="field-grid">
             <label>

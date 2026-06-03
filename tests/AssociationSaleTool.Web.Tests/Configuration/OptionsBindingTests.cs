@@ -13,6 +13,9 @@ public class OptionsBindingTests
         var values = new Dictionary<string, string?>
         {
             ["Database:SqlitePath"] = "data/event.db",
+            ["Database:ActiveProfile"] = "current",
+            ["Database:Profiles:current"] = "data/event.db",
+            ["Database:Profiles:user-test"] = "data/user-test.db",
             ["Event:Name"] = "2026 Toy Sale",
             ["Admin:SharedPassword"] = "secret",
             ["Printing:InvoicePeriod"] = "2611",
@@ -23,11 +26,89 @@ public class OptionsBindingTests
             .AddInMemoryCollection(values)
             .Build();
 
-        Assert.Equal("data/event.db", configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()!.SqlitePath);
+        var databaseOptions = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()!;
+        Assert.Equal("data/event.db", databaseOptions.SqlitePath);
+        Assert.Equal("current", databaseOptions.ActiveProfile);
+        Assert.Equal("data/event.db", databaseOptions.ResolveSqlitePath());
+        Assert.Equal("data/user-test.db", databaseOptions.Profiles["user-test"]);
         Assert.Equal("2026 Toy Sale", configuration.GetSection(EventOptions.SectionName).Get<EventOptions>()!.Name);
         Assert.Equal("secret", configuration.GetSection(AdminOptions.SectionName).Get<AdminOptions>()!.SharedPassword);
         var printingOptions = configuration.GetSection(PrintingOptions.SectionName).Get<PrintingOptions>()!;
         Assert.Equal("2611AFBJ", printingOptions.InvoiceNumberPrefix);
+    }
+
+    [Fact]
+    public void DatabaseOptionsResolveActiveProfilePath()
+    {
+        var options = new DatabaseOptions
+        {
+            SqlitePath = "data/current.db",
+            ActiveProfile = "user-test",
+            Profiles = new Dictionary<string, string?>
+            {
+                ["current"] = "data/current.db",
+                ["user-test"] = "data/user-test.db"
+            }
+        };
+
+        Assert.Equal("data/user-test.db", options.ResolveSqlitePath());
+    }
+
+    [Fact]
+    public void DatabaseOptionsFallbackToLegacySqlitePathWhenNoActiveProfileIsSet()
+    {
+        var options = new DatabaseOptions
+        {
+            SqlitePath = "data/current.db"
+        };
+
+        Assert.Equal("data/current.db", options.ResolveSqlitePath());
+    }
+
+    [Fact]
+    public void StartupUsesActiveDatabaseProfilePath()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"association-sale-tool-profile-{Guid.NewGuid():N}");
+        var legacyPath = Path.Combine(directory, "legacy.db");
+        var userTestPath = Path.Combine(directory, "user-test.db");
+
+        try
+        {
+            using var factory = new WebApplicationFactory<Program>()
+                .WithWebHostBuilder(builder =>
+                {
+                    builder.UseEnvironment("Development");
+                    builder.ConfigureAppConfiguration((_, configurationBuilder) =>
+                    {
+                        var values = new Dictionary<string, string?>
+                        {
+                            ["Database:SqlitePath"] = legacyPath,
+                            ["Database:ActiveProfile"] = "user-test",
+                            ["Database:Profiles:current"] = legacyPath,
+                            ["Database:Profiles:user-test"] = userTestPath,
+                            ["Event:Name"] = "Association Toy Sale Tests",
+                            ["Admin:SharedPassword"] = "secret"
+                        };
+
+                        configurationBuilder.AddInMemoryCollection(values);
+                    });
+                });
+
+            using var client = factory.CreateClient();
+
+            Assert.True(File.Exists(userTestPath));
+            Assert.False(File.Exists(legacyPath));
+        }
+        finally
+        {
+            TryDelete(legacyPath);
+            TryDelete($"{legacyPath}-wal");
+            TryDelete($"{legacyPath}-shm");
+            TryDelete(userTestPath);
+            TryDelete($"{userTestPath}-wal");
+            TryDelete($"{userTestPath}-shm");
+            TryDeleteDirectory(directory);
+        }
     }
 
     [Theory]
@@ -111,6 +192,23 @@ public class OptionsBindingTests
             if (File.Exists(path))
             {
                 File.Delete(path);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path);
             }
         }
         catch (IOException)

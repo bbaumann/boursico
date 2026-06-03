@@ -53,24 +53,33 @@ public sealed class CreateModel(
             return Page();
         }
 
-        var result = await intakeService.CreateSellerWithItemsAsync(
-            new CreateSellerWithItemsRequest(
-                Input.FirstName,
-                Input.LastName,
-                Input.Email,
-                Input.Phone,
-                Input.PostalAddress,
-                Input.Notes,
-                IntakeMode.EmailPreregistration,
-                rowsToCreate,
-                feePaidCents,
-                Input.PostalCode,
-                Input.City,
-                IdentityDocumentType: Input.IdentityDocumentType,
-                IdentityDocumentNumber: Input.IdentityDocumentNumber,
-                IdentityDocumentIssuedOn: Input.IdentityDocumentIssuedOn,
-                IdentityDocumentIssuer: Input.IdentityDocumentIssuer),
-            cancellationToken);
+        CreateSellerWithItemsResult result;
+        try
+        {
+            result = await intakeService.CreateSellerWithItemsAsync(
+                new CreateSellerWithItemsRequest(
+                    Input.FirstName,
+                    Input.LastName,
+                    Input.Email,
+                    Input.Phone,
+                    Input.PostalAddress,
+                    Input.Notes,
+                    IntakeMode.EmailPreregistration,
+                    rowsToCreate,
+                    feePaidCents,
+                    Input.PostalCode,
+                    Input.City,
+                    IdentityDocumentType: Input.IdentityDocumentType,
+                    IdentityDocumentNumber: Input.IdentityDocumentNumber,
+                    IdentityDocumentIssuedOn: Input.IdentityDocumentIssuedOn,
+                    IdentityDocumentIssuer: Input.IdentityDocumentIssuer),
+                cancellationToken);
+        }
+        catch (InvalidSellerPostalCityException exception)
+        {
+            ModelState.AddModelError("Input.City", exception.Message);
+            return Page();
+        }
 
         if (result.Outcome == CreateSellerWithItemsOutcome.ExistingSellerFound)
         {

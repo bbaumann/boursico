@@ -23,7 +23,9 @@ builder.Services.AddSingleton<SqliteConnectionInterceptor>();
 builder.Services
     .AddOptions<DatabaseOptions>()
     .Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.SqlitePath), "Database:SqlitePath is required")
+    .Validate(
+        options => options.HasResolvedSqlitePath(),
+        "Database:SqlitePath is required, or Database:ActiveProfile must reference a configured Database:Profiles entry.")
     .ValidateOnStart();
 builder.Services
     .AddOptions<EventOptions>()
@@ -53,7 +55,7 @@ builder.Services
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
     var databaseOptions = serviceProvider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-    var databasePath = Path.GetFullPath(databaseOptions.SqlitePath, builder.Environment.ContentRootPath);
+    var databasePath = Path.GetFullPath(databaseOptions.ResolveSqlitePath(), builder.Environment.ContentRootPath);
     var databaseDirectory = Path.GetDirectoryName(databasePath);
 
     if (!string.IsNullOrWhiteSpace(databaseDirectory))

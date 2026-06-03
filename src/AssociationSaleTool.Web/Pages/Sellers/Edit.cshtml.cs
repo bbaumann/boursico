@@ -65,24 +65,33 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             return Page();
         }
 
-        var result = await intakeService.UpdateSellerAsync(
-            id,
-            new UpdateSellerRequest(
-                Input.FirstName,
-                Input.LastName,
-                Input.Email,
-                Input.Phone,
-                Input.PostalAddress,
-                Input.Notes,
-                feePaidCents,
-                Input.PostalCode,
-                Input.City,
-                Input.ImportNotes,
-                Input.IdentityDocumentType,
-                Input.IdentityDocumentNumber,
-                Input.IdentityDocumentIssuedOn,
-                Input.IdentityDocumentIssuer),
-            cancellationToken);
+        UpdateSellerResult result;
+        try
+        {
+            result = await intakeService.UpdateSellerAsync(
+                id,
+                new UpdateSellerRequest(
+                    Input.FirstName,
+                    Input.LastName,
+                    Input.Email,
+                    Input.Phone,
+                    Input.PostalAddress,
+                    Input.Notes,
+                    feePaidCents,
+                    Input.PostalCode,
+                    Input.City,
+                    Input.ImportNotes,
+                    Input.IdentityDocumentType,
+                    Input.IdentityDocumentNumber,
+                    Input.IdentityDocumentIssuedOn,
+                    Input.IdentityDocumentIssuer),
+                cancellationToken);
+        }
+        catch (InvalidSellerPostalCityException exception)
+        {
+            ModelState.AddModelError("Input.City", exception.Message);
+            return Page();
+        }
 
         if (result == UpdateSellerResult.NotFound)
         {

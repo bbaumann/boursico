@@ -103,6 +103,67 @@ public sealed class IntakeServiceTests
         Assert.Equal("deposit_pending", seller.DepositStatus);
     }
 
+    [Fact]
+    public async Task CreateSellerAsync_CanonicalizesKnownIsereCity()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context, postalCityLookup: CreateLookup("38120", "Saint-Égrève"));
+
+        var result = await service.CreateSellerAsync(
+            new CreateSellerRequest(
+                "Ada",
+                "Lovelace",
+                null,
+                "0123",
+                "1 rue des Tests",
+                null,
+                PostalCode: "38120",
+                City: "St Egreve"));
+
+        Assert.Equal(CreateSellerOutcome.Created, result.Outcome);
+        var seller = await context.Sellers.SingleAsync();
+        Assert.Equal("38120", seller.PostalCode);
+        Assert.Equal("Saint-Égrève", seller.City);
+    }
+
+    [Fact]
+    public async Task CreateSellerAsync_RejectsUnknownCityForKnownIserePostalCode()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context, postalCityLookup: CreateLookup("38120", "Saint-Égrève"));
+
+        var exception = await Assert.ThrowsAsync<InvalidSellerPostalCityException>(() =>
+            service.CreateSellerAsync(
+                new CreateSellerRequest(
+                    "Ada",
+                    "Lovelace",
+                    null,
+                    "0123",
+                    "1 rue des Tests",
+                    null,
+                    PostalCode: "38120",
+                    City: "Grenoble")));
+
+        Assert.Equal("La ville doit correspondre au code postal sélectionné.", exception.Message);
+        Assert.Empty(await context.Sellers.ToListAsync());
+    }
+
 
     [Fact]
     public async Task CreateSellerAsync_ReturnsDuplicateResultAndDoesNotCreateSellerForSameNameAndPhone()
@@ -583,6 +644,40 @@ public sealed class IntakeServiceTests
         Assert.Equal(string.Empty, updatedSeller.PostalCode);
         Assert.Equal(string.Empty, updatedSeller.City);
         Assert.Equal("Updated", updatedSeller.Notes);
+    }
+
+    [Fact]
+    public async Task UpdateSellerAsync_RejectsUnknownCityForKnownIserePostalCode()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context, postalCityLookup: CreateLookup("38120", "Saint-Égrève"));
+        var seller = (await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null))).Seller!;
+
+        var exception = await Assert.ThrowsAsync<InvalidSellerPostalCityException>(() =>
+            service.UpdateSellerAsync(
+                seller.Id,
+                new UpdateSellerRequest(
+                    "Ada",
+                    "Lovelace",
+                    null,
+                    "0123",
+                    "1 rue des Tests",
+                    null,
+                    PostalCode: "38120",
+                    City: "Grenoble")));
+
+        Assert.Equal("La ville doit correspondre au code postal sélectionné.", exception.Message);
+        var unchangedSeller = await context.Sellers.SingleAsync();
+        Assert.Equal(string.Empty, unchangedSeller.PostalCode);
+        Assert.Equal(string.Empty, unchangedSeller.City);
     }
 
 
@@ -1298,6 +1393,15 @@ public sealed class IntakeServiceTests
         Assert.Equal("sold", statusesByReference["AA-002"]);
         Assert.Equal("missing", statusesByReference["AA-003"]);
         Assert.Equal("defective", statusesByReference["AA-004"]);
+    }
+
+    private static IserePostalCityLookup CreateLookup(string postalCode, params string[] cities)
+    {
+        return new IserePostalCityLookup(
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                [postalCode] = cities
+            });
     }
 }
 

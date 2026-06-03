@@ -61,6 +61,13 @@ public sealed class IserePostalCityLookup
         return false;
     }
 
+    public bool HasCitiesForPostalCode(string? postalCode)
+    {
+        var normalizedPostalCode = postalCode?.Trim();
+        return !string.IsNullOrWhiteSpace(normalizedPostalCode)
+            && citiesByPostalCode.ContainsKey(normalizedPostalCode);
+    }
+
     public bool TryFindCanonicalCityLenient(string? postalCode, string? city, out string? canonicalCity)
     {
         canonicalCity = null;

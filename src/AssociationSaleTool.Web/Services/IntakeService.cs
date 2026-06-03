@@ -13,15 +13,18 @@ public sealed class IntakeService
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
     private readonly SellerDuplicateService _sellerDuplicateService;
+    private readonly IserePostalCityLookup _postalCityLookup;
 
     public IntakeService(
         AppDbContext dbContext,
         SalePhaseService? salePhaseService = null,
-        SellerDuplicateService? sellerDuplicateService = null)
+        SellerDuplicateService? sellerDuplicateService = null,
+        IserePostalCityLookup? postalCityLookup = null)
     {
         _dbContext = dbContext;
         _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
         _sellerDuplicateService = sellerDuplicateService ?? new SellerDuplicateService(dbContext);
+        _postalCityLookup = postalCityLookup ?? IserePostalCityLookup.Empty;
     }
 
     public async Task<List<SellerEntity>> ListSellersAsync(CancellationToken cancellationToken = default)
@@ -65,8 +68,7 @@ public sealed class IntakeService
 
         var normalizedPhone = NormalizeOptional(request.Phone) ?? string.Empty;
         var normalizedPostalAddress = NormalizeOptional(request.PostalAddress) ?? string.Empty;
-        var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
-        var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
+        var normalizedPostalCity = NormalizeSellerPostalCity(request.PostalCode, request.City);
         var normalizedIdentityDocumentType = NormalizeOptional(request.IdentityDocumentType);
         var normalizedIdentityDocumentNumber = NormalizeOptional(request.IdentityDocumentNumber);
         var normalizedIdentityDocumentIssuer = NormalizeOptional(request.IdentityDocumentIssuer);
@@ -88,8 +90,8 @@ public sealed class IntakeService
             Email = NormalizeOptional(request.Email),
             Phone = normalizedPhone,
             PostalAddress = normalizedPostalAddress,
-            PostalCode = normalizedPostalCode,
-            City = normalizedCity,
+            PostalCode = normalizedPostalCity.PostalCode,
+            City = normalizedPostalCity.City,
             IdentityDocumentType = normalizedIdentityDocumentType,
             IdentityDocumentNumber = normalizedIdentityDocumentNumber,
             IdentityDocumentIssuedOn = request.IdentityDocumentIssuedOn,
@@ -127,8 +129,7 @@ public sealed class IntakeService
 
         var normalizedPhone = NormalizeOptional(request.Phone) ?? string.Empty;
         var normalizedPostalAddress = NormalizeOptional(request.PostalAddress) ?? string.Empty;
-        var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
-        var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
+        var normalizedPostalCity = NormalizeSellerPostalCity(request.PostalCode, request.City);
         var normalizedIdentityDocumentType = NormalizeOptional(request.IdentityDocumentType);
         var normalizedIdentityDocumentNumber = NormalizeOptional(request.IdentityDocumentNumber);
         var normalizedIdentityDocumentIssuer = NormalizeOptional(request.IdentityDocumentIssuer);
@@ -156,8 +157,8 @@ public sealed class IntakeService
                     Email = NormalizeOptional(request.Email),
                     Phone = normalizedPhone,
                     PostalAddress = normalizedPostalAddress,
-                    PostalCode = normalizedPostalCode,
-                    City = normalizedCity,
+                    PostalCode = normalizedPostalCity.PostalCode,
+                    City = normalizedPostalCity.City,
                     IdentityDocumentType = normalizedIdentityDocumentType,
                     IdentityDocumentNumber = normalizedIdentityDocumentNumber,
                     IdentityDocumentIssuedOn = request.IdentityDocumentIssuedOn,
@@ -230,8 +231,7 @@ public sealed class IntakeService
 
         var normalizedPhone = NormalizeOptional(request.Phone) ?? string.Empty;
         var normalizedPostalAddress = NormalizeOptional(request.PostalAddress) ?? string.Empty;
-        var normalizedPostalCode = NormalizeOptional(request.PostalCode) ?? string.Empty;
-        var normalizedCity = NormalizeOptional(request.City) ?? string.Empty;
+        var normalizedPostalCity = NormalizeSellerPostalCity(request.PostalCode, request.City);
         var normalizedIdentityDocumentType = NormalizeOptional(request.IdentityDocumentType);
         var normalizedIdentityDocumentNumber = NormalizeOptional(request.IdentityDocumentNumber);
         var normalizedIdentityDocumentIssuer = NormalizeOptional(request.IdentityDocumentIssuer);
@@ -250,8 +250,8 @@ public sealed class IntakeService
         seller.Email = NormalizeOptional(request.Email);
         seller.Phone = normalizedPhone;
         seller.PostalAddress = normalizedPostalAddress;
-        seller.PostalCode = normalizedPostalCode;
-        seller.City = normalizedCity;
+        seller.PostalCode = normalizedPostalCity.PostalCode;
+        seller.City = normalizedPostalCity.City;
         seller.IdentityDocumentType = normalizedIdentityDocumentType;
         seller.IdentityDocumentNumber = normalizedIdentityDocumentNumber;
         seller.IdentityDocumentIssuedOn = request.IdentityDocumentIssuedOn;
@@ -395,6 +395,29 @@ public sealed class IntakeService
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
+    private SellerPostalCity NormalizeSellerPostalCity(string? postalCode, string? city)
+    {
+        var normalizedPostalCode = NormalizeOptional(postalCode) ?? string.Empty;
+        var normalizedCity = NormalizeOptional(city) ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedPostalCode) || string.IsNullOrWhiteSpace(normalizedCity))
+        {
+            return new SellerPostalCity(normalizedPostalCode, normalizedCity);
+        }
+
+        if (_postalCityLookup.TryFindCanonicalCity(normalizedPostalCode, normalizedCity, out var exactCity)
+            || _postalCityLookup.TryFindCanonicalCityLenient(normalizedPostalCode, normalizedCity, out exactCity))
+        {
+            return new SellerPostalCity(normalizedPostalCode, exactCity ?? normalizedCity);
+        }
+
+        if (_postalCityLookup.HasCitiesForPostalCode(normalizedPostalCode))
+        {
+            throw new InvalidSellerPostalCityException();
+        }
+
+        return new SellerPostalCity(normalizedPostalCode, normalizedCity);
+    }
+
     private static void EnsureSellerPriceIsWholeEuro(int sellerPriceCents)
     {
         if (sellerPriceCents % 100 != 0)
@@ -428,6 +451,8 @@ public sealed class IntakeService
             EnsureSellerPriceIsWholeEuro(row.SellerPriceCents);
         }
     }
+
+    private sealed record SellerPostalCity(string PostalCode, string City);
 
     private static bool SellerCanBeValidated(SellerEntity seller)
     {

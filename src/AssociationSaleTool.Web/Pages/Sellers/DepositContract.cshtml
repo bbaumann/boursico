@@ -58,22 +58,6 @@
                             }
                         </dd>
                     </div>
-                    <div>
-                        <dt>Nature de la pièce d'identité</dt>
-                        <dd>@(Model.Seller.IdentityDocumentType ?? "À compléter")</dd>
-                    </div>
-                    <div>
-                        <dt>Numéro de la pièce d'identité</dt>
-                        <dd>@(Model.Seller.IdentityDocumentNumber ?? "À compléter")</dd>
-                    </div>
-                    <div>
-                        <dt>Date de délivrance</dt>
-                        <dd>@DepositContractModel.FormatDate(Model.Seller.IdentityDocumentIssuedOn)</dd>
-                    </div>
-                    <div>
-                        <dt>Autorité de délivrance</dt>
-                        <dd>@(Model.Seller.IdentityDocumentIssuer ?? "À compléter")</dd>
-                    </div>
                 </dl>
             </div>
         </section>
