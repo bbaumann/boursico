@@ -84,7 +84,7 @@ public sealed class IntakeService
 
         var seller = new SellerEntity
         {
-            SellerCode = SellerCodeGenerator.GetCodeAt(await _dbContext.Sellers.CountAsync(cancellationToken)),
+            SellerCode = await AllocateSellerCodeAsync(cancellationToken),
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             Email = NormalizeOptional(request.Email),
@@ -151,7 +151,7 @@ public sealed class IntakeService
 
                 var seller = new SellerEntity
                 {
-                    SellerCode = SellerCodeGenerator.GetCodeAt(await _dbContext.Sellers.CountAsync(cancellationToken)),
+                    SellerCode = await AllocateSellerCodeAsync(cancellationToken),
                     FirstName = request.FirstName.Trim(),
                     LastName = request.LastName.Trim(),
                     Email = NormalizeOptional(request.Email),
@@ -388,6 +388,16 @@ public sealed class IntakeService
     public async Task<bool> CanEditSellerMasterDataAsync(CancellationToken cancellationToken = default)
     {
         return await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken);
+    }
+
+    private async Task<string> AllocateSellerCodeAsync(CancellationToken cancellationToken)
+    {
+        var existingCodes = await _dbContext.Sellers
+            .AsNoTracking()
+            .Select(x => x.SellerCode)
+            .ToListAsync(cancellationToken);
+
+        return SellerCodeGenerator.GetNextAvailableCode(existingCodes);
     }
 
     private static string? NormalizeOptional(string? value)

@@ -131,6 +131,33 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellersIndexConstrainsSellerCodeColumnForLegacyLongCodes()
+    {
+        var client = _factory.CreateClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Sellers.Add(new SellerEntity
+            {
+                SellerCode = "DL4BCF74",
+                FirstName = "Ariane",
+                LastName = "Martin",
+                Phone = "0101010101",
+                PostalAddress = "1 rue du Filtre"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/vendeurs");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("seller-index-table", content);
+        Assert.Contains("seller-index-code-column", content);
+        Assert.Contains("class=\"seller-index-code-cell\">DL4BCF74</td>", content);
+    }
+
+    [Fact]
     public async Task SellerPriceInputsUseFrenchWholeEuroBrowserValidation()
     {
         var client = _factory.CreateClient();
@@ -2810,6 +2837,22 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(".data-list-sale-table th,", content);
         Assert.Contains(".data-list-sale-table td", content);
         Assert.Contains(".data-list-sale-id-column", content);
+    }
+
+    [Fact]
+    public async Task SiteCssContainsSellerIndexTableLayout()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/css/site.css");
+
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains(".seller-index-table", content);
+        Assert.Contains(".seller-index-code-column", content);
+        Assert.Contains(".seller-index-code-cell", content);
+        Assert.Contains("overflow-wrap: anywhere;", content);
+        Assert.Contains("table-layout: fixed;", content);
     }
 
     [Fact]

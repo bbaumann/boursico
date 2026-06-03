@@ -31,6 +31,34 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task CreateSellerAsync_SkipsExistingGeneratedSellerCode()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        context.Sellers.Add(new SellerEntity
+        {
+            SellerCode = "CB",
+            FirstName = "Existing",
+            LastName = "Seller",
+            Phone = "0101010101",
+            PostalAddress = "1 rue des Tests"
+        });
+        await context.SaveChangesAsync();
+
+        var service = new IntakeService(context);
+
+        var createdSeller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", "ada@example.com", "0123", "2 rue des Tests", null));
+
+        Assert.Equal("BB", createdSeller.SellerCode);
+    }
+
+    [Fact]
     public async Task CreateSellerAsync_RejectsNewSellersWhenCatalogIsLocked()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

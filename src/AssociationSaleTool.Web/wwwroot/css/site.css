@@ -370,6 +370,40 @@ textarea {
   text-transform: uppercase;
 }
 
+.seller-index-table {
+  table-layout: fixed;
+}
+
+.seller-index-table th,
+.seller-index-table td {
+  overflow-wrap: anywhere;
+}
+
+.seller-index-code-column {
+  width: 5rem;
+}
+
+.seller-index-name-column {
+  width: 10rem;
+}
+
+.seller-index-email-column {
+  width: 13rem;
+}
+
+.seller-index-phone-column {
+  width: 8rem;
+}
+
+.seller-index-items-column,
+.seller-index-action-column {
+  width: 5rem;
+}
+
+.seller-index-code-cell {
+  font-weight: 700;
+}
+
 .subsection {
   margin-top: 2rem;
 }

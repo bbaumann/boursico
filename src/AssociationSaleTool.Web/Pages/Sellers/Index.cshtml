@@ -40,7 +40,16 @@
             <p class="empty-state" data-seller-empty-message hidden>Aucun vendeur ne correspond à cette recherche.</p>
         </section>
 
-        <table class="data-table">
+        <table class="data-table seller-index-table">
+            <colgroup>
+                <col class="seller-index-code-column" />
+                <col class="seller-index-name-column" />
+                <col class="seller-index-email-column" />
+                <col class="seller-index-phone-column" />
+                <col class="seller-index-address-column" />
+                <col class="seller-index-items-column" />
+                <col class="seller-index-action-column" />
+            </colgroup>
             <thead>
                 <tr>
                     <th>Code</th>
@@ -56,7 +65,7 @@
             @foreach (var seller in Model.Sellers)
             {
                 <tr data-seller-row data-seller-filter-text="@IndexModel.BuildSellerFilterText(seller)">
-                    <td>@seller.SellerCode</td>
+                    <td class="seller-index-code-cell">@seller.SellerCode</td>
                     <td>@seller.FirstName @seller.LastName</td>
                     <td>@(seller.Email ?? "—")</td>
                     <td>@seller.Phone</td>

@@ -56,6 +56,68 @@ public sealed class SellerFormImportServiceTests
     }
 
     [Fact]
+    public async Task ImportAsync_AllocatesTwoLetterCodesIgnoringMalformedAndReservedCodes()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        context.Sellers.AddRange(
+            new SellerEntity
+            {
+                SellerCode = "DL4BCF74",
+                FirstName = "Legacy",
+                LastName = "LongCode",
+                Phone = "0101010101",
+                PostalAddress = "1 rue des Tests"
+            },
+            new SellerEntity
+            {
+                SellerCode = "CK-001",
+                FirstName = "Legacy",
+                LastName = "HyphenCode",
+                Phone = "0202020202",
+                PostalAddress = "2 rue des Tests"
+            },
+            new SellerEntity
+            {
+                SellerCode = "AF",
+                FirstName = "Association",
+                LastName = "Familiale",
+                Phone = "0303030303",
+                PostalAddress = "3 rue des Tests"
+            });
+        await context.SaveChangesAsync();
+        var service = new SellerFormImportService(
+            context,
+            new SellerFormImportParser(CreateLookup("38120", "Saint-Ã‰grÃ¨ve")));
+
+        var result = await service.ImportAsync(CreateCsv(SampleCsv));
+
+        Assert.All(result.Rows, row => Assert.Equal(SellerFormImportRowOutcome.Imported, row.Outcome));
+        var importedSellers = await context.Sellers
+            .Where(x => x.LastName == "Baumann" || x.LastName == "Bulteau")
+            .OrderBy(x => x.SellerCode)
+            .ToListAsync();
+        Assert.Collection(
+            importedSellers,
+            first =>
+            {
+                Assert.Equal("BB", first.SellerCode);
+                Assert.Equal("Baumann", first.LastName);
+            },
+            second =>
+            {
+                Assert.Equal("CB", second.SellerCode);
+                Assert.Equal("Bulteau", second.LastName);
+            });
+    }
+
+    [Fact]
     public async Task ImportAsync_FlagsSingleDuplicateWithoutAutoImportingIt()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

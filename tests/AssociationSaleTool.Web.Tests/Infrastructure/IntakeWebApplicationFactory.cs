@@ -15,6 +15,7 @@ public sealed class IntakeWebApplicationFactory : WebApplicationFactory<Program>
         {
             var values = new Dictionary<string, string?>
             {
+                ["Database:ActiveProfile"] = string.Empty,
                 ["Database:SqlitePath"] = _databasePath,
                 ["Event:Name"] = "Association Toy Sale Tests",
                 ["Admin:SharedPassword"] = "test-password"

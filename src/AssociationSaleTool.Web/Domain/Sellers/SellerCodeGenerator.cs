@@ -9,6 +9,8 @@ public static class SellerCodeGenerator
         'M', 'N', 'P', 'R', 'S', 'T', 'U', 'W', 'X', 'Y', 'Z'
     ];
 
+    private static int GeneratedCodeCapacity => SafeAlphabet.Length * SafeAlphabet.Length;
+
     public static string GetCodeAt(int index)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
@@ -28,5 +30,36 @@ public static class SellerCodeGenerator
             span[0] = state.first;
             span[1] = state.second;
         });
+    }
+
+    public static string GetNextAvailableCode(IEnumerable<string> existingCodes)
+    {
+        ArgumentNullException.ThrowIfNull(existingCodes);
+
+        var usedCodes = existingCodes
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .Select(code => code.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        for (var index = 0; index < GeneratedCodeCapacity; index++)
+        {
+            var code = GetCodeAt(index);
+            if (!usedCodes.Contains(code))
+            {
+                return code;
+            }
+        }
+
+        for (var suffix = 1; ; suffix++)
+        {
+            for (var index = 0; index < GeneratedCodeCapacity; index++)
+            {
+                var code = $"{GetCodeAt(index)}{suffix}";
+                if (!usedCodes.Contains(code))
+                {
+                    return code;
+                }
+            }
+        }
     }
 }
