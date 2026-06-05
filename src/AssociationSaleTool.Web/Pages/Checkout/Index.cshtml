@@ -52,9 +52,10 @@
         <section class="subsection checkout-lookup">
             <section class="checkout-buyer-fields" aria-labelledby="checkout-buyer-title">
                 <h2 id="checkout-buyer-title">Acheteur</h2>
+                <p class="form-required-note">Les champs marqués <span class="required-field-badge">Obligatoire</span> doivent être complétés.</p>
                 <div class="field-grid" data-postal-city-root>
                     <label for="checkout-buyer-name">
-                        Nom ou structure
+                        <span class="field-label-text">Nom ou structure <span class="required-field-badge">Obligatoire</span></span>
                         <input id="checkout-buyer-name"
                                type="text"
                                autocomplete="name"
@@ -63,7 +64,7 @@
                                data-checkout-buyer-name />
                     </label>
                     <label for="checkout-buyer-postal-code">
-                        Code postal
+                        <span class="field-label-text">Code postal <span class="required-field-badge">Obligatoire</span></span>
                         <input id="checkout-buyer-postal-code"
                                type="text"
                                inputmode="numeric"
@@ -74,7 +75,7 @@
                                data-checkout-buyer-postal-code />
                     </label>
                     <label for="checkout-buyer-city">
-                        Ville
+                        <span class="field-label-text">Ville <span class="required-field-badge">Obligatoire</span></span>
                         <input id="checkout-buyer-city"
                                type="text"
                                autocomplete="address-level2"

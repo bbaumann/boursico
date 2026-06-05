@@ -360,6 +360,24 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task RequiredFieldMarkersAreRenderedOnCheckoutBuyerFields()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/caisse");
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+        Assert.Contains("form-required-note", content);
+        AssertRequiredFieldMarker(content, "Nom ou structure");
+        AssertRequiredFieldMarker(content, "Code postal");
+        AssertRequiredFieldMarker(content, "Ville");
+        Assert.DoesNotContain(
+            "<span class=\"field-label-text\">Adresse <span class=\"required-field-badge\">Obligatoire</span></span>",
+            content);
+    }
+
+    [Fact]
     public async Task CreateSellerPostShowsDuplicateMatchesInFrench()
     {
         var client = _factory.CreateClient();
