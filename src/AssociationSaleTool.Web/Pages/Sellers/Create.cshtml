@@ -52,8 +52,8 @@
                 <span asp-validation-for="Input.Email" class="validation"></span>
             </label>
             <label>
-                <span>Téléphone</span>
-                <input asp-for="Input.Phone" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span class="field-label-text">Téléphone <span class="required-field-badge">Obligatoire</span></span>
+                <input asp-for="Input.Phone" aria-required="true" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.Phone" class="validation"></span>
             </label>
             <label>
@@ -70,30 +70,32 @@
         </div>
 
         <label>
-            <span>Adresse postale</span>
-            <textarea asp-for="Input.PostalAddress" rows="2" disabled="@(!Model.CanEditSellerMasterData)"></textarea>
+            <span class="field-label-text">Adresse postale <span class="required-field-badge">Obligatoire</span></span>
+            <textarea asp-for="Input.PostalAddress" rows="2" aria-required="true" disabled="@(!Model.CanEditSellerMasterData)"></textarea>
             <span asp-validation-for="Input.PostalAddress" class="validation"></span>
         </label>
 
         <div class="field-grid" data-postal-city-root>
             <label>
-                <span>Code postal</span>
+                <span class="field-label-text">Code postal <span class="required-field-badge">Obligatoire</span></span>
                 <input asp-for="Input.PostalCode"
                        type="text"
                        inputmode="numeric"
                        maxlength="5"
                        autocomplete="postal-code"
                        data-postal-code-input
+                       aria-required="true"
                        disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.PostalCode" class="validation"></span>
             </label>
             <label>
-                <span>Ville</span>
+                <span class="field-label-text">Ville <span class="required-field-badge">Obligatoire</span></span>
                 <input asp-for="Input.City"
                        type="text"
                        maxlength="200"
                        autocomplete="address-level2"
                        data-city-input
+                       aria-required="true"
                        disabled="@(!Model.CanEditSellerMasterData)" />
                 <select name="Input.City" data-city-select hidden disabled></select>
                 <span asp-validation-for="Input.City" class="validation"></span>

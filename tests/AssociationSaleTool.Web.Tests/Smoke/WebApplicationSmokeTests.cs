@@ -300,6 +300,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("form-required-note", createContent);
         AssertRequiredFieldMarker(createContent, "Prénom");
         AssertRequiredFieldMarker(createContent, "Nom");
+        AssertRequiredFieldMarker(createContent, "Téléphone");
+        AssertRequiredFieldMarker(createContent, "Adresse postale");
+        AssertRequiredFieldMarker(createContent, "Code postal");
+        AssertRequiredFieldMarker(createContent, "Ville");
 
         var sellerId = await GetSellerIdByCodeAsync("RF-001");
         var editResponse = await client.GetAsync($"/vendeurs/{sellerId}/modifier");
@@ -308,6 +312,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("form-required-note", editContent);
         AssertRequiredFieldMarker(editContent, "Prénom");
         AssertRequiredFieldMarker(editContent, "Nom");
+        AssertRequiredFieldMarker(editContent, "Téléphone");
+        AssertRequiredFieldMarker(editContent, "Adresse postale");
+        AssertRequiredFieldMarker(editContent, "Code postal");
+        AssertRequiredFieldMarker(editContent, "Ville");
     }
 
     [Fact]
