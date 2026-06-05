@@ -353,6 +353,7 @@ function initializeCheckout(root) {
   const buyerNameInput = root.querySelector("[data-checkout-buyer-name]");
   const buyerPostalCodeInput = root.querySelector("[data-checkout-buyer-postal-code]");
   const buyerCityInput = root.querySelector("[data-checkout-buyer-city]");
+  const buyerCitySelect = root.querySelector("[data-checkout-buyer-city-select]");
   const buyerMessage = root.querySelector("[data-checkout-buyer-message]");
   const finalizeButton = root.querySelector("[data-checkout-finalize]");
   const modal = root.querySelector("[data-checkout-modal]");
@@ -460,6 +461,15 @@ function initializeCheckout(root) {
     }
   }
 
+  function focusBuyerField(input) {
+    if (input === buyerCityInput && buyerCitySelect && !buyerCitySelect.disabled && !buyerCitySelect.hidden) {
+      buyerCitySelect.focus();
+      return;
+    }
+
+    input?.focus();
+  }
+
   function validateBuyerDetails() {
     const buyerDetails = getBuyerDetails();
     const missingFields = [
@@ -474,7 +484,7 @@ function initializeCheckout(root) {
     }
 
     setBuyerMessage("Le nom, le code postal et la ville de l'acheteur sont obligatoires.");
-    missingFields[0][1]?.focus();
+    focusBuyerField(missingFields[0][1]);
     return false;
   }
 

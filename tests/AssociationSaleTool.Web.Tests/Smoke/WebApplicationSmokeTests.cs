@@ -3548,7 +3548,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-buyer-name", content);
         Assert.Contains("data-checkout-buyer-postal-code", content);
         Assert.Contains("data-checkout-buyer-city", content);
-        Assert.Contains("data-checkout-buyer-city-options", content);
+        Assert.Contains("data-city-select", content);
+        Assert.DoesNotContain("data-checkout-buyer-city-options", content);
+        Assert.DoesNotContain("checkout-buyer-city-options", content);
         Assert.Contains("data-checkout-buyer-message", content);
         Assert.Contains("data-postal-city-root", content);
         Assert.Contains("data-postal-code-input", content);
