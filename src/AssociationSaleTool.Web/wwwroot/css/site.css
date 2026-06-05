@@ -275,6 +275,21 @@ label {
   gap: 0.35rem;
 }
 
+.file-import-picker {
+  gap: 0.75rem;
+}
+
+.file-import-picker-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.file-import-picker-status {
+  color: var(--muted);
+}
+
 input,
 select,
 textarea {

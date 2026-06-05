@@ -25,19 +25,23 @@
     <form method="post"
           enctype="multipart/form-data"
           class="stack-form"
+          data-auto-submit-file-form
           asp-page="/Sellers/Import"
           asp-page-handler="Import">
         <div asp-validation-summary="ModelOnly" class="validation"></div>
-        <label>
+        <label class="file-import-picker">
             <span>Fichier CSV ou TSV</span>
-            <input asp-for="FormFile" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" disabled="@(!Model.CanImportSellerData)" />
+            <span class="file-import-picker-control">
+                <span class="button-link button-link-solid">Choisir un fichier CSV ou TSV</span>
+                <span class="file-import-picker-status" data-auto-submit-file-status>Aucun fichier sélectionné</span>
+            </span>
+            <input asp-for="FormFile"
+                   class="screen-reader-label"
+                   type="file"
+                   accept=".csv,.tsv,text/csv,text/tab-separated-values"
+                   disabled="@(!Model.CanImportSellerData)"
+                   data-auto-submit-file-input />
         </label>
-        <div class="form-actions">
-            @if (Model.CanImportSellerData)
-            {
-                <button type="submit" class="button-link button-link-solid">Importer les nouvelles soumissions</button>
-            }
-        </div>
     </form>
 
     @if (Model.AppendResult is not null && Model.AppendResult.Outcome == SellerFormDuplicateAppendOutcome.Appended)

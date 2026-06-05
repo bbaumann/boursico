@@ -2277,7 +2277,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var decodedForm = WebUtility.HtmlDecode(formContent);
         Assert.Contains("Importer des soumissions", decodedForm);
         Assert.Contains("Fichier CSV ou TSV", decodedForm);
-        Assert.Contains("Importer les nouvelles soumissions", decodedForm);
+        Assert.Contains("Choisir un fichier CSV ou TSV", decodedForm);
+        Assert.Contains("Aucun fichier sélectionné", decodedForm);
+        Assert.Contains("data-auto-submit-file-input", decodedForm);
+        Assert.Contains("data-auto-submit-file-form", decodedForm);
+        Assert.Contains("screen-reader-label", decodedForm);
+        Assert.DoesNotContain("Importer les nouvelles soumissions", decodedForm);
 
         using var multipart = new MultipartFormDataContent();
         multipart.Add(new StringContent(ExtractRequestVerificationToken(formContent)), "__RequestVerificationToken");

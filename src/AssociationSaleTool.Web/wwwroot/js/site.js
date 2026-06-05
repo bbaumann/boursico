@@ -54,6 +54,25 @@ document.addEventListener("click", event => {
   row.querySelector("input")?.focus();
 });
 
+document.addEventListener("change", event => {
+  const input = event.target.closest("[data-auto-submit-file-input]");
+  if (!input || !input.files || input.files.length === 0) {
+    return;
+  }
+
+  const form = input.closest("form");
+  const status = form?.querySelector("[data-auto-submit-file-status]");
+  if (status) {
+    status.textContent = `${input.files[0].name} - import en cours...`;
+  }
+
+  if (form?.requestSubmit) {
+    form.requestSubmit();
+  } else {
+    form?.submit();
+  }
+});
+
 function formatCheckoutPrice(cents) {
   return `${(cents / 100).toFixed(2)} €`;
 }
