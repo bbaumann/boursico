@@ -15,7 +15,7 @@ namespace AssociationSaleTool.Web.Pages.Sellers;
 public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOptions>? adminOptions = null) : PageModel
 {
     private const int DefaultRowCount = 10;
-    private const string ExcelDuplicateAlertMessage = "Ce vendeur existe déjà. Les articles du fichier Excel ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.";
+    private const string DuplicateRowsAlertMessage = "Ce vendeur existe déjà. Les articles saisis ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.";
     private readonly AdminOptions _adminOptions = adminOptions?.Value ?? new AdminOptions();
 
     [BindProperty]
@@ -215,9 +215,11 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         return Page();
     }
 
-    public static string FormatPrice(int priceCents)
+    public static string FormatPrice(int? priceCents)
     {
-        return $"{(priceCents / 100m).ToString("0.00", CultureInfo.InvariantCulture)} €";
+        return priceCents is null
+            ? "À compléter"
+            : $"{(priceCents.Value / 100m).ToString("0.00", CultureInfo.InvariantCulture)} €";
     }
 
     public static string FormatDate(DateOnly? date)
@@ -338,13 +340,13 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             .Select(row => new ItemRowInput
             {
                 Title = row.Title,
-                SellerPrice = EuroPriceInput.FormatFromCents(row.SellerPriceCents)
+                SellerPrice = row.SellerPriceCents is null
+                    ? null
+                    : EuroPriceInput.FormatFromCents(row.SellerPriceCents.Value)
             })
             .ToList();
         EnsureDefaultRows();
-        PendingRowsAlert = pendingRows.AlertMessageKey == PendingSellerItemRowsSession.ExcelDuplicateAlertKey
-            ? ExcelDuplicateAlertMessage
-            : ExcelDuplicateAlertMessage;
+        PendingRowsAlert = DuplicateRowsAlertMessage;
     }
 
     private static ItemBatchInput CreateDefaultInput()
@@ -398,7 +400,13 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             hasItemMessages = true;
         }
 
-        if (seller.Items.Any(item => item.SellerPriceCents < 0))
+        if (seller.Items.Any(item => item.SellerPriceCents is null))
+        {
+            messages.Add("Tous les articles doivent avoir un prix vendeur avant de valider le dépôt.");
+            hasItemMessages = true;
+        }
+
+        if (seller.Items.Any(item => item.SellerPriceCents is < 0))
         {
             messages.Add("Tous les prix vendeur doivent être supérieurs ou égaux à zéro.");
             hasItemMessages = true;

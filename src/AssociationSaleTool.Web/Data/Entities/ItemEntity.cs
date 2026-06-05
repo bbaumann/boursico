@@ -12,7 +12,7 @@ public sealed class ItemEntity
 
     public string Title { get; set; } = string.Empty;
 
-    public int SellerPriceCents { get; set; }
+    public int? SellerPriceCents { get; set; }
 
     public string Status { get; set; } = string.Empty;
 

@@ -41,7 +41,8 @@ public sealed class ReconciliationService(AppDbContext dbContext)
     {
         return await dbContext.Sellers
             .AsNoTracking()
-            .Where(x => x.Items.Any(item => SellerSheetStatuses.Contains(item.Status)))
+            .Where(x => x.Items.Any(item => SellerSheetStatuses.Contains(item.Status)
+                && item.SellerPriceCents.HasValue))
             .OrderBy(x => x.SellerCode)
             .Select(x => new SellerSheetOption(
                 x.SellerCode,
@@ -54,7 +55,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
     {
         return await dbContext.Items
             .AsNoTracking()
-            .Where(x => CorrectionStatuses.Contains(x.Status))
+            .Where(x => CorrectionStatuses.Contains(x.Status) && x.SellerPriceCents.HasValue)
             .OrderBy(x => x.Reference)
             .Select(x => new ReconciliationItemSearchResult(
                 x.Id,
@@ -64,7 +65,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                 x.Reference,
                 x.Title,
                 x.Status,
-                x.SellerPriceCents))
+                x.SellerPriceCents!.Value))
             .ToListAsync(cancellationToken);
     }
 
@@ -175,7 +176,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
 
         if (isMissing)
         {
-            priceCents = item.SellerPriceCents;
+            priceCents = item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference);
         }
         else
         {
@@ -204,7 +205,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             item.Reference,
             item.Title,
             item.Status,
-            item.SellerPriceCents,
+            item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference),
             false);
     }
 }

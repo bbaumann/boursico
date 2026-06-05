@@ -298,7 +298,7 @@ public sealed class SellersPageModelTests
         var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Ce vendeur existe déjà. Les articles du fichier Excel ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.", pageModel.PendingRowsAlert);
+        Assert.Equal("Ce vendeur existe déjà. Les articles saisis ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.", pageModel.PendingRowsAlert);
         Assert.Equal(IntakeMode.EmailPreregistration, pageModel.Input.IntakeMode);
         Assert.Equal("Toy train", pageModel.Input.Rows[0].Title);
         Assert.Equal("4", pageModel.Input.Rows[0].SellerPrice);

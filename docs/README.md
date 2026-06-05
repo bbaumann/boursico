@@ -67,7 +67,7 @@ Post-sale reconciliation is optimized for correctness and auditability. It is an
 
 V1 is feature-complete but not live yet.
 
-The earlier deliberately narrow baseline is now called the MVP in these docs. Current V1 includes that MVP foundation plus the implemented checkout, administration, reconciliation, data-list, Excel-prefill, seller-fee, payment-tracking, and defective-item workflows recorded in the decisions.
+The earlier deliberately narrow baseline is now called the MVP in these docs. Current V1 includes that MVP foundation plus the implemented checkout, administration, reconciliation, data-list, external seller-form import, seller-fee, payment-tracking, and defective-item workflows recorded in the decisions.
 
 VNext now means future work after the first live V1, not the current software state.
 

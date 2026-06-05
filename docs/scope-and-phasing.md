@@ -63,7 +63,7 @@ These are known ideas beyond the feature-complete V1:
 
 - seller self-service preregistration portal
 - automated formal statement generation beyond the seller sheet workflow
-- broader import tooling beyond the reviewed one-seller Excel prefill
+- broader import/export tooling beyond the current CSV/TSV seller-form import
 - richer accounting and refund ledgers if the association later needs them
 - optional multi-event history or archive workflows
 - stronger user identity and audit logging

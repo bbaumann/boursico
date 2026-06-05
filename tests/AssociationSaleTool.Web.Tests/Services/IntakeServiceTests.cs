@@ -1051,6 +1051,51 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task ValidateSellerDepositAsync_RejectsSellerWithItemMissingPrice()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "BB001",
+            ItemNumber = 1,
+            Title = "Jouet sans prix",
+            SellerPriceCents = null,
+            Status = "registered"
+        });
+        await context.SaveChangesAsync();
+
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.NotAllowed, result);
+        var rejectedSeller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("deposit_pending", rejectedSeller.DepositStatus);
+        Assert.Equal("registered", Assert.Single(rejectedSeller.Items).Status);
+    }
+
+    [Fact]
     public async Task ValidateSellerDepositAsync_ToleratesHistoricalItemStatuses()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

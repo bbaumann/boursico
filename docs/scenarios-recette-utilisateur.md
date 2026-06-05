@@ -76,14 +76,13 @@ Description : créer un vendeur sans passer par l'import, ou compléter les info
 - Niveau : `Bénévole`
 - Rôle typique : Bénévole
 
-Description : ajouter les jouets prévus pour un vendeur, manuellement ou depuis le fichier Excel de dépôt.
+Description : ajouter les jouets prévus pour un vendeur depuis la fiche vendeur.
 
 #### Étapes
 
 1. Ouvrir la fiche vendeur.
 2. Ajouter les articles avec leur titre et leur prix.
-3. Si un fichier Excel de dépôt est disponible, l'utiliser comme pré-remplissage puis vérifier le formulaire.
-4. Enregistrer les articles.
+3. Enregistrer les articles.
 
 #### Critères d'acceptation
 

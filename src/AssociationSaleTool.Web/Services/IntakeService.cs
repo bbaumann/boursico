@@ -428,8 +428,13 @@ public sealed class IntakeService
         return new SellerPostalCity(normalizedPostalCode, normalizedCity);
     }
 
-    private static void EnsureSellerPriceIsWholeEuro(int sellerPriceCents)
+    private static void EnsureSellerPriceIsWholeEuro(int? sellerPriceCents)
     {
+        if (sellerPriceCents is null)
+        {
+            return;
+        }
+
         if (sellerPriceCents % 100 != 0)
         {
             throw new ArgumentException("Seller price must be a whole euro amount.", nameof(sellerPriceCents));
@@ -479,7 +484,7 @@ public sealed class IntakeService
             && seller.Items.All(item =>
                 (item.Status is "registered" or "in_stock" or "sold" or "missing" or "defective")
                 && !string.IsNullOrWhiteSpace(item.Title)
-                && item.SellerPriceCents >= 0);
+                && item.SellerPriceCents is >= 0);
     }
 
     private List<ItemEntity> AddItemRows(

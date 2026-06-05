@@ -80,16 +80,22 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
 
         var importNotes = new List<string>();
         var city = NormalizeCity(postalCode, submittedCity, importNotes);
-        var (validRows, ignoredLines) = ParseItemRows(articles);
+        var (itemRows, ignoredLines, incompleteLines) = ParseItemRows(articles);
+        if (incompleteLines.Count > 0)
+        {
+            importNotes.Add($"Import formulaire : {incompleteLines.Count} article{(incompleteLines.Count > 1 ? "s" : "")} à corriger importé{(incompleteLines.Count > 1 ? "s" : "")} sans prix.");
+            importNotes.AddRange(incompleteLines.Select(line => $"Ligne {line.LineNumber} : {line.Reason} - {line.RawValue}"));
+        }
+
         if (ignoredLines.Count > 0)
         {
-            importNotes.Add($"Import formulaire : {ignoredLines.Count} ligne{(ignoredLines.Count > 1 ? "s" : "")} article{(ignoredLines.Count > 1 ? "s" : "")} ignorée{(ignoredLines.Count > 1 ? "s" : "")}.");
+            importNotes.Add($"Import formulaire : {ignoredLines.Count} ligne{(ignoredLines.Count > 1 ? "s" : "")} article{(ignoredLines.Count > 1 ? "s" : "")} non importée{(ignoredLines.Count > 1 ? "s" : "")}.");
             importNotes.AddRange(ignoredLines.Select(line => $"Ligne {line.LineNumber} : {line.Reason} - {line.RawValue}"));
         }
 
-        if (validRows.Count == 0)
+        if (itemRows.Count == 0)
         {
-            importNotes.Add("Import formulaire : aucun article valide importé.");
+            importNotes.Add("Import formulaire : aucun article importé.");
         }
 
         return new SellerFormImportSubmission(
@@ -103,8 +109,9 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
             city,
             notes,
             JoinImportNotes(importNotes),
-            validRows,
-            ignoredLines);
+            itemRows,
+            ignoredLines,
+            incompleteLines);
     }
 
     private string NormalizeCity(string postalCode, string? submittedCity, List<string> importNotes)
@@ -130,10 +137,14 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
         return string.Empty;
     }
 
-    private static (IReadOnlyList<CreateItemRowRequest> ValidRows, IReadOnlyList<SellerFormIgnoredItemLine> IgnoredLines) ParseItemRows(string articles)
+    private static (
+        IReadOnlyList<CreateItemRowRequest> ItemRows,
+        IReadOnlyList<SellerFormIgnoredItemLine> IgnoredLines,
+        IReadOnlyList<SellerFormIncompleteItemLine> IncompleteLines) ParseItemRows(string articles)
     {
-        var validRows = new List<CreateItemRowRequest>();
+        var itemRows = new List<CreateItemRowRequest>();
         var ignoredLines = new List<SellerFormIgnoredItemLine>();
+        var incompleteLines = new List<SellerFormIncompleteItemLine>();
         var normalized = articles.Replace("\r\n", "\n").Replace('\r', '\n');
         var lines = normalized.Split('\n');
 
@@ -145,53 +156,68 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
                 continue;
             }
 
-            if (TryParseItemLine(raw, out var row, out var reason))
+            var parsedLine = ParseItemLine(raw);
+            if (parsedLine.Row is not null)
             {
-                validRows.Add(row);
+                itemRows.Add(parsedLine.Row);
+                if (parsedLine.Row.SellerPriceCents is null)
+                {
+                    incompleteLines.Add(new SellerFormIncompleteItemLine(
+                        index + 1,
+                        raw,
+                        parsedLine.Reason,
+                        parsedLine.Row.Title));
+                }
             }
             else
             {
-                ignoredLines.Add(new SellerFormIgnoredItemLine(index + 1, raw, reason));
+                ignoredLines.Add(new SellerFormIgnoredItemLine(index + 1, raw, parsedLine.Reason));
             }
         }
 
-        return (validRows, ignoredLines);
+        return (itemRows, ignoredLines, incompleteLines);
     }
 
-    private static bool TryParseItemLine(string raw, out CreateItemRowRequest row, out string reason)
+    private static ParsedItemLine ParseItemLine(string raw)
     {
-        row = new CreateItemRowRequest(string.Empty, 0);
-        reason = "prix manquant";
-
-        if (TryParseWholeEuroPrice(raw, out _))
+        if (PriceLikeOnlyPattern().IsMatch(raw))
         {
-            reason = "titre manquant";
-            return false;
+            return new ParsedItemLine(null, "titre manquant");
         }
 
         var match = ItemLinePattern().Match(raw);
-        if (!match.Success)
+        if (match.Success)
         {
-            return false;
+            var matchedTitle = NormalizeItemTitle(match.Groups["title"].Value);
+            var amount = match.Groups["amount"].Value.Trim();
+            if (string.IsNullOrWhiteSpace(matchedTitle))
+            {
+                return new ParsedItemLine(null, "titre manquant");
+            }
+
+            if (!TryParseWholeEuroPrice(amount, out var priceCents))
+            {
+                return new ParsedItemLine(new CreateItemRowRequest(matchedTitle, null), "prix non accepté");
+            }
+
+            return new ParsedItemLine(new CreateItemRowRequest(matchedTitle, priceCents), string.Empty);
         }
 
-        var title = match.Groups["title"].Value.Trim().Trim(',', ';');
-        var amount = match.Groups["amount"].Value.Trim();
+        var title = NormalizeItemTitle(raw);
         if (string.IsNullOrWhiteSpace(title))
         {
-            reason = "titre manquant";
-            return false;
+            return new ParsedItemLine(null, "titre manquant");
         }
 
-        if (!TryParseWholeEuroPrice(amount, out var priceCents))
-        {
-            reason = "prix non accepté";
-            return false;
-        }
-
-        row = new CreateItemRowRequest(title, priceCents);
-        return true;
+        return new ParsedItemLine(new CreateItemRowRequest(title, null), "prix manquant");
     }
+
+    private static string NormalizeItemTitle(string value)
+    {
+        return value.Trim().Trim(',', ';');
+    }
+
+    private sealed record ParsedItemLine(CreateItemRowRequest? Row, string Reason);
 
     private static bool TryParseWholeEuroPrice(string value, out int priceCents)
     {
@@ -289,4 +315,7 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
 
     [GeneratedRegex("^(?<euros>\\d+)(?:[,.](?<decimals>\\d{2}))?(?:\\s*(?:€|EUR))?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex PriceOnlyPattern();
+
+    [GeneratedRegex("^\\d+(?:[,.]\\d{1,2})?(?:\\s*(?:€|EUR))?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex PriceLikeOnlyPattern();
 }

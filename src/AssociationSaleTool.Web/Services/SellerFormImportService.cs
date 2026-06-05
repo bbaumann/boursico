@@ -86,7 +86,7 @@ public sealed class SellerFormImportService
             var title = row.Title.Trim();
             if (existingKeys.Contains((title, row.SellerPriceCents)))
             {
-                notes.Add($"Import formulaire : article déjà présent ignoré - {title} - {FormatWholeEuro(row.SellerPriceCents)}.");
+                notes.Add($"Import formulaire : article déjà présent ignoré - {title} - {FormatImportPrice(row.SellerPriceCents)}.");
                 continue;
             }
 
@@ -157,7 +157,7 @@ public sealed class SellerFormImportService
 
         try
         {
-            if (submission.ValidRows.Count > 0)
+            if (submission.ItemRows.Count > 0)
             {
                 var result = await _intakeService.CreateSellerWithItemsAsync(
                     new CreateSellerWithItemsRequest(
@@ -168,7 +168,7 @@ public sealed class SellerFormImportService
                         submission.PostalAddress,
                         submission.Notes,
                         IntakeMode.EmailPreregistration,
-                        submission.ValidRows,
+                        submission.ItemRows,
                         FeePaidCents: 0,
                         PostalCode: submission.PostalCode,
                         City: submission.City,
@@ -268,8 +268,8 @@ public sealed class SellerFormImportService
         }
     }
 
-    private static string FormatWholeEuro(int priceCents)
+    private static string FormatImportPrice(int? priceCents)
     {
-        return $"{priceCents / 100} €";
+        return priceCents is null ? "prix à compléter" : $"{priceCents / 100} €";
     }
 }

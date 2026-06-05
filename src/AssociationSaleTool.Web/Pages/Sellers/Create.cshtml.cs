@@ -8,17 +8,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AssociationSaleTool.Web.Pages.Sellers;
 
-public sealed class CreateModel(
-    IntakeService intakeService,
-    ExcelSellerItemParser? excelParser = null) : PageModel
+public sealed class CreateModel(IntakeService intakeService) : PageModel
 {
     private const int DefaultRowCount = 10;
 
     [BindProperty]
     public InputModel Input { get; set; } = CreateDefaultInput();
-
-    [BindProperty]
-    public IFormFile? ExcelFile { get; set; }
 
     public bool CanEditSellerMasterData { get; private set; }
 
@@ -94,68 +89,6 @@ public sealed class CreateModel(
         }
 
         return RedirectToPage("/Sellers/Details", new { id = result.Seller!.Id });
-    }
-
-    public async Task<IActionResult> OnPostImportExcelAsync(CancellationToken cancellationToken)
-    {
-        ModelState.Clear();
-        CanEditSellerMasterData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
-        Input = CreateDefaultInput();
-
-        if (!CanEditSellerMasterData)
-        {
-            ModelState.AddModelError(string.Empty, "Les vendeurs ne peuvent pas être créés dans le statut actuel de la vente.");
-            return Page();
-        }
-
-        if (excelParser is null)
-        {
-            throw new InvalidOperationException("Excel parser service is not available.");
-        }
-
-        var parseResult = await excelParser.ParseAsync(ExcelFile, cancellationToken);
-        if (!parseResult.Succeeded)
-        {
-            foreach (var error in parseResult.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error);
-            }
-
-            return Page();
-        }
-
-        var duplicateMatches = await intakeService.FindDuplicateSellersAsync(
-            parseResult.FirstName,
-            parseResult.LastName,
-            parseResult.Phone,
-            cancellationToken);
-        if (TryStorePendingRowsAndRedirect(duplicateMatches, IntakeMode.EmailPreregistration, parseResult.Rows, out var redirect))
-        {
-            return redirect;
-        }
-
-        Input = new InputModel
-        {
-            FirstName = parseResult.FirstName,
-            LastName = parseResult.LastName,
-            Email = parseResult.Email,
-            Phone = parseResult.Phone ?? string.Empty,
-            PostalAddress = parseResult.PostalAddress,
-            PostalCode = parseResult.PostalCode ?? string.Empty,
-            City = parseResult.City ?? string.Empty,
-            FeePaid = "0",
-            Notes = parseResult.Notes,
-            IntakeMode = IntakeMode.EmailPreregistration,
-            Rows = parseResult.Rows
-                .Select(row => new ItemRowInput
-                {
-                    Title = row.Title,
-                    SellerPrice = EuroPriceInput.FormatFromCents(row.SellerPriceCents)
-                })
-                .ToList()
-        };
-        EnsureDefaultRows();
-        return Page();
     }
 
     private static string BuildDuplicateMessage(IReadOnlyList<SellerDuplicateMatch> matches)

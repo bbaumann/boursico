@@ -23,15 +23,10 @@ Relevant docs:
 
 ### Intake And Seller Management
 
-- `/vendeurs/creer` can upload one reviewed `.xlsx` seller workbook as an editable form prefill
-- item rows are read from columns `B:C`, including rows beyond the old 15-row template area
-- Excel upload saves nothing until the operator reviews and submits the normal form
-- duplicate seller detection blocks create/edit conflicts and redirects Excel-prefilled rows to the existing seller detail page for review
-- Excel prefill reads `CP VILLE` when present and accepts only canonical postal-code/city pairs from the authoritative Isere city list
-- `resources/depot-internet.xlsx` keeps its hidden `codes postaux` list generated from the same JSON file used by the application
 - `/vendeurs/importer` imports CSV/TSV exports from an external seller form into permissive `deposit_pending` seller drafts
 - external form import preserves unresolved city and bad-item details in seller-level import notes
-- duplicate external-form submissions are not auto-imported; single-match duplicates can append valid new item lines to the existing seller
+- recoverable external-form item lines with missing or invalid prices are imported as items to correct before deposit validation
+- duplicate external-form submissions are not auto-imported; single-match duplicates can append new imported item lines to the existing seller
 
 Relevant docs:
 
@@ -84,7 +79,7 @@ Possible later slices:
 
 ### Broader Import And Export Tooling
 
-V1 has a reviewed one-seller Excel prefill helper. Future work could support additional workbook shapes, batch review tooling, formal exports, archival packages, or provider-specific form-export mappings if real event operations need them.
+V1 has CSV/TSV seller-form import. Future work could support additional workbook shapes, batch review tooling, formal exports, archival packages, or provider-specific form-export mappings if real event operations need them.
 
 ### Richer Accounting And Refund Model
 

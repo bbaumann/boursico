@@ -219,6 +219,32 @@ public class AppDbContextModelTests
     }
 
     [Fact]
+    public void ItemSellerPriceColumnIsOptionalButNonNegativeWhenPresent()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+
+        var entityType = context.Model.FindEntityType(typeof(ItemEntity));
+        Assert.NotNull(entityType);
+        var sellerPrice = Assert.Single(entityType!.GetProperties(), property => property.Name == nameof(ItemEntity.SellerPriceCents));
+        Assert.Equal("seller_price_cents", sellerPrice.GetColumnName());
+        Assert.True(sellerPrice.IsNullable);
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'item'";
+        var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
+        Assert.Contains("\"seller_price_cents\" INTEGER NULL", createTableSql);
+        Assert.Contains("CHECK (seller_price_cents IS NULL OR seller_price_cents >= 0)", createTableSql);
+    }
+
+    [Fact]
     public void SaleStoresSubtotalFeeAndTotalColumns()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

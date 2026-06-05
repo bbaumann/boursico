@@ -118,6 +118,49 @@ public sealed class SellerFormImportServiceTests
     }
 
     [Fact]
+    public async Task ImportAsync_CreatesIncompleteItemsWhenItemTitleCanBeRecovered()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new SellerFormImportService(context, new SellerFormImportParser());
+
+        var result = await service.ImportAsync(CreateCsv(RecoverableItemErrorsCsv));
+
+        var row = Assert.Single(result.Rows);
+        Assert.Equal(SellerFormImportRowOutcome.Imported, row.Outcome);
+        var seller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("Camille", seller.FirstName);
+        Assert.Collection(
+            seller.Items.OrderBy(x => x.ItemNumber),
+            first =>
+            {
+                Assert.Equal("Puzzle complet", first.Title);
+                Assert.Equal(500, first.SellerPriceCents);
+            },
+            second =>
+            {
+                Assert.Equal("Jeu prix decimal", second.Title);
+                int? price = second.SellerPriceCents;
+                Assert.Null(price);
+            },
+            third =>
+            {
+                Assert.Equal("Jouet prix absent", third.Title);
+                int? price = third.SellerPriceCents;
+                Assert.Null(price);
+            });
+        Assert.Contains("prix non accepté", seller.ImportNotes);
+        Assert.Contains("prix manquant", seller.ImportNotes);
+        Assert.Contains("titre manquant", seller.ImportNotes);
+    }
+
+    [Fact]
     public async Task ImportAsync_FlagsSingleDuplicateWithoutAutoImportingIt()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -205,6 +248,58 @@ public sealed class SellerFormImportServiceTests
     }
 
     [Fact]
+    public async Task AppendDuplicateItemsAsync_AddsIncompleteRowsWithMissingPrices()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var seller = new SellerEntity
+        {
+            SellerCode = "AA",
+            FirstName = "Sarah",
+            LastName = "Bulteau",
+            Phone = "0600000000",
+            PostalAddress = "12 Rue Adolphe Muguet",
+            PostalCode = "38120",
+            City = "Saint-Ã‰grÃ¨ve"
+        };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+        var service = new SellerFormImportService(context, new SellerFormImportParser());
+
+        var result = await service.AppendDuplicateItemsAsync(
+            seller.Id,
+            [
+                new CreateItemRowRequest("Jeu sans prix", null),
+                new CreateItemRowRequest("Jeu PS5", 500)
+            ],
+            "Import formulaire : prix Ã  corriger.");
+
+        Assert.Equal(SellerFormDuplicateAppendOutcome.Appended, result.Outcome);
+        Assert.Equal(2, result.CreatedItemCount);
+        var updated = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Collection(
+            updated.Items.OrderBy(x => x.ItemNumber),
+            first =>
+            {
+                Assert.Equal("Jeu sans prix", first.Title);
+                int? price = first.SellerPriceCents;
+                Assert.Null(price);
+            },
+            second =>
+            {
+                Assert.Equal("Jeu PS5", second.Title);
+                Assert.Equal(500, second.SellerPriceCents);
+            });
+        Assert.Contains("prix Ã  corriger", updated.ImportNotes);
+    }
+
+    [Fact]
     public async Task ImportAsync_ExposesOnlyIgnoreForSeveralDuplicateMatches()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -240,6 +335,17 @@ public sealed class SellerFormImportServiceTests
         "1","33792452","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Zentiltoutou","Baumann","Benjamin","0609710985","Zentiltoutou@Gmail.com","29 avenue du mont Valérien","92500","Rueil Malmaison","Lego Pirate, 5"
         "2","33792475","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Zentiltoutou","Bulteau","Sarah","0600000000","sarah.bulteau@example.test","12 Rue Adolphe Muguet","38120","St Egreve","Lot 3 livres Monsieur Madame, 2
         Chateau Playmobil, 10"
+        """;
+
+    private const string RecoverableItemErrorsCsv =
+        """
+        "Bourse aux jouets Test","","","","","","","","","","","","","","","",""
+        "Détails de la soumission","","","","","","","","","","","","","","","",""
+        "Séquentiel","SID","Heure de soumission","Heure de complétion","Heure de modification","Brouillon","Adresse IP","UID","Nom d'utilisateur","Nom","Prénom","Téléphone","Email","Adresse","Code Postal","Ville","Jouet,Prix"
+        "1","33793000","11/05/2026 - 18:20","11/05/2026 - 18:20","11/05/2026 - 19:33","0","91.167.159.160","2780872","Test","Martin","Camille","0600000001","camille@example.test","1 rue des tests","38100","Grenoble","Puzzle complet, 5
+        Jeu prix decimal, 4,50
+        Jouet prix absent
+        12"
         """;
 
     private const string SingleDuplicateCsv =

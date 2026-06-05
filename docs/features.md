@@ -23,7 +23,6 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Prevent accidental duplicate sellers during seller creation and seller editing
 - Search sellers by code or name using a live-filtered sellers table
 - Create items manually from seller-provided lists
-- Prefill seller and item rows from a one-seller Excel workbook before reviewed save
 - Import seller drafts and item rows from CSV/TSV exports of an external seller form
 - Record seller preregistration received by email
 - Record in-person seller item lists as `registered` until the signed deposit is validated
@@ -245,7 +244,7 @@ V1 invoice handling is intentionally simple:
 
 ### Seller Deposit Validation
 
-Items are entered in `registered` state whether they come from an email list, Excel prefill, external form import, or in-person operator entry.
+Items are entered in `registered` state whether they come from an email list, external form import, or in-person operator entry.
 
 Before validation:
 
@@ -259,29 +258,13 @@ When the seller physically gives the toys to the association:
 1. The operator opens the seller detail page.
 2. The operator completes any missing phone, postal address, postal code, city, identity document nature, identity document number, issue date, or issuing authority.
 3. The operator prints `Imprimer le contrat`.
-4. The seller signs the printed recap with the association identity, legal mentions, seller fee status, seller identity document details, and item prices.
+4. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
 5. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
 6. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
 
-The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, whether payment is still due, and the seller identity document details collected before validation. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
+The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, whether payment is still due, and item prices. It does not print the seller identity document fields. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
 
 After validation, normal seller and item edits are locked for that seller. The signed paper contract is the legal proof; the database status is only the operational gate. Admin cancellation is available from the seller detail page during `presale` after confirming the shared admin password. It moves only items still `in_stock` back to `registered`; `sold`, `missing`, and `defective` items remain unchanged and read-only. Revalidating the deposit later tolerates those historical item states and only moves current `registered` items back to `in_stock`.
-
-### Excel Seller And Item Prefill
-
-Excel intake is an operator helper on `/vendeurs/creer`, not a direct import path.
-
-- the upload accepts one `.xlsx` workbook with one visible seller sheet; hidden helper sheets are ignored
-- the parser reads seller identity from the template labels and item title/price rows from columns `B:C`
-- item rows may continue beyond the old 15-row template area
-- upload fills the editable seller and item form and saves nothing
-- the operator reviews the prefilled form, then saves through the normal intake action
-- final save creates the seller and item rows in one transaction
-- duplicate sellers redirect to the existing seller detail page with the parsed item rows prefilled in `Ajouter des articles`
-- missing seller contact and identity document fields stay blank until the operator completes them before deposit validation
-- when the workbook has a `CP VILLE` value, Excel prefill accepts only canonical postal-code/city pairs from the authoritative Isere city list used by the application
-- the depot workbook's hidden `codes postaux` list is generated from the same JSON file used by the application
-- Excel prefill defaults the paid seller fee to `EUR 0`
 
 ### External Seller Form Import
 
@@ -290,9 +273,12 @@ External form import is an operator helper on `/vendeurs/importer`.
 - the upload accepts CSV and TSV exports from an external seller form provider
 - the importer detects the form header row, including Framaforms exports with metadata rows before the real header
 - seller drafts are imported when first name and last name are present
-- phone, address, postal code, city, email, notes, and valid item lines may be missing at import time
+- phone, address, postal code, city, email, notes, and item prices may be missing at import time
 - item data comes from one multiline `Jouet,Prix` field with one item per line, title first and whole-euro price last
-- valid item lines become `registered` items and invalid item lines are ignored
+- valid item lines become `registered` items
+- item lines with a recoverable title but missing or invalid price are imported as `registered` items with a missing seller price and import notes
+- item lines without a recoverable title are not imported and are recorded in import notes
+- a seller with any item missing a seller price cannot be deposit-validated until the item is corrected or deleted
 - unreconciled city values leave the seller city blank while keeping the submitted postal code and recording the submitted city in `seller.import_notes`
 - import notes show `Import à vérifier` on the seller detail page and can be edited or cleared from seller edit
 - duplicate sellers are not auto-imported

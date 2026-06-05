@@ -67,9 +67,11 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
         return IsActiveTab(tab) ? "page" : null;
     }
 
-    public static string FormatPrice(int priceCents)
+    public static string FormatPrice(int? priceCents)
     {
-        return $"{priceCents / 100m:0.00} €";
+        return priceCents is null
+            ? "À compléter"
+            : $"{priceCents.Value / 100m:0.00} €";
     }
 
     public static string FormatSellerFeeProgress(int paidFeeCents, int expectedFeeCents)

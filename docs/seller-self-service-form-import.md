@@ -75,12 +75,12 @@ Parsing rules:
 - the price is the final token or final separated segment
 - the title is everything before the price
 - accepted prices are whole euros, such as `5`, `5 EUR`, `5 €`, `5,00`, or `5.00`
-- prices with cents, such as `5,50`, are rejected for that item line
-- a title without a price is an invalid item line
-- a price without a title is an invalid item line
+- prices with cents, such as `5,50`, are not accepted as seller prices
+- a title without a price is imported as an item with a missing seller price
+- a price without a title is an invalid item line recorded as a note only
 - extra blank lines are ignored
 
-Invalid item lines do not block seller import. Valid item lines are imported; invalid item lines are ignored and recorded in import notes. If no valid item line exists, the seller draft is still imported with an import note.
+Invalid item lines do not block seller import. Valid item lines are imported with their seller price. Lines with a recoverable title but missing or invalid price are imported as items with no seller price and recorded in import notes. Lines without a recoverable title are ignored and recorded in import notes. If no item line can be imported, the seller draft is still imported with an import note.
 
 ## Import Preview And Result
 
@@ -207,9 +207,9 @@ The first slice should not implement a multi-match merge or selection workflow. 
 
 When appending to an existing seller:
 
-- valid item lines are added to that seller as preregistered items, unless an item with the same imported title and same seller price already exists on that seller
-- invalid item lines are ignored
-- ignored item lines are recorded in `seller.import_notes`
+- valid item lines and recoverable title-only item lines are added to that seller as preregistered items, unless an item with the same imported title and same seller price already exists on that seller
+- invalid item lines without a recoverable title are ignored
+- incomplete and ignored item lines are recorded in `seller.import_notes`
 - submitted seller contact fields do not overwrite the existing seller
 - the import row becomes `Importé`
 

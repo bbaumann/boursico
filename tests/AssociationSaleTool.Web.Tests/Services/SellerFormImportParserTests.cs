@@ -29,8 +29,21 @@ public sealed class SellerFormImportParserTests
                 var item = Assert.Single(first.ValidRows);
                 Assert.Equal("Lego Pirate", item.Title);
                 Assert.Equal(500, item.SellerPriceCents);
-                Assert.Contains(first.IgnoredItemLines, line => line.RawValue == "Puzzle incomplet");
-                Assert.Contains(first.IgnoredItemLines, line => line.RawValue == "Voiture 4,50");
+                Assert.Collection(
+                    first.IncompleteRows,
+                    firstIncomplete =>
+                    {
+                        Assert.Equal("Puzzle incomplet", firstIncomplete.Title);
+                        Assert.Null(firstIncomplete.SellerPriceCents);
+                    },
+                    secondIncomplete =>
+                    {
+                        Assert.Equal("Voiture", secondIncomplete.Title);
+                        Assert.Null(secondIncomplete.SellerPriceCents);
+                    });
+                Assert.Contains(first.IncompleteItemLines, line => line.RawValue == "Puzzle incomplet" && line.Reason == "prix manquant");
+                Assert.Contains(first.IncompleteItemLines, line => line.RawValue == "Voiture 4,50" && line.Reason == "prix non accepté");
+                Assert.Empty(first.IgnoredItemLines);
             },
             second =>
             {
@@ -64,13 +77,19 @@ public sealed class SellerFormImportParserTests
             "Export test","","","","","","","","","","","","","","","",""
             "Détails de la soumission","","","","","","","","","","","","","","","",""
             "Séquentiel","SID","Heure de soumission","Heure de complétion","Heure de modification","Brouillon","Adresse IP","UID","Nom d'utilisateur","Nom","Prénom","Téléphone","Email","Adresse","Code Postal","Ville","Jouet,Prix"
-            "1","1","","","","0","","","","Durand","Marie","","","","","","Puzzle sans prix"
+            "1","1","","","","0","","","","Durand","Marie","","","","","","Puzzle sans prix
+            4,50"
             """));
 
         Assert.True(result.Succeeded, string.Join(Environment.NewLine, result.Errors));
         var submission = Assert.Single(result.Submissions);
         Assert.Empty(submission.ValidRows);
-        Assert.Contains("aucun article valide", submission.ImportNotes);
+        var incompleteRow = Assert.Single(submission.IncompleteRows);
+        Assert.Equal("Puzzle sans prix", incompleteRow.Title);
+        Assert.Null(incompleteRow.SellerPriceCents);
+        Assert.Contains(submission.IgnoredItemLines, line => line.RawValue == "4,50" && line.Reason == "titre manquant");
+        Assert.Contains("article à corriger", submission.ImportNotes);
+        Assert.Contains("prix manquant", submission.ImportNotes);
     }
 
     private const string SampleCsv =

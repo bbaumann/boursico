@@ -34,13 +34,15 @@ public sealed class CheckoutService
     {
         return await _dbContext.Items
             .AsNoTracking()
-            .Where(x => x.Status == "in_stock" && x.Seller.DepositStatus == SellerDepositStatuses.Validated)
+            .Where(x => x.Status == "in_stock"
+                && x.Seller.DepositStatus == SellerDepositStatuses.Validated
+                && x.SellerPriceCents.HasValue)
             .OrderBy(x => x.Reference)
             .Select(x => new CheckoutCatalogItem(
                 x.Id,
                 x.Reference,
                 x.Title,
-                x.SellerPriceCents))
+                x.SellerPriceCents!.Value))
             .ToListAsync(cancellationToken);
     }
 
@@ -168,7 +170,7 @@ public sealed class CheckoutService
             sale.SaleLines.Add(new SaleLineEntity
             {
                 ItemId = item.Id,
-                SellerPriceAtSaleCents = item.SellerPriceCents
+                SellerPriceAtSaleCents = item.SellerPriceCents!.Value
             });
         }
 
@@ -265,7 +267,8 @@ public sealed class CheckoutService
         var conflictItemIds = requestedItemIds
             .Where(itemId => !loadedById.TryGetValue(itemId, out var item)
                 || item.Status != "in_stock"
-                || item.Seller.DepositStatus != SellerDepositStatuses.Validated)
+                || item.Seller.DepositStatus != SellerDepositStatuses.Validated
+                || !item.SellerPriceCents.HasValue)
             .Distinct()
             .ToList();
 
@@ -274,7 +277,7 @@ public sealed class CheckoutService
             return new CheckoutValidationResult(false, conflictItemIds, null, loadedItems.Count);
         }
 
-        var subtotalCents = loadedItems.Sum(x => x.SellerPriceCents);
+        var subtotalCents = loadedItems.Sum(x => x.SellerPriceCents!.Value);
         var totals = CheckoutPricingCalculator.CalculateTotals(subtotalCents);
         var cartTotals = new CheckoutCartTotals(
             totals.SubtotalSellerPriceCents,

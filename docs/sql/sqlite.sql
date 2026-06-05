@@ -30,7 +30,7 @@ CREATE TABLE item (
     reference TEXT NOT NULL,
     item_number INTEGER NOT NULL,
     title TEXT NOT NULL,
-    seller_price_cents INTEGER NOT NULL,
+    seller_price_cents INTEGER,
     status TEXT NOT NULL,
     CONSTRAINT fk_item_seller
         FOREIGN KEY (seller_id)
@@ -40,7 +40,7 @@ CREATE TABLE item (
     CONSTRAINT ck_item_status
         CHECK (status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')),
     CONSTRAINT ck_item_seller_price_cents
-        CHECK (seller_price_cents >= 0),
+        CHECK (seller_price_cents IS NULL OR seller_price_cents >= 0),
     CONSTRAINT uq_item_reference UNIQUE (reference),
     CONSTRAINT uq_item_seller_number UNIQUE (seller_id, item_number)
 );

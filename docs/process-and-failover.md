@@ -6,7 +6,7 @@
 
 1. Some sellers send their item lists outside the system, typically by email.
 2. Intake operator creates sellers in the system.
-3. Items are entered as `registered`, whether they come from an emailed list, Excel prefill, or in-person operator entry.
+3. Items are entered as `registered`, whether they come from an emailed list, external form import, or in-person operator entry.
 4. When the seller physically delivers toys, the operator completes missing seller contact details, reviews the seller record, removes or corrects incomplete items, prints the deposit contract, and gets it signed.
 5. The operator validates the seller deposit from the seller detail page. This sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
 6. If a defect is spotted before the seller signs the deposit contract, the item is not accepted and any corresponding `registered` row may be deleted.
@@ -65,7 +65,7 @@ If a buyer returns a defective sold item, an admin uses `Rembourser` from `Corre
 
 ## Seller Deposit Validation Workflow
 
-1. Seller item data is recorded from email, Excel prefill, or in-person entry.
+1. Seller item data is recorded from email, external form import, or in-person entry.
 2. Preregistered items exist in `registered` status.
 3. When toys are physically delivered, the operator reviews the seller item list before signature.
 4. The operator completes phone, postal address, postal code, and city before validation.

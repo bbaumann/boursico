@@ -9,7 +9,7 @@ public sealed record DataListItemRow(
     string SellerName,
     string Status,
     string StatusLabel,
-    int SellerPriceCents,
+    int? SellerPriceCents,
     string SearchText);
 
 public sealed record DataListSellerRow(

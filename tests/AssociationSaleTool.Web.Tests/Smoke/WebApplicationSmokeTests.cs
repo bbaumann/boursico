@@ -2242,17 +2242,17 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerCreatePageRendersCombinedSellerItemFormAndExcelUpload()
+    public async Task SellerCreatePageRendersCombinedSellerItemFormWithoutExcelUpload()
     {
         var client = _factory.CreateClient();
         var response = await client.GetAsync("/vendeurs/creer");
 
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("excel-import-panel", content);
-        Assert.Contains("excel-import-form", content);
-        Assert.Contains("aria-label=\"Préremplissage Excel\"", content);
-        Assert.Contains("Fichier Excel vendeur", content);
+        Assert.DoesNotContain("excel-import-panel", content);
+        Assert.DoesNotContain("excel-import-form", content);
+        Assert.DoesNotContain("Préremplissage Excel", content);
+        Assert.DoesNotContain("Fichier Excel vendeur", content);
         Assert.DoesNotContain("Pr\u00c3", content);
         Assert.DoesNotContain("<h2>Importer depuis Excel</h2>", content);
         Assert.Contains("Enregistrer le vendeur et les articles", content);
@@ -2263,52 +2263,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("name=\"Input.Rows[10].Title\"", content);
         Assert.Contains("data-item-registration-table", content);
         Assert.Contains("data-add-item-row", content);
-    }
-
-    [Fact]
-    public async Task SellerCreateExcelUploadPrefillsFormWithoutPersistingData()
-    {
-        var client = _factory.CreateClient();
-        await SetSalePhaseAsync(SalePhase.Presale);
-        int sellerCountBefore;
-        int itemCountBefore;
-
-        using (var beforeScope = _factory.Services.CreateScope())
-        {
-            var beforeContext = beforeScope.ServiceProvider.GetRequiredService<AppDbContext>();
-            sellerCountBefore = await beforeContext.Sellers.CountAsync();
-            itemCountBefore = await beforeContext.Items.CountAsync();
-        }
-
-        var form = await client.GetAsync("/vendeurs/creer");
-        form.EnsureSuccessStatusCode();
-        var formContent = await form.Content.ReadAsStringAsync();
-
-        using var multipart = new MultipartFormDataContent();
-        multipart.Add(new StringContent(ExtractRequestVerificationToken(formContent)), "__RequestVerificationToken");
-        multipart.Add(
-            new ByteArrayContent(CreateSellerWorkbookBytes()),
-            "ExcelFile",
-            "liste.xlsx");
-
-        var response = await client.PostAsync("/vendeurs/creer?handler=ImportExcel", multipart);
-
-        response.EnsureSuccessStatusCode();
-        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("value=\"Marie\"", content);
-        Assert.Contains("value=\"Durand\"", content);
-        Assert.Contains("value=\"0600000000\"", content);
-        Assert.DoesNotContain("UNKNOWN", content);
-        Assert.Contains("value=\"38120\"", content);
-        Assert.Contains("value=\"Saint-Égrève\"", content);
-        Assert.Contains("Puzzle Excel", content);
-        Assert.Contains("value=\"5\"", content);
-        AssertCreateSellerFormPostsToCreatePage(content);
-
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        Assert.Equal(sellerCountBefore, await dbContext.Sellers.CountAsync());
-        Assert.Equal(itemCountBefore, await dbContext.Items.CountAsync());
     }
 
     [Fact]
@@ -3095,7 +3049,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerDetailsShowsArticleCorrectionActionWhenDepositValidationRejectsItems()
+    public async Task SellerDetailsShowsArticleCorrectionActionWhenDepositValidationRejectsMissingItemPrice()
     {
         var client = _factory.CreateClient();
         long sellerId;
@@ -3127,8 +3081,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SellerId = seller.Id,
                 Reference = "BK-ITEM-001",
                 ItemNumber = 1,
-                Title = "",
-                SellerPriceCents = 450,
+                Title = "Jouet sans prix",
+                SellerPriceCents = null,
                 Status = "registered"
             });
             await dbContext.SaveChangesAsync();
@@ -3148,7 +3102,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         postResponse.EnsureSuccessStatusCode();
 
         var rejectedContent = WebUtility.HtmlDecode(await postResponse.Content.ReadAsStringAsync());
-        Assert.Contains("Tous les articles doivent avoir un titre avant de valider le dépôt.", rejectedContent);
+        Assert.Contains("Tous les articles doivent avoir un prix vendeur avant de valider le dépôt.", rejectedContent);
         Assert.Contains("Corriger les articles", rejectedContent);
         Assert.Contains("href=\"#articles\"", rejectedContent);
         Assert.DoesNotContain("Corriger le vendeur", rejectedContent);
@@ -4030,7 +3984,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 new SaleLineEntity
                 {
                     ItemId = item.Id,
-                    SellerPriceAtSaleCents = item.SellerPriceCents
+                    SellerPriceAtSaleCents = item.SellerPriceCents.GetValueOrDefault()
                 }
             ]
         };
@@ -4129,7 +4083,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 new SaleLineEntity
                 {
                     ItemId = soldItem.Id,
-                    SellerPriceAtSaleCents = soldItem.SellerPriceCents
+                    SellerPriceAtSaleCents = soldItem.SellerPriceCents.GetValueOrDefault()
                 }
             ]
         };
@@ -4171,15 +4125,15 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             dbContext.Sales.Add(new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
-                SubtotalSellerPriceCents = item.SellerPriceCents,
+                SubtotalSellerPriceCents = item.SellerPriceCents.GetValueOrDefault(),
                 CheckoutFeeCents = 0,
-                TotalPaidCents = item.SellerPriceCents,
+                TotalPaidCents = item.SellerPriceCents.GetValueOrDefault(),
                 SaleLines =
                 [
                     new SaleLineEntity
                     {
                         ItemId = item.Id,
-                        SellerPriceAtSaleCents = item.SellerPriceCents
+                        SellerPriceAtSaleCents = item.SellerPriceCents.GetValueOrDefault()
                     }
                 ]
             });

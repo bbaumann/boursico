@@ -68,7 +68,7 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("seller_id");
 
-                    b.Property<int>("SellerPriceCents")
+                    b.Property<int?>("SellerPriceCents")
                         .HasColumnType("INTEGER")
                         .HasColumnName("seller_price_cents");
 
@@ -98,7 +98,7 @@ namespace AssociationSaleTool.Web.Migrations
 
                     b.ToTable("item", null, t =>
                         {
-                            t.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
+                            t.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents IS NULL OR seller_price_cents >= 0");
 
                             t.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')");
                         });

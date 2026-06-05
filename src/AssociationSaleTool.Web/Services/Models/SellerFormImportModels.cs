@@ -18,13 +18,27 @@ public sealed record SellerFormImportSubmission(
     string City,
     string? Notes,
     string? ImportNotes,
-    IReadOnlyList<CreateItemRowRequest> ValidRows,
-    IReadOnlyList<SellerFormIgnoredItemLine> IgnoredItemLines);
+    IReadOnlyList<CreateItemRowRequest> ItemRows,
+    IReadOnlyList<SellerFormIgnoredItemLine> IgnoredItemLines,
+    IReadOnlyList<SellerFormIncompleteItemLine> IncompleteItemLines)
+{
+    public IReadOnlyList<CreateItemRowRequest> ValidRows =>
+        ItemRows.Where(row => row.SellerPriceCents is not null).ToList();
+
+    public IReadOnlyList<CreateItemRowRequest> IncompleteRows =>
+        ItemRows.Where(row => row.SellerPriceCents is null).ToList();
+}
 
 public sealed record SellerFormIgnoredItemLine(
     int LineNumber,
     string RawValue,
     string Reason);
+
+public sealed record SellerFormIncompleteItemLine(
+    int LineNumber,
+    string RawValue,
+    string Reason,
+    string Title);
 
 public sealed record SellerFormImportResult(
     IReadOnlyList<SellerFormImportRowResult> Rows,

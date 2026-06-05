@@ -87,9 +87,9 @@ public sealed class ImportModel(SellerFormImportService importService, IntakeSer
         };
     }
 
-    public static string FormatPrice(int priceCents)
+    public static string FormatPrice(int? priceCents)
     {
-        return $"{priceCents / 100} €";
+        return priceCents is null ? "À compléter" : $"{priceCents / 100} €";
     }
 
     public sealed class DuplicateAppendInputModel
@@ -105,6 +105,6 @@ public sealed class ImportModel(SellerFormImportService importService, IntakeSer
     {
         public string Title { get; set; } = string.Empty;
 
-        public int SellerPriceCents { get; set; }
+        public int? SellerPriceCents { get; set; }
     }
 }

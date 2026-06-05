@@ -133,7 +133,7 @@ Cliquer sur `Fichier CSV ou TSV`, choisir l'export, puis cliquer sur `Importer l
 
 L'import crée des fiches vendeurs en `Dépôt à valider` quand la soumission contient au moins un prénom et un nom. Les coordonnées et informations de pièce d'identité incomplètes ne bloquent pas l'import : elles seront complétées avec le vendeur avant la signature du contrat.
 
-Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`. Les lignes d'articles invalides sont ignorées et notées sur la fiche vendeur dans `Import à vérifier`.
+Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`. Quand une ligne contient un titre mais pas de prix valide, l'article est aussi ajouté en `enregistré` avec un prix `À compléter`, et une note est ajoutée dans `Import à vérifier`. Quand le titre ne peut pas être extrait, la ligne n'est pas importée et reste seulement notée dans `Import à vérifier`.
 
 Si une ville reçue ne peut pas être reconnue, le code postal est conservé, la ville reste vide, et la ville reçue est notée dans `Import à vérifier`.
 
@@ -181,9 +181,9 @@ Quand le vendeur apporte les jouets :
 6. Faire signer le contrat papier par le vendeur.
 7. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
 
-Le contrat imprimé affiche l'identité de l'association, son adresse, son SIRET, les informations de pièce d'identité du vendeur, les frais vendeurs attendus, les frais déjà payés, les mentions légales, la liste des articles et les prix. Il ne contient qu'une signature vendeur, avec la phrase `J'accepte le règlement de la bourse aux jouets` juste avant la date de signature. Le statut de l'événement n'est pas imprimé sur le contrat.
+Le contrat imprimé affiche l'identité de l'association, son adresse, son SIRET, les frais vendeurs attendus, les frais déjà payés, les mentions légales, la liste des articles et les prix. Il n'affiche pas les informations de pièce d'identité du vendeur. Il ne contient qu'une signature vendeur, avec la phrase `J'accepte le règlement de la bourse aux jouets` juste avant la date de signature. Le statut de l'événement n'est pas imprimé sur le contrat.
 
-La validation du dépôt passe les articles acceptés `en stock` et verrouille les modifications normales du vendeur et de ses articles. Le contrat papier signé est la preuve du dépôt et de l'accord sur les prix.
+La validation du dépôt passe les articles acceptés `en stock` et verrouille les modifications normales du vendeur et de ses articles. Elle est bloquée tant qu'un article a un prix `À compléter`. Le contrat papier signé est la preuve du dépôt et de l'accord sur les prix.
 
 Si le dépôt doit être rouvert exceptionnellement, revenir en `Prévente`, ouvrir la fiche vendeur, cliquer sur `Annuler la validation du dépôt`, puis saisir le mot de passe administrateur. Les articles encore `en stock` repassent `enregistré` et redeviennent modifiables. Les articles déjà `vendu`, `manquant` ou `défectueux` restent inchangés et en lecture seule. Après correction, cliquer à nouveau sur `Valider le dépôt`.
 

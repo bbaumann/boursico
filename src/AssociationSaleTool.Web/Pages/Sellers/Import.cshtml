@@ -93,7 +93,8 @@
                         </td>
                         <td>
                             <div>@row.Submission.ValidRows.Count article@(row.Submission.ValidRows.Count > 1 ? "s" : "") prêt@(row.Submission.ValidRows.Count > 1 ? "s" : "")</div>
-                            <div>@row.Submission.IgnoredItemLines.Count ligne@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "") ignorée@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "")</div>
+                            <div>@row.Submission.IncompleteRows.Count article@(row.Submission.IncompleteRows.Count > 1 ? "s" : "") à corriger</div>
+                            <div>@row.Submission.IgnoredItemLines.Count ligne@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "") non importée@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "")</div>
                         </td>
                         <td>@ImportModel.FormatOutcome(row.Outcome)</td>
                         <td>
@@ -114,16 +115,16 @@
                                             </p>
                                         }
                                     </div>
-                                    @if (row.CanAppendToExistingSeller && row.Submission.ValidRows.Count > 0)
+                                    @if (row.CanAppendToExistingSeller && row.Submission.ItemRows.Count > 0)
                                     {
                                         var match = row.DuplicateMatches[0];
                                         <form method="post" class="inline-form" asp-page-handler="AppendDuplicate">
                                             <input type="hidden" asp-for="DuplicateInput.SellerId" value="@match.SellerId" />
                                             <input type="hidden" asp-for="DuplicateInput.ImportNotes" value="@row.Submission.ImportNotes" />
-                                            @for (var i = 0; i < row.Submission.ValidRows.Count; i++)
+                                            @for (var i = 0; i < row.Submission.ItemRows.Count; i++)
                                             {
-                                                <input type="hidden" name="DuplicateInput.Rows[@i].Title" value="@row.Submission.ValidRows[i].Title" />
-                                                <input type="hidden" name="DuplicateInput.Rows[@i].SellerPriceCents" value="@row.Submission.ValidRows[i].SellerPriceCents" />
+                                                <input type="hidden" name="DuplicateInput.Rows[@i].Title" value="@row.Submission.ItemRows[i].Title" />
+                                                <input type="hidden" name="DuplicateInput.Rows[@i].SellerPriceCents" value="@row.Submission.ItemRows[i].SellerPriceCents" />
                                             }
                                             <button type="submit" class="table-action-button">Ajouter les articles au vendeur existant</button>
                                         </form>

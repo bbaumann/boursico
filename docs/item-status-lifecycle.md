@@ -50,7 +50,7 @@ The signed paper contract is the legal proof of deposit and price agreement. The
 
 ### `registered`
 
-- entered from an emailed list, Excel prefill, or in-person intake before deposit validation
+- entered from an emailed list, external form import, or in-person intake before deposit validation
 - not yet accepted into stock through a signed seller deposit
 - excluded from checkout and seller-sheet outputs
 - may remain in this state if the seller has not brought the item yet

@@ -10,7 +10,7 @@ public sealed class ItemCorrectionService(AppDbContext dbContext)
     {
         return await dbContext.Items
             .AsNoTracking()
-            .Where(x => x.Status != "registered")
+            .Where(x => x.Status != "registered" && x.SellerPriceCents.HasValue)
             .OrderBy(x => x.Reference)
             .Select(x => new ItemCorrectionCandidate(
                 x.Id,
@@ -49,7 +49,7 @@ public sealed class ItemCorrectionService(AppDbContext dbContext)
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
                 x.Status,
-                x.SellerPriceCents,
+                x.SellerPriceCents!.Value,
                 x.SaleLines
                     .Where(line => line.CorrectedAt == null && line.RefundedAt == null)
                     .OrderByDescending(line => line.Sale.SoldAt)

@@ -99,8 +99,8 @@ public sealed class DataListServiceTests
             ChequeNumber = "CH-999",
             ChequeBankName = "Banque cach\u00e9e"
         };
-        sale.SaleLines.Add(new SaleLineEntity { ItemId = firstItem.Id, SellerPriceAtSaleCents = firstItem.SellerPriceCents });
-        sale.SaleLines.Add(new SaleLineEntity { ItemId = secondItem.Id, SellerPriceAtSaleCents = secondItem.SellerPriceCents });
+        sale.SaleLines.Add(new SaleLineEntity { ItemId = firstItem.Id, SellerPriceAtSaleCents = firstItem.SellerPriceCents.GetValueOrDefault() });
+        sale.SaleLines.Add(new SaleLineEntity { ItemId = secondItem.Id, SellerPriceAtSaleCents = secondItem.SellerPriceCents.GetValueOrDefault() });
         context.Sales.Add(sale);
         await context.SaveChangesAsync();
         var service = new DataListService(context);
@@ -193,7 +193,7 @@ public sealed class DataListServiceTests
                     new SaleLineEntity
                     {
                         ItemId = firstItem.Id,
-                        SellerPriceAtSaleCents = firstItem.SellerPriceCents,
+                        SellerPriceAtSaleCents = firstItem.SellerPriceCents.GetValueOrDefault(),
                         RefundedAt = new DateTime(2026, 5, 5, 12, 0, 0, DateTimeKind.Utc),
                         RefundItemPriceCents = 1000,
                         RefundCheckoutFeeCents = 100,
@@ -201,7 +201,7 @@ public sealed class DataListServiceTests
                         RefundReason = "defective",
                         RefundCheckoutCode = "CAISSE-2"
                     },
-                    new SaleLineEntity { ItemId = secondItem.Id, SellerPriceAtSaleCents = secondItem.SellerPriceCents }
+                    new SaleLineEntity { ItemId = secondItem.Id, SellerPriceAtSaleCents = secondItem.SellerPriceCents.GetValueOrDefault() }
                 ]
             },
             new SaleEntity
@@ -214,7 +214,7 @@ public sealed class DataListServiceTests
                 PaymentMethod = SalePaymentMethods.Cheque,
                 SaleLines =
                 [
-                    new SaleLineEntity { ItemId = thirdItem.Id, SellerPriceAtSaleCents = thirdItem.SellerPriceCents }
+                    new SaleLineEntity { ItemId = thirdItem.Id, SellerPriceAtSaleCents = thirdItem.SellerPriceCents.GetValueOrDefault() }
                 ]
             });
         await context.SaveChangesAsync();

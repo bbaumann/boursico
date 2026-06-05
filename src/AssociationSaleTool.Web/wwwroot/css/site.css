@@ -264,29 +264,6 @@ h1 {
   gap: 1rem;
 }
 
-.excel-import-panel {
-  margin: 1.25rem 0;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.48);
-}
-
-.excel-import-form {
-  display: grid;
-  grid-template-columns: minmax(18rem, 1fr) auto;
-  gap: 0.75rem;
-  align-items: end;
-}
-
-.excel-import-form label {
-  min-width: 0;
-}
-
-.excel-import-form .button-link {
-  white-space: nowrap;
-}
-
 .field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

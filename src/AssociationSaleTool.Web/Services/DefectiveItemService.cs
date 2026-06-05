@@ -18,7 +18,7 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.Reference,
                 x.Title,
                 x.Status,
-                x.SellerPriceCents,
+                x.SellerPriceCents!.Value,
                 x.SaleLines.Any(line => line.RefundedAt != null)))
             .ToListAsync(cancellationToken);
     }
@@ -51,7 +51,7 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.Reference,
                 x.Title,
                 x.Status,
-                x.SellerPriceCents,
+                x.SellerPriceCents!.Value,
                 x.SaleLines.Any(line => line.RefundedAt != null)))
             .ToListAsync(cancellationToken);
     }
@@ -60,7 +60,8 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
     {
         return dbContext.Items
             .AsNoTracking()
-            .Where(x => x.Status == "in_stock" || x.Status == "defective");
+            .Where(x => (x.Status == "in_stock" || x.Status == "defective")
+                && x.SellerPriceCents.HasValue);
     }
 
     public async Task<DefectiveItemStatusChangeResult> MarkDefectiveAsync(

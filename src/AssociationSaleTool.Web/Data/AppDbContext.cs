@@ -57,7 +57,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Reference).HasColumnName("reference").IsRequired();
             entity.Property(x => x.ItemNumber).HasColumnName("item_number").IsRequired();
             entity.Property(x => x.Title).HasColumnName("title").IsRequired();
-            entity.Property(x => x.SellerPriceCents).HasColumnName("seller_price_cents").IsRequired();
+            entity.Property(x => x.SellerPriceCents).HasColumnName("seller_price_cents");
             entity.Property(x => x.Status).HasColumnName("status").IsRequired();
 
             entity.HasOne(x => x.Seller)
@@ -76,7 +76,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable(table =>
             {
                 table.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')");
-                table.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents >= 0");
+                table.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents IS NULL OR seller_price_cents >= 0");
             });
         });
 

@@ -13,23 +13,6 @@
         <p class="validation">Les vendeurs ne peuvent pas être créés dans le statut actuel de la vente.</p>
     }
 
-    @if (Model.CanEditSellerMasterData)
-    {
-        <section class="excel-import-panel" aria-label="Préremplissage Excel">
-            <form method="post"
-                  enctype="multipart/form-data"
-                  class="excel-import-form"
-                  asp-page="/Sellers/Create"
-                  asp-page-handler="ImportExcel">
-                <label>
-                    <span>Fichier Excel vendeur</span>
-                    <input asp-for="ExcelFile" type="file" accept=".xlsx" />
-                </label>
-                <button type="submit" class="button-link">Importer</button>
-            </form>
-        </section>
-    }
-
     <form method="post" class="stack-form" asp-page="/Sellers/Create">
         <div asp-validation-summary="ModelOnly" class="validation"></div>
         @if (Model.DuplicateMatches.Count > 0)

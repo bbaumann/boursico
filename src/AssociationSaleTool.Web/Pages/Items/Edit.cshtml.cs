@@ -33,7 +33,9 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         Input = new InputModel
         {
             Title = item.Title,
-            SellerPrice = EuroPriceInput.FormatFromCents(item.SellerPriceCents)
+            SellerPrice = item.SellerPriceCents is null
+                ? string.Empty
+                : EuroPriceInput.FormatFromCents(item.SellerPriceCents.Value)
         };
 
         return Page();
