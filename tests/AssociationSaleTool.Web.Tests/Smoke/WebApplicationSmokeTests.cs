@@ -277,6 +277,81 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task RequiredFieldMarkersAreRenderedOnSellerForms()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            dbContext.Sellers.Add(new SellerEntity
+            {
+                SellerCode = "RF-001",
+                FirstName = "Renee",
+                LastName = "Obligatoire"
+            });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var createResponse = await client.GetAsync("/vendeurs/creer");
+        createResponse.EnsureSuccessStatusCode();
+        var createContent = WebUtility.HtmlDecode(await createResponse.Content.ReadAsStringAsync());
+        Assert.Contains("form-required-note", createContent);
+        AssertRequiredFieldMarker(createContent, "Prénom");
+        AssertRequiredFieldMarker(createContent, "Nom");
+
+        var sellerId = await GetSellerIdByCodeAsync("RF-001");
+        var editResponse = await client.GetAsync($"/vendeurs/{sellerId}/modifier");
+        editResponse.EnsureSuccessStatusCode();
+        var editContent = WebUtility.HtmlDecode(await editResponse.Content.ReadAsStringAsync());
+        Assert.Contains("form-required-note", editContent);
+        AssertRequiredFieldMarker(editContent, "Prénom");
+        AssertRequiredFieldMarker(editContent, "Nom");
+    }
+
+    [Fact]
+    public async Task RequiredFieldMarkersAreRenderedOnItemEditForm()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+        long itemId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "RI-001",
+                FirstName = "Renee",
+                LastName = "Article"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var item = new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "RI-001",
+                ItemNumber = 1,
+                Title = "Puzzle requis",
+                SellerPriceCents = 800,
+                Status = "registered"
+            };
+            dbContext.Items.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemId = item.Id;
+        }
+
+        var response = await client.GetAsync($"/articles/{itemId}/modifier");
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("form-required-note", content);
+        AssertRequiredFieldMarker(content, "Titre");
+        AssertRequiredFieldMarker(content, "Prix vendeur");
+    }
+
+    [Fact]
     public async Task CreateSellerPostShowsDuplicateMatchesInFrench()
     {
         var client = _factory.CreateClient();
@@ -4267,6 +4342,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             Assert.Contains($"{name}=\"{value}\"", inputMatch.Value);
         }
+    }
+
+    private static void AssertRequiredFieldMarker(string html, string label)
+    {
+        Assert.Contains(
+            $"<span class=\"field-label-text\">{label} <span class=\"required-field-badge\">Obligatoire</span></span>",
+            html);
     }
 
     [Fact]

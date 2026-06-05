@@ -275,6 +275,35 @@ label {
   gap: 0.35rem;
 }
 
+.field-label-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-weight: 700;
+}
+
+.required-field-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid rgba(138, 31, 17, 0.28);
+  border-radius: 999px;
+  color: #8a1f11;
+  background: rgba(255, 244, 239, 0.95);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.form-required-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .file-import-picker {
   gap: 0.75rem;
 }
@@ -306,6 +335,18 @@ textarea {
 .validation {
   color: #8a1f11;
   font-size: 0.9rem;
+}
+
+.validation.field-validation-error {
+  font-weight: 700;
+}
+
+input.input-validation-error,
+select.input-validation-error,
+textarea.input-validation-error {
+  border-color: #8a1f11;
+  background: rgba(255, 244, 239, 0.95);
+  box-shadow: 0 0 0 0.18rem rgba(138, 31, 17, 0.14);
 }
 
 .success-message {

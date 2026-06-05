@@ -17,18 +17,21 @@
     {
     <form method="post" class="stack-form">
         <div asp-validation-summary="ModelOnly" class="validation"></div>
+        <p class="form-required-note">Les champs marqués <span class="required-field-badge">Obligatoire</span> doivent être complétés.</p>
         <label>
-            <span>Titre</span>
-            <input asp-for="Input.Title" />
+            <span class="field-label-text">Titre <span class="required-field-badge">Obligatoire</span></span>
+            <input asp-for="Input.Title" aria-required="true" />
             <span asp-validation-for="Input.Title" class="validation"></span>
         </label>
 
         <label>
-            <span>Prix vendeur (€ entier)</span>
+            <span class="field-label-text">Prix vendeur <span class="required-field-badge">Obligatoire</span></span>
+            <span class="seller-meta">Montant entier en euros.</span>
             <input asp-for="Input.SellerPrice"
                    type="text"
                    inputmode="numeric"
                    pattern="[0-9]+"
+                   aria-required="true"
                    data-whole-euro-input="true"
                    data-whole-euro-message="Le prix vendeur doit être un montant entier en euros." />
             <span asp-validation-for="Input.SellerPrice" class="validation"></span>

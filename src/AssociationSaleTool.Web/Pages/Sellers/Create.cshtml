@@ -15,6 +15,7 @@
 
     <form method="post" class="stack-form" asp-page="/Sellers/Create">
         <div asp-validation-summary="ModelOnly" class="validation"></div>
+        <p class="form-required-note">Les champs marqués <span class="required-field-badge">Obligatoire</span> doivent être complétés.</p>
         @if (Model.DuplicateMatches.Count > 0)
         {
             <section class="duplicate-match-list" aria-label="Vendeurs existants">
@@ -36,13 +37,13 @@
 
         <div class="field-grid">
             <label>
-                <span>Prénom</span>
-                <input asp-for="Input.FirstName" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span class="field-label-text">Prénom <span class="required-field-badge">Obligatoire</span></span>
+                <input asp-for="Input.FirstName" aria-required="true" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.FirstName" class="validation"></span>
             </label>
             <label>
-                <span>Nom</span>
-                <input asp-for="Input.LastName" disabled="@(!Model.CanEditSellerMasterData)" />
+                <span class="field-label-text">Nom <span class="required-field-badge">Obligatoire</span></span>
+                <input asp-for="Input.LastName" aria-required="true" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.LastName" class="validation"></span>
             </label>
             <label>
