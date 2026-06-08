@@ -996,9 +996,73 @@ function initializeCheckout(root) {
   refreshCheckoutCodeState();
 }
 
+function initializeSellerDepositFlow(root) {
+  const openButton = root.querySelector("[data-seller-deposit-open]");
+  const dialog = root.querySelector("[data-seller-deposit-dialog]");
+  const printStep = root.querySelector("[data-seller-deposit-print-step]");
+  const validateStep = root.querySelector("[data-seller-deposit-validate-step]");
+  const printLink = root.querySelector("[data-seller-deposit-print]");
+  const backButton = root.querySelector("[data-seller-deposit-back]");
+  const closeButtons = root.querySelectorAll("[data-seller-deposit-close]");
+  const signatureConfirmation = root.querySelector("[data-seller-deposit-signature-confirmation]");
+  const submitButton = root.querySelector("[data-seller-deposit-submit]");
+
+  if (!openButton || !dialog || !printStep || !validateStep) {
+    return;
+  }
+
+  function updateSubmitState() {
+    if (!submitButton || !signatureConfirmation) {
+      return;
+    }
+
+    submitButton.disabled = !signatureConfirmation.checked;
+  }
+
+  function showStep(step) {
+    const isValidateStep = step === "validate";
+    printStep.hidden = isValidateStep;
+    validateStep.hidden = !isValidateStep;
+
+    root.querySelectorAll("[data-seller-deposit-step-indicator]").forEach(indicator => {
+      const isCurrent = indicator.dataset.sellerDepositStepIndicator === step;
+      if (isCurrent) {
+        indicator.setAttribute("aria-current", "step");
+      } else {
+        indicator.removeAttribute("aria-current");
+      }
+    });
+
+    updateSubmitState();
+    const focusTarget = isValidateStep
+      ? signatureConfirmation || backButton || submitButton
+      : printLink || closeButtons[0];
+    focusTarget?.focus();
+  }
+
+  openButton.addEventListener("click", () => {
+    dialog.showModal();
+    showStep("print");
+  });
+
+  printLink?.addEventListener("click", () => showStep("validate"));
+  backButton?.addEventListener("click", () => showStep("print"));
+  signatureConfirmation?.addEventListener("change", updateSubmitState);
+  closeButtons.forEach(button => button.addEventListener("click", () => dialog.close()));
+  dialog.addEventListener("close", () => {
+    if (signatureConfirmation) {
+      signatureConfirmation.checked = false;
+    }
+
+    updateSubmitState();
+  });
+  updateSubmitState();
+}
+
 document.querySelectorAll("[data-postal-city-root]").forEach(initializePostalCityRoot);
 document.querySelectorAll("[data-whole-euro-input]").forEach(initializeWholeEuroInput);
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);
+document.querySelectorAll("[data-seller-deposit-flow]").forEach(initializeSellerDepositFlow);
 
 function initializeReconciliation(root) {
   const searchInput = root.querySelector("[data-reconciliation-search]");

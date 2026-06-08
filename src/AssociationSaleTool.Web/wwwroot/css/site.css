@@ -730,6 +730,59 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   margin: 0;
 }
 
+.seller-deposit-flow {
+  display: inline-flex;
+}
+
+.seller-deposit-dialog {
+  width: min(38rem, calc(100vw - 2rem));
+}
+
+.seller-deposit-step-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seller-deposit-step-list li {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.seller-deposit-step-list li[aria-current="step"] {
+  border-color: rgba(15, 95, 111, 0.35);
+  color: var(--accent-strong);
+  background: rgba(15, 95, 111, 0.08);
+}
+
+.seller-deposit-step-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.seller-deposit-step-panel h4,
+.seller-deposit-step-panel p {
+  margin: 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-weight: 700;
+}
+
+.checkbox-label input {
+  margin-top: 0.2rem;
+}
+
 .deposit-contract-parties {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
