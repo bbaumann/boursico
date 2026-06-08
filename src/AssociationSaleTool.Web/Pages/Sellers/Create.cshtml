@@ -15,7 +15,6 @@
 
     <form method="post" class="stack-form" asp-page="/Sellers/Create">
         <div asp-validation-summary="ModelOnly" class="validation"></div>
-        <p class="form-required-note">Les champs marqués <span class="required-field-badge">Obligatoire</span> doivent être complétés.</p>
         @if (Model.DuplicateMatches.Count > 0)
         {
             <section class="duplicate-match-list" aria-label="Vendeurs existants">

@@ -52,7 +52,6 @@
         <section class="subsection checkout-lookup">
             <section class="checkout-buyer-fields" aria-labelledby="checkout-buyer-title">
                 <h2 id="checkout-buyer-title">Acheteur</h2>
-                <p class="form-required-note">Les champs marqués <span class="required-field-badge">Obligatoire</span> doivent être complétés.</p>
                 <div class="field-grid" data-postal-city-root>
                     <label for="checkout-buyer-name">
                         <span class="field-label-text">Nom ou structure <span class="required-field-badge">Obligatoire</span></span>
@@ -110,7 +109,7 @@
                    data-checkout-search
                    placeholder="Référence ou titre" />
 
-            <div class="checkout-results-frame">
+            <div class="checkout-results-frame" data-checkout-results-frame hidden>
                 <table class="data-table checkout-results-table">
                     <colgroup>
                         <col class="checkout-reference-column" />

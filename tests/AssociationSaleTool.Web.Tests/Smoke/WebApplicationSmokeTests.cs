@@ -297,7 +297,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var createResponse = await client.GetAsync("/vendeurs/creer");
         createResponse.EnsureSuccessStatusCode();
         var createContent = WebUtility.HtmlDecode(await createResponse.Content.ReadAsStringAsync());
-        Assert.Contains("form-required-note", createContent);
+        Assert.DoesNotContain("form-required-note", createContent);
         AssertRequiredFieldMarker(createContent, "Prénom");
         AssertRequiredFieldMarker(createContent, "Nom");
         AssertRequiredFieldMarker(createContent, "Téléphone");
@@ -309,7 +309,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var editResponse = await client.GetAsync($"/vendeurs/{sellerId}/modifier");
         editResponse.EnsureSuccessStatusCode();
         var editContent = WebUtility.HtmlDecode(await editResponse.Content.ReadAsStringAsync());
-        Assert.Contains("form-required-note", editContent);
+        Assert.DoesNotContain("form-required-note", editContent);
         AssertRequiredFieldMarker(editContent, "Prénom");
         AssertRequiredFieldMarker(editContent, "Nom");
         AssertRequiredFieldMarker(editContent, "Téléphone");
@@ -354,7 +354,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var response = await client.GetAsync($"/articles/{itemId}/modifier");
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("form-required-note", content);
+        Assert.DoesNotContain("form-required-note", content);
         AssertRequiredFieldMarker(content, "Titre");
         AssertRequiredFieldMarker(content, "Prix vendeur");
     }
@@ -368,7 +368,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
-        Assert.Contains("form-required-note", content);
+        Assert.DoesNotContain("form-required-note", content);
         AssertRequiredFieldMarker(content, "Nom ou structure");
         AssertRequiredFieldMarker(content, "Code postal");
         AssertRequiredFieldMarker(content, "Ville");

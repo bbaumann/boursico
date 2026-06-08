@@ -342,6 +342,7 @@ async function postCheckoutCart(url, cart, options = {}) {
 function initializeCheckout(root) {
   const dataElement = document.getElementById("checkout-catalog-data");
   const searchInput = root.querySelector("[data-checkout-search]");
+  const resultsFrame = root.querySelector("[data-checkout-results-frame]");
   const resultsBody = root.querySelector("[data-checkout-results]");
   const cartBody = root.querySelector("[data-checkout-cart]");
   const emptyCart = root.querySelector("[data-checkout-empty-cart]");
@@ -728,13 +729,26 @@ function initializeCheckout(root) {
     window.print();
   }
 
+  function clearCheckoutResults() {
+    searchInput.value = "";
+    resultsBody.replaceChildren();
+
+    if (resultsFrame) {
+      resultsFrame.hidden = true;
+    }
+  }
+
   function renderResults() {
     const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
     resultsBody.replaceChildren();
 
     if (!query) {
-      resultsBody.appendChild(createCheckoutEmptyRow("Saisissez une recherche pour filtrer les articles.", 3));
+      clearCheckoutResults();
       return;
+    }
+
+    if (resultsFrame) {
+      resultsFrame.hidden = false;
     }
 
     const matches = catalog.filter(item =>
@@ -838,6 +852,7 @@ function initializeCheckout(root) {
     cart.push(item);
     setMessage("");
     conflictItemIds.delete(Number(item.id));
+    clearCheckoutResults();
     renderCart();
   });
 
