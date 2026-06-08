@@ -116,10 +116,17 @@
         <div class="form-actions seller-deposit-actions">
             @if (Model.CanValidateDeposit)
             {
-                <div class="seller-deposit-flow" data-seller-deposit-flow>
-                    <button type="button" class="button-link button-link-solid" data-seller-deposit-open>
-                        Finaliser le dépôt
-                    </button>
+                <div class="seller-deposit-flow"
+                     data-seller-deposit-flow
+                     @Html.Raw(Model.ShouldOpenDepositFinalizationDialog ? "data-seller-deposit-auto-open" : string.Empty)>
+                    <form method="post"
+                          asp-page-handler="BeginDepositFinalization"
+                          asp-route-id="@Model.Seller.Id"
+                          class="inline-form">
+                        <button type="submit" class="button-link button-link-solid" data-seller-deposit-begin>
+                            Finaliser le dépôt
+                        </button>
+                    </form>
                     <dialog id="deposit-finalization-dialog"
                             class="admin-dialog seller-deposit-dialog"
                             data-seller-deposit-dialog
@@ -131,16 +138,14 @@
                         </ol>
                         <section class="seller-deposit-step-panel" data-seller-deposit-print-step>
                             <h4>Étape 1 - Imprimer le contrat</h4>
-                            <p>Ouvrez le contrat dans un nouvel onglet, lancez l'impression, puis revenez ici avec le vendeur.</p>
+                            <p>Cliquez pour lancer l'impression du contrat, puis revenez ici avec le vendeur.</p>
                             <div class="form-actions">
-                                <a class="button-link button-link-solid"
-                                   asp-page="/Sellers/DepositContract"
-                                   asp-route-id="@Model.Seller.Id"
-                                   target="_blank"
-                                   rel="noopener"
-                                   data-seller-deposit-print>
+                                <button type="button"
+                                        class="button-link button-link-solid"
+                                        data-seller-deposit-print
+                                        data-seller-deposit-print-url="@Url.Page("/Sellers/DepositContract", new { id = Model.Seller.Id, impression = "auto" })">
                                     Imprimer le contrat
-                                </a>
+                                </button>
                                 <button type="button" class="button-link" data-seller-deposit-close>Retour</button>
                             </div>
                         </section>

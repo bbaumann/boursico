@@ -2567,13 +2567,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Préfecture 38", content);
         Assert.Contains("Dépôt à valider", content);
         Assert.Contains("data-seller-deposit-flow", content);
-        Assert.Contains("data-seller-deposit-open", content);
+        Assert.Contains("handler=BeginDepositFinalization", content);
+        Assert.Contains("data-seller-deposit-begin", content);
         Assert.Contains("Finaliser le dépôt", content);
         Assert.Contains("data-seller-deposit-dialog", content);
         Assert.Contains("Étape 1 - Imprimer le contrat", content);
         Assert.Contains("Imprimer le contrat", content);
-        Assert.Contains($"href=\"/vendeurs/{sellerId}/contrat-depot\"", content);
-        Assert.Contains("target=\"_blank\"", content);
+        Assert.Contains($"data-seller-deposit-print-url=\"/vendeurs/{sellerId}/contrat-depot?impression=auto\"", content);
+        Assert.DoesNotContain("target=\"_blank\"", content);
         Assert.Contains("Étape 2 - Valider le dépôt", content);
         Assert.Contains("Faites signer le contrat papier par le vendeur.", content);
         Assert.Contains("Le contrat papier est signé par le vendeur.", content);
@@ -2586,6 +2587,21 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain($"<a class=\"button-link\" href=\"/vendeurs/{sellerId}/contrat-depot\">Imprimer le contrat</a>", content);
         Assert.DoesNotContain("Marquer en stock", content);
         Assert.DoesNotContain("handler=MarkItemInStock", content);
+
+        var finalizationResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
+            BuildFormContent(content));
+
+        finalizationResponse.EnsureSuccessStatusCode();
+
+        var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
+        Assert.Contains("data-seller-deposit-auto-open", finalizationContent);
+        Assert.Contains("Le contrat papier est signé par le vendeur.", finalizationContent);
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var verifiedSeller = await verificationContext.Sellers.SingleAsync(x => x.Id == sellerId);
+        Assert.Equal("deposit_pending", verifiedSeller.DepositStatus);
     }
 
     [Fact]
@@ -3088,9 +3104,18 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Le contrat papier est signé par le vendeur.", content);
         Assert.DoesNotContain("handler=MarkItemInStock", content);
 
+        var finalizationResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
+            BuildFormContent(content));
+
+        finalizationResponse.EnsureSuccessStatusCode();
+
+        var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
+        Assert.Contains("data-seller-deposit-auto-open", finalizationContent);
+
         var postResponse = await client.PostAsync(
             $"/vendeurs/{sellerId}?handler=ValidateDeposit",
-            BuildFormContent(content));
+            BuildFormContent(finalizationContent));
 
         postResponse.EnsureSuccessStatusCode();
 
@@ -3146,7 +3171,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Le contrat papier est signé par le vendeur.", content);
 
         var postResponse = await client.PostAsync(
-            $"/vendeurs/{sellerId}?handler=ValidateDeposit",
+            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
             BuildFormContent(content));
 
         postResponse.EnsureSuccessStatusCode();
@@ -3159,6 +3184,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Le numéro de la pièce d'identité est obligatoire.", rejectedContent);
         Assert.Contains("La date de délivrance est obligatoire.", rejectedContent);
         Assert.Contains("L'autorité de délivrance est obligatoire.", rejectedContent);
+        Assert.DoesNotContain("data-seller-deposit-auto-open", rejectedContent);
         Assert.Contains("Corriger le vendeur", rejectedContent);
         Assert.Contains($"href=\"/vendeurs/{sellerId}/modifier\"", rejectedContent);
 
@@ -3217,13 +3243,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         var postResponse = await client.PostAsync(
-            $"/vendeurs/{sellerId}?handler=ValidateDeposit",
+            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
             BuildFormContent(content));
 
         postResponse.EnsureSuccessStatusCode();
 
         var rejectedContent = WebUtility.HtmlDecode(await postResponse.Content.ReadAsStringAsync());
         Assert.Contains("Tous les articles doivent avoir un prix vendeur avant de valider le dépôt.", rejectedContent);
+        Assert.DoesNotContain("data-seller-deposit-auto-open", rejectedContent);
         Assert.Contains("Corriger les articles", rejectedContent);
         Assert.Contains("href=\"#articles\"", rejectedContent);
         Assert.DoesNotContain("Corriger le vendeur", rejectedContent);
@@ -3286,6 +3313,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Contrat de dépôt", content);
         Assert.Contains("Imprimer", content);
+        Assert.DoesNotContain("data-deposit-contract-auto-print", content);
         Assert.Contains("Association Familiale", content);
         Assert.Contains("33 Av. de l'Europe, 38120 Saint-Égrève", content);
         Assert.Contains("SIRET : 306 041 997 00058", content);
@@ -3308,6 +3336,15 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("J'accepte le règlement de la bourse aux jouets", content);
         Assert.Contains("Signature vendeur", content);
         Assert.DoesNotContain("Signature association", content);
+
+        var autoPrintResponse = await client.GetAsync($"/vendeurs/{sellerId}/contrat-depot?impression=auto");
+        autoPrintResponse.EnsureSuccessStatusCode();
+
+        var autoPrintContent = WebUtility.HtmlDecode(await autoPrintResponse.Content.ReadAsStringAsync());
+        Assert.Contains("data-deposit-contract-auto-print", autoPrintContent);
+        Assert.Contains("Fermer cet onglet", autoPrintContent);
+        Assert.Contains("Contrat de dépôt", autoPrintContent);
+        Assert.Contains("Puzzle contrat", autoPrintContent);
     }
 
     [Fact]

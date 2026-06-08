@@ -5,6 +5,10 @@
 }
 
 <span class="seller-sheets-print-root" hidden></span>
+@if (Model.AutoPrint)
+{
+    <span data-deposit-contract-auto-print hidden></span>
+}
 
 <section class="page-card no-print">
     <div class="page-header">
@@ -13,7 +17,14 @@
             <h1 class="page-title">Contrat de dépôt</h1>
         </div>
         <div class="form-actions">
-            <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.Seller!.Id">Retour au vendeur</a>
+            @if (Model.AutoPrint)
+            {
+                <button type="button" class="button-link" data-deposit-contract-close>Fermer cet onglet</button>
+            }
+            else
+            {
+                <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.Seller!.Id">Retour au vendeur</a>
+            }
             <button type="button" class="button-link button-link-solid" onclick="window.print()">Imprimer</button>
         </div>
     </div>

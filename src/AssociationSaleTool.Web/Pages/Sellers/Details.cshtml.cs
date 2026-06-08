@@ -36,6 +36,8 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
 
     public bool CanCancelDepositValidation { get; private set; }
 
+    public bool ShouldOpenDepositFinalizationDialog { get; private set; }
+
     public string? ReadOnlyMessage { get; private set; }
 
     public bool IsDepositValidated => Seller?.DepositStatus == SellerDepositStatuses.Validated;
@@ -154,9 +156,7 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         }
 
         var validationState = BuildDepositValidationState(loaded);
-        DepositValidationMessages = validationState.Messages;
-        HasSellerDepositValidationMessages = validationState.HasSellerMessages;
-        HasItemDepositValidationMessages = validationState.HasItemMessages;
+        ApplyDepositValidationState(validationState);
         if (DepositValidationMessages.Count == 0)
         {
             DepositValidationMessages = [
@@ -166,11 +166,37 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             HasItemDepositValidationMessages = true;
         }
 
-        foreach (var message in DepositValidationMessages)
+        AddDepositValidationMessagesToModelState();
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostBeginDepositFinalizationAsync(long id, CancellationToken cancellationToken)
+    {
+        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (loaded is null)
         {
-            ModelState.AddModelError(string.Empty, message);
+            return NotFound();
         }
 
+        PopulateSellerState(loaded);
+        Input = CreateDefaultInput();
+        await PopulatePermissionStateAsync(loaded, cancellationToken);
+
+        if (!CanValidateDeposit)
+        {
+            ModelState.AddModelError(string.Empty, "Le dépôt ne peut pas être finalisé dans le statut actuel de la vente.");
+            return Page();
+        }
+
+        var validationState = BuildDepositValidationState(loaded);
+        ApplyDepositValidationState(validationState);
+        if (DepositValidationMessages.Count > 0)
+        {
+            AddDepositValidationMessagesToModelState();
+            return Page();
+        }
+
+        ShouldOpenDepositFinalizationDialog = true;
         return Page();
     }
 
@@ -246,7 +272,7 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         var isPendingDeposit = seller.DepositStatus == SellerDepositStatuses.Pending;
         CanEditItemMasterData = canEditCurrentPhase && isPendingDeposit;
         CanEditSellerMasterData = canEditCurrentPhase && isPendingDeposit;
-        CanValidateDeposit = canEditCurrentPhase && isPendingDeposit && Items.Count > 0;
+        CanValidateDeposit = canEditCurrentPhase && isPendingDeposit;
         CanCancelDepositValidation = canEditCurrentPhase
             && seller.DepositStatus == SellerDepositStatuses.Validated;
         ReadOnlyMessage = !isPendingDeposit
@@ -347,6 +373,21 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             .ToList();
         EnsureDefaultRows();
         PendingRowsAlert = DuplicateRowsAlertMessage;
+    }
+
+    private void ApplyDepositValidationState(DepositValidationState validationState)
+    {
+        DepositValidationMessages = validationState.Messages;
+        HasSellerDepositValidationMessages = validationState.HasSellerMessages;
+        HasItemDepositValidationMessages = validationState.HasItemMessages;
+    }
+
+    private void AddDepositValidationMessagesToModelState()
+    {
+        foreach (var message in DepositValidationMessages)
+        {
+            ModelState.AddModelError(string.Empty, message);
+        }
     }
 
     private static ItemBatchInput CreateDefaultInput()

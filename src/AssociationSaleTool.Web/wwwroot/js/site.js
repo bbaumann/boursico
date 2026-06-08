@@ -997,17 +997,17 @@ function initializeCheckout(root) {
 }
 
 function initializeSellerDepositFlow(root) {
-  const openButton = root.querySelector("[data-seller-deposit-open]");
+  const autoOpen = root.hasAttribute("data-seller-deposit-auto-open");
   const dialog = root.querySelector("[data-seller-deposit-dialog]");
   const printStep = root.querySelector("[data-seller-deposit-print-step]");
   const validateStep = root.querySelector("[data-seller-deposit-validate-step]");
-  const printLink = root.querySelector("[data-seller-deposit-print]");
+  const printButton = root.querySelector("[data-seller-deposit-print]");
   const backButton = root.querySelector("[data-seller-deposit-back]");
   const closeButtons = root.querySelectorAll("[data-seller-deposit-close]");
   const signatureConfirmation = root.querySelector("[data-seller-deposit-signature-confirmation]");
   const submitButton = root.querySelector("[data-seller-deposit-submit]");
 
-  if (!openButton || !dialog || !printStep || !validateStep) {
+  if (!dialog || !printStep || !validateStep) {
     return;
   }
 
@@ -1036,16 +1036,17 @@ function initializeSellerDepositFlow(root) {
     updateSubmitState();
     const focusTarget = isValidateStep
       ? signatureConfirmation || backButton || submitButton
-      : printLink || closeButtons[0];
+      : printButton || closeButtons[0];
     focusTarget?.focus();
   }
 
-  openButton.addEventListener("click", () => {
-    dialog.showModal();
-    showStep("print");
-  });
+  printButton?.addEventListener("click", () => {
+    if (printButton.dataset.sellerDepositPrintUrl) {
+      window.open(printButton.dataset.sellerDepositPrintUrl, "_blank", "noopener");
+    }
 
-  printLink?.addEventListener("click", () => showStep("validate"));
+    showStep("validate");
+  });
   backButton?.addEventListener("click", () => showStep("print"));
   signatureConfirmation?.addEventListener("change", updateSubmitState);
   closeButtons.forEach(button => button.addEventListener("click", () => dialog.close()));
@@ -1057,12 +1058,31 @@ function initializeSellerDepositFlow(root) {
     updateSubmitState();
   });
   updateSubmitState();
+
+  if (autoOpen) {
+    dialog.showModal();
+    showStep("print");
+  }
+}
+
+function initializeDepositContractAutoPrint() {
+  const closeButton = document.querySelector("[data-deposit-contract-close]");
+  closeButton?.addEventListener("click", () => window.close());
+
+  window.onafterprint = () => {
+    window.close();
+  };
+
+  requestAnimationFrame(() => {
+    window.print();
+  });
 }
 
 document.querySelectorAll("[data-postal-city-root]").forEach(initializePostalCityRoot);
 document.querySelectorAll("[data-whole-euro-input]").forEach(initializeWholeEuroInput);
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);
 document.querySelectorAll("[data-seller-deposit-flow]").forEach(initializeSellerDepositFlow);
+document.querySelectorAll("[data-deposit-contract-auto-print]").forEach(initializeDepositContractAutoPrint);
 
 function initializeReconciliation(root) {
   const searchInput = root.querySelector("[data-reconciliation-search]");

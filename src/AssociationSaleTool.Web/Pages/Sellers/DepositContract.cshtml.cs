@@ -29,8 +29,12 @@ public sealed class DepositContractModel(IntakeService intakeService, IOptions<P
 
     public string FeePaymentLabel => RemainingFeeCents == 0 ? "réglé" : "à régler";
 
-    public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
+    public bool AutoPrint { get; private set; }
+
+    public async Task<IActionResult> OnGetAsync(long id, string? impression, CancellationToken cancellationToken)
     {
+        AutoPrint = string.Equals(impression, "auto", StringComparison.OrdinalIgnoreCase);
+
         var seller = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
         if (seller is null)
         {
