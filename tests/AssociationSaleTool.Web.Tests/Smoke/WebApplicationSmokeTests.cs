@@ -3672,6 +3672,30 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-payment-method", content);
         Assert.Contains("data-checkout-cheque-number", content);
         Assert.Contains("data-checkout-cheque-bank-name", content);
+        Assert.Contains("list=\"checkout-cheque-bank-options\"", content);
+        Assert.Contains("id=\"checkout-cheque-bank-options\"", content);
+        var bankSuggestions = Regex.Matches(content, "<option value=\"(?<bank>[^\"]+)\"></option>")
+            .Select(match => match.Groups["bank"].Value)
+            .ToList();
+        Assert.Equal(
+            [
+                "Crédit Agricole",
+                "La Banque Postale",
+                "Caisse d'Épargne",
+                "Société Générale",
+                "Banque Populaire",
+                "Crédit Mutuel",
+                "BNP Paribas",
+                "LCL",
+                "CIC",
+                "CCF",
+                "Axa Banque",
+                "Crédit Coopératif",
+                "Crédit Maritime",
+                "Banque Palatine",
+                "Banque BCP"
+            ],
+            bankSuggestions);
         Assert.Contains("data-checkout-invoice", content);
         Assert.DoesNotContain("data-checkout-invoice-header", content);
         Assert.Contains("Facture <span data-checkout-invoice-number>", content);
