@@ -254,6 +254,67 @@ public sealed class SalesViewServiceTests
         Assert.Null(detail);
     }
 
+    [Fact]
+    public async Task UpdateBuyerAddressAsync_StoresTrimmedBuyerAddress()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var sale = await SeedSaleAsync(
+            context,
+            new DateTime(2026, 5, 4, 16, 0, 0, DateTimeKind.Utc),
+            null,
+            SalePaymentMethods.Card,
+            null,
+            null,
+            ("SV-006-001", "Jeu facture", 1200, null));
+        var service = new SalesViewService(context);
+
+        var result = await service.UpdateBuyerAddressAsync(
+            sale.Id,
+            "  Association sportive\n12 rue des Lilas  ");
+
+        Assert.Equal(SaleBuyerAddressUpdateResult.Updated, result);
+        var storedSale = await context.Sales.SingleAsync(x => x.Id == sale.Id);
+        Assert.Equal("Association sportive\n12 rue des Lilas", storedSale.BuyerAddress);
+        var detail = await service.GetSaleAsync(sale.Id);
+        Assert.NotNull(detail);
+        Assert.True(detail!.CanPrintInvoice);
+    }
+
+    [Fact]
+    public async Task UpdateBuyerAddressAsync_RejectsBlankBuyerAddressWithoutChangingSale()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var sale = await SeedSaleAsync(
+            context,
+            new DateTime(2026, 5, 4, 17, 0, 0, DateTimeKind.Utc),
+            "Adresse existante",
+            SalePaymentMethods.Card,
+            null,
+            null,
+            ("SV-007-001", "Jeu facture", 1200, null));
+        var service = new SalesViewService(context);
+
+        var result = await service.UpdateBuyerAddressAsync(sale.Id, "   ");
+
+        Assert.Equal(SaleBuyerAddressUpdateResult.MissingBuyerAddress, result);
+        var storedSale = await context.Sales.SingleAsync(x => x.Id == sale.Id);
+        Assert.Equal("Adresse existante", storedSale.BuyerAddress);
+    }
+
+    [Fact]
+    public async Task UpdateBuyerAddressAsync_ReturnsNotFoundWhenSaleDoesNotExist()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var service = new SalesViewService(context);
+
+        var result = await service.UpdateBuyerAddressAsync(42, "12 rue des Lilas");
+
+        Assert.Equal(SaleBuyerAddressUpdateResult.NotFound, result);
+    }
+
     private static async Task<SaleEntity> SeedSaleAsync(
         AppDbContext context,
         DateTime soldAt,

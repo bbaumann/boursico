@@ -36,6 +36,11 @@
         </div>
     }
 
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <p class="success-message" role="status">@Model.StatusMessage</p>
+    }
+
     @if (Model.Sale.HasBuyerDetails)
     {
         <section class="subsection">
@@ -68,13 +73,30 @@
         </dl>
     </section>
 
-    @if (!string.IsNullOrWhiteSpace(Model.Sale.BuyerAddress))
-    {
-        <section class="subsection">
-            <h2>Adresse</h2>
+    <section class="subsection">
+        <h2>Adresse de facturation</h2>
+        @if (!string.IsNullOrWhiteSpace(Model.Sale.BuyerAddress))
+        {
             <p>@Model.Sale.BuyerAddress</p>
-        </section>
-    }
+        }
+        <form method="post" action="/caisse/ventes/@Model.Sale.SaleId?handler=EnregistrerAdresse">
+            @Html.AntiForgeryToken()
+            <label for="sales-view-buyer-address">
+                Adresse de facturation
+                <textarea id="sales-view-buyer-address"
+                          name="AddressInput.BuyerAddress"
+                          rows="3"
+                          autocomplete="street-address"
+                          placeholder="Adresse client à imprimer sur la facture"
+                          data-sales-view-buyer-address>@Model.AddressInput.BuyerAddress</textarea>
+            </label>
+            <span asp-validation-for="AddressInput.BuyerAddress" class="validation field-validation-error"></span>
+            <p class="seller-meta">À enregistrer avant d'imprimer une facture pour cette vente.</p>
+            <button type="submit" class="button-link button-link-solid">
+                Enregistrer l'adresse
+            </button>
+        </form>
+    </section>
 
     @if (!string.IsNullOrWhiteSpace(Model.Sale.InvoiceNumber))
     {
@@ -99,7 +121,7 @@
     {
         <section class="subsection">
             <h2>Facture</h2>
-            <p class="seller-meta">La facture ne peut pas être imprimée : aucune adresse n'a été saisie au moment de la vente.</p>
+            <p class="seller-meta">Ajoutez une adresse de facturation avant d'imprimer la facture.</p>
         </section>
     }
 

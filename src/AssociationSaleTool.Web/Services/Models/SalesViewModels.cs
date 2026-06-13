@@ -96,3 +96,10 @@ public enum SaleInvoicePrintResult
     MissingBuyerAddress,
     NotFound
 }
+
+public enum SaleBuyerAddressUpdateResult
+{
+    Updated,
+    MissingBuyerAddress,
+    NotFound
+}

@@ -45,6 +45,30 @@ public sealed class SalesViewService
         return sale is null ? null : BuildDetail(sale);
     }
 
+    public async Task<SaleBuyerAddressUpdateResult> UpdateBuyerAddressAsync(
+        long saleId,
+        string? buyerAddress,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedBuyerAddress = NormalizeOptionalText(buyerAddress);
+        if (normalizedBuyerAddress is null)
+        {
+            return SaleBuyerAddressUpdateResult.MissingBuyerAddress;
+        }
+
+        var sale = await _dbContext.Sales
+            .SingleOrDefaultAsync(x => x.Id == saleId, cancellationToken);
+
+        if (sale is null)
+        {
+            return SaleBuyerAddressUpdateResult.NotFound;
+        }
+
+        sale.BuyerAddress = normalizedBuyerAddress;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return SaleBuyerAddressUpdateResult.Updated;
+    }
+
     public async Task<SaleInvoicePrintResult> EnsureInvoiceAsync(long saleId, CancellationToken cancellationToken = default)
     {
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -146,5 +170,11 @@ public sealed class SalesViewService
 
         terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference, x.Item.Title }));
         return string.Join(' ', terms).ToLower(FrenchCulture);
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        var normalized = value?.Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 }

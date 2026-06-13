@@ -1234,6 +1234,46 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SalesViewDetailPageAddsBuyerAddressBeforePrintingInvoice()
+    {
+        var client = _factory.CreateClient();
+        var sale = await SeedSalesViewInvoiceCandidateAsync(buyerAddress: null);
+
+        var response = await client.GetAsync($"/caisse/ventes/{sale.SaleId}");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Adresse de facturation", content);
+        Assert.Contains("Enregistrer l'adresse", content);
+        Assert.DoesNotContain("data-sales-view-print-invoice", content);
+
+        var addressResponse = await client.PostAsync(
+            $"/caisse/ventes/{sale.SaleId}?handler=EnregistrerAdresse",
+            BuildFormContent(content, ("AddressInput.BuyerAddress", "  34 rue de la Facture  ")));
+
+        addressResponse.EnsureSuccessStatusCode();
+        var addressContent = WebUtility.HtmlDecode(await addressResponse.Content.ReadAsStringAsync());
+        Assert.Contains("Adresse de facturation enregistrée.", addressContent);
+        Assert.Contains("34 rue de la Facture", addressContent);
+        Assert.Contains("data-sales-view-print-invoice", addressContent);
+
+        var printResponse = await client.PostAsync(
+            $"/caisse/ventes/{sale.SaleId}?handler=PrintInvoice",
+            BuildFormContent(addressContent));
+
+        printResponse.EnsureSuccessStatusCode();
+        var printContent = WebUtility.HtmlDecode(await printResponse.Content.ReadAsStringAsync());
+        Assert.Contains("data-sales-view-print-on-load", printContent);
+        Assert.Contains("34 rue de la Facture", printContent);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var storedSale = await dbContext.Sales.SingleAsync(x => x.Id == sale.SaleId);
+        Assert.Equal("34 rue de la Facture", storedSale.BuyerAddress);
+        Assert.NotNull(storedSale.InvoiceNumber);
+    }
+
+    [Fact]
     public async Task DataListsPageLoadsWithoutAdminGateAndShowsArticlesByDefault()
     {
         var client = _factory.CreateClient();
@@ -4100,7 +4140,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         return (sale.Id, firstItem.Reference, secondItem.Reference);
     }
 
-    private async Task<(long SaleId, string FirstReference)> SeedSalesViewInvoiceCandidateAsync()
+    private async Task<(long SaleId, string FirstReference)> SeedSalesViewInvoiceCandidateAsync(
+        string? buyerAddress = "12 rue des Lilas")
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -4137,7 +4178,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             BuyerName = "MJC Centre",
             BuyerPostalCode = "38100",
             BuyerCity = "Grenoble",
-            BuyerAddress = "12 rue des Lilas",
+            BuyerAddress = buyerAddress,
             PaymentMethod = "card",
             SaleLines =
             [
