@@ -741,6 +741,38 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   line-height: 1.45;
 }
 
+.seller-deposit-success {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(31, 107, 58, 0.28);
+  border-radius: 8px;
+  background: rgba(31, 107, 58, 0.08);
+}
+
+.seller-deposit-blocker-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.seller-deposit-blocker-summary div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(138, 31, 17, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 244, 239, 0.72);
+}
+
+.seller-deposit-blocker-summary span {
+  color: var(--ink);
+}
+
+.seller-deposit-blocker-detail {
+  margin-top: 0.75rem;
+}
+
 .seller-deposit-status-pending {
   color: #6f4a09;
   background: rgba(159, 109, 22, 0.12);
@@ -1065,9 +1097,41 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   max-width: 1120px;
 }
 
+.checkout-step-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkout-step-list li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+  font-weight: 700;
+}
+
+.checkout-step-list span,
+.checkout-step-number {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.checkout-step-number {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
 .checkout-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(18rem, 0.85fr) minmax(24rem, 1.15fr);
   gap: 2rem;
   align-items: start;
 }
@@ -1113,6 +1177,10 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   width: 7.5rem;
 }
 
+.checkout-result-action-column {
+  width: 6.5rem;
+}
+
 .checkout-cart-action-column {
   width: 5.5rem;
 }
@@ -1123,6 +1191,10 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 
 .checkout-result-row:hover {
   background: rgba(13, 92, 99, 0.08);
+}
+
+.checkout-result-action-cell {
+  text-align: right;
 }
 
 .checkout-cart-panel .validation {
@@ -1162,9 +1234,29 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   font-weight: 700;
 }
 
-.checkout-finalize-actions {
+.checkout-sticky-summary {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin-top: 1.25rem;
-  justify-content: flex-end;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 252, 245, 0.98);
+  box-shadow: 0 -12px 32px rgba(72, 61, 43, 0.12);
+}
+
+.checkout-sticky-summary div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.checkout-sticky-summary strong {
+  color: var(--accent);
 }
 
 .invoice-address-field {
@@ -1488,6 +1580,20 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   .seller-deposit-flow {
     display: flex;
     flex-wrap: wrap;
+  }
+
+  .seller-deposit-blocker-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .checkout-step-list,
+  .checkout-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .checkout-sticky-summary {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

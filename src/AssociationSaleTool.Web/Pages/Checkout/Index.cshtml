@@ -51,10 +51,16 @@
     </section>
 
     <div data-checkout-workflow hidden>
+    <ol class="checkout-step-list" aria-label="Étapes de vente">
+        <li><span>Étape 1</span>Acheteur</li>
+        <li><span>Étape 2</span>Articles</li>
+        <li><span>Étape 3</span>Paiement</li>
+    </ol>
+
     <div class="checkout-grid">
-        <section class="subsection checkout-lookup">
-            <section class="checkout-buyer-fields" aria-labelledby="checkout-buyer-title">
-                <h2 id="checkout-buyer-title">Acheteur</h2>
+        <section class="subsection checkout-lookup checkout-step-panel" aria-labelledby="checkout-step-buyer-title">
+            <section class="checkout-buyer-fields" aria-labelledby="checkout-step-buyer-title">
+                <h2 id="checkout-step-buyer-title"><span class="checkout-step-number">Étape 1</span> Acheteur</h2>
                 <div class="field-grid" data-postal-city-root>
                     <label for="checkout-buyer-name">
                         <span class="field-label-text">Nom ou structure <span class="required-field-badge">Obligatoire</span></span>
@@ -102,8 +108,8 @@
 
         </section>
 
-        <aside class="subsection checkout-cart-panel">
-            <h2>Panier</h2>
+        <aside class="subsection checkout-cart-panel checkout-step-panel" aria-labelledby="checkout-step-items-title">
+            <h2 id="checkout-step-items-title"><span class="checkout-step-number">Étape 2</span> Articles</h2>
 
             <label for="checkout-search">Rechercher un article</label>
             <input id="checkout-search"
@@ -118,17 +124,19 @@
                         <col class="checkout-reference-column" />
                         <col class="checkout-title-column" />
                         <col class="checkout-price-column" />
+                        <col class="checkout-result-action-column" />
                     </colgroup>
                     <thead>
                         <tr>
                             <th>REF</th>
                             <th>Titre</th>
                             <th>Prix</th>
+                            <th>Ajouter</th>
                         </tr>
                     </thead>
                     <tbody data-checkout-results>
                         <tr>
-                            <td colspan="3" class="empty-state">Saisissez une recherche pour filtrer les articles.</td>
+                            <td colspan="4" class="empty-state">Saisissez une recherche pour filtrer les articles.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -171,7 +179,11 @@
                 </div>
             </dl>
 
-            <div class="form-actions checkout-finalize-actions">
+            <div class="checkout-sticky-summary" data-checkout-sticky-summary>
+                <div>
+                    <span data-checkout-sticky-count>0 article</span>
+                    <strong>Total <span data-checkout-sticky-total>0.00 €</span></strong>
+                </div>
                 <button type="button"
                         class="button-link button-link-solid"
                         data-checkout-finalize
@@ -184,7 +196,8 @@
 
     <div class="checkout-modal" data-checkout-modal hidden role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
         <div class="checkout-modal-panel">
-            <h2 id="checkout-modal-title">Finaliser la vente</h2>
+            <h2 id="checkout-modal-title"><span class="checkout-step-number">Étape 3</span> Paiement</h2>
+            <p class="seller-meta">Vérifiez le total, choisissez le paiement, puis validez la vente.</p>
             <dl class="checkout-totals">
                 <div>
                     <dt>Articles</dt>
@@ -270,12 +283,12 @@
             </fieldset>
             <div class="form-actions checkout-modal-actions">
                 <button type="button" class="button-link" data-checkout-modal-back>Retour</button>
-                <button type="button" class="button-link button-link-solid" data-checkout-save-sale>Enregistrer la vente</button>
+                <button type="button" class="button-link button-link-solid" data-checkout-save-sale>Valider sans imprimer</button>
                 <button type="button"
                         class="button-link button-link-solid"
                         data-checkout-save-print
                         disabled>
-                    Enregistrer et imprimer
+                    Valider et imprimer la facture
                 </button>
             </div>
         </div>

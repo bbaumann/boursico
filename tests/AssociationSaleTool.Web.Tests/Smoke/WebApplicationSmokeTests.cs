@@ -3267,7 +3267,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         postResponse.EnsureSuccessStatusCode();
 
         var rejectedContent = WebUtility.HtmlDecode(await postResponse.Content.ReadAsStringAsync());
-        Assert.Contains("Complétez les informations obligatoires avant de valider le dépôt.", rejectedContent);
+        Assert.Contains("Corrigez les points ci-dessous avant de finaliser le dépôt.", rejectedContent);
+        Assert.Contains("Fiche vendeur", rejectedContent);
         Assert.Contains("Le code postal est obligatoire.", rejectedContent);
         Assert.Contains("La ville est obligatoire.", rejectedContent);
         Assert.Contains("La nature de la pièce d'identité est obligatoire.", rejectedContent);
@@ -3275,7 +3276,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("La date de délivrance est obligatoire.", rejectedContent);
         Assert.Contains("L'autorité de délivrance est obligatoire.", rejectedContent);
         Assert.DoesNotContain("data-seller-deposit-auto-open", rejectedContent);
-        Assert.Contains("Corriger le vendeur", rejectedContent);
+        Assert.Contains("Corriger la fiche vendeur", rejectedContent);
         Assert.Contains($"href=\"/vendeurs/{sellerId}/modifier\"", rejectedContent);
 
         using var verificationScope = _factory.Services.CreateScope();
@@ -3680,7 +3681,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Caisse", content);
         Assert.Contains("Rechercher un article", content);
-        Assert.Contains("Panier", content);
+        Assert.Contains("Étape 1", content);
+        Assert.Contains("Acheteur", content);
+        Assert.Contains("Étape 2", content);
+        Assert.Contains("Articles", content);
+        Assert.Contains("Étape 3", content);
+        Assert.Contains("Paiement", content);
         Assert.Contains("Sous-total", content);
         Assert.Contains("Frais association familiale", content);
         Assert.DoesNotContain("Frais de caisse", content);
@@ -3702,6 +3708,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Ville", content);
         Assert.Contains("data-checkout-search", content);
         Assert.Contains("data-checkout-results", content);
+        Assert.Contains("data-checkout-sticky-summary", content);
+        Assert.Contains("data-checkout-sticky-count", content);
+        Assert.Contains("data-checkout-sticky-total", content);
         Assert.Contains("data-checkout-cart", content);
         Assert.Contains("data-checkout-subtotal", content);
         Assert.Contains("data-checkout-finalize", content);
@@ -3709,12 +3718,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-checkout-modal", content);
         Assert.Contains("data-checkout-modal-count", content);
         Assert.Contains("data-checkout-save-sale", content);
-        Assert.Contains("Enregistrer la vente", content);
+        Assert.Contains("Valider sans imprimer", content);
         Assert.Contains("data-checkout-buyer-address", content);
         Assert.Contains("Adresse", content);
         Assert.DoesNotContain("Détails du reçu", content);
         Assert.Contains("data-checkout-save-print", content);
-        Assert.Contains("Enregistrer et imprimer", content);
+        Assert.Contains("Valider et imprimer la facture", content);
         Assert.Contains("Mode de paiement", content);
         Assert.Contains("CB", content);
         Assert.Contains("Espèces", content);
@@ -3766,6 +3775,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("Reçu de vente", content);
         Assert.Contains("checkout-results-frame", content);
         Assert.Contains("<th>REF</th>", content);
+        Assert.Contains("<th>Ajouter</th>", content);
         Assert.Contains("CK-001-001", content);
         Assert.Contains("Jeu de cubes", content);
     }
@@ -3779,14 +3789,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        var cartPanelIndex = content.IndexOf("class=\"subsection checkout-cart-panel\"", StringComparison.Ordinal);
-        var cartHeadingIndex = content.IndexOf("<h2>Panier</h2>", StringComparison.Ordinal);
+        var cartPanelIndex = content.IndexOf("checkout-cart-panel", StringComparison.Ordinal);
+        var cartHeadingIndex = content.IndexOf("checkout-step-items-title", StringComparison.Ordinal);
         var searchIndex = content.IndexOf("data-checkout-search", StringComparison.Ordinal);
         var cartBodyIndex = content.IndexOf("data-checkout-cart", StringComparison.Ordinal);
 
         Assert.True(cartPanelIndex >= 0, "The checkout page should render the cart panel.");
-        Assert.True(cartHeadingIndex > cartPanelIndex, "The Panier heading should be inside the cart panel.");
-        Assert.True(searchIndex > cartHeadingIndex, "The item search should be rendered inside the Panier section.");
+        Assert.True(cartHeadingIndex > cartPanelIndex, "The Articles heading should be inside the cart panel.");
+        Assert.True(searchIndex > cartHeadingIndex, "The item search should be rendered inside the Articles section.");
         Assert.True(searchIndex < cartBodyIndex, "The item search should appear before the cart rows.");
     }
 

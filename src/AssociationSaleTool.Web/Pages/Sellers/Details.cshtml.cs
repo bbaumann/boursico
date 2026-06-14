@@ -50,6 +50,9 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
 
     public string? PendingRowsAlert { get; private set; }
 
+    [TempData]
+    public string? DepositSuccessMessage { get; set; }
+
     public IReadOnlyList<string> DepositValidationMessages { get; private set; } = [];
 
     public bool HasSellerDepositValidationMessages { get; private set; }
@@ -147,6 +150,9 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         var result = await intakeService.ValidateSellerDepositAsync(id, cancellationToken);
         if (result == SellerDepositStatusChangeResult.Changed)
         {
+            DepositSuccessMessage = loaded.Items.Count == 1
+                ? "Dépôt validé : 1 article est maintenant en stock."
+                : $"Dépôt validé : {loaded.Items.Count} articles sont maintenant en stock.";
             return RedirectToPage("/Sellers/Details", new { id });
         }
 

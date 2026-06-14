@@ -35,6 +35,13 @@
         </div>
     </div>
 
+    @if (!string.IsNullOrWhiteSpace(Model.DepositSuccessMessage))
+    {
+        <p class="success-message seller-deposit-success" data-seller-deposit-success role="status">
+            @Model.DepositSuccessMessage
+        </p>
+    }
+
     <section class="subsection seller-deposit-panel">
         <div>
             <h2>Dépôt vendeur</h2>
@@ -46,8 +53,24 @@
         @if (Model.DepositValidationMessages.Count > 0)
         {
             <div class="validation" role="alert">
-                <p>Complétez les informations obligatoires avant de valider le dépôt.</p>
-                <ul>
+                <p>Corrigez les points ci-dessous avant de finaliser le dépôt.</p>
+                <div class="seller-deposit-blocker-summary">
+                    @if (Model.HasSellerDepositValidationMessages)
+                    {
+                        <div>
+                            <strong>Fiche vendeur</strong>
+                            <span>Des informations obligatoires manquent.</span>
+                        </div>
+                    }
+                    @if (Model.HasItemDepositValidationMessages)
+                    {
+                        <div>
+                            <strong>Articles</strong>
+                            <span>Des articles sont incomplets ou absents.</span>
+                        </div>
+                    }
+                </div>
+                <ul class="seller-deposit-blocker-detail">
                     @foreach (var message in Model.DepositValidationMessages)
                     {
                         <li>@message</li>
@@ -56,11 +79,11 @@
                 <div class="form-actions seller-deposit-validation-actions">
                     @if (Model.HasSellerDepositValidationMessages && Model.CanEditSellerMasterData)
                     {
-                        <a class="button-link button-link-solid" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Corriger le vendeur</a>
+                        <a class="button-link button-link-solid" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Corriger la fiche vendeur</a>
                     }
                     @if (Model.HasItemDepositValidationMessages && Model.CanEditItemMasterData)
                     {
-                        <a class="button-link" href="#articles">Corriger les articles</a>
+                        <a class="button-link" href="#articles">Corriger les articles incomplets</a>
                     }
                 </div>
             </div>

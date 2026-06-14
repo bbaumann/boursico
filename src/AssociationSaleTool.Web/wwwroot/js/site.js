@@ -83,6 +83,22 @@ function createCheckoutCell(text) {
   return cell;
 }
 
+function createCheckoutAddButton(itemId) {
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.className = "table-action-button table-action-button-primary";
+  addButton.dataset.checkoutAdd = itemId;
+  addButton.textContent = "Ajouter";
+  return addButton;
+}
+
+function createCheckoutActionCell(itemId) {
+  const cell = document.createElement("td");
+  cell.className = "checkout-result-action-cell";
+  cell.appendChild(createCheckoutAddButton(itemId));
+  return cell;
+}
+
 function createCheckoutEmptyRow(message, columnCount) {
   const row = document.createElement("tr");
   const cell = document.createElement("td");
@@ -350,6 +366,8 @@ function initializeCheckout(root) {
   const subtotalElement = root.querySelector("[data-checkout-subtotal]");
   const feeElement = root.querySelector("[data-checkout-fee]");
   const totalElement = root.querySelector("[data-checkout-total]");
+  const stickyCountElement = root.querySelector("[data-checkout-sticky-count]");
+  const stickyTotalElement = root.querySelector("[data-checkout-sticky-total]");
   const buyerAddressInput = root.querySelector("[data-checkout-buyer-address]");
   const buyerNameInput = root.querySelector("[data-checkout-buyer-name]");
   const buyerPostalCodeInput = root.querySelector("[data-checkout-buyer-postal-code]");
@@ -764,7 +782,7 @@ function initializeCheckout(root) {
       `${item.reference} ${item.title}`.toLocaleLowerCase("fr-FR").includes(query));
 
     if (matches.length === 0) {
-      resultsBody.appendChild(createCheckoutEmptyRow("Aucun article ne correspond à cette recherche.", 3));
+      resultsBody.appendChild(createCheckoutEmptyRow("Aucun article ne correspond à cette recherche.", 4));
       return;
     }
 
@@ -775,6 +793,7 @@ function initializeCheckout(root) {
       row.appendChild(createCheckoutCell(item.reference));
       row.appendChild(createCheckoutCell(item.title));
       row.appendChild(createCheckoutCell(formatCheckoutPrice(item.sellerPriceCents)));
+      row.appendChild(createCheckoutActionCell(item.id));
       resultsBody.appendChild(row);
     }
   }
@@ -821,6 +840,14 @@ function initializeCheckout(root) {
 
     if (totalElement) {
       totalElement.textContent = formatCheckoutPrice(total);
+    }
+
+    if (stickyCountElement) {
+      stickyCountElement.textContent = cart.length === 1 ? "1 article" : `${cart.length} articles`;
+    }
+
+    if (stickyTotalElement) {
+      stickyTotalElement.textContent = formatCheckoutPrice(total);
     }
 
     if (finalizeButton) {
