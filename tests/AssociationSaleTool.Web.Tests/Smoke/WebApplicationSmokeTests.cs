@@ -2221,11 +2221,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Sous-total articles", content);
+        Assert.Contains("Frais de vente (15%)", content);
         Assert.Contains("Frais attendus", content);
         Assert.Contains("Frais payés", content);
         Assert.Contains("Frais restant dus", content);
         Assert.Contains("Total à payer", content);
-        Assert.Contains("8.00 €", content);
+        Assert.Contains("1.50 €", content);
+        Assert.Contains("6.50 €", content);
         }
         finally
         {

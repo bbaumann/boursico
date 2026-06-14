@@ -114,9 +114,12 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                     .Select(BuildReturnedItem)
                     .ToList();
                 var itemSubtotalCents = payableItems.Sum(item => item.PriceCents);
+                var associationMarginCents = SellerPayoutCalculator.CalculateAssociationMarginCents(itemSubtotalCents);
                 var expectedFeeCents = SellerFeeCalculator.CalculateExpectedFeeCents(seller.Items.Count);
                 var remainingFeeCents = SellerFeeCalculator.CalculateRemainingFeeCents(expectedFeeCents, seller.FeePaidCents);
-                var totalPayableCents = Math.Max(itemSubtotalCents - remainingFeeCents, 0);
+                var totalPayableCents = SellerPayoutCalculator.CalculateTotalPayableCents(
+                    itemSubtotalCents,
+                    remainingFeeCents);
 
                 return new SellerSheet(
                     seller.Id,
@@ -130,6 +133,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                     payableItems,
                     returnedItems,
                     itemSubtotalCents,
+                    associationMarginCents,
                     expectedFeeCents,
                     seller.FeePaidCents,
                     remainingFeeCents,

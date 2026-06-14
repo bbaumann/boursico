@@ -60,7 +60,7 @@ If a buyer returns a defective sold item, an admin uses `Rembourser` from `Corre
 7. Seller sheet is regenerated from the dashboard.
 8. If the `missing` status change was a mistake and the item is found before finalization, admin restores the item to `in_stock` as a reconciliation correction and regenerates the sheet.
 9. Defective items appear in the returned-items list with `DÉFECTUEUX`; they are not paid to the seller.
-10. Another operator writes the check based on the final amount to pay.
+10. Another operator writes the check based on the final amount to pay after the 15 percent association margin and any unpaid seller fee.
 11. Check, final seller sheet, and returned items are physically grouped for seller pickup.
 
 ## Seller Deposit Validation Workflow

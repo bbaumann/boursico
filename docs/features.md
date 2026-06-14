@@ -321,7 +321,7 @@ It must contain:
 - returned items list
 - payable items list
 - fee breakdown
-- final amount to pay the seller after unpaid fee deduction
+- final amount to pay the seller after association margin and unpaid fee deduction
 
 The returned items list appears first because operators use the sheet to gather physical returns before preparing seller payout.
 Returned rows include a printed checkbox column so operators can mark each item as found.
@@ -364,6 +364,7 @@ The operator records the amount already paid by the seller on the seller form.
 The seller sheet shows:
 
 - item subtotal for payable items
+- association margin
 - expected seller fee
 - already-paid seller fee
 - remaining fee due
@@ -371,7 +372,7 @@ The seller sheet shows:
 
 The final amount to pay the seller is:
 
-- item subtotal minus remaining fee due, floored at zero
+- item subtotal minus 15 percent association margin and remaining fee due, floored at zero
 
 ### Physical Workflow Supported By The Sheet
 

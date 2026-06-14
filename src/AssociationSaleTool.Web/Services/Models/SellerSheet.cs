@@ -12,6 +12,7 @@ public sealed record SellerSheet(
     IReadOnlyList<SellerSheetItem> PayableItems,
     IReadOnlyList<SellerSheetItem> ReturnedItems,
     int ItemSubtotalCents,
+    int AssociationMarginCents,
     int ExpectedFeeCents,
     int PaidFeeCents,
     int RemainingFeeCents,

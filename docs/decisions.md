@@ -156,14 +156,14 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-013 Association Margin Is Stored Per Item But Not Used For Seller Settlement
 
-- Status: superseded by D-028
+- Status: superseded by D-028 and D-049
 - Key drivers:
   - sale price is seller price plus 20 percent
-  - seller settlement should stay simple and based on seller price only
+  - MVP settlement was intended to stay simple and based on seller price only
 - Decision:
   - store both seller price and customer-facing sale price on each item
 - Consequence:
-  - seller settlement remains simple
+  - settlement in that older MVP shape remained simple
   - association margin can be analyzed separately
 
 ## D-014 Use Seller-Centered Item References
@@ -376,16 +376,16 @@ This file captures the main project decisions in a lightweight ADR format.
 - Key drivers:
   - the seller-entered item price is the printed price the customer sees on each toy
   - the association fee is applied to the customer checkout total rather than baked into each item price
-  - seller settlement should stay simple and based on seller prices only
+  - checkout pricing should stay simple and based on seller-entered item prices
 - Decision:
   - store one item price in V1: `seller_price`
-  - treat that item price as both the seller payout price and the printed per-item customer price
+  - treat that item price as both the printed per-item customer price and the reconciliation payable subtotal before settlement deductions
   - compute a checkout fee equal to 10 percent of the cart subtotal
   - round the checkout fee to the nearest cent, with midpoint values rounded away from zero
   - store sale-level payment values on `sale`: subtotal, checkout fee, and total paid
   - store only `seller_price_at_sale` on each `sale_line`
 - Consequence:
-  - seller settlement remains based on seller price only
+  - seller settlement starts from seller price snapshots and then applies the D-049 association margin and any remaining seller fee
   - customer-paid money is audited at the sale level rather than through a second per-item price
   - intake no longer needs to compute or show a derived per-item sale price
 
@@ -808,3 +808,21 @@ This file captures the main project decisions in a lightweight ADR format.
   - organizers can close each physical checkout independently while still seeing the global event total
   - refund attribution follows the physical checkout that paid the refund, not the original sale checkout
   - the feature stays a read-only reporting aid rather than a full accounting ledger or payment-provider reconciliation system
+
+## D-049 Apply Association Margin To Seller Settlement
+
+- Status: accepted
+- Key drivers:
+  - the association keeps a 15 percent margin on payable seller item totals
+  - treasurers need printable seller sheets to show the deduction before writing checks
+  - seller fee deduction must continue to apply after margin deduction
+- Decision:
+  - calculate a 15 percent association margin from the payable item subtotal during reconciliation
+  - round the margin to the nearest cent with the same away-from-zero rule used by checkout percentage fees
+  - subtract both the association margin and remaining unpaid seller fee from the seller payout
+  - floor the final payout at zero
+  - show the margin as a separate row on printable seller sheets
+- Consequence:
+  - seller payout is now `payable item subtotal - association margin - remaining seller fee`
+  - overpaid seller fees still never increase payout
+  - refunded or corrected sold items remain excluded from payable subtotal

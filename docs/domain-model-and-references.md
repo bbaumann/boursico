@@ -129,7 +129,7 @@ Each sale stores the transaction-level customer payment values:
 - checkout fee: 10 percent of the subtotal, rounded to the nearest cent with midpoint values rounded away from zero
 - total paid: subtotal + checkout fee
 
-Seller settlement uses seller price only. A defective-item buyer refund reimburses the buyer the item price plus the 10 percent checkout fee for that item; it does not change the original sale totals.
+Seller settlement starts from seller price snapshots for payable items, then deducts the 15 percent association margin and any remaining seller fee. A defective-item buyer refund reimburses the buyer the item price plus the 10 percent checkout fee for that item; it does not change the original sale totals.
 
 Financial closing groups collected money by `sale.checkout_code` and refunds by `sale_line.refund_checkout_code`. Per-checkout net collected is collected money for that checkout minus refunds physically paid by that checkout.
 

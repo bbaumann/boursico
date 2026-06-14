@@ -62,10 +62,11 @@ public sealed class ReconciliationServiceTests
         var sheet = Assert.Single(await service.ListSellerSheetsAsync());
 
         Assert.Equal(1200, sheet.ItemSubtotalCents);
+        Assert.Equal(180, sheet.AssociationMarginCents);
         Assert.Equal(200, sheet.ExpectedFeeCents);
         Assert.Equal(0, sheet.PaidFeeCents);
         Assert.Equal(200, sheet.RemainingFeeCents);
-        Assert.Equal(1000, sheet.TotalPayableCents);
+        Assert.Equal(820, sheet.TotalPayableCents);
         Assert.Collection(
             sheet.PayableItems,
             soldItem =>
@@ -85,7 +86,7 @@ public sealed class ReconciliationServiceTests
     }
 
     [Fact]
-    public async Task ListSellerSheetsAsync_DeductsUnpaidSellerFeesFromPayout()
+    public async Task ListSellerSheetsAsync_DeductsAssociationMarginAndUnpaidSellerFeesFromPayout()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -129,10 +130,65 @@ public sealed class ReconciliationServiceTests
         var sheet = Assert.Single(await service.ListSellerSheetsAsync());
 
         Assert.Equal(1000, sheet.ItemSubtotalCents);
+        Assert.Equal(150, sheet.AssociationMarginCents);
         Assert.Equal(400, sheet.ExpectedFeeCents);
         Assert.Equal(200, sheet.PaidFeeCents);
         Assert.Equal(200, sheet.RemainingFeeCents);
-        Assert.Equal(800, sheet.TotalPayableCents);
+        Assert.Equal(650, sheet.TotalPayableCents);
+    }
+
+    [Fact]
+    public async Task ListSellerSheetsAsync_AppliesAssociationMarginBeforeUnpaidSellerFee()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+
+        var seller = new SellerEntity
+        {
+            SellerCode = "AA",
+            FirstName = "Ada",
+            LastName = "Lovelace"
+        };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+
+        var soldItems = new List<ItemEntity>();
+        for (var itemNumber = 1; itemNumber <= 10; itemNumber++)
+        {
+            soldItems.Add(AddItem(
+                context,
+                seller,
+                $"AA-{itemNumber:000}",
+                itemNumber,
+                $"Article {itemNumber}",
+                200,
+                "sold"));
+        }
+
+        await context.SaveChangesAsync();
+
+        context.Sales.Add(new SaleEntity
+        {
+            SoldAt = DateTime.UtcNow,
+            SubtotalSellerPriceCents = 2000,
+            CheckoutFeeCents = 200,
+            TotalPaidCents = 2200,
+            SaleLines = soldItems
+                .Select(item => new SaleLineEntity { ItemId = item.Id, SellerPriceAtSaleCents = 200 })
+                .ToList()
+        });
+        await context.SaveChangesAsync();
+
+        var service = new ReconciliationService(context);
+
+        var sheet = Assert.Single(await service.ListSellerSheetsAsync());
+
+        Assert.Equal(2000, sheet.ItemSubtotalCents);
+        Assert.Equal(300, sheet.AssociationMarginCents);
+        Assert.Equal(200, sheet.ExpectedFeeCents);
+        Assert.Equal(0, sheet.PaidFeeCents);
+        Assert.Equal(200, sheet.RemainingFeeCents);
+        Assert.Equal(1500, sheet.TotalPayableCents);
     }
 
     [Fact]
@@ -175,10 +231,11 @@ public sealed class ReconciliationServiceTests
         var sheet = Assert.Single(await service.ListSellerSheetsAsync());
 
         Assert.Equal(1000, sheet.ItemSubtotalCents);
+        Assert.Equal(150, sheet.AssociationMarginCents);
         Assert.Equal(200, sheet.ExpectedFeeCents);
         Assert.Equal(600, sheet.PaidFeeCents);
         Assert.Equal(0, sheet.RemainingFeeCents);
-        Assert.Equal(1000, sheet.TotalPayableCents);
+        Assert.Equal(850, sheet.TotalPayableCents);
     }
 
     [Fact]
