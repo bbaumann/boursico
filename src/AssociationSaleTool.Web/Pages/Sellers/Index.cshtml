@@ -44,9 +44,9 @@
             <colgroup>
                 <col class="seller-index-code-column" />
                 <col class="seller-index-name-column" />
-                <col class="seller-index-email-column" />
-                <col class="seller-index-phone-column" />
-                <col class="seller-index-address-column" />
+                <col class="seller-index-email-column seller-index-secondary-column" />
+                <col class="seller-index-phone-column seller-index-secondary-column" />
+                <col class="seller-index-address-column seller-index-secondary-column" />
                 <col class="seller-index-items-column" />
                 <col class="seller-index-action-column" />
             </colgroup>
@@ -54,9 +54,9 @@
                 <tr>
                     <th>Code</th>
                     <th>Nom</th>
-                    <th>E-mail</th>
-                    <th>Téléphone</th>
-                    <th>Adresse</th>
+                    <th class="seller-index-secondary-column">E-mail</th>
+                    <th class="seller-index-secondary-column">Téléphone</th>
+                    <th class="seller-index-secondary-column">Adresse</th>
                     <th>Articles</th>
                     <th></th>
                 </tr>
@@ -67,9 +67,9 @@
                 <tr data-seller-row data-seller-filter-text="@IndexModel.BuildSellerFilterText(seller)">
                     <td class="seller-index-code-cell">@seller.SellerCode</td>
                     <td>@seller.FirstName @seller.LastName</td>
-                    <td>@(seller.Email ?? "—")</td>
-                    <td>@seller.Phone</td>
-                    <td>
+                    <td class="seller-index-secondary-column">@(seller.Email ?? "—")</td>
+                    <td class="seller-index-secondary-column">@seller.Phone</td>
+                    <td class="seller-index-secondary-column">
                         @seller.PostalAddress
                         @if (!string.IsNullOrWhiteSpace(seller.PostalCode) || !string.IsNullOrWhiteSpace(seller.City))
                         {

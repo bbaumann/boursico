@@ -3,6 +3,12 @@
 @model AssociationSaleTool.Web.Pages.Sellers.DetailsModel
 @{
     ViewData["Title"] = "Détail du vendeur";
+    var depositValidationCount = Model.DepositValidationMessages.Count;
+    var depositSummary = Model.IsDepositValidated
+        ? "Le dépôt est validé. Les articles sont en stock et le dépôt reste annulable par un administrateur."
+        : depositValidationCount > 0
+            ? $"{depositValidationCount} information{(depositValidationCount > 1 ? "s" : string.Empty)} à corriger avant de finaliser le dépôt."
+            : "Le dépôt est prêt dès que le contrat papier est imprimé et signé.";
 }
 
 @if (!string.IsNullOrWhiteSpace(Model.PendingRowsAlert))
@@ -29,67 +35,13 @@
         </div>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(Model.ReadOnlyMessage))
-    {
-        <p class="validation">@Model.ReadOnlyMessage</p>
-    }
-
-    <dl class="seller-contact-list">
-        <div>
-            <dt>E-mail</dt>
-            <dd>@(Model.Seller.Email ?? "Sans e-mail")</dd>
-        </div>
-        <div>
-            <dt>Téléphone</dt>
-            <dd>@Model.Seller.Phone</dd>
-        </div>
-        <div>
-            <dt>Adresse</dt>
-            <dd>
-                @Model.Seller.PostalAddress
-                @if (!string.IsNullOrWhiteSpace(Model.Seller.PostalCode) || !string.IsNullOrWhiteSpace(Model.Seller.City))
-                {
-                    <br />
-                    <span>@Model.Seller.PostalCode @Model.Seller.City</span>
-                }
-            </dd>
-        </div>
-        <div>
-            <dt>Nature de la pièce d'identité</dt>
-            <dd>@(Model.Seller.IdentityDocumentType ?? "À compléter")</dd>
-        </div>
-        <div>
-            <dt>Numéro de la pièce d'identité</dt>
-            <dd>@(Model.Seller.IdentityDocumentNumber ?? "À compléter")</dd>
-        </div>
-        <div>
-            <dt>Date de délivrance</dt>
-            <dd>@DetailsModel.FormatDate(Model.Seller.IdentityDocumentIssuedOn)</dd>
-        </div>
-        <div>
-            <dt>Autorité de délivrance</dt>
-            <dd>@(Model.Seller.IdentityDocumentIssuer ?? "À compléter")</dd>
-        </div>
-    </dl>
-
-    <p class="seller-fee-status @(Model.FeeStatus.IsFullyPaid ? "seller-fee-status-paid" : "seller-fee-status-due")">
-        Frais : @DetailsModel.FormatPrice(Model.FeeStatus.ExpectedFeeCents) (payés @DetailsModel.FormatPrice(Model.FeeStatus.PaidFeeCents))
-    </p>
-
-    @if (!string.IsNullOrWhiteSpace(Model.Seller.ImportNotes))
-    {
-        <section class="subsection existing-seller-alert">
-            <h2>Import à vérifier</h2>
-            <pre>@Model.Seller.ImportNotes</pre>
-        </section>
-    }
-
     <section class="subsection seller-deposit-panel">
         <div>
             <h2>Dépôt vendeur</h2>
             <p class="seller-deposit-status @(Model.IsDepositValidated ? "seller-deposit-status-validated" : "seller-deposit-status-pending")">
                 @Model.DepositStatusLabel
             </p>
+            <p class="seller-deposit-summary">@depositSummary</p>
         </div>
         @if (Model.DepositValidationMessages.Count > 0)
         {
@@ -204,6 +156,61 @@
             }
         </div>
     </section>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ReadOnlyMessage))
+    {
+        <p class="validation">@Model.ReadOnlyMessage</p>
+    }
+
+    <dl class="seller-contact-list">
+        <div>
+            <dt>E-mail</dt>
+            <dd>@(Model.Seller.Email ?? "Sans e-mail")</dd>
+        </div>
+        <div>
+            <dt>Téléphone</dt>
+            <dd>@Model.Seller.Phone</dd>
+        </div>
+        <div>
+            <dt>Adresse</dt>
+            <dd>
+                @Model.Seller.PostalAddress
+                @if (!string.IsNullOrWhiteSpace(Model.Seller.PostalCode) || !string.IsNullOrWhiteSpace(Model.Seller.City))
+                {
+                    <br />
+                    <span>@Model.Seller.PostalCode @Model.Seller.City</span>
+                }
+            </dd>
+        </div>
+        <div>
+            <dt>Nature de la pièce d'identité</dt>
+            <dd>@(Model.Seller.IdentityDocumentType ?? "À compléter")</dd>
+        </div>
+        <div>
+            <dt>Numéro de la pièce d'identité</dt>
+            <dd>@(Model.Seller.IdentityDocumentNumber ?? "À compléter")</dd>
+        </div>
+        <div>
+            <dt>Date de délivrance</dt>
+            <dd>@DetailsModel.FormatDate(Model.Seller.IdentityDocumentIssuedOn)</dd>
+        </div>
+        <div>
+            <dt>Autorité de délivrance</dt>
+            <dd>@(Model.Seller.IdentityDocumentIssuer ?? "À compléter")</dd>
+        </div>
+    </dl>
+
+    <p class="seller-fee-status @(Model.FeeStatus.IsFullyPaid ? "seller-fee-status-paid" : "seller-fee-status-due")">
+        Frais : @DetailsModel.FormatPrice(Model.FeeStatus.ExpectedFeeCents) (payés @DetailsModel.FormatPrice(Model.FeeStatus.PaidFeeCents))
+    </p>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Seller.ImportNotes))
+    {
+        <section class="subsection existing-seller-alert">
+            <h2>Import à vérifier</h2>
+            <pre>@Model.Seller.ImportNotes</pre>
+        </section>
+    }
 
     <section class="subsection" id="articles">
         <h2>Articles</h2>

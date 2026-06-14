@@ -8,7 +8,7 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 body {
@@ -19,7 +19,7 @@ body {
     radial-gradient(circle at top left, rgba(13, 92, 99, 0.14), transparent 32%),
     radial-gradient(circle at bottom right, rgba(185, 118, 44, 0.16), transparent 28%),
     linear-gradient(180deg, #f8f2e8 0%, #efe6d7 100%);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Segoe UI", Arial, sans-serif;
 }
 
 .page-frame {
@@ -80,15 +80,18 @@ body {
   flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: 4rem;
-  padding: 0.75rem 1.25rem;
+  box-sizing: border-box;
+  min-height: 3.75rem;
+  padding: 0.7rem 0.9rem;
   border: 1px solid transparent;
   border-radius: 14px;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.7);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-align: center;
   text-decoration: none;
 }
 
@@ -236,11 +239,14 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  min-height: 2.75rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
   text-decoration: none;
 }
 
@@ -398,8 +404,8 @@ textarea.input-validation-error {
 
 .data-table th {
   color: var(--muted);
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -426,6 +432,10 @@ textarea.input-validation-error {
 
 .seller-index-phone-column {
   width: 8rem;
+}
+
+.seller-index-address-column {
+  width: 13rem;
 }
 
 .seller-index-items-column,
@@ -694,17 +704,25 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 
 .seller-deposit-panel {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  margin-top: 1.25rem;
   padding: 1rem;
   border: 1px solid var(--border);
   border-left: 0.35rem solid var(--accent);
   background: rgba(255, 255, 255, 0.6);
 }
 
+.seller-deposit-panel > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+}
+
 .seller-deposit-panel h2 {
-  margin: 0 0 0.35rem;
+  margin: 0;
 }
 
 .seller-deposit-status {
@@ -713,6 +731,14 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
   font-weight: 700;
+}
+
+.seller-deposit-summary {
+  flex-basis: 100%;
+  max-width: 36rem;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .seller-deposit-status-pending {
@@ -1393,6 +1419,78 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   vertical-align: middle;
 }
 
+@media (max-width: 980px) {
+  .app-status-header,
+  .main-navigation,
+  .page-shell {
+    width: min(100% - 2rem, 960px);
+  }
+
+  .main-navigation {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    border-radius: 16px;
+  }
+
+  .main-navigation-link {
+    min-height: 3rem;
+    padding: 0.55rem 0.65rem;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .page-shell {
+    padding: 1rem 0 4rem;
+  }
+
+  .page-card {
+    padding: 1.5rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.7rem 0.55rem;
+  }
+
+  .seller-index-secondary-column {
+    display: none;
+  }
+
+  .seller-index-code-column {
+    width: 5.8rem;
+  }
+
+  .seller-index-name-column {
+    width: auto;
+  }
+
+  .seller-index-items-column,
+  .seller-index-action-column {
+    width: 5.75rem;
+  }
+
+  .seller-contact-list {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 1rem;
+  }
+
+  .seller-deposit-panel {
+    flex-direction: column;
+  }
+
+  .seller-deposit-actions {
+    justify-content: flex-start;
+  }
+
+  .seller-deposit-flow {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
 @media print {
   @page {
     size: A4;
@@ -1582,6 +1680,14 @@ body:has(.seller-sheets-print-root) .page-frame {
   .page-frame {
     inset: 12px;
     border-radius: 20px;
+  }
+
+  .main-navigation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .main-navigation-link:nth-child(5) {
+    grid-column: auto;
   }
 
   .page-shell {
