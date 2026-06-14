@@ -11,21 +11,21 @@ The checkout flow is the most interaction-heavy part of the application, so it i
 - the checkout page loads a lightweight item catalog once when the page opens
 - the catalog lives only in page memory for the lifetime of the checkout page
 - there is no `sessionStorage` or other browser persistence for the catalog
-- the physical checkout code is stored separately in browser `localStorage`
+- the selected configured caisse id is stored separately in browser `localStorage`
 - there is no background refresh while the page stays open
 - after a successful save, the checkout returns to a fresh state and reloads the catalog
 
 The server remains authoritative for item availability and sale persistence.
 
-## Checkout Code
+## Caisse Selection
 
-Each physical checkout station uses a simple text checkout code.
+Each physical checkout station is configured by an admin before sale day with a name and initial cash amount (`fond de caisse`).
 
-- the checkout page blocks sale entry until the operator saves a non-empty `Nom de la caisse`
-- the code is kept in browser `localStorage` so the same station keeps using it across page reloads
-- every sale save request includes the current checkout code
-- the server rejects blank checkout codes and stores the trimmed value on `sale.checkout_code`
-- uniqueness is handled operationally by event organizers; the app does not maintain a checkout-station registry
+- the checkout page blocks sale entry until the operator chooses an active configured caisse
+- the selected caisse id is kept in browser `localStorage` so the same station keeps using it across page reloads
+- every sale save request includes the current `cashRegisterId`
+- the server rejects missing, inactive, or unknown caisse ids and stores the id on `sale.cash_register_id`
+- the admin page maintains the configured caisse registry; caisse names must be unique
 
 ## Catalog Content
 
@@ -55,7 +55,7 @@ The top of the checkout content includes required buyer information fields befor
 
 The postal code input is numeric. When the postal code is an Isère code (`38xxx`), the city input offers a dropdown of matching cities from local static data generated from the official French Geo API commune dataset for department 38. When one city matches the postal code, the city field is prefilled. For other French departments, the city input remains free text.
 
-Buyer details are persisted on the sale when the operator saves. The sale is rejected if buyer name, postal code, city, or checkout code is blank. Buyer details are separate from the optional `buyer_address`; filling name, postal code, and city alone does not mean an invoice was requested.
+Buyer details are persisted on the sale when the operator saves. The sale is rejected if buyer name, postal code, city, or configured caisse is missing. Buyer details are separate from the optional `buyer_address`; filling name, postal code, and city alone does not mean an invoice was requested.
 
 The checkout lookup is not an autocomplete widget.
 
@@ -141,7 +141,7 @@ The modal has exactly three actions:
 
 - performs a second authoritative validation at save time
 - validates the sale-level payment method and cheque details
-- persists the sale with its checkout code if validation succeeds
+- persists the sale with its configured caisse if validation succeeds
 - returns to a fresh checkout state
 - reloads the in-memory catalog
 
@@ -150,7 +150,7 @@ The modal has exactly three actions:
 - is disabled unless the checkout `Adresse` field, stored internally as `buyer_address`, was filled on the checkout page
 - performs a second authoritative validation at save time
 - validates the sale-level payment method and cheque details
-- persists the sale with its checkout code if validation succeeds
+- persists the sale with its configured caisse if validation succeeds
 - opens the browser print dialog
 - returns to a fresh checkout state
 - reloads the in-memory catalog

@@ -14,6 +14,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<SaleLineEntity> SaleLines => Set<SaleLineEntity>();
 
+    public DbSet<CashRegisterEntity> CashRegisters => Set<CashRegisterEntity>();
+
     public DbSet<EventStateEntity> EventState => Set<EventStateEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -88,7 +90,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.SubtotalSellerPriceCents).HasColumnName("subtotal_seller_price_cents").IsRequired();
             entity.Property(x => x.CheckoutFeeCents).HasColumnName("checkout_fee_cents").IsRequired();
             entity.Property(x => x.TotalPaidCents).HasColumnName("total_paid_cents").IsRequired();
-            entity.Property(x => x.CheckoutCode).HasColumnName("checkout_code").HasDefaultValue(string.Empty).IsRequired();
+            entity.Property(x => x.CashRegisterId).HasColumnName("cash_register_id").IsRequired();
             entity.Property(x => x.BuyerName).HasColumnName("buyer_name");
             entity.Property(x => x.BuyerPostalCode).HasColumnName("buyer_postal_code");
             entity.Property(x => x.BuyerCity).HasColumnName("buyer_city");
@@ -98,8 +100,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.PaymentMethod).HasColumnName("payment_method");
             entity.Property(x => x.ChequeNumber).HasColumnName("cheque_number");
             entity.Property(x => x.ChequeBankName).HasColumnName("cheque_bank_name");
+            entity.HasOne(x => x.CashRegister)
+                .WithMany(x => x.Sales)
+                .HasForeignKey(x => x.CashRegisterId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(x => x.SoldAt);
-            entity.HasIndex(x => x.CheckoutCode);
+            entity.HasIndex(x => x.CashRegisterId);
             entity.HasIndex(x => x.InvoiceNumber)
                 .IsUnique()
                 .HasFilter("invoice_number IS NOT NULL");
@@ -125,7 +131,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.RefundCheckoutFeeCents).HasColumnName("refund_checkout_fee_cents");
             entity.Property(x => x.RefundTotalCents).HasColumnName("refund_total_cents");
             entity.Property(x => x.RefundReason).HasColumnName("refund_reason");
-            entity.Property(x => x.RefundCheckoutCode).HasColumnName("refund_checkout_code");
+            entity.Property(x => x.RefundCashRegisterId).HasColumnName("refund_cash_register_id");
 
             entity.HasOne(x => x.Sale)
                 .WithMany(x => x.SaleLines)
@@ -135,12 +141,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany(x => x.SaleLines)
                 .HasForeignKey(x => x.ItemId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.RefundCashRegister)
+                .WithMany(x => x.RefundSaleLines)
+                .HasForeignKey(x => x.RefundCashRegisterId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(x => x.ItemId)
                 .IsUnique()
                 .HasFilter("corrected_at IS NULL AND refunded_at IS NULL");
             entity.HasIndex(x => x.SaleId);
-            entity.HasIndex(x => x.RefundCheckoutCode);
+            entity.HasIndex(x => x.RefundCashRegisterId);
 
             entity.ToTable(table =>
             {
@@ -148,6 +158,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 table.HasCheckConstraint("ck_sale_line_refund_item_price_cents", "refund_item_price_cents IS NULL OR refund_item_price_cents >= 0");
                 table.HasCheckConstraint("ck_sale_line_refund_checkout_fee_cents", "refund_checkout_fee_cents IS NULL OR refund_checkout_fee_cents >= 0");
                 table.HasCheckConstraint("ck_sale_line_refund_total_cents", "refund_total_cents IS NULL OR refund_total_cents >= 0");
+            });
+        });
+
+        modelBuilder.Entity<CashRegisterEntity>(entity =>
+        {
+            entity.ToTable("cash_register");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasColumnName("name").IsRequired();
+            entity.Property(x => x.InitialCashCents).HasColumnName("initial_cash_cents").HasDefaultValue(0).IsRequired();
+            entity.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true).IsRequired();
+            entity.Property(x => x.DisplayOrder).HasColumnName("display_order").HasDefaultValue(0).IsRequired();
+
+            entity.HasIndex(x => x.Name)
+                .IsUnique();
+
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("ck_cash_register_name_not_blank", "length(trim(name)) > 0");
+                table.HasCheckConstraint("ck_cash_register_initial_cash_cents", "initial_cash_cents >= 0");
+                table.HasCheckConstraint("ck_cash_register_is_active", "is_active IN (0, 1)");
             });
         });
 

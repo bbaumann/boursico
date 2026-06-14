@@ -277,7 +277,7 @@ public class AppDbContextModelTests
     }
 
     [Fact]
-    public void SaleStoresCheckoutCodeColumn()
+    public void SaleReferencesCashRegisterColumn()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite("Data Source=:memory:")
@@ -287,7 +287,46 @@ public class AppDbContextModelTests
 
         var saleEntityType = context.Model.FindEntityType(typeof(SaleEntity));
         Assert.NotNull(saleEntityType);
-        Assert.Contains(saleEntityType!.GetProperties(), property => property.GetColumnName() == "checkout_code");
+        var cashRegisterId = Assert.Single(saleEntityType!.GetProperties(), property => property.Name == nameof(SaleEntity.CashRegisterId));
+        Assert.Equal("cash_register_id", cashRegisterId.GetColumnName());
+        Assert.False(cashRegisterId.IsNullable);
+        Assert.DoesNotContain(saleEntityType.GetProperties(), property => property.GetColumnName() == "checkout_code");
+        Assert.Contains(
+            saleEntityType.GetForeignKeys(),
+            foreignKey => foreignKey.PrincipalEntityType.ClrType == typeof(CashRegisterEntity)
+                && foreignKey.Properties.Select(property => property.Name).SequenceEqual([nameof(SaleEntity.CashRegisterId)]));
+    }
+
+    [Fact]
+    public void CashRegisterStoresNameInitialCashAndActiveFlag()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        using var context = new AppDbContext(options);
+        context.Database.EnsureCreated();
+
+        var entityType = context.Model.FindEntityType(typeof(CashRegisterEntity));
+        Assert.NotNull(entityType);
+        Assert.Contains(entityType!.GetProperties(), property => property.GetColumnName() == "name");
+        Assert.Contains(entityType.GetProperties(), property => property.GetColumnName() == "initial_cash_cents");
+        Assert.Contains(entityType.GetProperties(), property => property.GetColumnName() == "is_active");
+        Assert.Contains(entityType.GetIndexes(), index => index.IsUnique
+            && index.Properties.Select(property => property.Name).SequenceEqual([nameof(CashRegisterEntity.Name)]));
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cash_register'";
+        var createTableSql = Assert.IsType<string>(command.ExecuteScalar());
+        Assert.Contains("\"name\" TEXT NOT NULL", createTableSql);
+        Assert.Contains("\"initial_cash_cents\" INTEGER NOT NULL DEFAULT 0", createTableSql);
+        Assert.Contains("\"is_active\" INTEGER NOT NULL DEFAULT 1", createTableSql);
+        Assert.Contains("CHECK (length(trim(name)) > 0)", createTableSql);
+        Assert.Contains("CHECK (initial_cash_cents >= 0)", createTableSql);
+        Assert.Contains("CHECK (is_active IN (0, 1))", createTableSql);
     }
 
     [Fact]
@@ -372,7 +411,8 @@ public class AppDbContextModelTests
         Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_checkout_fee_cents");
         Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_total_cents");
         Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_reason");
-        Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_checkout_code");
+        Assert.Contains(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_cash_register_id");
+        Assert.DoesNotContain(saleLineEntityType.GetProperties(), property => property.GetColumnName() == "refund_checkout_code");
     }
 
     [Fact]

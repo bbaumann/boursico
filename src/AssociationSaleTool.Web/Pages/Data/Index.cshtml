@@ -268,7 +268,9 @@
                             <th>Sous-total</th>
                             <th>Frais</th>
                             <th>CB</th>
+                            <th>Fond</th>
                             <th>Esp&egrave;ces</th>
+                            <th>Esp&egrave;ces attendues</th>
                             <th>Ch&egrave;ques</th>
                             <th>Encaiss&eacute;</th>
                             <th>Rembours&eacute;</th>
@@ -285,7 +287,9 @@
                             <td>@IndexModel.FormatPrice(row.SubtotalSellerPriceCents)</td>
                             <td>@IndexModel.FormatPrice(row.CheckoutFeeCents)</td>
                             <td>@IndexModel.FormatPrice(row.CardTotalCents)</td>
+                            <td>@IndexModel.FormatPrice(row.InitialCashCents)</td>
                             <td>@IndexModel.FormatPrice(row.CashTotalCents)</td>
+                            <td>@IndexModel.FormatPrice(row.ExpectedCashCents)</td>
                             <td>@IndexModel.FormatPrice(row.ChequeTotalCents)</td>
                             <td>@IndexModel.FormatPrice(row.TotalCollectedCents)</td>
                             <td>@IndexModel.FormatPrice(row.RefundTotalCents)</td>

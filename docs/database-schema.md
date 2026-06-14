@@ -26,6 +26,7 @@ Concrete DDL drafts are available in:
 - One active sold toy appears in exactly one active payable sale line.
 - Corrected sale lines remain as historical correction evidence.
 - Refunded sale lines remain as historical refund evidence.
+- Physical caisses are configured centrally and referenced by sales and refund payments.
 - Seller sheets are derived from current data, not stored as their own primary business objects in V1.
 - One database file represents one event operationally in V1.
 
@@ -99,7 +100,7 @@ Represents one completed checkout.
 
 - `id`
 - `sold_at`
-- `checkout_code`
+- `cash_register_id`
 - `subtotal_seller_price_cents`
 - `checkout_fee_cents`
 - `total_paid_cents`
@@ -117,8 +118,8 @@ Represents one completed checkout.
 
 - There is no `is_paid` field in V1; persisting the sale means the checkout is complete.
 - `sold_at` should be stored in UTC.
-- `checkout_code` stores the physical checkout station code used for the sale.
-- `checkout_code` is required by the application for new checkout sales, but uniqueness is handled operationally and is not a database constraint.
+- `cash_register_id` points to the configured physical caisse used for the sale.
+- `cash_register_id` is required for new checkout sales.
 - `subtotal_seller_price_cents`, `checkout_fee_cents`, and `total_paid_cents` are stored as integer cents.
 - `buyer_name`, `buyer_postal_code`, and `buyer_city` are required by the application for new checkout sales.
 - `buyer_postal_code` is stored as text even though the UI input is numeric, so postal-code formatting is not treated as arithmetic.
@@ -129,6 +130,25 @@ Represents one completed checkout.
 - `payment_method` is set for new sales and uses `card`, `cash`, or `cheque`.
 - `cheque_number` and `cheque_bank_name` are required by the application only when `payment_method` is `cheque`.
 - Existing rows created before this feature may have null payment traceability fields.
+
+## `cash_register`
+
+Represents one configured physical caisse.
+
+### Columns
+
+- `id`
+- `name`
+- `initial_cash_cents`
+- `is_active`
+- `display_order`
+
+### Notes
+
+- `name` is the operator-facing caisse name shown in `/caisse`, `/administration`, and closing reports.
+- `initial_cash_cents` stores the `fond de caisse` physically placed in the caisse before sales start.
+- `is_active` hides obsolete caisses from new sale and refund selection without deleting historical references.
+- `display_order` controls the order in dropdowns and closing reports.
 
 ## `sale_line`
 
@@ -146,7 +166,7 @@ Represents one sold item inside one sale.
 - `refund_checkout_fee_cents`
 - `refund_total_cents`
 - `refund_reason`
-- `refund_checkout_code`
+- `refund_cash_register_id`
 
 ### Notes
 
@@ -161,7 +181,7 @@ Represents one sold item inside one sale.
 - `refund_checkout_fee_cents` stores the reimbursed 10 percent association fee.
 - `refund_total_cents = refund_item_price_cents + refund_checkout_fee_cents`.
 - `refund_reason` is `defective` for the current refund workflow.
-- `refund_checkout_code` stores the physical checkout station that paid the refund.
+- `refund_cash_register_id` stores the configured physical caisse that paid the refund.
 - Original sale totals are not recalculated when a sale line is corrected.
 - Original sale totals are not recalculated when a sale line is refunded.
 - If an admin cancels a defective refund that was entered by mistake, the refund fields are cleared and the original sale totals still remain unchanged.
@@ -187,6 +207,8 @@ V1 uses a single row with `id = 1`.
 ## Relationships
 
 - one `seller` has many `item`
+- one `cash_register` has many `sale`
+- one `cash_register` may have many refunding `sale_line` rows
 - one `sale` has many `sale_line`
 - one `item` may have many historical `sale_line` rows
 - one `item` may have at most one active payable `sale_line` where `corrected_at IS NULL AND refunded_at IS NULL`
@@ -198,20 +220,24 @@ V1 uses a single row with `id = 1`.
 - `seller.id`
 - `item.id`
 - `sale.id`
+- `cash_register.id`
 - `sale_line.id`
 - `event_state.id`
 
 ## Foreign Keys
 
 - `item.seller_id -> seller.id`
+- `sale.cash_register_id -> cash_register.id`
 - `sale_line.sale_id -> sale.id`
 - `sale_line.item_id -> item.id`
+- `sale_line.refund_cash_register_id -> cash_register.id`
 
 ## Uniqueness Constraints
 
 - `seller.seller_code` unique
 - `item.reference` unique
 - `(item.seller_id, item.item_number)` unique
+- `cash_register.name` unique
 - `sale_line.item_id` unique only for active payable rows where `corrected_at IS NULL AND refunded_at IS NULL`
 
 ## Nullability
@@ -246,10 +272,10 @@ V1 uses a single row with `id = 1`.
 ## `sale`
 
 - `sold_at`: required
+- `cash_register_id`: required
 - `subtotal_seller_price_cents`: required
 - `checkout_fee_cents`: required
 - `total_paid_cents`: required
-- `checkout_code`: required for new application-created rows
 - `buyer_name`: required for new application-created rows
 - `buyer_postal_code`: required for new application-created rows
 - `buyer_city`: required for new application-created rows
@@ -266,12 +292,19 @@ V1 uses a single row with `id = 1`.
 - `refund_checkout_fee_cents`: optional
 - `refund_total_cents`: optional
 - `refund_reason`: optional
-- `refund_checkout_code`: optional
+- `refund_cash_register_id`: optional
 
 ## `event_state`
 
 - `sale_phase`: required
 - `updated_at`: required
+
+## `cash_register`
+
+- `name`: required
+- `initial_cash_cents`: required
+- `is_active`: required
+- `display_order`: required
 
 ## Enumerations
 
@@ -337,7 +370,7 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - when item master data is locked, only workflow-driven status transitions remain allowed
 - after `seller.deposit_status = deposit_validated`, normal seller and item edits are locked for that seller even during `presale`
 - admin cancellation may set `seller.deposit_status` back to `deposit_pending` during `presale` after shared-password confirmation; it moves only current `in_stock` items back to `registered` and leaves `sold`, `missing`, and `defective` items unchanged
-- `sale.checkout_code`, `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
+- `sale.cash_register_id`, `sale.subtotal_seller_price_cents`, `sale.checkout_fee_cents`, and `sale.total_paid_cents` should be treated as immutable after creation
 - `sale_line` price snapshots are immutable; correction status is represented by `corrected_at`, and defective buyer refunds are represented by the refund fields, which may only be cleared by the explicit admin refund-cancellation workflow
 
 ## Business Invariants
@@ -351,7 +384,7 @@ These are important invariants even if they are enforced first in application lo
 - one item can only have one active payable sale line
 - corrected sale lines do not make an item unavailable for sale
 - refunded sale lines do not make an item payable to the seller
-- if a sale line has `refunded_at`, then `refund_reason`, `refund_item_price_cents`, `refund_checkout_fee_cents`, `refund_total_cents`, and `refund_checkout_code` should be filled
+- if a sale line has `refunded_at`, then `refund_reason`, `refund_item_price_cents`, `refund_checkout_fee_cents`, `refund_total_cents`, and `refund_cash_register_id` should be filled
 - `sale.subtotal_seller_price_cents` must equal the sum of its sale lines' `seller_price_at_sale_cents`
 - `sale.checkout_fee_cents` must equal 10 percent of `sale.subtotal_seller_price_cents`, rounded to the nearest cent with midpoint values rounded away from zero
 - `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
@@ -394,9 +427,10 @@ These items are not part of post-sale payable or returned outputs.
 For V1 seller settlement:
 
 - item subtotal = sum of `seller_price_cents` for all payable items
+- sale fee = 15 percent of item subtotal, rounded to the nearest cent with midpoint values rounded away from zero
 - expected seller fee = EUR 2 per started block of 15 seller items, including `registered` items
 - remaining seller fee = max(expected seller fee - `seller.fee_paid_cents`, 0)
-- final payout = max(item subtotal - remaining seller fee, 0)
+- final payout = max(item subtotal - sale fee - remaining seller fee, 0)
 
 ## Index Plan
 
@@ -405,15 +439,16 @@ Recommended indexes:
 - unique index on `seller.seller_code`
 - unique index on `item.reference`
 - unique index on `(item.seller_id, item.item_number)`
+- unique index on `cash_register.name`
 - unique partial index on `sale_line.item_id` where `corrected_at IS NULL AND refunded_at IS NULL`
 - index on `item.reference`
 - index on `item.title`
 - index on `item.seller_id`
 - index on `item.status`
 - index on `sale.sold_at`
-- index on `sale.checkout_code`
+- index on `sale.cash_register_id`
 - index on `sale_line.sale_id`
-- index on `sale_line.refund_checkout_code`
+- index on `sale_line.refund_cash_register_id`
 
 These support:
 
@@ -421,7 +456,7 @@ These support:
 - seller sheet generation
 - post-sale filtering by item status
 - event-level sale listing and export
-- financial closing totals by physical checkout
+- financial closing totals by configured caisse, including initial cash amounts
 
 ## Reference Generation
 

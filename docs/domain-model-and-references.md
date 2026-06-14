@@ -51,7 +51,7 @@ Suggested fields:
 
 - sale id
 - timestamp
-- physical checkout code
+- configured caisse id
 - subtotal seller price
 - checkout fee
 - total paid
@@ -72,11 +72,23 @@ Suggested fields:
 - seller price at time of sale
 - corrected at timestamp, when an admin corrected a mistaken sale line
 - refunded at timestamp, when an admin refunded a defective sold item
-- refund item price, refunded checkout fee, total refunded amount, refund reason, and refund checkout code
+- refund item price, refunded checkout fee, total refunded amount, refund reason, and refund caisse id
 
 If a sale line is corrected, the original sale and sale totals remain stored. The corrected line no longer makes the item unavailable for sale and is ignored by seller-sheet payable output.
 
-If a sale line is refunded because the sold item is defective, the original sale and sale totals remain stored. The refunded line is ignored by seller-sheet payable output, records the physical checkout that paid the refund, and the item becomes `defective` so it is returned to the seller.
+If a sale line is refunded because the sold item is defective, the original sale and sale totals remain stored. The refunded line is ignored by seller-sheet payable output, records the configured caisse that paid the refund, and the item becomes `defective` so it is returned to the seller.
+
+### CashRegister
+
+Represents one physical caisse configured by an admin before sale day.
+
+Suggested fields:
+
+- caisse id
+- name
+- initial cash amount (`fond de caisse`)
+- active flag
+- display order
 
 ## Item Status Model
 
@@ -129,9 +141,9 @@ Each sale stores the transaction-level customer payment values:
 - checkout fee: 10 percent of the subtotal, rounded to the nearest cent with midpoint values rounded away from zero
 - total paid: subtotal + checkout fee
 
-Seller settlement starts from seller price snapshots for payable items, then deducts the 15 percent association margin and any remaining seller fee. A defective-item buyer refund reimburses the buyer the item price plus the 10 percent checkout fee for that item; it does not change the original sale totals.
+Seller settlement starts from seller price snapshots for payable items, then deducts the 15 percent sale fee and any remaining seller fee. A defective-item buyer refund reimburses the buyer the item price plus the 10 percent checkout fee for that item; it does not change the original sale totals.
 
-Financial closing groups collected money by `sale.checkout_code` and refunds by `sale_line.refund_checkout_code`. Per-checkout net collected is collected money for that checkout minus refunds physically paid by that checkout.
+Financial closing groups collected money by `sale.cash_register_id` and refunds by `sale_line.refund_cash_register_id`. Per-caisse expected cash starts from the configured `fond de caisse`, adds cash sales for that caisse, and subtracts refunds physically paid by that caisse.
 
 Persistence rule:
 

@@ -76,6 +76,7 @@ builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<InvoiceNumberService>();
 builder.Services.AddScoped<SalesViewService>();
 builder.Services.AddScoped<DataListService>();
+builder.Services.AddScoped<CashRegisterService>();
 builder.Services.AddScoped<ReconciliationService>();
 builder.Services.AddScoped<SalePhaseService>();
 builder.Services.AddScoped<SaleCorrectionService>();

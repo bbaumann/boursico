@@ -787,27 +787,29 @@ This file captures the main project decisions in a lightweight ADR format.
   - checkout remains protected because incomplete sellers cannot pass the deposit gate
   - the printed contract includes the legal identity-document details collected at deposit time
 
-## D-048 Track Physical Checkout Codes For Closing
+## D-048 Track Configured Caisses For Closing
 
 - Status: accepted
 - Key drivers:
   - sale-day operations may use multiple physical checkout stations
   - offline validation compares cash/card/cheque reality with system totals after the event
   - refunding a defective sold item can happen at a different checkout from the original sale
-  - checkout-code uniqueness can be handled operationally by organizers
+  - the `fond de caisse` is physically placed in each caisse before sales start and should be included in expected cash totals
+  - operators need a low-friction caisse choice on `/caisse`
 - Decision:
-  - store a required text `sale.checkout_code` on every new sale
-  - let the checkout page keep the station code in browser `localStorage` so one physical station can keep using the same code across reloads
-  - do not add a checkout-station table or enforce code uniqueness in the database
-  - when refunding a defective sale line from `/administration`, require the admin to choose the refund checkout code from distinct non-empty `sale.checkout_code` values already present in the database
-  - store the selected refund station on `sale_line.refund_checkout_code`
+  - add a `cash_register` table configured from `/administration`
+  - store a required `sale.cash_register_id` on every new sale
+  - let the checkout page keep the selected caisse id in browser `localStorage` so one physical station can keep using the same caisse across reloads
+  - when refunding a defective sale line from `/administration`, require the admin to choose the configured refund caisse that physically paid the refund
+  - store the selected refund caisse on `sale_line.refund_cash_register_id`
   - add a read-only `/donnees?onglet=cloture` tab named `Clôture`
-  - show one global row and one row per checkout code with sales, item count, subtotal, association fee, payment-method totals, collected total, refunded total, and net total
-  - group per-checkout sales by `sale.checkout_code` and per-checkout refunds by `sale_line.refund_checkout_code`
+  - show one global row and one row per configured caisse with sales, item count, subtotal, association fee, payment-method totals, collected total, refunded total, net total, fond de caisse, and expected cash
+  - group per-caisse sales by `sale.cash_register_id` and per-caisse refunds by `sale_line.refund_cash_register_id`
+  - calculate expected cash per caisse as `fond de caisse + cash sales - refunds paid`
 - Consequence:
-  - organizers can close each physical checkout independently while still seeing the global event total
+  - organizers can close each physical caisse independently while still seeing the global event total
   - refund attribution follows the physical checkout that paid the refund, not the original sale checkout
-  - the feature stays a read-only reporting aid rather than a full accounting ledger or payment-provider reconciliation system
+  - the feature stays a lightweight cash-management aid rather than a full accounting ledger or payment-provider reconciliation system
 
 ## D-049 Apply Association Margin To Seller Settlement
 

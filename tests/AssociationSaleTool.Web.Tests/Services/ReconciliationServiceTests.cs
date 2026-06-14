@@ -50,6 +50,7 @@ public sealed class ReconciliationServiceTests
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = await SeedCashRegisterAsync(context),
             SubtotalSellerPriceCents = 500,
             CheckoutFeeCents = 50,
             TotalPaidCents = 550,
@@ -118,6 +119,7 @@ public sealed class ReconciliationServiceTests
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = await SeedCashRegisterAsync(context),
             SubtotalSellerPriceCents = 1000,
             CheckoutFeeCents = 100,
             TotalPaidCents = 1100,
@@ -170,6 +172,7 @@ public sealed class ReconciliationServiceTests
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = await SeedCashRegisterAsync(context),
             SubtotalSellerPriceCents = 2000,
             CheckoutFeeCents = 200,
             TotalPaidCents = 2200,
@@ -219,6 +222,7 @@ public sealed class ReconciliationServiceTests
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = await SeedCashRegisterAsync(context),
             SubtotalSellerPriceCents = 1000,
             CheckoutFeeCents = 100,
             TotalPaidCents = 1100,
@@ -270,6 +274,7 @@ public sealed class ReconciliationServiceTests
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = await SeedCashRegisterAsync(context),
             SubtotalSellerPriceCents = 400,
             CheckoutFeeCents = 40,
             TotalPaidCents = 440,
@@ -310,6 +315,7 @@ public sealed class ReconciliationServiceTests
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = await SeedCashRegisterAsync(context),
             SubtotalSellerPriceCents = 900,
             CheckoutFeeCents = 90,
             TotalPaidCents = 990,
@@ -341,9 +347,11 @@ public sealed class ReconciliationServiceTests
         var directDefective = AddItem(context, seller, "AA-003", 3, "Livre abime", 600, "defective");
         await context.SaveChangesAsync();
 
+        var cashRegisterId = await SeedCashRegisterAsync(context);
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 1700,
             CheckoutFeeCents = 170,
             TotalPaidCents = 1870,
@@ -358,7 +366,8 @@ public sealed class ReconciliationServiceTests
                     RefundItemPriceCents = 700,
                     RefundCheckoutFeeCents = 70,
                     RefundTotalCents = 770,
-                    RefundReason = "defective"
+                    RefundReason = "defective",
+                    RefundCashRegisterId = cashRegisterId
                 }
             ]
         });
@@ -798,6 +807,25 @@ public sealed class ReconciliationServiceTests
             .AsNoTracking()
             .Select(x => x.Status)
             .SingleAsync();
+    }
+
+    private static async Task<long> SeedCashRegisterAsync(AppDbContext context)
+    {
+        var existingCashRegister = await context.CashRegisters.SingleOrDefaultAsync(x => x.Name == "CAISSE-1");
+        if (existingCashRegister is not null)
+        {
+            return existingCashRegister.Id;
+        }
+
+        var cashRegister = new CashRegisterEntity
+        {
+            Name = "CAISSE-1",
+            InitialCashCents = 5000,
+            IsActive = true
+        };
+        context.CashRegisters.Add(cashRegister);
+        await context.SaveChangesAsync();
+        return cashRegister.Id;
     }
 
     private static ItemEntity AddItem(

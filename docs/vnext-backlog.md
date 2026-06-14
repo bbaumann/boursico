@@ -50,16 +50,17 @@ Relevant docs:
 - checkout persists sale-level payment method as card, cash, or cheque
 - cheque sales require cheque number and bank name
 - payment and cheque details are visible in read-only sales history
-- checkout persists a simple physical checkout code on every sale
-- defective-refund entry stores the checkout code that physically paid the refund
+- admins configure physical caisses with initial cash amounts
+- checkout persists the selected configured caisse on every sale
+- defective-refund entry stores the configured caisse that physically paid the refund
 - `/donnees` exposes read-only `Articles`, `Vendeurs`, `Ventes`, `Chèques`, and `Clôture` tabs for operator inspection
-- the `Clôture` tab shows global and per-checkout collected, refunded, and net totals
+- the `Clôture` tab shows global and per-caisse collected, refunded, net, fond de caisse, and expected cash totals
 
 Relevant docs:
 
 - [D-035 Persist Sale Payment Method And Cheque Traceability](./decisions.md#d-035-persist-sale-payment-method-and-cheque-traceability)
 - [D-038 Expose Ungated Read-Only Data Lists](./decisions.md#d-038-expose-ungated-read-only-data-lists)
-- [D-045 Track Physical Checkout Codes For Closing](./decisions.md#d-045-track-physical-checkout-codes-for-closing)
+- [D-048 Track Configured Caisses For Closing](./decisions.md#d-048-track-configured-caisses-for-closing)
 
 ## Candidate Future VNext Ideas
 
@@ -83,7 +84,7 @@ V1 has CSV/TSV seller-form import. Future work could support additional workbook
 
 ### Richer Accounting And Refund Model
 
-V1 tracks checkout totals, payment method, cheque details, physical checkout codes, seller fees, defective buyer refunds, and a read-only closing dashboard. A future accounting model could add separate refund/payment ledger tables, payment-provider reconciliation, or richer seller accounting reports.
+V1 tracks checkout totals, payment method, cheque details, configured physical caisses, seller fees, defective buyer refunds, and a read-only closing dashboard. A future accounting model could add separate refund/payment ledger tables, payment-provider reconciliation, or richer seller accounting reports.
 
 ### Multi-Event History
 

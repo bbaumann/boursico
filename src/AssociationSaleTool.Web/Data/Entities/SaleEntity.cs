@@ -12,7 +12,9 @@ public sealed class SaleEntity
 
     public int TotalPaidCents { get; set; }
 
-    public string CheckoutCode { get; set; } = string.Empty;
+    public long CashRegisterId { get; set; }
+
+    public CashRegisterEntity CashRegister { get; set; } = null!;
 
     public string? BuyerName { get; set; }
 

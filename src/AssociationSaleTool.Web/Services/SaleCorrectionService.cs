@@ -7,14 +7,14 @@ namespace AssociationSaleTool.Web.Services;
 
 public sealed class SaleCorrectionService(AppDbContext dbContext)
 {
-    public async Task<List<string>> ListCheckoutCodesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<CashRegisterOption>> ListRefundCashRegistersAsync(CancellationToken cancellationToken = default)
     {
-        return await dbContext.Sales
+        return await dbContext.CashRegisters
             .AsNoTracking()
-            .Select(x => x.CheckoutCode)
-            .Where(x => x != string.Empty)
-            .Distinct()
-            .OrderBy(x => x)
+            .Where(x => x.IsActive)
+            .OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.Name)
+            .Select(x => new CashRegisterOption(x.Id, x.Name, x.InitialCashCents))
             .ToListAsync(cancellationToken);
     }
 
@@ -69,21 +69,20 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
 
     public async Task<SaleCorrectionResult> RefundDefectiveSaleLineAsync(
         long saleLineId,
-        string? refundCheckoutCode,
+        long? refundCashRegisterId,
         CancellationToken cancellationToken = default)
     {
-        var normalizedRefundCheckoutCode = NormalizeOptionalText(refundCheckoutCode);
-        if (normalizedRefundCheckoutCode is null)
+        if (refundCashRegisterId is null)
         {
-            return SaleCorrectionResult.InvalidCheckoutCode;
+            return SaleCorrectionResult.InvalidCashRegister;
         }
 
-        var checkoutCodeExists = await dbContext.Sales
+        var cashRegisterExists = await dbContext.CashRegisters
             .AsNoTracking()
-            .AnyAsync(x => x.CheckoutCode == normalizedRefundCheckoutCode, cancellationToken);
-        if (!checkoutCodeExists)
+            .AnyAsync(x => x.Id == refundCashRegisterId.Value && x.IsActive, cancellationToken);
+        if (!cashRegisterExists)
         {
-            return SaleCorrectionResult.InvalidCheckoutCode;
+            return SaleCorrectionResult.InvalidCashRegister;
         }
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -111,7 +110,7 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
         saleLine.RefundCheckoutFeeCents = refundTotals.CheckoutFeeCents;
         saleLine.RefundTotalCents = saleLine.SellerPriceAtSaleCents + refundTotals.CheckoutFeeCents;
         saleLine.RefundReason = "defective";
-        saleLine.RefundCheckoutCode = normalizedRefundCheckoutCode;
+        saleLine.RefundCashRegisterId = refundCashRegisterId.Value;
         saleLine.Item.Status = "defective";
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -164,17 +163,11 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
         saleLine.RefundCheckoutFeeCents = null;
         saleLine.RefundTotalCents = null;
         saleLine.RefundReason = null;
-        saleLine.RefundCheckoutCode = null;
+        saleLine.RefundCashRegisterId = null;
         saleLine.Item.Status = "sold";
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return SaleCorrectionResult.RefundCanceled;
-    }
-
-    private static string? NormalizeOptionalText(string? value)
-    {
-        var normalized = value?.Trim();
-        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 }

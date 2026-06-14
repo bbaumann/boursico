@@ -49,9 +49,11 @@ public sealed class DefectiveItemServiceTests
         var seller = await SeedSellerAsync(context);
         var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "defective");
         await context.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(context);
         context.Sales.Add(new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 500,
             CheckoutFeeCents = 50,
             TotalPaidCents = 550,
@@ -65,7 +67,8 @@ public sealed class DefectiveItemServiceTests
                     RefundItemPriceCents = 500,
                     RefundCheckoutFeeCents = 50,
                     RefundTotalCents = 550,
-                    RefundReason = "defective"
+                    RefundReason = "defective",
+                    RefundCashRegisterId = cashRegisterId
                 }
             ]
         });
@@ -131,6 +134,19 @@ public sealed class DefectiveItemServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
         return seller;
+    }
+
+    private static async Task<long> SeedCashRegisterAsync(AppDbContext context)
+    {
+        var cashRegister = new CashRegisterEntity
+        {
+            Name = "CAISSE-1",
+            InitialCashCents = 5000,
+            IsActive = true
+        };
+        context.CashRegisters.Add(cashRegister);
+        await context.SaveChangesAsync();
+        return cashRegister.Id;
     }
 
     private static ItemEntity AddItem(

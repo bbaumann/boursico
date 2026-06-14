@@ -22,9 +22,11 @@ public sealed class SaleLineEntity
 
     public string? RefundReason { get; set; }
 
-    public string? RefundCheckoutCode { get; set; }
+    public long? RefundCashRegisterId { get; set; }
 
     public SaleEntity Sale { get; set; } = null!;
 
     public ItemEntity Item { get; set; } = null!;
+
+    public CashRegisterEntity? RefundCashRegister { get; set; }
 }

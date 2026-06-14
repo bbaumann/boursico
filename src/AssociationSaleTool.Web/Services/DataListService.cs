@@ -157,9 +157,17 @@ public sealed class DataListService(AppDbContext dbContext)
     {
         var sales = await dbContext.Sales
             .AsNoTracking()
+            .Include(x => x.CashRegister)
             .Include(x => x.SaleLines)
-            .OrderBy(x => x.CheckoutCode)
+            .OrderBy(x => x.CashRegister.DisplayOrder)
+            .ThenBy(x => x.CashRegister.Name)
             .ThenBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var cashRegisters = await dbContext.CashRegisters
+            .AsNoTracking()
+            .OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.Name)
             .ToListAsync(cancellationToken);
 
         var refundedLines = sales
@@ -167,25 +175,19 @@ public sealed class DataListService(AppDbContext dbContext)
             .Where(line => line.RefundedAt is not null && line.RefundTotalCents is not null)
             .ToList();
 
-        var checkoutCodes = sales
-            .Select(sale => sale.CheckoutCode)
-            .Where(code => !string.IsNullOrWhiteSpace(code))
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(code => code, StringComparer.Ordinal)
-            .ToList();
-
         var rows = new List<DataListClosingRow>
         {
-            BuildClosingRow(GlobalClosingLabel, null, isGlobal: true, sales, refundedLines)
+            BuildClosingRow(GlobalClosingLabel, null, cashRegisters.Sum(x => x.InitialCashCents), isGlobal: true, sales, refundedLines)
         };
 
-        rows.AddRange(checkoutCodes.Select(code =>
+        rows.AddRange(cashRegisters.Select(cashRegister =>
             BuildClosingRow(
-                code,
-                code,
+                cashRegister.Name,
+                cashRegister.Id,
+                cashRegister.InitialCashCents,
                 isGlobal: false,
-                sales.Where(sale => sale.CheckoutCode == code),
-                refundedLines.Where(line => line.RefundCheckoutCode == code))));
+                sales.Where(sale => sale.CashRegisterId == cashRegister.Id),
+                refundedLines.Where(line => line.RefundCashRegisterId == cashRegister.Id))));
 
         return rows;
     }
@@ -203,7 +205,8 @@ public sealed class DataListService(AppDbContext dbContext)
 
     private static DataListClosingRow BuildClosingRow(
         string label,
-        string? checkoutCode,
+        long? cashRegisterId,
+        int initialCashCents,
         bool isGlobal,
         IEnumerable<SaleEntity> sales,
         IEnumerable<SaleLineEntity> refundedLines)
@@ -214,10 +217,11 @@ public sealed class DataListService(AppDbContext dbContext)
 
         return new DataListClosingRow(
             label,
-            checkoutCode,
+            cashRegisterId,
             isGlobal,
             saleList.Count,
             saleList.Sum(sale => sale.SaleLines.Count),
+            initialCashCents,
             saleList.Sum(sale => sale.SubtotalSellerPriceCents),
             saleList.Sum(sale => sale.CheckoutFeeCents),
             totalCollectedCents,
@@ -225,6 +229,7 @@ public sealed class DataListService(AppDbContext dbContext)
             totalCollectedCents - refundTotalCents,
             saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Card).Sum(sale => sale.TotalPaidCents),
             saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Cash).Sum(sale => sale.TotalPaidCents),
-            saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Cheque).Sum(sale => sale.TotalPaidCents));
+            saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Cheque).Sum(sale => sale.TotalPaidCents),
+            initialCashCents + saleList.Where(sale => sale.PaymentMethod == SalePaymentMethods.Cash).Sum(sale => sale.TotalPaidCents) - refundTotalCents);
     }
 }

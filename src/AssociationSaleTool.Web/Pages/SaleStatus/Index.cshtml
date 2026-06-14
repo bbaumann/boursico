@@ -80,6 +80,116 @@ else
             </div>
         </section>
 
+        <section class="subsection">
+            <h2>Caisses</h2>
+            <p class="seller-meta">Configurez les caisses physiques avant la vente. Le fond de caisse est ajouté au calcul des espèces attendues dans la clôture.</p>
+
+            <form method="post" asp-page-handler="SaveCashRegister" class="stack-form">
+                <div class="field-grid">
+                    <label for="cash-register-name-new">
+                        Nom de la caisse
+                        <input id="cash-register-name-new"
+                               name="CashRegisterInput.Name"
+                               type="text"
+                               maxlength="80"
+                               autocomplete="off"
+                               required />
+                    </label>
+                    <label for="cash-register-initial-cash-new">
+                        Fond de caisse (€)
+                        <input id="cash-register-initial-cash-new"
+                               name="CashRegisterInput.InitialCash"
+                               type="text"
+                               inputmode="decimal"
+                               autocomplete="off"
+                               required />
+                    </label>
+                    <label for="cash-register-active-new">
+                        Active
+                        <input id="cash-register-active-new"
+                               name="CashRegisterInput.IsActive"
+                               type="checkbox"
+                               value="true"
+                               checked />
+                        <input type="hidden" name="CashRegisterInput.IsActive" value="false" />
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button-link button-link-solid">Ajouter la caisse</button>
+                </div>
+            </form>
+
+            @if (Model.CashRegisters.Count > 0)
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Fond de caisse</th>
+                            <th>Active</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var cashRegister in Model.CashRegisters)
+                    {
+                        <tr>
+                            <td>
+                                <form id="cash-register-form-@cashRegister.Id"
+                                      method="post"
+                                      asp-page-handler="SaveCashRegister">
+                                    <input type="hidden" name="CashRegisterInput.Id" value="@cashRegister.Id" />
+                                    <input id="cash-register-name-@cashRegister.Id"
+                                           name="CashRegisterInput.Name"
+                                           type="text"
+                                           maxlength="80"
+                                           value="@cashRegister.Name"
+                                           readonly="@cashRegister.HasMovements"
+                                           aria-describedby="cash-register-note-@cashRegister.Id"
+                                           required />
+                                    @if (cashRegister.HasMovements)
+                                    {
+                                        <p id="cash-register-note-@cashRegister.Id" class="seller-meta">Nom verrouillé car la caisse est déjà utilisée.</p>
+                                    }
+                                </form>
+                            </td>
+                            <td>
+                                <input form="cash-register-form-@cashRegister.Id"
+                                       name="CashRegisterInput.InitialCash"
+                                       type="text"
+                                       inputmode="decimal"
+                                       value="@EuroPriceInput.FormatFromCents(cashRegister.InitialCashCents)"
+                                       required />
+                            </td>
+                            <td>
+                                <input form="cash-register-form-@cashRegister.Id"
+                                       name="CashRegisterInput.IsActive"
+                                       type="checkbox"
+                                       value="true"
+                                       checked="@cashRegister.IsActive" />
+                                <input form="cash-register-form-@cashRegister.Id"
+                                       type="hidden"
+                                       name="CashRegisterInput.IsActive"
+                                       value="false" />
+                            </td>
+                            <td class="table-actions-cell">
+                                <button form="cash-register-form-@cashRegister.Id"
+                                        type="submit"
+                                        class="table-action-button table-action-button-primary">
+                                    Enregistrer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="empty-state">Aucune caisse configurée.</p>
+            }
+        </section>
+
         <section class="subsection" data-item-correction-root>
             <h2>Correction des articles</h2>
             <p class="seller-meta">Utiliser uniquement pour corriger un article non enregistré : le remettre en stock, le marquer défectueux, ou rembourser un article vendu défectueux.</p>
@@ -188,15 +298,15 @@ else
                                                   asp-page-handler="RefundDefectiveSaleLine"
                                                   asp-route-saleLineId="@refundSaleLineId"
                                                   class="inline-form">
-                                                <label for="refund-checkout-code-@refundSaleLineId">
+                                                <label for="refund-cash-register-@refundSaleLineId">
                                                     Caisse de remboursement
-                                                    <select id="refund-checkout-code-@refundSaleLineId"
-                                                            name="refundCheckoutCode"
+                                                    <select id="refund-cash-register-@refundSaleLineId"
+                                                            name="refundCashRegisterId"
                                                             required>
                                                         <option value="">Choisir une caisse</option>
-                                                        @foreach (var checkoutCode in Model.CheckoutCodes)
+                                                        @foreach (var cashRegister in Model.RefundCashRegisters)
                                                         {
-                                                            <option value="@checkoutCode">@checkoutCode</option>
+                                                            <option value="@cashRegister.Id">@cashRegister.Name</option>
                                                         }
                                                     </select>
                                                 </label>

@@ -5,6 +5,7 @@ using AssociationSaleTool.Web.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Json;
@@ -536,6 +537,37 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains($"href=\"{AdminPath}\"", content);
     }
 
+    [Fact]
+    public async Task AdminPageCashRegisterManagementDoesNotExposeDisplayOrder()
+    {
+        var client = _factory.CreateClient();
+
+        var content = await UnlockSaleStatusPageAsync(client);
+
+        Assert.Contains("Caisses", content);
+        Assert.DoesNotContain("Ordre d'affichage", content);
+        Assert.DoesNotContain("CashRegisterInput.DisplayOrder", content);
+    }
+
+    [Fact]
+    public async Task AdminPageCreatesActiveCashRegisterWhenActiveCheckboxIsChecked()
+    {
+        var client = _factory.CreateClient();
+        var cashRegisterName = $"CAISSE-ACTIVE-{Guid.NewGuid():N}";
+
+        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        var response = await client.PostAsync(
+            $"{AdminPath}?handler=SaveCashRegister",
+            BuildCashRegisterCreateFormContent(dashboardContent, cashRegisterName));
+
+        response.EnsureSuccessStatusCode();
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var cashRegister = await dbContext.CashRegisters.SingleAsync(x => x.Name == cashRegisterName);
+        Assert.True(cashRegister.IsActive);
+    }
+
     [Theory]
     [InlineData(
         SalePhase.Presale,
@@ -633,6 +665,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var client = _factory.CreateClient();
         long itemId;
         long saleLineId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -659,10 +692,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SC-001");
 
             var sale = new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
+                CashRegisterId = cashRegisterId,
                 SubtotalSellerPriceCents = 900,
                 CheckoutFeeCents = 90,
                 TotalPaidCents = 990,
@@ -763,9 +798,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.AddRange(soldItem, inStockItem, defectiveItem, missingItem, registeredItem);
             await dbContext.SaveChangesAsync();
+            var cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SD-001");
             var sale = new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
+                CashRegisterId = cashRegisterId,
                 SubtotalSellerPriceCents = 1000,
                 CheckoutFeeCents = 100,
                 TotalPaidCents = 1100,
@@ -866,6 +903,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var client = _factory.CreateClient();
         long itemId;
         long saleLineId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -890,6 +928,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             };
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-RET");
 
             var sale = new SaleEntity
             {
@@ -897,7 +936,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 SubtotalSellerPriceCents = 1500,
                 CheckoutFeeCents = 150,
                 TotalPaidCents = 1650,
-                CheckoutCode = "CAISSE-RET",
+                CashRegisterId = cashRegisterId,
                 SaleLines =
                 [
                     new SaleLineEntity
@@ -916,7 +955,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var dashboardContent = await UnlockSaleStatusPageAsync(client);
         var response = await client.PostAsync(
             $"{AdminPath}?handler=RefundDefectiveSaleLine&saleLineId={saleLineId}",
-            BuildFormContent(dashboardContent, ("refundCheckoutCode", "CAISSE-RET")));
+            BuildFormContent(dashboardContent, ("refundCashRegisterId", cashRegisterId.ToString(CultureInfo.InvariantCulture))));
 
         response.EnsureSuccessStatusCode();
 
@@ -930,7 +969,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Equal(150, saleLine.RefundCheckoutFeeCents);
             Assert.Equal(1650, saleLine.RefundTotalCents);
             Assert.Equal("defective", saleLine.RefundReason);
-            Assert.Equal("CAISSE-RET", saleLine.RefundCheckoutCode);
+            Assert.Equal(cashRegisterId, saleLine.RefundCashRegisterId);
         }
     }
 
@@ -940,6 +979,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var client = _factory.CreateClient();
         long itemId;
         long saleLineId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -964,10 +1004,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             };
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SU-001");
 
             var sale = new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
+                CashRegisterId = cashRegisterId,
                 SubtotalSellerPriceCents = 1500,
                 CheckoutFeeCents = 150,
                 TotalPaidCents = 1650,
@@ -981,7 +1023,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                         RefundItemPriceCents = 1500,
                         RefundCheckoutFeeCents = 150,
                         RefundTotalCents = 1650,
-                        RefundReason = "defective"
+                        RefundReason = "defective",
+                        RefundCashRegisterId = cashRegisterId
                     }
                 ]
             };
@@ -1090,10 +1133,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             };
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            var cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SG-001");
 
             var sale = new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
+                CashRegisterId = cashRegisterId,
                 SubtotalSellerPriceCents = 700,
                 CheckoutFeeCents = 70,
                 TotalPaidCents = 770,
@@ -1427,7 +1472,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("Cl\u00f4ture", content);
         Assert.Contains("data-list-closing-table", content);
         Assert.Contains("Toutes les caisses", content);
-        Assert.Contains(scenario.CheckoutCode, content);
+        Assert.Contains(scenario.CashRegisterName, content);
         Assert.Contains("9.90 \u20ac", content);
         Assert.Contains("0.00 \u20ac", content);
     }
@@ -1461,10 +1506,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             };
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            var cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-REF");
 
             var sale = new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
+                CashRegisterId = cashRegisterId,
                 SubtotalSellerPriceCents = 1000,
                 CheckoutFeeCents = 100,
                 TotalPaidCents = 1100,
@@ -1478,7 +1525,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                         RefundItemPriceCents = 1000,
                         RefundCheckoutFeeCents = 100,
                         RefundTotalCents = 1100,
-                        RefundReason = "defective"
+                        RefundReason = "defective",
+                        RefundCashRegisterId = cashRegisterId
                     }
                 ]
             };
@@ -3841,6 +3889,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -3868,6 +3917,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-001");
             itemId = item.Id;
         }
 
@@ -3885,6 +3935,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -3913,6 +3964,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-003");
             itemId = item.Id;
         }
 
@@ -3921,7 +3973,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
-                checkoutCode = "CAISSE-SV-001",
+                cashRegisterId,
                 buyerName = "Client vente",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble",
@@ -3937,7 +3989,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Equal(1500, sale.SubtotalSellerPriceCents);
             Assert.Equal(150, sale.CheckoutFeeCents);
             Assert.Equal(1650, sale.TotalPaidCents);
-            Assert.Equal("CAISSE-SV-001", sale.CheckoutCode);
+            Assert.Equal(cashRegisterId, sale.CashRegisterId);
             Assert.Equal("cash", sale.PaymentMethod);
             Assert.Null(sale.ChequeNumber);
             Assert.Null(sale.ChequeBankName);
@@ -4136,10 +4188,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         dbContext.Items.AddRange(firstItem, secondItem);
         await dbContext.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(dbContext, $"CAISSE-{sellerCode}");
 
         var sale = new SaleEntity
         {
             SoldAt = new DateTime(2026, 5, 4, 10, 0, 0, DateTimeKind.Utc),
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 1500,
             CheckoutFeeCents = 150,
             TotalPaidCents = 1650,
@@ -4194,10 +4248,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         dbContext.Items.Add(item);
         await dbContext.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(dbContext, $"CAISSE-{seller.SellerCode}");
 
         var sale = new SaleEntity
         {
             SoldAt = new DateTime(2026, 5, 4, 10, 0, 0, DateTimeKind.Utc),
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 1200,
             CheckoutFeeCents = 120,
             TotalPaidCents = 1320,
@@ -4230,13 +4286,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         string InStockReference,
         string SoldReference,
         string MissingReference,
-        string CheckoutCode)> SeedDataListScenarioAsync()
+        string CashRegisterName)> SeedDataListScenarioAsync()
     {
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var suffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
         var sellerCode = $"DL{suffix}";
-        var checkoutCode = $"CAISSE-DL-{suffix}";
+        var cashRegisterName = $"CAISSE-DL-{suffix}";
         var seller = new SellerEntity
         {
             SellerCode = sellerCode,
@@ -4290,6 +4346,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         dbContext.Items.AddRange(registeredItem, inStockItem, soldItem, missingItem);
         await dbContext.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(dbContext, cashRegisterName);
 
         var sale = new SaleEntity
         {
@@ -4297,7 +4354,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             SubtotalSellerPriceCents = 900,
             CheckoutFeeCents = 90,
             TotalPaidCents = 990,
-            CheckoutCode = checkoutCode,
+            CashRegisterId = cashRegisterId,
             BuyerName = "MJC Centre",
             BuyerPostalCode = "38100",
             BuyerCity = "Grenoble",
@@ -4318,7 +4375,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         dbContext.Sales.Add(sale);
         await dbContext.SaveChangesAsync();
 
-        return (seller.Id, sellerCode, sale.Id, registeredItem.Reference, inStockItem.Reference, soldItem.Reference, missingItem.Reference, checkoutCode);
+        return (seller.Id, sellerCode, sale.Id, registeredItem.Reference, inStockItem.Reference, soldItem.Reference, missingItem.Reference, cashRegisterName);
     }
 
     private async Task SetSalePhaseAsync(SalePhase phase)
@@ -4338,6 +4395,28 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             .SingleAsync();
     }
 
+    private static async Task<long> SeedCashRegisterAsync(
+        AppDbContext dbContext,
+        string name,
+        int initialCashCents = 5000)
+    {
+        var existingCashRegister = await dbContext.CashRegisters.SingleOrDefaultAsync(x => x.Name == name);
+        if (existingCashRegister is not null)
+        {
+            return existingCashRegister.Id;
+        }
+
+        var cashRegister = new CashRegisterEntity
+        {
+            Name = name,
+            InitialCashCents = initialCashCents,
+            IsActive = true
+        };
+        dbContext.CashRegisters.Add(cashRegister);
+        await dbContext.SaveChangesAsync();
+        return cashRegister.Id;
+    }
+
     private async Task EnsureSoldItemsHaveSaleLinesAsync()
     {
         using var scope = _factory.Services.CreateScope();
@@ -4346,12 +4425,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             .Include(x => x.SaleLines)
             .Where(x => x.Status == "sold" && !x.SaleLines.Any(line => line.CorrectedAt == null))
             .ToListAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SEED");
 
         foreach (var item in soldItemsWithoutSaleLines)
         {
             dbContext.Sales.Add(new SaleEntity
             {
                 SoldAt = DateTime.UtcNow,
+                CashRegisterId = cashRegisterId,
                 SubtotalSellerPriceCents = item.SellerPriceCents.GetValueOrDefault(),
                 CheckoutFeeCents = 0,
                 TotalPaidCents = item.SellerPriceCents.GetValueOrDefault(),
@@ -4379,6 +4460,63 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         values.AddRange(fields.Select(field => new KeyValuePair<string, string>(field.Name, field.Value)));
 
         return new FormUrlEncodedContent(values);
+    }
+
+    private static FormUrlEncodedContent BuildCashRegisterCreateFormContent(string html, string cashRegisterName)
+    {
+        var formMatch = Regex.Matches(
+                html,
+                "<form(?<attributes>[^>]*)>(?<body>.*?)</form>",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline)
+            .Cast<Match>()
+            .FirstOrDefault(match => match.Groups["body"].Value.Contains("Ajouter la caisse", StringComparison.Ordinal));
+        Assert.NotNull(formMatch);
+
+        var values = new List<KeyValuePair<string, string>>
+        {
+            new("__RequestVerificationToken", ExtractRequestVerificationToken(html))
+        };
+
+        foreach (var inputMatch in Regex.Matches(
+                     formMatch.Groups["body"].Value,
+                     "<input(?<attributes>[^>]*)>",
+                     RegexOptions.IgnoreCase | RegexOptions.Singleline).Cast<Match>())
+        {
+            var attributes = inputMatch.Groups["attributes"].Value;
+            var name = ExtractAttributeValue(attributes, "name");
+            if (name is null || name == "__RequestVerificationToken")
+            {
+                continue;
+            }
+
+            var type = ExtractAttributeValue(attributes, "type") ?? "text";
+            if (string.Equals(type, "checkbox", StringComparison.OrdinalIgnoreCase)
+                && !attributes.Contains("checked", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var value = name switch
+            {
+                "CashRegisterInput.Name" => cashRegisterName,
+                "CashRegisterInput.InitialCash" => "50",
+                _ => ExtractAttributeValue(attributes, "value") ?? string.Empty
+            };
+
+            values.Add(new KeyValuePair<string, string>(name, value));
+        }
+
+        return new FormUrlEncodedContent(values);
+    }
+
+    private static string? ExtractAttributeValue(string attributes, string attributeName)
+    {
+        var match = Regex.Match(
+            attributes,
+            $@"\b{Regex.Escape(attributeName)}=""(?<value>[^""]*)""",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+        return match.Success ? WebUtility.HtmlDecode(match.Groups["value"].Value) : null;
     }
 
     private static void AssertCreateSellerFormPostsToCreatePage(string html)
@@ -4503,6 +4641,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -4531,6 +4670,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-003");
             itemId = item.Id;
         }
 
@@ -4539,7 +4679,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
-                checkoutCode = "CAISSE-SV-003",
+                cashRegisterId,
                 buyerName = "  Association sportive  ",
                 buyerPostalCode = "  38100  ",
                 buyerCity = " Grenoble ",
@@ -4561,6 +4701,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -4589,6 +4730,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-004");
             itemId = item.Id;
         }
 
@@ -4597,7 +4739,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
-                checkoutCode = "CAISSE-SV-004",
+                cashRegisterId,
                 buyerName = "Sonia Cheque",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble",
@@ -4623,6 +4765,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -4651,6 +4794,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-005");
             itemId = item.Id;
         }
 
@@ -4659,7 +4803,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
-                checkoutCode = "CAISSE-SV-005",
+                cashRegisterId,
                 buyerName = "Sonia Cheque",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble",
@@ -4688,6 +4832,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -4716,6 +4861,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-007");
             itemId = item.Id;
         }
 
@@ -4724,7 +4870,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
-                checkoutCode = "CAISSE-SV-007",
+                cashRegisterId,
                 buyerName = "Sonia",
                 buyerPostalCode = "38100",
                 buyerCity = " "
@@ -4750,6 +4896,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -4778,6 +4925,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-006");
             itemId = item.Id;
         }
 
@@ -4786,7 +4934,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
-                checkoutCode = "CAISSE-SV-006",
+                cashRegisterId,
                 buyerName = "  Ecole du centre  ",
                 buyerPostalCode = "  38100  ",
                 buyerCity = " Grenoble "
@@ -4809,6 +4957,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     {
         var client = _factory.CreateClient();
         long itemId;
+        long cashRegisterId;
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -4836,6 +4985,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             dbContext.Items.Add(item);
             await dbContext.SaveChangesAsync();
+            cashRegisterId = await SeedCashRegisterAsync(dbContext, "CAISSE-SV-002");
             itemId = item.Id;
         }
 
@@ -4844,7 +4994,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             new
             {
                 itemIds = new[] { itemId },
-                checkoutCode = "CAISSE-SV-002",
+                cashRegisterId,
                 buyerName = "Client conflit",
                 buyerPostalCode = "38100",
                 buyerCity = "Grenoble"

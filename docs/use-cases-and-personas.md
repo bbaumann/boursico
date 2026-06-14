@@ -250,20 +250,20 @@ Description : piloter les phases `Prévente`, `Vente` et `Après-vente`.
 - Niveau : `Bénévole`
 - Rôle typique : Bénévole
 
-Description : identifier le poste de caisse physique avant d'encaisser.
+Description : choisir le poste de caisse physique configuré par l'administrateur avant d'encaisser.
 
 #### Étapes
 
 1. Ouvrir `CAISSE`.
-2. Saisir un `Nom de la caisse`.
-3. Enregistrer ce nom.
-4. Recharger la page pour vérifier que le poste garde ce nom.
+2. Choisir une caisse active dans la liste.
+3. Enregistrer ce choix.
+4. Recharger la page pour vérifier que le poste garde cette caisse.
 
 #### Critères d'acceptation
 
-- La caisse ne permet pas d'encaisser tant que le nom de caisse est vide.
-- Le nom est conservé sur le poste.
-- Les ventes enregistrées portent ce code caisse.
+- La caisse ne permet pas d'encaisser tant qu'aucune caisse active n'est choisie.
+- Le choix est conservé sur le poste.
+- Les ventes enregistrées portent cette caisse.
 
 ### Vente-02 - Encaisser un client
 

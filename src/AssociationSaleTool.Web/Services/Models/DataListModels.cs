@@ -51,10 +51,11 @@ public sealed record DataListChequeRow(
 
 public sealed record DataListClosingRow(
     string Label,
-    string? CheckoutCode,
+    long? CashRegisterId,
     bool IsGlobal,
     int SaleCount,
     int ItemCount,
+    int InitialCashCents,
     int SubtotalSellerPriceCents,
     int CheckoutFeeCents,
     int TotalCollectedCents,
@@ -62,4 +63,5 @@ public sealed record DataListClosingRow(
     int NetCollectedCents,
     int CardTotalCents,
     int CashTotalCents,
-    int ChequeTotalCents);
+    int ChequeTotalCents,
+    int ExpectedCashCents);

@@ -94,7 +94,7 @@ function createCheckoutEmptyRow(message, columnCount) {
 }
 
 let checkoutCitiesByPostalCode = null;
-const checkoutCodeStorageKey = "association-sale-tool.checkout-code";
+const cashRegisterStorageKey = "association-sale-tool.cash-register-id";
 
 async function loadCheckoutCitiesByPostalCode() {
   if (checkoutCitiesByPostalCode !== null) {
@@ -295,8 +295,8 @@ async function postCheckoutCart(url, cart, options = {}) {
     body.buyerAddress = options.buyerAddress;
   }
 
-  if (options.checkoutCode !== undefined) {
-    body.checkoutCode = options.checkoutCode;
+  if (options.cashRegisterId !== undefined) {
+    body.cashRegisterId = options.cashRegisterId;
   }
 
   if (options.createInvoice !== undefined) {
@@ -361,11 +361,10 @@ function initializeCheckout(root) {
   const modalBackButton = root.querySelector("[data-checkout-modal-back]");
   const saveSaleButton = root.querySelector("[data-checkout-save-sale]");
   const savePrintButton = root.querySelector("[data-checkout-save-print]");
-  const checkoutCodeSetup = root.querySelector("[data-checkout-code-setup]");
   const checkoutWorkflow = root.querySelector("[data-checkout-workflow]");
-  const checkoutCodeInput = root.querySelector("[data-checkout-code-input]");
-  const checkoutCodeSaveButton = root.querySelector("[data-checkout-code-save]");
-  const checkoutCodeMessage = root.querySelector("[data-checkout-code-message]");
+  const cashRegisterSelect = root.querySelector("[data-checkout-cash-register-select]");
+  const cashRegisterSaveButton = root.querySelector("[data-checkout-cash-register-save]");
+  const cashRegisterMessage = root.querySelector("[data-checkout-cash-register-message]");
   const paymentMethodInputs = root.querySelectorAll("[data-checkout-payment-method]");
   const chequeDetails = root.querySelector("[data-checkout-cheque-details]");
   const chequeNumberInput = root.querySelector("[data-checkout-cheque-number]");
@@ -400,33 +399,43 @@ function initializeCheckout(root) {
   };
   let paymentSubmitAttempted = false;
 
-  function setCheckoutCodeMessage(text) {
-    if (checkoutCodeMessage) {
-      checkoutCodeMessage.textContent = text;
+  function setCashRegisterMessage(text) {
+    if (cashRegisterMessage) {
+      cashRegisterMessage.textContent = text;
     }
   }
 
-  function getCheckoutCode() {
-    return localStorage.getItem(checkoutCodeStorageKey)?.trim() || "";
+  function getCashRegisterId() {
+    return localStorage.getItem(cashRegisterStorageKey)?.trim() || "";
   }
 
-  function refreshCheckoutCodeState() {
-    const checkoutCode = getCheckoutCode();
-    if (checkoutCodeInput) {
-      checkoutCodeInput.value = checkoutCode;
+  function getCashRegisterIdNumber() {
+    const cashRegisterId = Number.parseInt(getCashRegisterId(), 10);
+    return Number.isFinite(cashRegisterId) && cashRegisterId > 0 ? cashRegisterId : null;
+  }
+
+  function refreshCashRegisterState() {
+    let cashRegisterId = getCashRegisterId();
+    if (cashRegisterSelect) {
+      cashRegisterSelect.value = cashRegisterId;
+      if (cashRegisterId.length > 0 && cashRegisterSelect.value !== cashRegisterId) {
+        localStorage.removeItem(cashRegisterStorageKey);
+        cashRegisterId = "";
+      }
     }
 
     if (checkoutWorkflow) {
-      checkoutWorkflow.hidden = checkoutCode.length === 0;
+      checkoutWorkflow.hidden = cashRegisterId.length === 0;
     }
 
-    if (checkoutCode.length === 0) {
-      setCheckoutCodeMessage("Renseignez le nom de la caisse avant d'enregistrer une vente.");
-      checkoutCodeInput?.focus();
+    if (cashRegisterId.length === 0) {
+      setCashRegisterMessage("Choisissez une caisse avant d'enregistrer une vente.");
+      cashRegisterSelect?.focus();
       return;
     }
 
-    setCheckoutCodeMessage(`Caisse active : ${checkoutCode}`);
+    const selectedOption = cashRegisterSelect?.selectedOptions?.[0];
+    setCashRegisterMessage(`Caisse active : ${selectedOption?.textContent || cashRegisterId}`);
   }
 
   function findCatalogItem(itemId) {
@@ -598,7 +607,7 @@ function initializeCheckout(root) {
 
   function getSaleDetails() {
     return {
-      checkoutCode: getCheckoutCode(),
+      cashRegisterId: getCashRegisterIdNumber(),
       buyerAddress: getBuyerAddress(),
       ...getBuyerDetails(),
       ...getPaymentDetails()
@@ -915,8 +924,8 @@ function initializeCheckout(root) {
       return;
     }
 
-    if (getCheckoutCode().length === 0) {
-      refreshCheckoutCodeState();
+    if (getCashRegisterId().length === 0) {
+      refreshCashRegisterState();
       return;
     }
 
@@ -961,8 +970,8 @@ function initializeCheckout(root) {
       return;
     }
 
-    if (getCheckoutCode().length === 0) {
-      refreshCheckoutCodeState();
+    if (getCashRegisterId().length === 0) {
+      refreshCashRegisterState();
       return;
     }
 
@@ -997,18 +1006,18 @@ function initializeCheckout(root) {
   renderCart();
   updateChequeDetailsVisibility();
   updateSavePrintButtonState();
-  checkoutCodeSaveButton?.addEventListener("click", () => {
-    const normalizedCode = checkoutCodeInput?.value.trim() || "";
-    if (normalizedCode.length === 0) {
-      setCheckoutCodeMessage("Le nom de la caisse est obligatoire.");
-      checkoutCodeInput?.focus();
+  cashRegisterSaveButton?.addEventListener("click", () => {
+    const selectedCashRegisterId = cashRegisterSelect?.value.trim() || "";
+    if (selectedCashRegisterId.length === 0) {
+      setCashRegisterMessage("Choisissez une caisse.");
+      cashRegisterSelect?.focus();
       return;
     }
 
-    localStorage.setItem(checkoutCodeStorageKey, normalizedCode);
-    refreshCheckoutCodeState();
+    localStorage.setItem(cashRegisterStorageKey, selectedCashRegisterId);
+    refreshCashRegisterState();
   });
-  refreshCheckoutCodeState();
+  refreshCashRegisterState();
 }
 
 function initializeSellerDepositFlow(root) {

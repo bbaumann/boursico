@@ -14,7 +14,7 @@ public sealed class CheckoutService
     private const string PostSaleMessage = "La vente est en après-vente. Aucune nouvelle vente ne peut être enregistrée.";
     private const string MissingBuyerDetailsMessage = "Le nom, le code postal et la ville de l'acheteur sont obligatoires.";
     private const string MissingInvoiceAddressMessage = "L'adresse de l'acheteur est obligatoire pour imprimer une facture.";
-    private const string MissingCheckoutCodeMessage = "Le nom de la caisse est obligatoire.";
+    private const string MissingCashRegisterMessage = "Choisissez une caisse avant d'enregistrer une vente.";
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
     private readonly InvoiceNumberService _invoiceNumberService;
@@ -68,10 +68,9 @@ public sealed class CheckoutService
         CancellationToken cancellationToken = default,
         CheckoutPaymentDetails? paymentDetails = null,
         bool createInvoice = false,
-        string? checkoutCode = null)
+        long? cashRegisterId = null)
     {
-        var normalizedCheckoutCode = NormalizeOptionalText(checkoutCode);
-        if (normalizedCheckoutCode is null)
+        if (cashRegisterId is null)
         {
             return new CheckoutSaleResult(
                 false,
@@ -79,7 +78,22 @@ public sealed class CheckoutService
                 [],
                 null,
                 0,
-                MissingCheckoutCodeMessage,
+                MissingCashRegisterMessage,
+                IsValidationError: true);
+        }
+
+        var cashRegisterExists = await _dbContext.CashRegisters
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == cashRegisterId.Value && x.IsActive, cancellationToken);
+        if (!cashRegisterExists)
+        {
+            return new CheckoutSaleResult(
+                false,
+                null,
+                [],
+                null,
+                0,
+                MissingCashRegisterMessage,
                 IsValidationError: true);
         }
 
@@ -148,7 +162,7 @@ public sealed class CheckoutService
             SubtotalSellerPriceCents = validation.Totals.SubtotalSellerPriceCents,
             CheckoutFeeCents = validation.Totals.CheckoutFeeCents,
             TotalPaidCents = validation.Totals.TotalPaidCents,
-            CheckoutCode = normalizedCheckoutCode,
+            CashRegisterId = cashRegisterId.Value,
             BuyerAddress = normalizedBuyerAddress,
             BuyerName = normalizedBuyerDetails.BuyerName,
             BuyerPostalCode = normalizedBuyerDetails.BuyerPostalCode,

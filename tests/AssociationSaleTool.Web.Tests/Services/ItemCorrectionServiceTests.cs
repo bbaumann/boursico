@@ -40,9 +40,11 @@ public sealed class ItemCorrectionServiceTests
         var seller = await SeedSellerAsync(context);
         var item = AddItem(context, seller, "AA-001", 1, "Sold toy", 1200, "sold");
         await context.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-1");
         var sale = new SaleEntity
         {
             SoldAt = new DateTime(2026, 5, 5, 10, 0, 0, DateTimeKind.Utc),
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 1200,
             CheckoutFeeCents = 120,
             TotalPaidCents = 1320,
@@ -80,9 +82,11 @@ public sealed class ItemCorrectionServiceTests
         var seller = await SeedSellerAsync(context);
         var item = AddItem(context, seller, "AA-001", 1, "Refunded toy", 1200, "defective");
         await context.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-1");
         var sale = new SaleEntity
         {
             SoldAt = new DateTime(2026, 5, 5, 10, 0, 0, DateTimeKind.Utc),
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 1200,
             CheckoutFeeCents = 120,
             TotalPaidCents = 1320,
@@ -96,7 +100,8 @@ public sealed class ItemCorrectionServiceTests
                     RefundItemPriceCents = 1200,
                     RefundCheckoutFeeCents = 120,
                     RefundTotalCents = 1320,
-                    RefundReason = "defective"
+                    RefundReason = "defective",
+                    RefundCashRegisterId = cashRegisterId
                 }
             ]
         };
@@ -140,6 +145,19 @@ public sealed class ItemCorrectionServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
         return seller;
+    }
+
+    private static async Task<long> SeedCashRegisterAsync(AppDbContext context, string name)
+    {
+        var cashRegister = new CashRegisterEntity
+        {
+            Name = name,
+            InitialCashCents = 5000,
+            IsActive = true
+        };
+        context.CashRegisters.Add(cashRegister);
+        await context.SaveChangesAsync();
+        return cashRegister.Id;
     }
 
     private static ItemEntity AddItem(

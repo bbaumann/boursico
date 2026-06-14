@@ -12,6 +12,7 @@ namespace AssociationSaleTool.Web.Pages.SaleStatus;
 public sealed class IndexModel(
     SalePhaseService salePhaseService,
     SaleCorrectionService saleCorrectionService,
+    CashRegisterService cashRegisterService,
     DefectiveItemService defectiveItemService,
     ItemCorrectionService itemCorrectionService,
     IOptions<AdminOptions> adminOptions) : PageModel
@@ -37,13 +38,18 @@ public sealed class IndexModel(
 
     public IReadOnlyList<ItemCorrectionCandidate> ItemCorrectionCandidates { get; private set; } = [];
 
-    public IReadOnlyList<string> CheckoutCodes { get; private set; } = [];
+    public IReadOnlyList<CashRegisterOption> RefundCashRegisters { get; private set; } = [];
+
+    public IReadOnlyList<CashRegisterAdminRow> CashRegisters { get; private set; } = [];
 
     [BindProperty]
     public PhaseInputModel Input { get; set; } = new();
 
     [BindProperty]
     public PasswordInputModel PasswordInput { get; set; } = new();
+
+    [BindProperty]
+    public CashRegisterInputModel CashRegisterInput { get; set; } = new();
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -91,6 +97,41 @@ public sealed class IndexModel(
         return RedirectToPage();
     }
 
+    public async Task<IActionResult> OnPostSaveCashRegisterAsync(CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        if (!TryParseCashRegisterInitialCash(CashRegisterInput.InitialCash, out var initialCashCents))
+        {
+            ModelState.AddModelError(
+                "CashRegisterInput.InitialCash",
+                "Saisissez un fond de caisse valide en euros.");
+            await LoadPageAsync(cancellationToken);
+            return Page();
+        }
+
+        var result = await cashRegisterService.SaveCashRegisterAsync(
+            CashRegisterInput.Id,
+            CashRegisterInput.Name,
+            initialCashCents,
+            CashRegisterInput.IsActive,
+            CashRegisterInput.DisplayOrder,
+            cancellationToken);
+
+        if (result == CashRegisterSaveResult.Saved)
+        {
+            SuccessMessage = "Caisse enregistrée.";
+            return RedirectToPage();
+        }
+
+        ModelState.AddModelError("CashRegisterInput.Name", ToCashRegisterValidationMessage(result));
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
     public async Task<IActionResult> OnPostCorrectSaleLineAsync(
         long saleLineId,
         CancellationToken cancellationToken)
@@ -118,7 +159,7 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostRefundDefectiveSaleLineAsync(
         long saleLineId,
-        string? refundCheckoutCode,
+        long? refundCashRegisterId,
         CancellationToken cancellationToken)
     {
         if (!UnlockPageIfSessionAllows())
@@ -126,7 +167,7 @@ public sealed class IndexModel(
             return Page();
         }
 
-        var result = await saleCorrectionService.RefundDefectiveSaleLineAsync(saleLineId, refundCheckoutCode, cancellationToken);
+        var result = await saleCorrectionService.RefundDefectiveSaleLineAsync(saleLineId, refundCashRegisterId, cancellationToken);
         if (result == SaleCorrectionResult.Refunded)
         {
             SuccessMessage = "L'article est marqué défectueux. Remboursez l'acheteur du montant indiqué et rendez l'article au vendeur en fin de vente.";
@@ -136,7 +177,7 @@ public sealed class IndexModel(
         var message = result switch
         {
             SaleCorrectionResult.NotFound => "Ligne de vente introuvable.",
-            SaleCorrectionResult.InvalidCheckoutCode => "Choisissez une caisse de remboursement existante.",
+            SaleCorrectionResult.InvalidCashRegister => "Choisissez une caisse de remboursement existante.",
             _ => "Cette ligne de vente ne peut pas être remboursée dans son état actuel."
         };
 
@@ -234,7 +275,8 @@ public sealed class IndexModel(
     {
         CurrentPhase = await salePhaseService.GetCurrentPhaseAsync(cancellationToken);
         ItemCorrectionCandidates = await itemCorrectionService.ListCandidatesAsync(cancellationToken);
-        CheckoutCodes = await saleCorrectionService.ListCheckoutCodesAsync(cancellationToken);
+        RefundCashRegisters = await saleCorrectionService.ListRefundCashRegistersAsync(cancellationToken);
+        CashRegisters = await cashRegisterService.ListCashRegistersAsync(cancellationToken);
     }
 
     private bool UnlockPageIfSessionAllows()
@@ -252,5 +294,41 @@ public sealed class IndexModel(
     public sealed class PasswordInputModel
     {
         public string? Password { get; set; }
+    }
+
+    public sealed class CashRegisterInputModel
+    {
+        public long? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? InitialCash { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        public int? DisplayOrder { get; set; }
+    }
+
+    private static bool TryParseCashRegisterInitialCash(string? rawValue, out int cents)
+    {
+        if (!EuroPriceInput.TryParseToCents(rawValue, out cents))
+        {
+            return false;
+        }
+
+        return cents >= 0;
+    }
+
+    private static string ToCashRegisterValidationMessage(CashRegisterSaveResult result)
+    {
+        return result switch
+        {
+            CashRegisterSaveResult.NotFound => "Caisse introuvable.",
+            CashRegisterSaveResult.NameRequired => "Le nom de la caisse est obligatoire.",
+            CashRegisterSaveResult.DuplicateName => "Une caisse porte déjà ce nom.",
+            CashRegisterSaveResult.NegativeInitialCash => "Le fond de caisse ne peut pas être négatif.",
+            CashRegisterSaveResult.RenameNotAllowed => "Une caisse déjà utilisée ne peut pas être renommée.",
+            _ => "La caisse n'a pas pu être enregistrée."
+        };
     }
 }

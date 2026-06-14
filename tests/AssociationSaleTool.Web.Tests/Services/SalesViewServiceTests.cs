@@ -183,10 +183,12 @@ public sealed class SalesViewServiceTests
         };
         context.Items.AddRange(refundedItem, activeItem);
         await context.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-REFUND");
 
         var sale = new SaleEntity
         {
             SoldAt = new DateTime(2026, 5, 4, 14, 0, 0, DateTimeKind.Utc),
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 2000,
             CheckoutFeeCents = 200,
             TotalPaidCents = 2200,
@@ -200,7 +202,8 @@ public sealed class SalesViewServiceTests
                     RefundItemPriceCents = 1200,
                     RefundCheckoutFeeCents = 120,
                     RefundTotalCents = 1320,
-                    RefundReason = "defective"
+                    RefundReason = "defective",
+                    RefundCashRegisterId = cashRegisterId
                 },
                 new SaleLineEntity
                 {
@@ -333,10 +336,12 @@ public sealed class SalesViewServiceTests
 
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
+        var cashRegisterId = await SeedCashRegisterAsync(context, $"CAISSE-{seller.SellerCode}");
 
         var sale = new SaleEntity
         {
             SoldAt = soldAt,
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = lines.Sum(x => x.PriceCents),
             CheckoutFeeCents = lines.Sum(x => x.PriceCents) / 10,
             TotalPaidCents = lines.Sum(x => x.PriceCents) + lines.Sum(x => x.PriceCents) / 10,
@@ -373,6 +378,25 @@ public sealed class SalesViewServiceTests
         context.Sales.Add(sale);
         await context.SaveChangesAsync();
         return sale;
+    }
+
+    private static async Task<long> SeedCashRegisterAsync(AppDbContext context, string name)
+    {
+        var existingCashRegister = await context.CashRegisters.SingleOrDefaultAsync(x => x.Name == name);
+        if (existingCashRegister is not null)
+        {
+            return existingCashRegister.Id;
+        }
+
+        var cashRegister = new CashRegisterEntity
+        {
+            Name = name,
+            InitialCashCents = 5000,
+            IsActive = true
+        };
+        context.CashRegisters.Add(cashRegister);
+        await context.SaveChangesAsync();
+        return cashRegister.Id;
     }
 
     private static async Task<AppDbContext> CreateContextAsync(SqliteConnection connection)

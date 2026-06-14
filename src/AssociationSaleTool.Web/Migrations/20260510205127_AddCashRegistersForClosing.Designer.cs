@@ -11,14 +11,58 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AssociationSaleTool.Web.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260510205127_AddCheckoutClosingCodes")]
-    partial class AddCheckoutClosingCodes
+    [Migration("20260510205127_AddCashRegistersForClosing")]
+    partial class AddCashRegistersForClosing
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.10");
+
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DisplayOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnName("display_order");
+
+                    b.Property<int>("InitialCashCents")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnName("initial_cash_cents");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("cash_register", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_cash_register_initial_cash_cents", "initial_cash_cents >= 0");
+
+                            t.HasCheckConstraint("ck_cash_register_is_active", "is_active IN (0, 1)");
+
+                            t.HasCheckConstraint("ck_cash_register_name_not_blank", "length(trim(name)) > 0");
+                        });
+                });
 
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.EventStateEntity", b =>
                 {
@@ -129,12 +173,9 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("buyer_postal_code");
 
-                    b.Property<string>("CheckoutCode")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("")
-                        .HasColumnName("checkout_code");
+                    b.Property<long>("CashRegisterId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("cash_register_id");
 
                     b.Property<int>("CheckoutFeeCents")
                         .HasColumnType("INTEGER")
@@ -174,7 +215,7 @@ namespace AssociationSaleTool.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CheckoutCode");
+                    b.HasIndex("CashRegisterId");
 
                     b.HasIndex("InvoiceNumber")
                         .IsUnique()
@@ -206,9 +247,9 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("item_id");
 
-                    b.Property<string>("RefundCheckoutCode")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("refund_checkout_code");
+                    b.Property<long?>("RefundCashRegisterId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("refund_cash_register_id");
 
                     b.Property<int?>("RefundCheckoutFeeCents")
                         .HasColumnType("INTEGER")
@@ -244,7 +285,7 @@ namespace AssociationSaleTool.Web.Migrations
                         .IsUnique()
                         .HasFilter("corrected_at IS NULL AND refunded_at IS NULL");
 
-                    b.HasIndex("RefundCheckoutCode");
+                    b.HasIndex("RefundCashRegisterId");
 
                     b.HasIndex("SaleId");
 
@@ -360,9 +401,34 @@ namespace AssociationSaleTool.Web.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", "RefundCashRegister")
+                        .WithMany("RefundSaleLines")
+                        .HasForeignKey("RefundCashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Item");
 
+                    b.Navigation("RefundCashRegister");
+
                     b.Navigation("Sale");
+                });
+
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.SaleEntity", b =>
+                {
+                    b.HasOne("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", "CashRegister")
+                        .WithMany("Sales")
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CashRegister");
+                });
+
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", b =>
+                {
+                    b.Navigation("RefundSaleLines");
+
+                    b.Navigation("Sales");
                 });
 
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.ItemEntity", b =>

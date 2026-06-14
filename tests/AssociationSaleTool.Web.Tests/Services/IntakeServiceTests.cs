@@ -983,8 +983,17 @@ public sealed class IntakeServiceTests
             SellerPriceCents = 1000,
             Status = "in_stock"
         };
+        var cashRegister = new CashRegisterEntity
+        {
+            Name = "CAISSE-1",
+            InitialCashCents = 5000,
+            IsActive = true
+        };
+        context.CashRegisters.Add(cashRegister);
+        await context.SaveChangesAsync();
         var sale = new SaleEntity
         {
+            CashRegisterId = cashRegister.Id,
             SubtotalSellerPriceCents = 1000,
             CheckoutFeeCents = 100,
             TotalPaidCents = 1100,

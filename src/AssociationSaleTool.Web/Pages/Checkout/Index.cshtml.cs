@@ -10,6 +10,7 @@ namespace AssociationSaleTool.Web.Pages.Checkout;
 public sealed class IndexModel(
     CheckoutService checkoutService,
     SalePhaseService salePhaseService,
+    CashRegisterService cashRegisterService,
     IOptions<PrintingOptions> printingOptions) : PageModel
 {
     public string CatalogJson { get; private set; } = "[]";
@@ -19,6 +20,8 @@ public sealed class IndexModel(
     public bool SaleAllowed { get; private set; }
 
     public string SalePhaseLabel { get; private set; } = string.Empty;
+
+    public IReadOnlyList<AssociationSaleTool.Web.Services.Models.CashRegisterOption> CashRegisters { get; private set; } = [];
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -32,6 +35,7 @@ public sealed class IndexModel(
         }
 
         var catalog = await checkoutService.ListCatalogItemsAsync(cancellationToken);
+        CashRegisters = await cashRegisterService.ListActiveCashRegistersAsync(cancellationToken);
         CatalogJson = JsonSerializer.Serialize(catalog, new JsonSerializerOptions(JsonSerializerDefaults.Web));
     }
 }

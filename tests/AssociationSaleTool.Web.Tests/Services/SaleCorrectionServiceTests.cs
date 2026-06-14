@@ -41,7 +41,7 @@ public sealed class SaleCorrectionServiceTests
             buyerName: "Client correction",
             buyerPostalCode: "38000",
             buyerCity: "Grenoble",
-            checkoutCode: "CAISSE-1");
+            cashRegisterId: await SeedCashRegisterAsync(context, "CAISSE-1"));
 
         Assert.True(result.Saved);
         Assert.Equal("sold", (await context.Items.SingleAsync(x => x.Id == item.Id)).Status);
@@ -55,10 +55,10 @@ public sealed class SaleCorrectionServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var (item, saleLine) = await SeedSoldItemAsync(context);
-        await SeedCheckoutCodeAsync(context, "CAISSE-2");
+        var refundCashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-2");
         var service = new SaleCorrectionService(context);
 
-        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, "  CAISSE-2  ");
+        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, refundCashRegisterId);
 
         Assert.Equal(SaleCorrectionResult.Refunded, result);
         var savedItem = await context.Items.SingleAsync(x => x.Id == item.Id);
@@ -69,57 +69,57 @@ public sealed class SaleCorrectionServiceTests
         Assert.Equal(50, refundedLine.RefundCheckoutFeeCents);
         Assert.Equal(550, refundedLine.RefundTotalCents);
         Assert.Equal("defective", refundedLine.RefundReason);
-        Assert.Equal("CAISSE-2", refundedLine.RefundCheckoutCode);
+        Assert.Equal(refundCashRegisterId, refundedLine.RefundCashRegisterId);
         Assert.Null(refundedLine.CorrectedAt);
     }
 
     [Fact]
-    public async Task RefundDefectiveSaleLineAsync_RejectsBlankRefundCheckoutCode()
+    public async Task RefundDefectiveSaleLineAsync_RejectsMissingRefundCashRegister()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var (_, saleLine) = await SeedSoldItemAsync(context);
         var service = new SaleCorrectionService(context);
 
-        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, " ");
+        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, null);
 
-        Assert.Equal(SaleCorrectionResult.InvalidCheckoutCode, result);
+        Assert.Equal(SaleCorrectionResult.InvalidCashRegister, result);
         var savedLine = await context.SaleLines.SingleAsync(x => x.Id == saleLine.Id);
         Assert.Null(savedLine.RefundedAt);
-        Assert.Null(savedLine.RefundCheckoutCode);
+        Assert.Null(savedLine.RefundCashRegisterId);
     }
 
     [Fact]
-    public async Task RefundDefectiveSaleLineAsync_RejectsUnknownRefundCheckoutCode()
+    public async Task RefundDefectiveSaleLineAsync_RejectsUnknownRefundCashRegister()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var (_, saleLine) = await SeedSoldItemAsync(context);
         var service = new SaleCorrectionService(context);
 
-        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, "CAISSE-INCONNUE");
+        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, long.MaxValue);
 
-        Assert.Equal(SaleCorrectionResult.InvalidCheckoutCode, result);
+        Assert.Equal(SaleCorrectionResult.InvalidCashRegister, result);
         var savedLine = await context.SaleLines.SingleAsync(x => x.Id == saleLine.Id);
         Assert.Null(savedLine.RefundedAt);
-        Assert.Null(savedLine.RefundCheckoutCode);
+        Assert.Null(savedLine.RefundCashRegisterId);
     }
 
     [Fact]
-    public async Task ListCheckoutCodesAsync_ReturnsDistinctSaleCheckoutCodes()
+    public async Task ListRefundCashRegistersAsync_ReturnsConfiguredActiveCashRegisters()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
-        context.Sales.AddRange(
-            new SaleEntity { SoldAt = DateTime.UtcNow, CheckoutCode = "CAISSE-2", TotalPaidCents = 100, PaymentMethod = SalePaymentMethods.Card },
-            new SaleEntity { SoldAt = DateTime.UtcNow, CheckoutCode = "CAISSE-1", TotalPaidCents = 100, PaymentMethod = SalePaymentMethods.Cash },
-            new SaleEntity { SoldAt = DateTime.UtcNow, CheckoutCode = "CAISSE-2", TotalPaidCents = 100, PaymentMethod = SalePaymentMethods.Cheque });
+        context.CashRegisters.AddRange(
+            new CashRegisterEntity { Name = "CAISSE-2", InitialCashCents = 5000, IsActive = true, DisplayOrder = 2 },
+            new CashRegisterEntity { Name = "CAISSE-1", InitialCashCents = 4000, IsActive = true, DisplayOrder = 1 },
+            new CashRegisterEntity { Name = "CAISSE-0", InitialCashCents = 3000, IsActive = false, DisplayOrder = 0 });
         await context.SaveChangesAsync();
         var service = new SaleCorrectionService(context);
 
-        var codes = await service.ListCheckoutCodesAsync();
+        var cashRegisters = await service.ListRefundCashRegistersAsync();
 
-        Assert.Equal(["CAISSE-1", "CAISSE-2"], codes);
+        Assert.Equal(["CAISSE-1", "CAISSE-2"], cashRegisters.Select(x => x.Name));
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public sealed class SaleCorrectionServiceTests
         var service = new SaleCorrectionService(context);
 
         var beforeRefund = await service.ListActiveSoldItemsAsync();
-        await service.RefundDefectiveSaleLineAsync(saleLine.Id, "CAISSE-1");
+        await service.RefundDefectiveSaleLineAsync(saleLine.Id, await SeedCashRegisterAsync(context, "CAISSE-1"));
         var afterRefund = await service.ListActiveSoldItemsAsync();
 
         var item = Assert.Single(beforeRefund);
@@ -147,7 +147,7 @@ public sealed class SaleCorrectionServiceTests
         await using var context = await CreateContextAsync(connection);
         var (item, saleLine) = await SeedSoldItemAsync(context);
         var service = new SaleCorrectionService(context);
-        await service.RefundDefectiveSaleLineAsync(saleLine.Id, "CAISSE-1");
+        await service.RefundDefectiveSaleLineAsync(saleLine.Id, await SeedCashRegisterAsync(context, "CAISSE-1"));
 
         var result = await service.CancelDefectiveRefundAsync(saleLine.Id);
 
@@ -160,7 +160,7 @@ public sealed class SaleCorrectionServiceTests
         Assert.Null(restoredLine.RefundCheckoutFeeCents);
         Assert.Null(restoredLine.RefundTotalCents);
         Assert.Null(restoredLine.RefundReason);
-        Assert.Null(restoredLine.RefundCheckoutCode);
+        Assert.Null(restoredLine.RefundCashRegisterId);
         Assert.Null(restoredLine.CorrectedAt);
     }
 
@@ -186,7 +186,7 @@ public sealed class SaleCorrectionServiceTests
         var service = new SaleCorrectionService(context);
         await service.CorrectSaleLineAsync(saleLine.Id);
 
-        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, "CAISSE-1");
+        var result = await service.RefundDefectiveSaleLineAsync(saleLine.Id, await SeedCashRegisterAsync(context, "CAISSE-1"));
 
         Assert.Equal(SaleCorrectionResult.NotAllowed, result);
     }
@@ -229,7 +229,7 @@ public sealed class SaleCorrectionServiceTests
         await using var context = await CreateContextAsync(connection);
         var (_, saleLine) = await SeedSoldItemAsync(context);
         var service = new SaleCorrectionService(context);
-        await service.RefundDefectiveSaleLineAsync(saleLine.Id, "CAISSE-1");
+        await service.RefundDefectiveSaleLineAsync(saleLine.Id, await SeedCashRegisterAsync(context, "CAISSE-1"));
 
         var result = await service.CorrectSaleLineAsync(saleLine.Id);
 
@@ -262,10 +262,11 @@ public sealed class SaleCorrectionServiceTests
         context.Items.Add(item);
         await context.SaveChangesAsync();
 
+        var cashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-1");
         var sale = new SaleEntity
         {
             SoldAt = DateTime.UtcNow,
-            CheckoutCode = "CAISSE-1",
+            CashRegisterId = cashRegisterId,
             SubtotalSellerPriceCents = 500,
             CheckoutFeeCents = 50,
             TotalPaidCents = 550,
@@ -284,17 +285,23 @@ public sealed class SaleCorrectionServiceTests
         return (item, sale.SaleLines.Single());
     }
 
-    private static async Task SeedCheckoutCodeAsync(AppDbContext context, string checkoutCode)
+    private static async Task<long> SeedCashRegisterAsync(AppDbContext context, string name)
     {
-        context.Sales.Add(new SaleEntity
+        var existingCashRegister = await context.CashRegisters.SingleOrDefaultAsync(x => x.Name == name);
+        if (existingCashRegister is not null)
         {
-            SoldAt = DateTime.UtcNow,
-            CheckoutCode = checkoutCode,
-            SubtotalSellerPriceCents = 0,
-            CheckoutFeeCents = 0,
-            TotalPaidCents = 0
-        });
+            return existingCashRegister.Id;
+        }
+
+        var cashRegister = new CashRegisterEntity
+        {
+            Name = name,
+            InitialCashCents = 5000,
+            IsActive = true
+        };
+        context.CashRegisters.Add(cashRegister);
         await context.SaveChangesAsync();
+        return cashRegister.Id;
     }
 
     private static async Task<AppDbContext> CreateContextAsync(SqliteConnection connection)

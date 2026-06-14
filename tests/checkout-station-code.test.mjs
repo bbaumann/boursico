@@ -11,17 +11,18 @@ const checkoutPage = readFileSync(
   join(process.cwd(), "src", "AssociationSaleTool.Web", "Pages", "Checkout", "Index.cshtml"),
   "utf8");
 
-test("checkout station code is persisted locally and sent with sale requests", () => {
-  assert.match(siteScript, /const checkoutCodeStorageKey = "association-sale-tool\.checkout-code";/);
-  assert.match(siteScript, /localStorage\.getItem\(checkoutCodeStorageKey\)/);
-  assert.match(siteScript, /localStorage\.setItem\(checkoutCodeStorageKey,\s*normalizedCode\)/);
-  assert.match(siteScript, /body\.checkoutCode = options\.checkoutCode;/);
-  assert.match(siteScript, /checkoutCode: getCheckoutCode\(\)/);
+test("checkout cash register is persisted locally and sent with sale requests", () => {
+  assert.match(siteScript, /const cashRegisterStorageKey = "association-sale-tool\.cash-register-id";/);
+  assert.match(siteScript, /localStorage\.getItem\(cashRegisterStorageKey\)/);
+  assert.match(siteScript, /localStorage\.removeItem\(cashRegisterStorageKey\)/);
+  assert.match(siteScript, /localStorage\.setItem\(cashRegisterStorageKey,\s*selectedCashRegisterId\)/);
+  assert.match(siteScript, /body\.cashRegisterId = options\.cashRegisterId;/);
+  assert.match(siteScript, /cashRegisterId: getCashRegisterIdNumber\(\)/);
 });
 
-test("checkout page renders a French checkout code setup block", () => {
-  assert.match(checkoutPage, /data-checkout-code-setup/);
-  assert.match(checkoutPage, /data-checkout-code-input/);
-  assert.match(checkoutPage, /Nom de la caisse/);
-  assert.match(checkoutPage, /Enregistrer la caisse/);
+test("checkout page renders a French cash register setup block", () => {
+  assert.match(checkoutPage, /data-checkout-cash-register-setup/);
+  assert.match(checkoutPage, /data-checkout-cash-register-select/);
+  assert.match(checkoutPage, /Choisir une caisse/);
+  assert.match(checkoutPage, /Utiliser cette caisse/);
 });
