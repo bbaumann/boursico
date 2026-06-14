@@ -756,6 +756,17 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   margin: 0;
 }
 
+.seller-deposit-admin-section {
+  padding: 1rem;
+  border: 1px dashed rgba(90, 100, 88, 0.42);
+  border-radius: 8px;
+  background: rgba(90, 100, 88, 0.06);
+}
+
+.seller-deposit-admin-section h2 {
+  margin-top: 0;
+}
+
 .seller-deposit-flow {
   display: inline-flex;
 }
