@@ -147,36 +147,6 @@
                     </dialog>
                 </div>
             }
-            @if (Model.CanCancelDepositValidation)
-            {
-                <button type="button"
-                        class="button-link"
-                        onclick="document.getElementById('deposit-cancellation-dialog')?.showModal();">
-                    Annuler la validation du dépôt
-                </button>
-                <dialog id="deposit-cancellation-dialog" class="admin-dialog">
-                    <h3>Annulation de la validation du dépôt</h3>
-                    <p>Les articles encore en stock repasseront en enregistrés. Les articles déjà vendus, manquants ou défectueux resteront verrouillés.</p>
-                    <form method="post"
-                          asp-page-handler="CancelDepositValidation"
-                          asp-route-id="@Model.Seller.Id"
-                          class="stack-form">
-                        <label>
-                            <span>Mot de passe administrateur</span>
-                            <input asp-for="CancellationInput.AdminPassword" type="password" autocomplete="current-password" />
-                            <span asp-validation-for="CancellationInput.AdminPassword" class="validation"></span>
-                        </label>
-                        <div class="form-actions">
-                            <button type="submit" class="button-link button-link-solid">Annuler la validation</button>
-                            <button type="button"
-                                    class="button-link"
-                                    onclick="document.getElementById('deposit-cancellation-dialog')?.close();">
-                                Retour
-                            </button>
-                        </div>
-                    </form>
-                </dialog>
-            }
         </div>
     </section>
 
@@ -293,6 +263,41 @@
             </table>
         }
     </section>
+
+    @if (Model.CanCancelDepositValidation)
+    {
+        <section class="subsection seller-deposit-admin-section">
+            <h2>Administration</h2>
+            <p class="seller-meta">Action réservée aux administrateurs pour corriger une validation de dépôt faite par erreur.</p>
+            <button type="button"
+                    class="button-link"
+                    onclick="document.getElementById('deposit-cancellation-dialog')?.showModal();">
+                Annuler la validation du dépôt
+            </button>
+            <dialog id="deposit-cancellation-dialog" class="admin-dialog">
+                <h3>Annulation de la validation du dépôt</h3>
+                <p>Les articles encore en stock repasseront en enregistrés. Les articles déjà vendus, manquants ou défectueux resteront verrouillés.</p>
+                <form method="post"
+                      asp-page-handler="CancelDepositValidation"
+                      asp-route-id="@Model.Seller.Id"
+                      class="stack-form">
+                    <label>
+                        <span>Mot de passe administrateur</span>
+                        <input asp-for="CancellationInput.AdminPassword" type="password" autocomplete="current-password" />
+                        <span asp-validation-for="CancellationInput.AdminPassword" class="validation"></span>
+                    </label>
+                    <div class="form-actions">
+                        <button type="submit" class="button-link button-link-solid">Annuler la validation</button>
+                        <button type="button"
+                                class="button-link"
+                                onclick="document.getElementById('deposit-cancellation-dialog')?.close();">
+                            Retour
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+        </section>
+    }
 
     @if (Model.CanEditItemMasterData)
     {
