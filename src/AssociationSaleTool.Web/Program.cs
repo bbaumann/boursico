@@ -111,6 +111,9 @@ app.UseAuthorization();
 app.MapRazorPages();
 app.MapControllers();
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5050";
+app.Run($"http://0.0.0.0:{port}");
+
 app.Run();
 
 public partial class Program;
