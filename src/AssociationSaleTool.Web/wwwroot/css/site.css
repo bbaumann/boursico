@@ -1204,8 +1204,35 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   background: rgba(13, 92, 99, 0.08);
 }
 
+.checkout-result-row-disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  background: rgba(90, 100, 88, 0.08);
+}
+
+.checkout-result-row-disabled:hover {
+  background: rgba(90, 100, 88, 0.08);
+}
+
+.checkout-result-row-disabled td {
+  opacity: 0.72;
+}
+
 .checkout-result-action-cell {
   text-align: right;
+}
+
+.checkout-already-added-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid rgba(90, 100, 88, 0.28);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.65);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .checkout-cart-panel .validation {

@@ -99,6 +99,16 @@ function createCheckoutActionCell(itemId) {
   return cell;
 }
 
+function createCheckoutAlreadyAddedCell() {
+  const cell = document.createElement("td");
+  cell.className = "checkout-result-action-cell";
+  const alreadyAdded = document.createElement("span");
+  alreadyAdded.className = "checkout-already-added-badge";
+  alreadyAdded.textContent = "Déjà dans le panier";
+  cell.appendChild(alreadyAdded);
+  return cell;
+}
+
 function createCheckoutEmptyRow(message, columnCount) {
   const row = document.createElement("tr");
   const cell = document.createElement("td");
@@ -788,12 +798,21 @@ function initializeCheckout(root) {
 
     for (const item of matches) {
       const row = document.createElement("tr");
-      row.dataset.checkoutItemId = item.id;
+      const isAlreadyInCart = cart.some(cartItem => cartItem.id === item.id);
       row.className = "checkout-result-row";
+      row.classList.toggle("checkout-result-row-disabled", isAlreadyInCart);
+      if (isAlreadyInCart) {
+        row.setAttribute("aria-disabled", "true");
+      } else {
+        row.dataset.checkoutItemId = item.id;
+      }
+
       row.appendChild(createCheckoutCell(item.reference));
       row.appendChild(createCheckoutCell(item.title));
       row.appendChild(createCheckoutCell(formatCheckoutPrice(item.sellerPriceCents)));
-      row.appendChild(createCheckoutActionCell(item.id));
+      row.appendChild(isAlreadyInCart
+        ? createCheckoutAlreadyAddedCell()
+        : createCheckoutActionCell(item.id));
       resultsBody.appendChild(row);
     }
   }
@@ -877,11 +896,6 @@ function initializeCheckout(root) {
 
     const item = findCatalogItem(row.dataset.checkoutItemId);
     if (!item) {
-      return;
-    }
-
-    if (cart.some(cartItem => cartItem.id === item.id)) {
-      setMessage("Cet article est déjà dans le panier.");
       return;
     }
 

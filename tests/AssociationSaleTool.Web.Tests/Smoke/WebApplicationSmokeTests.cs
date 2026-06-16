@@ -2933,7 +2933,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains("initializeCheckout", content);
         Assert.Contains("data-checkout-root", content);
-        Assert.Contains("Cet article est déjà dans le panier.", content);
+        Assert.Contains("Déjà dans le panier", content);
+        Assert.Contains("checkout-result-row-disabled", content);
         Assert.Contains("data-checkout-remove", content);
         Assert.Contains("/api/caisse/validation", content);
         Assert.Contains("/api/ventes", content);
