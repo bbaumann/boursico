@@ -16,13 +16,19 @@ test("seller deposit finalization flow opens only when server validation passed"
     /const autoOpen = root\.hasAttribute\("data-seller-deposit-auto-open"\);/);
   assert.match(
     siteScript,
-    /if \(autoOpen\) \{\s*dialog\.showModal\(\);\s*showStep\("print"\);\s*\}/);
+    /const initialStep = root\.dataset\.sellerDepositInitialStep \|\| "fees";/);
+  assert.match(
+    siteScript,
+    /if \(autoOpen\) \{\s*dialog\.showModal\(\);\s*showStep\(initialStep\);\s*\}/);
 });
 
 test("seller deposit finalization advances after print and requires signed contract confirmation", () => {
   assert.match(
     siteScript,
     /const printButton = root\.querySelector\("\[data-seller-deposit-print\]"\);/);
+  assert.match(
+    siteScript,
+    /const feeStep = root\.querySelector\("\[data-seller-deposit-fee-step\]"\);/);
   assert.match(
     siteScript,
     /window\.open\(printButton\.dataset\.sellerDepositPrintUrl,\s*"_blank",\s*"noopener"\);/);
@@ -35,6 +41,9 @@ test("seller deposit finalization advances after print and requires signed contr
   assert.match(
     siteScript,
     /signatureConfirmation\?\.addEventListener\("change", updateSubmitState\);/);
+  assert.match(
+    siteScript,
+    /backToFeesButton\?\.addEventListener\("click", \(\) => showStep\("fees"\)\);/);
 });
 
 test("deposit contract auto-print mode prints and closes its generated tab", () => {

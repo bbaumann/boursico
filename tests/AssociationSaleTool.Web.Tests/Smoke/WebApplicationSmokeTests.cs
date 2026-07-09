@@ -2661,14 +2661,22 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-seller-deposit-begin", content);
         Assert.Contains("Finaliser le dépôt", content);
         Assert.Contains("data-seller-deposit-dialog", content);
-        Assert.Contains("Étape 1 - Imprimer le contrat", content);
+        Assert.Contains("<h4>Frais</h4>", content);
+        Assert.Contains("Attendus : 2.00 €", content);
+        Assert.Contains("Payés : 0.00 €", content);
+        Assert.Contains("Reste : 2.00 €", content);
+        Assert.Contains("Déduit au rapprochement", content);
+        Assert.Contains("name=\"DepositFeeInput.FeePaid\"", content);
+        Assert.Contains("handler=UpdateDepositFee", content);
+        Assert.Contains("data-seller-deposit-fee-step", content);
+        Assert.Contains("<h4>Contrat</h4>", content);
         Assert.Contains("Imprimer le contrat", content);
         Assert.Contains($"data-seller-deposit-print-url=\"/vendeurs/{sellerId}/contrat-depot?impression=auto\"", content);
         Assert.DoesNotContain("target=\"_blank\"", content);
-        Assert.Contains("Étape 2 - Valider le dépôt", content);
-        Assert.Contains("Faites signer le contrat papier par le vendeur.", content);
+        Assert.Contains("<h4>Signature</h4>", content);
         Assert.Contains("Le contrat papier est signé par le vendeur.", content);
         Assert.Contains("Valider le dépôt", content);
+        Assert.Contains("data-seller-deposit-initial-step=\"fees\"", content);
         Assert.Contains("data-seller-deposit-print-step", content);
         Assert.Contains("data-seller-deposit-validate-step", content);
         Assert.Contains("data-seller-deposit-signature-confirmation", content);
@@ -2686,12 +2694,26 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
         Assert.Contains("data-seller-deposit-auto-open", finalizationContent);
+        Assert.Contains("data-seller-deposit-initial-step=\"fees\"", finalizationContent);
         Assert.Contains("Le contrat papier est signé par le vendeur.", finalizationContent);
+
+        var feeUpdateResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=UpdateDepositFee",
+            BuildFormContent(finalizationContent, ("DepositFeeInput.FeePaid", "2")));
+
+        feeUpdateResponse.EnsureSuccessStatusCode();
+
+        var feeUpdateContent = WebUtility.HtmlDecode(await feeUpdateResponse.Content.ReadAsStringAsync());
+        Assert.Contains("data-seller-deposit-auto-open", feeUpdateContent);
+        Assert.Contains("data-seller-deposit-initial-step=\"print\"", feeUpdateContent);
+        Assert.Contains("Payés : 2.00 €", feeUpdateContent);
+        Assert.Contains("Reste : 0.00 €", feeUpdateContent);
 
         using var verificationScope = _factory.Services.CreateScope();
         var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var verifiedSeller = await verificationContext.Sellers.SingleAsync(x => x.Id == sellerId);
         Assert.Equal("deposit_pending", verifiedSeller.DepositStatus);
+        Assert.Equal(200, verifiedSeller.FeePaidCents);
     }
 
     [Fact]
@@ -3214,6 +3236,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
         Assert.Equal("deposit_validated", verifiedSeller.DepositStatus);
+        Assert.Equal(0, verifiedSeller.FeePaidCents);
         Assert.Equal("in_stock", Assert.Single(verifiedSeller.Items).Status);
     }
 

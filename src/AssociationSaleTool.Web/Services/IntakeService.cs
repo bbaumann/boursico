@@ -264,6 +264,29 @@ public sealed class IntakeService
         return UpdateSellerResult.Updated;
     }
 
+    public async Task<UpdateSellerResult> UpdateSellerFeePaidAsync(
+        long sellerId,
+        int feePaidCents,
+        CancellationToken cancellationToken = default)
+    {
+        var seller = await _dbContext.Sellers.SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
+        if (seller is null)
+        {
+            return UpdateSellerResult.NotFound;
+        }
+
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
+            || seller.DepositStatus != SellerDepositStatuses.Pending)
+        {
+            return UpdateSellerResult.NotAllowed;
+        }
+
+        EnsureSellerFeePaidIsValid(feePaidCents);
+        seller.FeePaidCents = feePaidCents;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return UpdateSellerResult.Updated;
+    }
+
     public async Task<UpdateItemResult> UpdateItemAsync(long itemId, UpdateItemRequest request, CancellationToken cancellationToken = default)
     {
         var item = await _dbContext.Items

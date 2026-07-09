@@ -24,6 +24,9 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
     [BindProperty]
     public CancellationInputModel CancellationInput { get; set; } = new();
 
+    [BindProperty]
+    public DepositFeeInputModel DepositFeeInput { get; set; } = new();
+
     public SellerEntity? Seller { get; private set; }
 
     public IReadOnlyList<ItemEntity> Items { get; private set; } = [];
@@ -37,6 +40,8 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
     public bool CanCancelDepositValidation { get; private set; }
 
     public bool ShouldOpenDepositFinalizationDialog { get; private set; }
+
+    public string DepositFinalizationInitialStep { get; private set; } = DepositFinalizationSteps.Fees;
 
     public string? ReadOnlyMessage { get; private set; }
 
@@ -203,6 +208,69 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         }
 
         ShouldOpenDepositFinalizationDialog = true;
+        DepositFinalizationInitialStep = DepositFinalizationSteps.Fees;
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostUpdateDepositFeeAsync(long id, CancellationToken cancellationToken)
+    {
+        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (loaded is null)
+        {
+            return NotFound();
+        }
+
+        var postedFeeInput = DepositFeeInput;
+        PopulateSellerState(loaded);
+        DepositFeeInput = postedFeeInput;
+        Input = CreateDefaultInput();
+        await PopulatePermissionStateAsync(loaded, cancellationToken);
+
+        if (!CanValidateDeposit)
+        {
+            ModelState.AddModelError(string.Empty, "Le dépôt ne peut pas être finalisé dans le statut actuel de la vente.");
+            return Page();
+        }
+
+        var validationState = BuildDepositValidationState(loaded);
+        ApplyDepositValidationState(validationState);
+        if (DepositValidationMessages.Count > 0)
+        {
+            AddDepositValidationMessagesToModelState();
+            return Page();
+        }
+
+        ShouldOpenDepositFinalizationDialog = true;
+        DepositFinalizationInitialStep = DepositFinalizationSteps.Fees;
+
+        var feePaidCents = ParseDepositFeePaid();
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        var result = await intakeService.UpdateSellerFeePaidAsync(id, feePaidCents, cancellationToken);
+        if (result == UpdateSellerResult.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (result == UpdateSellerResult.NotAllowed)
+        {
+            ModelState.AddModelError(string.Empty, "Les frais vendeur ne peuvent pas être modifiés dans le statut actuel de la vente.");
+            return Page();
+        }
+
+        var updated = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (updated is null)
+        {
+            return NotFound();
+        }
+
+        PopulateSellerState(updated);
+        await PopulatePermissionStateAsync(updated, cancellationToken);
+        ShouldOpenDepositFinalizationDialog = true;
+        DepositFinalizationInitialStep = DepositFinalizationSteps.Print;
         return Page();
     }
 
@@ -270,6 +338,10 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             seller.FeePaidCents,
             remainingFeeCents,
             remainingFeeCents == 0);
+        DepositFeeInput = new DepositFeeInputModel
+        {
+            FeePaid = EuroPriceInput.FormatFromCents(seller.FeePaidCents)
+        };
     }
 
     private async Task PopulatePermissionStateAsync(SellerEntity seller, CancellationToken cancellationToken)
@@ -336,6 +408,28 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         }
 
         return rowsToCreate;
+    }
+
+    private int ParseDepositFeePaid()
+    {
+        if (string.IsNullOrWhiteSpace(DepositFeeInput.FeePaid))
+        {
+            return 0;
+        }
+
+        if (!EuroPriceInput.TryParseToCents(DepositFeeInput.FeePaid, out var feePaidCents))
+        {
+            ModelState.AddModelError("DepositFeeInput.FeePaid", "Les frais payés doivent être un montant entier en euros.");
+            return 0;
+        }
+
+        if (feePaidCents < 0)
+        {
+            ModelState.AddModelError("DepositFeeInput.FeePaid", "Les frais payés doivent être supérieurs ou égaux à zéro.");
+            return 0;
+        }
+
+        return feePaidCents;
     }
 
     private void EnsureDefaultRows()
@@ -476,6 +570,13 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         bool HasSellerMessages,
         bool HasItemMessages);
 
+    private static class DepositFinalizationSteps
+    {
+        public const string Fees = "fees";
+
+        public const string Print = "print";
+    }
+
     public sealed class ItemBatchInput
     {
         public IntakeMode IntakeMode { get; set; }
@@ -493,6 +594,11 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
     public sealed class CancellationInputModel
     {
         public string? AdminPassword { get; set; }
+    }
+
+    public sealed class DepositFeeInputModel
+    {
+        public string? FeePaid { get; set; } = "0";
     }
 
     public sealed record SellerFeeStatus(

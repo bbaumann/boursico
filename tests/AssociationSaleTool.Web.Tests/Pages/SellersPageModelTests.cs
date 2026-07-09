@@ -339,6 +339,101 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
+    public async Task SellerDetailsPage_PostUpdateDepositFeePaid_UpdatesFeeAndReopensPrintStep()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = (await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"))).Seller!;
+        var rows = Enumerable.Range(1, 16)
+            .Select(index => new CreateItemRowRequest($"Toy {index}", 100))
+            .ToList();
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(seller.Id, IntakeMode.EmailPreregistration, rows));
+        var pageModel = new DetailsModel(service)
+        {
+            DepositFeeInput = new DetailsModel.DepositFeeInputModel
+            {
+                FeePaid = "4"
+            }
+        };
+
+        var result = await pageModel.OnPostUpdateDepositFeeAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.True(pageModel.ShouldOpenDepositFinalizationDialog);
+        Assert.Equal("print", pageModel.DepositFinalizationInitialStep);
+        Assert.Equal(400, pageModel.FeeStatus.ExpectedFeeCents);
+        Assert.Equal(400, pageModel.FeeStatus.PaidFeeCents);
+        Assert.Equal(0, pageModel.FeeStatus.RemainingFeeCents);
+        Assert.Equal(400, (await context.Sellers.SingleAsync()).FeePaidCents);
+    }
+
+    [Fact]
+    public async Task SellerDetailsPage_PostUpdateDepositFeePaid_ReturnsFeeStepForInvalidAmount()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = (await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"))).Seller!;
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy", 100)]));
+        var pageModel = new DetailsModel(service)
+        {
+            DepositFeeInput = new DetailsModel.DepositFeeInputModel
+            {
+                FeePaid = "-1"
+            }
+        };
+
+        var result = await pageModel.OnPostUpdateDepositFeeAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.True(pageModel.ShouldOpenDepositFinalizationDialog);
+        Assert.Equal("fees", pageModel.DepositFinalizationInitialStep);
+        Assert.False(pageModel.ModelState.IsValid);
+        Assert.Contains("supérieurs ou égaux à zéro", pageModel.ModelState["DepositFeeInput.FeePaid"]!.Errors.Single().ErrorMessage);
+        Assert.Equal(0, (await context.Sellers.SingleAsync()).FeePaidCents);
+    }
+
+    [Fact]
     public async Task SellerEditPage_Post_UpdatesSellerAndRedirectsToDetails()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

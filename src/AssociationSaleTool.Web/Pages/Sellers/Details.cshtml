@@ -93,6 +93,7 @@
             {
                 <div class="seller-deposit-flow"
                      data-seller-deposit-flow
+                     data-seller-deposit-initial-step="@Model.DepositFinalizationInitialStep"
                      @Html.Raw(Model.ShouldOpenDepositFinalizationDialog ? "data-seller-deposit-auto-open" : string.Empty)>
                     <form method="post"
                           asp-page-handler="BeginDepositFinalization"
@@ -108,25 +109,57 @@
                             aria-labelledby="deposit-finalization-title">
                         <h3 id="deposit-finalization-title">Finaliser le dépôt</h3>
                         <ol class="seller-deposit-step-list">
-                            <li data-seller-deposit-step-indicator="print" aria-current="step">Imprimer</li>
-                            <li data-seller-deposit-step-indicator="validate">Valider</li>
+                            <li data-seller-deposit-step-indicator="fees" aria-current="step">Frais</li>
+                            <li data-seller-deposit-step-indicator="print">Contrat</li>
+                            <li data-seller-deposit-step-indicator="validate">Signature</li>
                         </ol>
-                        <section class="seller-deposit-step-panel" data-seller-deposit-print-step>
-                            <h4>Étape 1 - Imprimer le contrat</h4>
-                            <p>Cliquez pour lancer l'impression du contrat, puis revenez ici avec le vendeur.</p>
+                        <section class="seller-deposit-step-panel" data-seller-deposit-fee-step>
+                            <h4>Frais</h4>
+                            <div class="seller-deposit-fee-recap">
+                                <p>Attendus : @DetailsModel.FormatPrice(Model.FeeStatus.ExpectedFeeCents)</p>
+                                <p>Payés : @DetailsModel.FormatPrice(Model.FeeStatus.PaidFeeCents)</p>
+                                <p>
+                                    Reste : @DetailsModel.FormatPrice(Model.FeeStatus.RemainingFeeCents)
+                                    @if (!Model.FeeStatus.IsFullyPaid)
+                                    {
+                                        <span>Déduit au rapprochement</span>
+                                    }
+                                </p>
+                            </div>
+                            <form method="post"
+                                  asp-page-handler="UpdateDepositFee"
+                                  asp-route-id="@Model.Seller.Id"
+                                  class="stack-form">
+                                <label>
+                                    <span>Frais payés (€ entier)</span>
+                                    <input asp-for="DepositFeeInput.FeePaid"
+                                           type="text"
+                                           inputmode="numeric"
+                                           pattern="[0-9]+"
+                                           data-whole-euro-input="true"
+                                           data-whole-euro-message="Les frais payés doivent être un montant entier en euros." />
+                                    <span asp-validation-for="DepositFeeInput.FeePaid" class="validation"></span>
+                                </label>
+                                <div class="form-actions">
+                                    <button type="button" class="button-link" data-seller-deposit-close>Retour</button>
+                                    <button type="submit" class="button-link button-link-solid">Continuer</button>
+                                </div>
+                            </form>
+                        </section>
+                        <section class="seller-deposit-step-panel" data-seller-deposit-print-step hidden>
+                            <h4>Contrat</h4>
                             <div class="form-actions">
+                                <button type="button" class="button-link" data-seller-deposit-back-to-fees>Retour</button>
                                 <button type="button"
                                         class="button-link button-link-solid"
                                         data-seller-deposit-print
                                         data-seller-deposit-print-url="@Url.Page("/Sellers/DepositContract", new { id = Model.Seller.Id, impression = "auto" })">
                                     Imprimer le contrat
                                 </button>
-                                <button type="button" class="button-link" data-seller-deposit-close>Retour</button>
                             </div>
                         </section>
                         <section class="seller-deposit-step-panel" data-seller-deposit-validate-step hidden>
-                            <h4>Étape 2 - Valider le dépôt</h4>
-                            <p>Faites signer le contrat papier par le vendeur.</p>
+                            <h4>Signature</h4>
                             <form method="post"
                                   asp-page-handler="ValidateDeposit"
                                   asp-route-id="@Model.Seller.Id"
@@ -135,9 +168,8 @@
                                     <input type="checkbox" data-seller-deposit-signature-confirmation />
                                     <span>Le contrat papier est signé par le vendeur.</span>
                                 </label>
-                                <p class="seller-meta">La validation passera les articles en stock et verrouillera les modifications normales du vendeur.</p>
                                 <div class="form-actions">
-                                    <button type="button" class="button-link" data-seller-deposit-back>Retour à l'impression</button>
+                                    <button type="button" class="button-link" data-seller-deposit-back>Retour</button>
                                     <button type="submit" class="button-link button-link-solid" data-seller-deposit-submit disabled>
                                         Valider le dépôt
                                     </button>

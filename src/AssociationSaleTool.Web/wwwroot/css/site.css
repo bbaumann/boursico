@@ -809,7 +809,7 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 
 .seller-deposit-step-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
   margin: 1rem 0;
   padding: 0;
@@ -836,9 +836,31 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   gap: 0.75rem;
 }
 
+.seller-deposit-step-panel[hidden] {
+  display: none;
+}
+
 .seller-deposit-step-panel h4,
 .seller-deposit-step-panel p {
   margin: 0;
+}
+
+.seller-deposit-fee-recap {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(15, 95, 111, 0.18);
+  border-radius: 8px;
+  background: rgba(15, 95, 111, 0.06);
+  font-weight: 700;
+}
+
+.seller-deposit-fee-recap span {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .checkbox-label {

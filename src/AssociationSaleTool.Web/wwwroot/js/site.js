@@ -1063,16 +1063,19 @@ function initializeCheckout(root) {
 
 function initializeSellerDepositFlow(root) {
   const autoOpen = root.hasAttribute("data-seller-deposit-auto-open");
+  const initialStep = root.dataset.sellerDepositInitialStep || "fees";
   const dialog = root.querySelector("[data-seller-deposit-dialog]");
+  const feeStep = root.querySelector("[data-seller-deposit-fee-step]");
   const printStep = root.querySelector("[data-seller-deposit-print-step]");
   const validateStep = root.querySelector("[data-seller-deposit-validate-step]");
   const printButton = root.querySelector("[data-seller-deposit-print]");
+  const backToFeesButton = root.querySelector("[data-seller-deposit-back-to-fees]");
   const backButton = root.querySelector("[data-seller-deposit-back]");
   const closeButtons = root.querySelectorAll("[data-seller-deposit-close]");
   const signatureConfirmation = root.querySelector("[data-seller-deposit-signature-confirmation]");
   const submitButton = root.querySelector("[data-seller-deposit-submit]");
 
-  if (!dialog || !printStep || !validateStep) {
+  if (!dialog || !feeStep || !printStep || !validateStep) {
     return;
   }
 
@@ -1085,12 +1088,16 @@ function initializeSellerDepositFlow(root) {
   }
 
   function showStep(step) {
-    const isValidateStep = step === "validate";
-    printStep.hidden = isValidateStep;
+    const normalizedStep = ["fees", "print", "validate"].includes(step) ? step : "fees";
+    const isFeeStep = normalizedStep === "fees";
+    const isPrintStep = normalizedStep === "print";
+    const isValidateStep = normalizedStep === "validate";
+    feeStep.hidden = !isFeeStep;
+    printStep.hidden = !isPrintStep;
     validateStep.hidden = !isValidateStep;
 
     root.querySelectorAll("[data-seller-deposit-step-indicator]").forEach(indicator => {
-      const isCurrent = indicator.dataset.sellerDepositStepIndicator === step;
+      const isCurrent = indicator.dataset.sellerDepositStepIndicator === normalizedStep;
       if (isCurrent) {
         indicator.setAttribute("aria-current", "step");
       } else {
@@ -1099,7 +1106,9 @@ function initializeSellerDepositFlow(root) {
     });
 
     updateSubmitState();
-    const focusTarget = isValidateStep
+    const focusTarget = isFeeStep
+      ? feeStep.querySelector("[name='DepositFeeInput.FeePaid']") || closeButtons[0]
+      : isValidateStep
       ? signatureConfirmation || backButton || submitButton
       : printButton || closeButtons[0];
     focusTarget?.focus();
@@ -1112,6 +1121,7 @@ function initializeSellerDepositFlow(root) {
 
     showStep("validate");
   });
+  backToFeesButton?.addEventListener("click", () => showStep("fees"));
   backButton?.addEventListener("click", () => showStep("print"));
   signatureConfirmation?.addEventListener("change", updateSubmitState);
   closeButtons.forEach(button => button.addEventListener("click", () => dialog.close()));
@@ -1126,7 +1136,7 @@ function initializeSellerDepositFlow(root) {
 
   if (autoOpen) {
     dialog.showModal();
-    showStep("print");
+    showStep(initialStep);
   }
 }
 
