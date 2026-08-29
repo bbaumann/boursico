@@ -1,0 +1,5 @@
+# Launcher scripts ship inside the handover archives and must keep the line
+# endings their target platform expects. A CRLF demarrer.sh fails on Debian
+# with "bad interpreter: /bin/sh^M".
+*.sh text eol=lf
+*.bat text eol=crlf

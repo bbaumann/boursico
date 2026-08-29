@@ -12,3 +12,4 @@ obj/
 *.db
 *.user
 bourse-aux-jouets.zip
+dist/
