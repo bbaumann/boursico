@@ -7,3 +7,8 @@ obj/
 .artifacts/
 *.db-shm
 *.db-wal
+
+.tmp/
+*.db
+*.user
+bourse-aux-jouets.zip
