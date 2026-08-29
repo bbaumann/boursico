@@ -177,9 +177,13 @@ Quand le vendeur apporte les jouets :
 2. Relire les articles un par un.
 3. Compléter le téléphone, l'adresse postale, le code postal, la ville et les informations de pièce d'identité du vendeur : nature de la pièce, numéro, date de délivrance et autorité de délivrance.
 4. Corriger ou supprimer les lignes incomplètes avant signature.
-5. Cliquer sur `Imprimer le contrat`.
-6. Faire signer le contrat papier par le vendeur.
-7. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
+5. Cliquer sur `Finaliser le dépôt`.
+6. Vérifier les frais vendeurs attendus, déjà payés et restant à payer. Corriger `Frais payés` si le vendeur règle tout ou partie des frais à ce moment.
+7. Cliquer sur `Continuer`, puis `Imprimer le contrat`.
+8. Faire signer le contrat papier par le vendeur.
+9. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
+
+Les frais restants ne bloquent pas la validation du dépôt. S'il reste un montant à payer, il sera déduit lors du rapprochement vendeur.
 
 Le contrat imprimé affiche l'identité de l'association, son adresse, son SIRET, les frais vendeurs attendus, les frais déjà payés, les mentions légales, la liste des articles et les prix. Il n'affiche pas les informations de pièce d'identité du vendeur. Il ne contient qu'une signature vendeur, avec la phrase `J'accepte le règlement de la bourse aux jouets` juste avant la date de signature. Le statut de l'événement n'est pas imprimé sur le contrat.
 
@@ -451,7 +455,7 @@ Pour présenter l'outil à des utilisateurs :
 1. Montrer le statut visible en haut de page.
 2. Ouvrir `VENDEURS`, créer ou ouvrir un vendeur.
 3. Ajouter quelques articles : ils restent `enregistré`.
-4. Ouvrir `Imprimer le contrat`, puis montrer la confirmation `Valider le dépôt` / `Le contrat est signé`.
+4. Ouvrir `Finaliser le dépôt`, montrer l'étape des frais vendeur, puis montrer `Imprimer le contrat` et la confirmation `Valider le dépôt` / `Le contrat est signé`.
 5. Passer dans `CAISSE`, chercher un article, l'ajouter au panier et montrer le calcul du total.
 6. Ouvrir `ADMIN`, expliquer le mot de passe et les trois statuts.
 7. Passer en `Après-vente`.

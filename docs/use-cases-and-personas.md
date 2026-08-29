@@ -170,14 +170,17 @@ Description : confirmer les jouets physiquement déposés, faire signer le contr
 2. Vérifier les articles apportés physiquement.
 3. Supprimer ou corriger les articles créés par erreur avant validation.
 4. Compléter les informations obligatoires du vendeur, y compris les informations de pièce d'identité.
-5. Renseigner les frais vendeur déjà payés.
-6. Cliquer sur `Imprimer le contrat`.
-7. Faire signer le contrat papier par le vendeur.
-8. Cliquer sur `Valider le dépôt`, puis confirmer que le contrat est signé.
+5. Cliquer sur `Finaliser le dépôt`.
+6. Vérifier les frais vendeur attendus, déjà payés et restant à payer.
+7. Renseigner les frais vendeur payés au dépôt si nécessaire, puis continuer vers le contrat.
+8. Cliquer sur `Imprimer le contrat`.
+9. Faire signer le contrat papier par le vendeur.
+10. Cliquer sur `Valider le dépôt`, puis confirmer que le contrat est signé.
 
 #### Critères d'acceptation
 
 - La validation est refusée si les informations obligatoires sont manquantes.
+- La validation reste possible si des frais vendeur restent à payer.
 - Le contrat imprimé contient l'identité de l'association, les informations vendeur, les frais vendeur et la liste des articles.
 - Après validation, les articles acceptés passent en `en stock`.
 - Après validation, les modifications normales du vendeur et de ses articles sont verrouillées.

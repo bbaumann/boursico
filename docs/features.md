@@ -258,12 +258,16 @@ When the seller physically gives the toys to the association:
 
 1. The operator opens the seller detail page.
 2. The operator completes any missing phone, postal address, postal code, city, identity document nature, identity document number, issue date, or issuing authority.
-3. The operator prints `Imprimer le contrat`.
-4. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
-5. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
-6. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
+3. The operator starts `Finaliser le dépôt`.
+4. The operator verifies the expected seller fee, the fee already paid, and the remaining fee, then updates `Frais payés` when the seller pays at deposit time.
+5. The operator prints `Imprimer le contrat`.
+6. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
+7. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
+8. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
 
 The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, whether payment is still due, and item prices. It does not print the seller identity document fields. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
+
+Remaining seller fees never block deposit validation. They remain visible in the deposit workflow and are deducted from the seller payout during reconciliation.
 
 After validation, normal seller and item edits are locked for that seller. The signed paper contract is the legal proof; the database status is only the operational gate. Admin cancellation is available from the seller detail page during `presale` after confirming the shared admin password. It moves only items still `in_stock` back to `registered`; `sold`, `missing`, and `defective` items remain unchanged and read-only. Revalidating the deposit later tolerates those historical item states and only moves current `registered` items back to `in_stock`.
 
