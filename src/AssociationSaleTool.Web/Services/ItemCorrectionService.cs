@@ -44,8 +44,10 @@ public sealed class ItemCorrectionService(AppDbContext dbContext)
                     .OrderByDescending(line => line.RefundedAt)
                     .Select(line => (DateTime?)line.Sale.SoldAt)
                     .FirstOrDefault(),
-                // The query above restricts to Status != "registered", i.e.
-                // every post-deposit status, so this is never null.
+                // By convention only: any post-deposit status implies a
+                // reference was already allocated by the deposit wizard, but
+                // that order is not enforced server-side yet (see the
+                // allocation task).
                 x.Reference!,
                 x.Title,
                 x.Seller.SellerCode,

@@ -124,8 +124,9 @@ public sealed class SalesViewService
             .OrderBy(x => x.Item.Reference)
             .Select(x => new SaleDetailLine(
                 x.Id,
-                // A sale line only exists for an item that has been sold,
-                // which is only reachable after deposit allocation.
+                // By convention only: a sold item implies a reference was
+                // already allocated by the deposit wizard, but that order is
+                // not enforced server-side yet (see the allocation task).
                 x.Item.Reference!,
                 x.Item.Title,
                 x.SellerPriceAtSaleCents,
@@ -170,8 +171,8 @@ public sealed class SalesViewService
             sale.ChequeBankName ?? string.Empty
         };
 
-        // Same invariant as BuildDetail above: a sale line's item was sold,
-        // so it always has an allocated reference.
+        // Same convention as BuildDetail above — not yet enforced
+        // server-side.
         terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference!, x.Item.Title }));
         return string.Join(' ', terms).ToLower(FrenchCulture);
     }

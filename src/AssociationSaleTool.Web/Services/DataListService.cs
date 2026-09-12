@@ -106,8 +106,9 @@ public sealed class DataListService(AppDbContext dbContext)
                     sale.BuyerCity ?? string.Empty,
                     paymentMethodLabel
                 };
-                // A sale line's item was sold, which is only reachable after
-                // deposit allocation, so its reference is never null here.
+                // By convention only: a sold item implies a reference was
+                // already allocated by the deposit wizard, but that order is
+                // not enforced server-side yet (see the allocation task).
                 searchTerms.AddRange(sale.SaleLines.SelectMany(line => new[] { line.Item.Reference!, line.Item.Title }));
 
                 return new DataListSaleRow(

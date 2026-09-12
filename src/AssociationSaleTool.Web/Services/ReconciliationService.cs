@@ -62,8 +62,10 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 $"{x.Seller.FirstName} {x.Seller.LastName}",
-                // The query above restricts to CorrectionStatuses
-                // ("in_stock"/"missing"), both post-deposit, so this is never null.
+                // By convention only: "in_stock"/"missing" implies a
+                // reference was already allocated by the deposit wizard, but
+                // that order is not enforced server-side yet (see the
+                // allocation task).
                 x.Reference!,
                 x.Title,
                 x.Status,
@@ -175,9 +177,9 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         return value.ToLower(FrenchCulture).Contains(normalizedQuery);
     }
 
-    // Called only for items with Status "sold" or "missing" (see the
-    // payableItems filter in ListSellerSheetsAsync) — both post-deposit
-    // statuses, so item.Reference is never null in this method.
+    // By convention only: "sold"/"missing" implies a reference was already
+    // allocated by the deposit wizard, but that order is not enforced
+    // server-side yet (see the allocation task).
     private static SellerSheetItem BuildPayableItem(ItemEntity item)
     {
         var isMissing = item.Status == "missing";
@@ -207,9 +209,8 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             isMissing);
     }
 
-    // Called only for items with Status "in_stock" or "defective" (see the
-    // returnedItems filter in ListSellerSheetsAsync) — both post-deposit
-    // statuses, so item.Reference is never null in this method.
+    // Same convention as BuildPayableItem above — not yet enforced
+    // server-side.
     private static SellerSheetItem BuildReturnedItem(ItemEntity item)
     {
         return new SellerSheetItem(

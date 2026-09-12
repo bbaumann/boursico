@@ -40,8 +40,9 @@ public sealed class CheckoutService
             .OrderBy(x => x.Reference)
             .Select(x => new CheckoutCatalogItem(
                 x.Id,
-                // "in_stock" is only reached after deposit validation, which
-                // allocates a reference to every item — never null here.
+                // By convention only: "in_stock" implies a reference was
+                // already allocated by the deposit wizard, but that order is
+                // not enforced server-side yet (see the allocation task).
                 x.Reference!,
                 x.Title,
                 x.SellerPriceCents!.Value))

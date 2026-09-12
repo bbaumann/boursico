@@ -15,8 +15,10 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                // BuildCandidateQuery restricts to "in_stock"/"defective",
-                // both post-deposit statuses, so a reference is always set.
+                // By convention only: "in_stock"/"defective" implies a
+                // reference was already allocated by the deposit wizard, but
+                // that order is not enforced server-side yet (see the
+                // allocation task).
                 x.Reference!,
                 x.Title,
                 x.Status,
@@ -50,7 +52,8 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                // Same invariant as ListCandidatesAsync above.
+                // Same convention as ListCandidatesAsync above — not yet
+                // enforced server-side.
                 x.Reference!,
                 x.Title,
                 x.Status,

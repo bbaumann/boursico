@@ -28,8 +28,9 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
                 x.Id,
                 x.SaleId,
                 x.ItemId,
-                // The query above restricts to Item.Status == "sold", which is
-                // reached only after deposit allocation, so this is never null.
+                // By convention only: "sold" implies a reference was already
+                // allocated by the deposit wizard, but that order is not
+                // enforced server-side yet (see the allocation task).
                 x.Item.Reference!,
                 x.Item.Title,
                 x.Item.Seller.SellerCode,
