@@ -124,9 +124,9 @@ public sealed class SalesViewService
             .OrderBy(x => x.Item.Reference)
             .Select(x => new SaleDetailLine(
                 x.Id,
-                // By convention only: a sold item implies a reference was
-                // already allocated by the deposit wizard, but that order is
-                // not enforced server-side yet (see the allocation task).
+                // A sold item implies a reference was already allocated:
+                // IntakeService.ValidateSellerDepositAsync refuses to move a
+                // registered item to in_stock while its reference is null.
                 x.Item.Reference!,
                 x.Item.Title,
                 x.SellerPriceAtSaleCents,
@@ -171,8 +171,7 @@ public sealed class SalesViewService
             sale.ChequeBankName ?? string.Empty
         };
 
-        // Same convention as BuildDetail above — not yet enforced
-        // server-side.
+        // Same guarantee as BuildDetail above.
         terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference!, x.Item.Title }));
         return string.Join(' ', terms).ToLower(FrenchCulture);
     }

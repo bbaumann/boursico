@@ -15,10 +15,11 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                // By convention only: "in_stock"/"defective" implies a
-                // reference was already allocated by the deposit wizard, but
-                // that order is not enforced server-side yet (see the
-                // allocation task).
+                // "in_stock"/"defective" implies a reference was already
+                // allocated: IntakeService.ValidateSellerDepositAsync refuses
+                // to move a registered item to in_stock while its reference
+                // is null, and defective items can only reach that status
+                // from in_stock.
                 x.Reference!,
                 x.Title,
                 x.Status,
@@ -52,8 +53,7 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                // Same convention as ListCandidatesAsync above — not yet
-                // enforced server-side.
+                // Same guarantee as ListCandidatesAsync above.
                 x.Reference!,
                 x.Title,
                 x.Status,

@@ -62,10 +62,10 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 $"{x.Seller.FirstName} {x.Seller.LastName}",
-                // By convention only: "in_stock"/"missing" implies a
-                // reference was already allocated by the deposit wizard, but
-                // that order is not enforced server-side yet (see the
-                // allocation task).
+                // "in_stock"/"missing" implies a reference was already
+                // allocated: IntakeService.ValidateSellerDepositAsync refuses
+                // to move a registered item to in_stock while its reference
+                // is null, and "missing" is only reached from in_stock.
                 x.Reference!,
                 x.Title,
                 x.Status,
@@ -177,9 +177,10 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         return value.ToLower(FrenchCulture).Contains(normalizedQuery);
     }
 
-    // By convention only: "sold"/"missing" implies a reference was already
-    // allocated by the deposit wizard, but that order is not enforced
-    // server-side yet (see the allocation task).
+    // "sold"/"missing" implies a reference was already allocated:
+    // IntakeService.ValidateSellerDepositAsync refuses to move a registered
+    // item to in_stock while its reference is null, and both statuses are
+    // only reached from in_stock.
     private static SellerSheetItem BuildPayableItem(ItemEntity item)
     {
         var isMissing = item.Status == "missing";
@@ -209,8 +210,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             isMissing);
     }
 
-    // Same convention as BuildPayableItem above — not yet enforced
-    // server-side.
+    // Same guarantee as BuildPayableItem above.
     private static SellerSheetItem BuildReturnedItem(ItemEntity item)
     {
         return new SellerSheetItem(

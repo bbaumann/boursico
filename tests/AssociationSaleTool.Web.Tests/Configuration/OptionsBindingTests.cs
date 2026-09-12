@@ -185,6 +185,12 @@ public class OptionsBindingTests
         }
     }
 
+    [Fact]
+    public void LabelsOptions_DefaultsToSevenSheetsOfSixtyFive()
+    {
+        Assert.Equal(455, new LabelsOptions().SoftCapacityPerLetter);
+    }
+
     private static void TryDelete(string path)
     {
         try

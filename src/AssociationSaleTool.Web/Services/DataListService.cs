@@ -106,9 +106,9 @@ public sealed class DataListService(AppDbContext dbContext)
                     sale.BuyerCity ?? string.Empty,
                     paymentMethodLabel
                 };
-                // By convention only: a sold item implies a reference was
-                // already allocated by the deposit wizard, but that order is
-                // not enforced server-side yet (see the allocation task).
+                // A sold item implies a reference was already allocated:
+                // IntakeService.ValidateSellerDepositAsync refuses to move a
+                // registered item to in_stock while its reference is null.
                 searchTerms.AddRange(sale.SaleLines.SelectMany(line => new[] { line.Item.Reference!, line.Item.Title }));
 
                 return new DataListSaleRow(

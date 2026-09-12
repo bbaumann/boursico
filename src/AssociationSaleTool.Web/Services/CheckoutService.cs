@@ -40,9 +40,9 @@ public sealed class CheckoutService
             .OrderBy(x => x.Reference)
             .Select(x => new CheckoutCatalogItem(
                 x.Id,
-                // By convention only: "in_stock" implies a reference was
-                // already allocated by the deposit wizard, but that order is
-                // not enforced server-side yet (see the allocation task).
+                // "in_stock" implies a reference was already allocated:
+                // IntakeService.ValidateSellerDepositAsync refuses to move a
+                // registered item to in_stock while its reference is null.
                 x.Reference!,
                 x.Title,
                 x.SellerPriceCents!.Value))

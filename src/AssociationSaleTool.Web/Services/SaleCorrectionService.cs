@@ -28,9 +28,9 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
                 x.Id,
                 x.SaleId,
                 x.ItemId,
-                // By convention only: "sold" implies a reference was already
-                // allocated by the deposit wizard, but that order is not
-                // enforced server-side yet (see the allocation task).
+                // "sold" implies a reference was already allocated:
+                // IntakeService.ValidateSellerDepositAsync refuses to move a
+                // registered item to in_stock while its reference is null.
                 x.Item.Reference!,
                 x.Item.Title,
                 x.Item.Seller.SellerCode,

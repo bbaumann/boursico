@@ -868,6 +868,7 @@ public sealed class SellersPageModelTests
             seller.Id,
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+        await service.AllocateDepositReferencesAsync(seller.Id);
 
         var pageModel = new DetailsModel(service);
 

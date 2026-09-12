@@ -52,6 +52,9 @@ builder.Services
     .Validate(options => !string.IsNullOrWhiteSpace(options.VatExemptionText), "Printing:VatExemptionText is required")
     .Validate(options => !string.IsNullOrWhiteSpace(options.LogoPath), "Printing:LogoPath is required")
     .ValidateOnStart();
+builder.Services
+    .AddOptions<LabelsOptions>()
+    .Bind(builder.Configuration.GetSection(LabelsOptions.SectionName));
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
     var databaseOptions = serviceProvider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
