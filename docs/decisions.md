@@ -868,4 +868,11 @@ This file captures the main project decisions in a lightweight ADR format.
     until allocation
   - an item shows an em dash (`—`) instead of a reference until its seller's
     deposit reaches the contract-print step
+  - the number part is capped at 999 per letter (20 x 999 against an event of
+    roughly 4,200 items, so this cannot occur in practice); an allocation
+    that would exceed it throws `ReferenceSpaceExhaustedException`, which is
+    deliberately uncaught and has no operator-facing recovery
+  - two deposit desks finalizing the same instant race on the same read
+    snapshot; the loser gets a generic error page but the fee is already
+    saved and allocation is idempotent, so re-clicking `Continuer` succeeds
   - `D-014` and `D-017` are superseded for current V1

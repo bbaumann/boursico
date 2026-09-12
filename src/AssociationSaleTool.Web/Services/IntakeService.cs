@@ -437,7 +437,12 @@ public sealed class IntakeService
             letter => letter,
             letter => HighestNumberForLetter(allocated, letter));
 
-        var ownLetter = seller.SellerCode[0];
+        // SellerCode defaults to string.Empty and the column only enforces
+        // NOT NULL, so a hand-edited database row could carry an empty code.
+        // Fall back to a real bucket letter rather than throwing
+        // IndexOutOfRangeException - unreachable through the app, but the
+        // same class of stale-data trap as the letter guards below.
+        var ownLetter = seller.SellerCode.Length > 0 ? seller.SellerCode[0] : ReferenceAllocator.SafeAlphabet[0];
         var existingLetter = seller.Items
             .Where(item => item.Reference is not null)
             .OrderByDescending(item => item.Id)
@@ -451,7 +456,12 @@ public sealed class IntakeService
             pending.Count,
             _labelsOptions.SoftCapacityPerLetter);
 
-        var next = usedByLetter[chosen];
+        // ChooseLetter can only return a letter outside usedByLetter's keys
+        // if both the existing-letter and own-letter guards in
+        // ReferenceAllocator.SelectLetter were somehow bypassed; treat that
+        // defensively as "unused" rather than crashing deposit finalization
+        // with no operator recovery.
+        var next = usedByLetter.GetValueOrDefault(chosen);
         foreach (var item in pending)
         {
             next++;

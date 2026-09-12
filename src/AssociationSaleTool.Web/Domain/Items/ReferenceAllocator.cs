@@ -47,13 +47,18 @@ public static class ReferenceAllocator
         int softCapacity)
     {
         // Top-up: keep the seller's items in one sort pile when they pull more
-        // toys out of the bag part-way through the deposit.
-        if (existingLetter is { } existing && Fits(usedByLetter, existing, count, softCapacity))
+        // toys out of the bag part-way through the deposit. A stale letter -
+        // e.g. the 'A' from a pre-migration "AA-001" reference - is not a
+        // real bucket and must not be trusted, so it falls through instead.
+        if (existingLetter is { } existing
+            && IsSafe(existing)
+            && Fits(usedByLetter, existing, count, softCapacity))
         {
             return existing;
         }
 
-        if (Fits(usedByLetter, ownLetter, count, softCapacity))
+        var ownLetterIsSafe = IsSafe(ownLetter);
+        if (ownLetterIsSafe && Fits(usedByLetter, ownLetter, count, softCapacity))
         {
             return ownLetter;
         }
@@ -70,9 +75,33 @@ public static class ReferenceAllocator
             .Select(candidate => (char?)candidate.Letter)
             .FirstOrDefault();
 
+        if (spill is { } spillLetter)
+        {
+            return spillLetter;
+        }
+
         // Relax: every letter is full, so the soft cap is ignored and the
         // seller goes into their own letter, onto labels printed on the day.
-        return spill ?? ownLetter;
+        // If ownLetter itself is not a real bucket (a stale/hand-edited
+        // seller code), that letter cannot be used either: fall back to the
+        // least-loaded real bucket regardless of the soft cap, so the result
+        // is always one of the twenty printed letters.
+        if (ownLetterIsSafe)
+        {
+            return ownLetter;
+        }
+
+        return SafeAlphabet
+            .Select((letter, index) => (Letter: letter, Index: index))
+            .OrderBy(candidate => Used(usedByLetter, candidate.Letter))
+            .ThenBy(candidate => candidate.Index)
+            .Select(candidate => candidate.Letter)
+            .First();
+    }
+
+    private static bool IsSafe(char letter)
+    {
+        return SafeAlphabet.Contains(letter);
     }
 
     private static bool Fits(

@@ -920,8 +920,16 @@ public sealed class SellersPageModelTests
         Assert.Contains(
             "Les références des articles n'ont pas encore été attribuées. Terminez l'étape des frais de la finalisation du dépôt avant de valider.",
             pageModel.DepositValidationMessages);
+
+        // Neither the seller-record nor the items are actually incomplete
+        // here - IntakeService's own guard refused only because references
+        // are not yet allocated - so neither blocker summary line ("Fiche
+        // vendeur" / "Articles") should show, and the "Corriger les articles
+        // incomplets" link (which points at data that isn't the problem)
+        // must not appear either. Only the specific message above should be
+        // visible to the operator.
         Assert.False(pageModel.HasSellerDepositValidationMessages);
-        Assert.True(pageModel.HasItemDepositValidationMessages);
+        Assert.False(pageModel.HasItemDepositValidationMessages);
         Assert.Equal("registered", (await context.Items.SingleAsync()).Status);
         Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
     }

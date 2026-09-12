@@ -1686,6 +1686,82 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task AllocateDepositReferencesAsync_DoesNotCrashWhenTheSellerHasAStalePreMigrationReference()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+
+        // A stale pre-migration reference such as "AA-001" makes the item's
+        // first character 'A', which is not in ReferenceAllocator.SafeAlphabet
+        // (reserved for the association). This is exactly the shape of a
+        // hand-edited or pre-migration database row: the fix must degrade
+        // into a valid allocation rather than throw KeyNotFoundException from
+        // an unguarded dictionary indexer.
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            Title = "Ancienne référence",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var newReference = await context.Items
+            .Where(x => x.SellerId == seller.Id && x.Title == "Puzzle")
+            .Select(x => x.Reference)
+            .SingleAsync();
+        Assert.NotNull(newReference);
+        Assert.Contains(newReference![0], AssociationSaleTool.Web.Domain.Items.ReferenceAllocator.SafeAlphabet);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_DoesNotCrashWhenTheSellerCodeIsEmpty()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+
+        // SellerEntity.SellerCode defaults to string.Empty and the column is
+        // NOT NULL only, so a hand-edited database row can carry an empty
+        // seller code. `seller.SellerCode[0]` must not throw
+        // IndexOutOfRangeException in that case.
+        var tracked = await context.Sellers.SingleAsync(x => x.Id == seller.Id);
+        tracked.SellerCode = string.Empty;
+        await context.SaveChangesAsync();
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var newReference = await context.Items
+            .Where(x => x.SellerId == seller.Id && x.Title == "Puzzle")
+            .Select(x => x.Reference)
+            .SingleAsync();
+        Assert.NotNull(newReference);
+        Assert.Contains(newReference![0], AssociationSaleTool.Web.Domain.Items.ReferenceAllocator.SafeAlphabet);
+    }
+
+    [Fact]
     public async Task CancelSellerDepositValidationAsync_KeepsAllocatedReferences()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

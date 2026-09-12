@@ -85,8 +85,14 @@ namespace AssociationSaleTool.Web.Migrations
                 -- (which excludes A, F, I, O, Q, V), so a synthetic fallback
                 -- reference can never collide with a genuine allocated one.
                 -- The numeric part is a dense sequence over just the
-                -- null-reference rows (not the raw Id), so it stays within
-                -- the load-bearing 3-digit format for any realistic dataset.
+                -- null-reference rows (not the raw Id). printf('%03d', n)
+                -- only guarantees a minimum of three digits: past 999
+                -- unallocated rows (plausible pre-event state, e.g. ~4,200
+                -- items awaiting deposit) it widens to four or more digits
+                -- rather than staying 3-digit. No collision results, and
+                -- this never matters in practice because Down never runs
+                -- against a live database - but that is a different claim
+                -- from "stays within the 3-digit format".
                 WITH missing_reference AS (
                     SELECT Id, ROW_NUMBER() OVER (ORDER BY Id) AS sequence_number
                     FROM item

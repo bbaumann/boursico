@@ -184,7 +184,7 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
                     "Le dépôt ne peut pas être validé : vérifiez les informations du vendeur et les articles avant de signer le contrat."
                 ];
             HasSellerDepositValidationMessages = !referencesNotYetAllocated;
-            HasItemDepositValidationMessages = true;
+            HasItemDepositValidationMessages = !referencesNotYetAllocated;
         }
 
         AddDepositValidationMessagesToModelState();
