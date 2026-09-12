@@ -1199,7 +1199,9 @@ public sealed class IntakeServiceTests
         Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
         var statusesByReference = await context.Items
             .OrderBy(x => x.Reference)
-            .ToDictionaryAsync(x => x.Reference, x => x.Status);
+            // Every item seeded above has an explicit Reference, so the key is
+            // never null here.
+            .ToDictionaryAsync(x => x.Reference!, x => x.Status);
         Assert.Equal("in_stock", statusesByReference["AA-001"]);
         Assert.Equal("sold", statusesByReference["AA-002"]);
         Assert.Equal("missing", statusesByReference["AA-003"]);
@@ -1495,7 +1497,9 @@ public sealed class IntakeServiceTests
         Assert.Equal("deposit_pending", reopenedSeller.DepositStatus);
         var statusesByReference = reopenedSeller.Items
             .OrderBy(x => x.Reference)
-            .ToDictionary(x => x.Reference, x => x.Status);
+            // Every item seeded above has an explicit Reference, so the key is
+            // never null here.
+            .ToDictionary(x => x.Reference!, x => x.Status);
         Assert.Equal("registered", statusesByReference["AA-001"]);
         Assert.Equal("sold", statusesByReference["AA-002"]);
         Assert.Equal("missing", statusesByReference["AA-003"]);

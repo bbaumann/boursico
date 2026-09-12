@@ -36,7 +36,9 @@ public sealed class DataListService(AppDbContext dbContext)
                     item.Status,
                     statusLabel,
                     item.SellerPriceCents,
-                    BuildSearchText(item.Reference, item.Title, item.Seller.SellerCode, sellerName, statusLabel, item.Status));
+                    // Registered items have no reference yet; BuildSearchText
+                    // already drops blank terms, so an empty string is a no-op.
+                    BuildSearchText(item.Reference ?? string.Empty, item.Title, item.Seller.SellerCode, sellerName, statusLabel, item.Status));
             })
             .ToList();
     }
@@ -104,7 +106,9 @@ public sealed class DataListService(AppDbContext dbContext)
                     sale.BuyerCity ?? string.Empty,
                     paymentMethodLabel
                 };
-                searchTerms.AddRange(sale.SaleLines.SelectMany(line => new[] { line.Item.Reference, line.Item.Title }));
+                // A sale line's item was sold, which is only reachable after
+                // deposit allocation, so its reference is never null here.
+                searchTerms.AddRange(sale.SaleLines.SelectMany(line => new[] { line.Item.Reference!, line.Item.Title }));
 
                 return new DataListSaleRow(
                     sale.Id,

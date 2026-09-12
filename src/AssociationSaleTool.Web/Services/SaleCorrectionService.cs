@@ -28,7 +28,9 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
                 x.Id,
                 x.SaleId,
                 x.ItemId,
-                x.Item.Reference,
+                // The query above restricts to Item.Status == "sold", which is
+                // reached only after deposit allocation, so this is never null.
+                x.Item.Reference!,
                 x.Item.Title,
                 x.Item.Seller.SellerCode,
                 $"{x.Item.Seller.FirstName} {x.Item.Seller.LastName}",

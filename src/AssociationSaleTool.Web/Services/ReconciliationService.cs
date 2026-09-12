@@ -62,7 +62,9 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 $"{x.Seller.FirstName} {x.Seller.LastName}",
-                x.Reference,
+                // The query above restricts to CorrectionStatuses
+                // ("in_stock"/"missing"), both post-deposit, so this is never null.
+                x.Reference!,
                 x.Title,
                 x.Status,
                 x.SellerPriceCents!.Value))
@@ -173,6 +175,9 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         return value.ToLower(FrenchCulture).Contains(normalizedQuery);
     }
 
+    // Called only for items with Status "sold" or "missing" (see the
+    // payableItems filter in ListSellerSheetsAsync) — both post-deposit
+    // statuses, so item.Reference is never null in this method.
     private static SellerSheetItem BuildPayableItem(ItemEntity item)
     {
         var isMissing = item.Status == "missing";
@@ -180,14 +185,14 @@ public sealed class ReconciliationService(AppDbContext dbContext)
 
         if (isMissing)
         {
-            priceCents = item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference);
+            priceCents = item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference!);
         }
         else
         {
             var activeSaleLine = item.SaleLines.SingleOrDefault(line => line.CorrectedAt is null && line.RefundedAt is null);
             if (activeSaleLine is null)
             {
-                throw new ReconciliationSellerSheetDataException(item.Reference);
+                throw new ReconciliationSellerSheetDataException(item.Reference!);
             }
 
             priceCents = activeSaleLine.SellerPriceAtSaleCents;
@@ -195,21 +200,24 @@ public sealed class ReconciliationService(AppDbContext dbContext)
 
         return new SellerSheetItem(
             item.Id,
-            item.Reference,
+            item.Reference!,
             item.Title,
             item.Status,
             priceCents,
             isMissing);
     }
 
+    // Called only for items with Status "in_stock" or "defective" (see the
+    // returnedItems filter in ListSellerSheetsAsync) — both post-deposit
+    // statuses, so item.Reference is never null in this method.
     private static SellerSheetItem BuildReturnedItem(ItemEntity item)
     {
         return new SellerSheetItem(
             item.Id,
-            item.Reference,
+            item.Reference!,
             item.Title,
             item.Status,
-            item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference),
+            item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference!),
             false);
     }
 }

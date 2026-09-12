@@ -44,7 +44,9 @@ public sealed class ItemCorrectionService(AppDbContext dbContext)
                     .OrderByDescending(line => line.RefundedAt)
                     .Select(line => (DateTime?)line.Sale.SoldAt)
                     .FirstOrDefault(),
-                x.Reference,
+                // The query above restricts to Status != "registered", i.e.
+                // every post-deposit status, so this is never null.
+                x.Reference!,
                 x.Title,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,

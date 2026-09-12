@@ -81,9 +81,28 @@ namespace AssociationSaleTool.Web.Migrations
                     CONSTRAINT uq_item_seller_number UNIQUE (seller_id, item_number)
                 );
 
+                -- 'F' is deliberately outside ReferenceAllocator.SafeAlphabet
+                -- (which excludes A, F, I, O, Q, V), so a synthetic fallback
+                -- reference can never collide with a genuine allocated one.
+                -- The numeric part is a dense sequence over just the
+                -- null-reference rows (not the raw Id), so it stays within
+                -- the load-bearing 3-digit format for any realistic dataset.
+                WITH missing_reference AS (
+                    SELECT Id, ROW_NUMBER() OVER (ORDER BY Id) AS sequence_number
+                    FROM item
+                    WHERE reference IS NULL
+                )
                 INSERT INTO item_old (Id, seller_id, reference, item_number, title, seller_price_cents, status)
-                SELECT Id, seller_id, COALESCE(reference, 'X' || printf('%03d', Id)), item_number, title, seller_price_cents, status
-                FROM item;
+                SELECT
+                    item.Id,
+                    item.seller_id,
+                    COALESCE(item.reference, 'F' || printf('%03d', missing_reference.sequence_number)),
+                    item.item_number,
+                    item.title,
+                    item.seller_price_cents,
+                    item.status
+                FROM item
+                LEFT JOIN missing_reference ON missing_reference.Id = item.Id;
 
                 DROP TABLE item;
 

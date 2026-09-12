@@ -40,7 +40,9 @@ public sealed class CheckoutService
             .OrderBy(x => x.Reference)
             .Select(x => new CheckoutCatalogItem(
                 x.Id,
-                x.Reference,
+                // "in_stock" is only reached after deposit validation, which
+                // allocates a reference to every item — never null here.
+                x.Reference!,
                 x.Title,
                 x.SellerPriceCents!.Value))
             .ToListAsync(cancellationToken);

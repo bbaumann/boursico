@@ -15,7 +15,9 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                x.Reference,
+                // BuildCandidateQuery restricts to "in_stock"/"defective",
+                // both post-deposit statuses, so a reference is always set.
+                x.Reference!,
                 x.Title,
                 x.Status,
                 x.SellerPriceCents!.Value,
@@ -48,7 +50,8 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                x.Reference,
+                // Same invariant as ListCandidatesAsync above.
+                x.Reference!,
                 x.Title,
                 x.Status,
                 x.SellerPriceCents!.Value,

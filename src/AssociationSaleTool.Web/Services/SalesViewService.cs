@@ -124,7 +124,9 @@ public sealed class SalesViewService
             .OrderBy(x => x.Item.Reference)
             .Select(x => new SaleDetailLine(
                 x.Id,
-                x.Item.Reference,
+                // A sale line only exists for an item that has been sold,
+                // which is only reachable after deposit allocation.
+                x.Item.Reference!,
                 x.Item.Title,
                 x.SellerPriceAtSaleCents,
                 x.CorrectedAt,
@@ -168,7 +170,9 @@ public sealed class SalesViewService
             sale.ChequeBankName ?? string.Empty
         };
 
-        terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference, x.Item.Title }));
+        // Same invariant as BuildDetail above: a sale line's item was sold,
+        // so it always has an allocated reference.
+        terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference!, x.Item.Title }));
         return string.Join(' ', terms).ToLower(FrenchCulture);
     }
 

@@ -3559,7 +3559,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
         Assert.Equal("deposit_pending", verifiedSeller.DepositStatus);
-        var statusesByReference = verifiedSeller.Items.ToDictionary(x => x.Reference, x => x.Status);
+        // Every item seeded above has an explicit Reference, so the key is
+        // never null here.
+        var statusesByReference = verifiedSeller.Items.ToDictionary(x => x.Reference!, x => x.Status);
         Assert.Equal("registered", statusesByReference["BK-CAN-001"]);
         Assert.Equal("sold", statusesByReference["BK-CAN-002"]);
         Assert.Equal("missing", statusesByReference["BK-CAN-003"]);
