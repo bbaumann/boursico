@@ -52,7 +52,7 @@ public sealed class IntakeService
     {
         return await _dbContext.Sellers
             .AsNoTracking()
-            .Include(x => x.Items.OrderBy(item => item.ItemNumber))
+            .Include(x => x.Items.OrderBy(item => item.Id))
             .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
     }
 
@@ -175,7 +175,7 @@ public sealed class IntakeService
                 };
 
                 _dbContext.Sellers.Add(seller);
-                AddItemRows(seller, request.Rows, 0);
+                AddItemRows(seller, request.Rows);
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -206,11 +206,7 @@ public sealed class IntakeService
             throw new InvalidOperationException("Seller deposit is already validated.");
         }
 
-        var nextItemNumber = await _dbContext.Items
-            .Where(x => x.SellerId == request.SellerId)
-            .Select(x => (int?)x.ItemNumber)
-            .MaxAsync(cancellationToken) ?? 0;
-        var createdItems = AddItemRows(seller, request.Rows, nextItemNumber);
+        var createdItems = AddItemRows(seller, request.Rows);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return createdItems;
@@ -633,20 +629,16 @@ public sealed class IntakeService
 
     private List<ItemEntity> AddItemRows(
         SellerEntity seller,
-        IReadOnlyList<CreateItemRowRequest> rows,
-        int currentMaxItemNumber)
+        IReadOnlyList<CreateItemRowRequest> rows)
     {
         var createdItems = new List<ItemEntity>();
-        var nextItemNumber = currentMaxItemNumber;
 
         foreach (var row in rows)
         {
-            nextItemNumber++;
             var item = new ItemEntity
             {
                 Seller = seller,
                 SellerId = seller.Id,
-                ItemNumber = nextItemNumber,
                 Title = row.Title.Trim(),
                 SellerPriceCents = row.SellerPriceCents,
                 Status = "registered"

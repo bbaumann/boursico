@@ -29,7 +29,6 @@ public sealed class ReconciliationServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Train",
             SellerPriceCents = 9999,
             Status = "sold"
@@ -38,7 +37,6 @@ public sealed class ReconciliationServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-002",
-            ItemNumber = 2,
             Title = "Puzzle",
             SellerPriceCents = 700,
             Status = "missing"
@@ -108,10 +106,10 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var sold = AddItem(context, seller, "AA-001", 1, "Train", 1000, "sold");
+        var sold = AddItem(context, seller, "AA-001", "Train", 1000, "sold");
         for (var itemNumber = 2; itemNumber <= 16; itemNumber++)
         {
-            AddItem(context, seller, $"AA-{itemNumber:000}", itemNumber, $"Registered {itemNumber}", 100, "registered");
+            AddItem(context, seller, $"AA-{itemNumber:000}", $"Registered {itemNumber}", 100, "registered");
         }
 
         await context.SaveChangesAsync();
@@ -161,7 +159,6 @@ public sealed class ReconciliationServiceTests
                 context,
                 seller,
                 $"AA-{itemNumber:000}",
-                itemNumber,
                 $"Article {itemNumber}",
                 200,
                 "sold"));
@@ -216,7 +213,7 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var sold = AddItem(context, seller, "AA-001", 1, "Train", 1000, "sold");
+        var sold = AddItem(context, seller, "AA-001", "Train", 1000, "sold");
         await context.SaveChangesAsync();
 
         context.Sales.Add(new SaleEntity
@@ -264,11 +261,11 @@ public sealed class ReconciliationServiceTests
         context.Sellers.AddRange(soldSeller, missingSeller, inStockSeller, registeredSeller, defectiveSeller, emptySeller);
         await context.SaveChangesAsync();
 
-        var soldItem = AddItem(context, soldSeller, "AA-001", 1, "Train", 400, "sold");
-        AddItem(context, missingSeller, "BB-001", 1, "Puzzle", 500, "missing");
-        AddItem(context, inStockSeller, "CC-001", 1, "Camion", 600, "in_stock");
-        AddItem(context, registeredSeller, "DD-001", 1, "Piano", 700, "registered");
-        AddItem(context, defectiveSeller, "EE-001", 1, "Livre", 800, "defective");
+        var soldItem = AddItem(context, soldSeller, "AA-001", "Train", 400, "sold");
+        AddItem(context, missingSeller, "BB-001", "Puzzle", 500, "missing");
+        AddItem(context, inStockSeller, "CC-001", "Camion", 600, "in_stock");
+        AddItem(context, registeredSeller, "DD-001", "Piano", 700, "registered");
+        AddItem(context, defectiveSeller, "EE-001", "Livre", 800, "defective");
         await context.SaveChangesAsync();
 
         context.Sales.Add(new SaleEntity
@@ -305,11 +302,11 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var sold = AddItem(context, seller, "AA-003", 3, "Train", 900, "sold");
-        var missing = AddItem(context, seller, "AA-002", 2, "Puzzle", 700, "missing");
-        var inStock = AddItem(context, seller, "AA-001", 1, "Camion", 600, "in_stock");
-        var defective = AddItem(context, seller, "AA-005", 5, "Livre abime", 500, "defective");
-        AddItem(context, seller, "AA-004", 4, "Piano", 500, "registered");
+        var sold = AddItem(context, seller, "AA-003", "Train", 900, "sold");
+        var missing = AddItem(context, seller, "AA-002", "Puzzle", 700, "missing");
+        var inStock = AddItem(context, seller, "AA-001", "Camion", 600, "in_stock");
+        var defective = AddItem(context, seller, "AA-005", "Livre abime", 500, "defective");
+        AddItem(context, seller, "AA-004", "Piano", 500, "registered");
         await context.SaveChangesAsync();
 
         context.Sales.Add(new SaleEntity
@@ -342,9 +339,9 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var sold = AddItem(context, seller, "AA-001", 1, "Train vendu", 1000, "sold");
-        var refunded = AddItem(context, seller, "AA-002", 2, "Puzzle rembourse", 700, "defective");
-        var directDefective = AddItem(context, seller, "AA-003", 3, "Livre abime", 600, "defective");
+        var sold = AddItem(context, seller, "AA-001", "Train vendu", 1000, "sold");
+        var refunded = AddItem(context, seller, "AA-002", "Puzzle rembourse", 700, "defective");
+        var directDefective = AddItem(context, seller, "AA-003", "Livre abime", 600, "defective");
         await context.SaveChangesAsync();
 
         var cashRegisterId = await SeedCashRegisterAsync(context);
@@ -400,8 +397,8 @@ public sealed class ReconciliationServiceTests
         context.Sellers.AddRange(firstSeller, secondSeller);
         await context.SaveChangesAsync();
 
-        AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
-        AddItem(context, secondSeller, "BB-001", 1, "Puzzle", 600, "in_stock");
+        AddItem(context, firstSeller, "AA-001", "Train", 500, "in_stock");
+        AddItem(context, secondSeller, "BB-001", "Puzzle", 600, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -428,8 +425,8 @@ public sealed class ReconciliationServiceTests
         context.Sellers.AddRange(firstSeller, secondSeller);
         await context.SaveChangesAsync();
 
-        AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
-        AddItem(context, secondSeller, "BB-001", 1, "Puzzle", 600, "in_stock");
+        AddItem(context, firstSeller, "AA-001", "Train", 500, "in_stock");
+        AddItem(context, secondSeller, "BB-001", "Puzzle", 600, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -452,10 +449,10 @@ public sealed class ReconciliationServiceTests
         context.Sellers.AddRange(secondSeller, firstSeller, inactiveSeller, defectiveSeller);
         await context.SaveChangesAsync();
 
-        AddItem(context, secondSeller, "BB-001", 1, "Puzzle", 600, "missing");
-        AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
-        AddItem(context, inactiveSeller, "CC-001", 1, "Livre", 400, "registered");
-        AddItem(context, defectiveSeller, "DD-001", 1, "Camion", 700, "defective");
+        AddItem(context, secondSeller, "BB-001", "Puzzle", 600, "missing");
+        AddItem(context, firstSeller, "AA-001", "Train", 500, "in_stock");
+        AddItem(context, inactiveSeller, "CC-001", "Livre", 400, "registered");
+        AddItem(context, defectiveSeller, "DD-001", "Camion", 700, "defective");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -476,10 +473,10 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var missing = AddItem(context, seller, "AA-002", 2, "Puzzle", 700, "missing");
-        var inStock = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
-        AddItem(context, seller, "AA-003", 3, "Livre", 400, "registered");
-        AddItem(context, seller, "AA-004", 4, "Piano", 800, "sold");
+        var missing = AddItem(context, seller, "AA-002", "Puzzle", 700, "missing");
+        var inStock = AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
+        AddItem(context, seller, "AA-003", "Livre", 400, "registered");
+        AddItem(context, seller, "AA-004", "Piano", 800, "sold");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -501,8 +498,8 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var expectedItem = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
-        AddItem(context, seller, "AA-002", 2, "Puzzle", 600, "in_stock");
+        var expectedItem = AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
+        AddItem(context, seller, "AA-002", "Puzzle", 600, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -523,8 +520,8 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
-        var expectedItem = AddItem(context, seller, "AA-002", 2, "Puzzle en bois", 600, "in_stock");
+        AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
+        var expectedItem = AddItem(context, seller, "AA-002", "Puzzle en bois", 600, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -545,8 +542,8 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
-        var expectedItem = AddItem(context, seller, "AA-002", 2, "ÉCOLE en bois", 600, "in_stock");
+        AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
+        var expectedItem = AddItem(context, seller, "AA-002", "ÉCOLE en bois", 600, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -567,7 +564,7 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        var item = AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -590,7 +587,7 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -616,7 +613,6 @@ public sealed class ReconciliationServiceTests
                 context,
                 seller,
                 $"AA-{itemNumber:000}",
-                itemNumber,
                 "Lot commun",
                 500,
                 "in_stock");
@@ -644,7 +640,7 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        var item = AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -665,7 +661,7 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "missing");
+        var item = AddItem(context, seller, "AA-001", "Train", 500, "missing");
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -687,7 +683,7 @@ public sealed class ReconciliationServiceTests
         firstContext.Sellers.Add(seller);
         await firstContext.SaveChangesAsync();
 
-        var item = AddItem(firstContext, seller, "AA-001", 1, "Train", 500, "in_stock");
+        var item = AddItem(firstContext, seller, "AA-001", "Train", 500, "in_stock");
         await firstContext.SaveChangesAsync();
 
         await using var secondContext = new AppDbContext(options);
@@ -742,7 +738,7 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, status);
+        var item = AddItem(context, seller, "AA-001", "Train", 500, status);
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -766,7 +762,7 @@ public sealed class ReconciliationServiceTests
         context.Sellers.Add(seller);
         await context.SaveChangesAsync();
 
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, status);
+        var item = AddItem(context, seller, "AA-001", "Train", 500, status);
         await context.SaveChangesAsync();
 
         var service = new ReconciliationService(context);
@@ -832,7 +828,6 @@ public sealed class ReconciliationServiceTests
         AppDbContext context,
         SellerEntity seller,
         string reference,
-        int itemNumber,
         string title,
         int sellerPriceCents,
         string status)
@@ -841,7 +836,6 @@ public sealed class ReconciliationServiceTests
         {
             SellerId = seller.Id,
             Reference = reference,
-            ItemNumber = itemNumber,
             Title = title,
             SellerPriceCents = sellerPriceCents,
             Status = status

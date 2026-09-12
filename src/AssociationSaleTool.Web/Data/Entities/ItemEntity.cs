@@ -14,8 +14,6 @@ public sealed class ItemEntity
     /// </summary>
     public string? Reference { get; set; }
 
-    public int ItemNumber { get; set; }
-
     public string Title { get; set; } = string.Empty;
 
     public int? SellerPriceCents { get; set; }

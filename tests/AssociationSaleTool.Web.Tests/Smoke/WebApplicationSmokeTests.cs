@@ -182,7 +182,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "WE-001",
-                ItemNumber = 1,
                 Title = "Whole euro toy",
                 SellerPriceCents = 1200,
                 Status = "registered"
@@ -342,7 +341,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "RI-001",
-                ItemNumber = 1,
                 Title = "Puzzle requis",
                 SellerPriceCents = 800,
                 Status = "registered"
@@ -684,7 +682,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SC-001-001",
-                ItemNumber = 1,
                 Title = "Article mal vendu",
                 SellerPriceCents = 900,
                 Status = "sold"
@@ -754,7 +751,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "00-SD-001",
-                ItemNumber = 1,
                 Title = "Article remboursable",
                 SellerPriceCents = 1000,
                 Status = "sold"
@@ -763,7 +759,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "00-SD-002",
-                ItemNumber = 2,
                 Title = "Article \u00e0 contr\u00f4ler",
                 SellerPriceCents = 700,
                 Status = "in_stock"
@@ -772,7 +767,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "00-SD-003",
-                ItemNumber = 3,
                 Title = "Article déjà défectueux",
                 SellerPriceCents = 500,
                 Status = "defective"
@@ -781,7 +775,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "00-SD-004",
-                ItemNumber = 4,
                 Title = "Article manquant",
                 SellerPriceCents = 300,
                 Status = "missing"
@@ -790,7 +783,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "00-SD-005",
-                ItemNumber = 5,
                 Title = "Article enregistré",
                 SellerPriceCents = 200,
                 Status = "registered"
@@ -870,7 +862,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = $"AF-001-{index:000}",
-                    ItemNumber = index,
                     Title = $"Article vendu {index}",
                     SellerPriceCents = 500 + index,
                     Status = "sold"
@@ -881,7 +872,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "ZZ-001-999",
-                ItemNumber = 16,
                 Title = "Article tardif à contrôler",
                 SellerPriceCents = 900,
                 Status = "in_stock"
@@ -921,7 +911,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SR-001-001",
-                ItemNumber = 1,
                 Title = "Article retourn\u00e9",
                 SellerPriceCents = 1500,
                 Status = "sold"
@@ -997,7 +986,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "00-SU-001",
-                ItemNumber = 1,
                 Title = "Article remboursement erreur",
                 SellerPriceCents = 1500,
                 Status = "defective"
@@ -1078,7 +1066,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SM-001-001",
-                ItemNumber = 1,
                 Title = "Article ab\u00eem\u00e9",
                 SellerPriceCents = 800,
                 Status = "in_stock"
@@ -1126,7 +1113,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SG-001-001",
-                ItemNumber = 1,
                 Title = "Article garde",
                 SellerPriceCents = 700,
                 Status = "sold"
@@ -1499,7 +1485,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-REF-001",
-                ItemNumber = 1,
                 Title = "Jeu defectueux",
                 SellerPriceCents = 1000,
                 Status = "defective"
@@ -1680,7 +1665,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "RO-001-001",
-                    ItemNumber = 1,
                     Title = "Puzzle lecture seule",
                     SellerPriceCents = 500,
                     Status = "in_stock"
@@ -1732,7 +1716,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "RO-002-001",
-                    ItemNumber = 1,
                     Title = "Article en stock",
                     SellerPriceCents = 500,
                     Status = "in_stock"
@@ -1741,7 +1724,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "RO-002-002",
-                    ItemNumber = 2,
                     Title = "Article manquant",
                     SellerPriceCents = 600,
                     Status = "missing"
@@ -1810,7 +1792,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                     {
                         SellerId = seller.Id,
                         Reference = "RA-010-001",
-                        ItemNumber = 1,
                         Title = "Camion filtrable",
                         SellerPriceCents = 700,
                         Status = "in_stock"
@@ -1819,7 +1800,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                     {
                         SellerId = seller.Id,
                         Reference = "RA-010-002",
-                        ItemNumber = 2,
                         Title = "Puzzle deja manquant",
                         SellerPriceCents = 800,
                         Status = "missing"
@@ -1911,7 +1891,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "RL-001-001",
-                ItemNumber = 1,
                 Title = "Article verrouille",
                 SellerPriceCents = 500,
                 Status = "in_stock"
@@ -1920,7 +1899,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "RL-001-002",
-                ItemNumber = 2,
                 Title = "Article deja manquant",
                 SellerPriceCents = 600,
                 Status = "missing"
@@ -1987,7 +1965,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                     {
                         SellerId = seller.Id,
                         Reference = "RC-001-001",
-                        ItemNumber = 1,
                         Title = "Puzzle rapprochement",
                         SellerPriceCents = 450,
                         Status = "in_stock"
@@ -1996,7 +1973,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                     {
                         SellerId = seller.Id,
                         Reference = "RC-001-002",
-                        ItemNumber = 2,
                         Title = "Train rapprochement",
                         SellerPriceCents = 800,
                         Status = "missing"
@@ -2055,7 +2031,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "RC-002-001",
-                    ItemNumber = 1,
                     Title = "Camion rapprochement",
                     SellerPriceCents = 700,
                     Status = "in_stock"
@@ -2118,7 +2093,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "RC-003-001",
-                    ItemNumber = 1,
                     Title = "Jeu retrouve",
                     SellerPriceCents = 900,
                     Status = "missing"
@@ -2241,7 +2215,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "RS-FEE-001",
-                ItemNumber = 1,
                 Title = "Article manquant",
                 SellerPriceCents = 1000,
                 Status = "missing"
@@ -2253,7 +2226,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = $"RS-FEE-{itemNumber:000}",
-                    ItemNumber = itemNumber,
                     Title = $"Article enregistre {itemNumber}",
                     SellerPriceCents = 100,
                     Status = "registered"
@@ -2368,7 +2340,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "RS-500-001",
-                ItemNumber = 1,
                 Title = "Article vendu incoherent",
                 SellerPriceCents = 1200,
                 Status = "sold"
@@ -2533,7 +2504,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-001-001",
-                ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 450,
                 Status = "registered"
@@ -2581,7 +2551,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = $"BK-FEE-{itemNumber:000}",
-                    ItemNumber = itemNumber,
                     Title = $"Jouet {itemNumber}",
                     SellerPriceCents = 100,
                     Status = "registered"
@@ -2633,7 +2602,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-002-001",
-                ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 500,
                 Status = "registered"
@@ -2781,7 +2749,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-LOCK-001",
-                ItemNumber = 1,
                 Title = "Puzzle verrouillé",
                 SellerPriceCents = 500,
                 Status = "in_stock"
@@ -3131,7 +3098,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-005-001",
-                ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 450,
                 Status = "registered"
@@ -3140,7 +3106,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-005-002",
-                ItemNumber = 2,
                 Title = "Camion",
                 SellerPriceCents = 700,
                 Status = "sold"
@@ -3197,7 +3162,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-008-001",
-                ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 450,
                 Status = "registered"
@@ -3266,7 +3230,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-MISS-001",
-                ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 450,
                 Status = "registered"
@@ -3342,7 +3305,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-ITEM-001",
-                ItemNumber = 1,
                 Title = "Jouet sans prix",
                 SellerPriceCents = null,
                 Status = "registered"
@@ -3403,7 +3365,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "BK-CON-001",
-                    ItemNumber = 1,
                     Title = "Puzzle contrat",
                     SellerPriceCents = 500,
                     Status = "registered"
@@ -3412,7 +3373,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "BK-CON-002",
-                    ItemNumber = 2,
                     Title = "Camion contrat",
                     SellerPriceCents = 700,
                     Status = "registered"
@@ -3491,7 +3451,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "BK-CAN-001",
-                    ItemNumber = 1,
                     Title = "Puzzle",
                     SellerPriceCents = 500,
                     Status = "in_stock"
@@ -3500,7 +3459,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "BK-CAN-002",
-                    ItemNumber = 2,
                     Title = "Train vendu",
                     SellerPriceCents = 700,
                     Status = "sold"
@@ -3509,7 +3467,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "BK-CAN-003",
-                    ItemNumber = 3,
                     Title = "Jeu manquant",
                     SellerPriceCents = 600,
                     Status = "missing"
@@ -3518,7 +3475,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 {
                     SellerId = seller.Id,
                     Reference = "BK-CAN-004",
-                    ItemNumber = 4,
                     Title = "Camion défectueux",
                     SellerPriceCents = 800,
                     Status = "defective"
@@ -3592,7 +3548,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-009-001",
-                ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 450,
                 Status = "registered"
@@ -3601,7 +3556,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-009-002",
-                ItemNumber = 2,
                 Title = "Camion",
                 SellerPriceCents = 700,
                 Status = "in_stock"
@@ -3646,7 +3600,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "BK-003-001",
-                ItemNumber = 1,
                 Title = "Grand coffret de construction",
                 SellerPriceCents = 1200,
                 Status = "registered"
@@ -3691,7 +3644,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "CK-001-001",
-                ItemNumber = 1,
                 Title = "Jeu de cubes",
                 SellerPriceCents = 900,
                 Status = "in_stock"
@@ -3851,7 +3803,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "CK-002-001",
-                ItemNumber = 1,
                 Title = "Toboggan miniature",
                 SellerPriceCents = 1200,
                 Status = "in_stock"
@@ -3897,7 +3848,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "CV-001-001",
-                ItemNumber = 1,
                 Title = "Jeu valide",
                 SellerPriceCents = 1200,
                 Status = "in_stock"
@@ -3945,7 +3895,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "CV-002-001",
-                ItemNumber = 1,
                 Title = "Jeu indisponible",
                 SellerPriceCents = 800,
                 Status = "sold"
@@ -3992,7 +3941,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-001-001",
-                ItemNumber = 1,
                 Title = "Jeu vendu",
                 SellerPriceCents = 1500,
                 Status = "in_stock"
@@ -4175,7 +4123,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = item.Reference,
-                ItemNumber = index + 1,
                 Title = item.Title,
                 SellerPriceCents = item.PriceCents,
                 Status = item.Status
@@ -4207,7 +4154,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             SellerId = seller.Id,
             Reference = $"{sellerCode}-001",
-            ItemNumber = 1,
             Title = "Jeu corrigé",
             SellerPriceCents = 900,
             Status = firstLineCorrectedAt is null ? "sold" : "in_stock"
@@ -4216,7 +4162,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             SellerId = seller.Id,
             Reference = $"{sellerCode}-002",
-            ItemNumber = 2,
             Title = "Jeu conserve",
             SellerPriceCents = 600,
             Status = "sold"
@@ -4276,7 +4221,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             SellerId = seller.Id,
             Reference = $"{seller.SellerCode}-001",
-            ItemNumber = 1,
             Title = "Jeu facture apres vente",
             SellerPriceCents = 1200,
             Status = "sold"
@@ -4347,7 +4291,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             SellerId = seller.Id,
             Reference = $"{sellerCode}001",
-            ItemNumber = 1,
             Title = "Jeu enregistr\u00e9",
             SellerPriceCents = 500,
             Status = "registered"
@@ -4356,7 +4299,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             SellerId = seller.Id,
             Reference = $"{sellerCode}002",
-            ItemNumber = 2,
             Title = "Jeu disponible",
             SellerPriceCents = 700,
             Status = "in_stock"
@@ -4365,7 +4307,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             SellerId = seller.Id,
             Reference = $"{sellerCode}003",
-            ItemNumber = 3,
             Title = "Jeu vendu",
             SellerPriceCents = 900,
             Status = "sold"
@@ -4374,7 +4315,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             SellerId = seller.Id,
             Reference = $"{sellerCode}004",
-            ItemNumber = 4,
             Title = "Jeu manquant",
             SellerPriceCents = 600,
             Status = "missing"
@@ -4698,7 +4638,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-003-001",
-                ItemNumber = 1,
                 Title = "Jeu avec facture",
                 SellerPriceCents = 1500,
                 Status = "in_stock"
@@ -4758,7 +4697,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-004-001",
-                ItemNumber = 1,
                 Title = "Jeu cheque",
                 SellerPriceCents = 1500,
                 Status = "in_stock"
@@ -4822,7 +4760,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-005-001",
-                ItemNumber = 1,
                 Title = "Jeu cheque incomplet",
                 SellerPriceCents = 1500,
                 Status = "in_stock"
@@ -4889,7 +4826,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-007-001",
-                ItemNumber = 1,
                 Title = "Jeu sans acheteur",
                 SellerPriceCents = 1500,
                 Status = "in_stock"
@@ -4953,7 +4889,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-006-001",
-                ItemNumber = 1,
                 Title = "Jeu avec acheteur",
                 SellerPriceCents = 1500,
                 Status = "in_stock"
@@ -5013,7 +4948,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             {
                 SellerId = seller.Id,
                 Reference = "SV-002-001",
-                ItemNumber = 1,
                 Title = "Jeu deja vendu",
                 SellerPriceCents = 1500,
                 Status = "sold"

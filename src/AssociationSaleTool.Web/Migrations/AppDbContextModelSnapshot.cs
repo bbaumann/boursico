@@ -99,10 +99,6 @@ namespace AssociationSaleTool.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ItemNumber")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("item_number");
-
                     b.Property<string>("Reference")
                         .HasColumnType("TEXT")
                         .HasColumnName("reference");
@@ -135,9 +131,6 @@ namespace AssociationSaleTool.Web.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("Title");
-
-                    b.HasIndex("SellerId", "ItemNumber")
-                        .IsUnique();
 
                     b.ToTable("item", null, t =>
                         {

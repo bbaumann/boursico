@@ -185,24 +185,6 @@ public class AppDbContextModelTests
     }
 
     [Fact]
-    public void ItemHasCompositeUniqueIndexForSellerAndNumber()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite("Data Source=:memory:")
-            .Options;
-
-        using var context = new AppDbContext(options);
-
-        var entityType = context.Model.FindEntityType(typeof(ItemEntity));
-        Assert.NotNull(entityType);
-        Assert.Contains(
-            entityType!.GetIndexes(),
-            index => index.IsUnique
-                && index.Properties.Select(property => property.Name).SequenceEqual(
-                    [nameof(ItemEntity.SellerId), nameof(ItemEntity.ItemNumber)]));
-    }
-
-    [Fact]
     public void ItemDoesNotStoreDerivedSalePriceColumn()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()

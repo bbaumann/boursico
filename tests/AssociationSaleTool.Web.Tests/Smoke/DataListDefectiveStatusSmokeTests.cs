@@ -71,7 +71,6 @@ public sealed class DataListDefectiveStatusSmokeTests : IClassFixture<IntakeWebA
         {
             SellerId = seller.Id,
             Reference = $"{sellerCode}001",
-            ItemNumber = 1,
             Title = "Jeu defectueux",
             SellerPriceCents = 500,
             Status = "defective"

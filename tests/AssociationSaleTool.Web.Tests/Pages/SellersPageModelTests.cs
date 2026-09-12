@@ -242,7 +242,7 @@ public sealed class SellersPageModelTests
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal(2, await context.Items.CountAsync());
         Assert.Collection(
-            await context.Items.OrderBy(x => x.ItemNumber).ToListAsync(),
+            await context.Items.OrderBy(x => x.Id).ToListAsync(),
             first => Assert.Equal(400, first.SellerPriceCents),
             second => Assert.Equal(1000, second.SellerPriceCents));
     }
@@ -821,7 +821,6 @@ public sealed class SellersPageModelTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = "sold"

@@ -167,7 +167,6 @@ public sealed class SalesViewServiceTests
         {
             SellerId = seller.Id,
             Reference = "SV-005-001",
-            ItemNumber = 1,
             Title = "Jeu defectueux",
             SellerPriceCents = 1200,
             Status = "defective"
@@ -176,7 +175,6 @@ public sealed class SalesViewServiceTests
         {
             SellerId = seller.Id,
             Reference = "SV-005-002",
-            ItemNumber = 2,
             Title = "Jeu conserve",
             SellerPriceCents = 800,
             Status = "sold"
@@ -358,7 +356,6 @@ public sealed class SalesViewServiceTests
             {
                 SellerId = seller.Id,
                 Reference = line.Reference,
-                ItemNumber = index + 1,
                 Title = line.Title,
                 SellerPriceCents = line.PriceCents,
                 Status = line.CorrectedAt is null ? "sold" : "in_stock"

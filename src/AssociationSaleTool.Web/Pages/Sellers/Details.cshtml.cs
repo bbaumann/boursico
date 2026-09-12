@@ -354,7 +354,7 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
     private void PopulateSellerState(SellerEntity seller)
     {
         Seller = seller;
-        Items = seller.Items.OrderBy(x => x.ItemNumber).ToList();
+        Items = seller.Items.OrderBy(x => x.Id).ToList();
         var expectedFeeCents = SellerFeeCalculator.CalculateExpectedFeeCents(seller.Items.Count);
         var remainingFeeCents = SellerFeeCalculator.CalculateRemainingFeeCents(expectedFeeCents, seller.FeePaidCents);
         FeeStatus = new SellerFeeStatus(

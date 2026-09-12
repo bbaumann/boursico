@@ -109,12 +109,12 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             {
                 var payableItems = seller.Items
                     .Where(item => item.Status is "sold" or "missing")
-                    .OrderBy(item => item.ItemNumber)
+                    .OrderBy(item => item.Reference)
                     .Select(BuildPayableItem)
                     .ToList();
                 var returnedItems = seller.Items
                     .Where(item => item.Status is "in_stock" or "defective")
-                    .OrderBy(item => item.ItemNumber)
+                    .OrderBy(item => item.Reference)
                     .Select(BuildReturnedItem)
                     .ToList();
                 var itemSubtotalCents = payableItems.Sum(item => item.PriceCents);

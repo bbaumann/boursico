@@ -57,7 +57,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasKey(x => x.Id);
             entity.Property(x => x.SellerId).HasColumnName("seller_id").IsRequired();
             entity.Property(x => x.Reference).HasColumnName("reference");
-            entity.Property(x => x.ItemNumber).HasColumnName("item_number").IsRequired();
             entity.Property(x => x.Title).HasColumnName("title").IsRequired();
             entity.Property(x => x.SellerPriceCents).HasColumnName("seller_price_cents");
             entity.Property(x => x.Status).HasColumnName("status").IsRequired();
@@ -68,8 +67,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(x => x.Reference)
-                .IsUnique();
-            entity.HasIndex(x => new { x.SellerId, x.ItemNumber })
                 .IsUnique();
             entity.HasIndex(x => x.Title);
             entity.HasIndex(x => x.SellerId);

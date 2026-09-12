@@ -134,8 +134,8 @@ public sealed class SellerDuplicateServiceTests
             Phone = "0123",
             Items =
             [
-                new ItemEntity { Reference = "AA-001", ItemNumber = 1, Title = "Toy", SellerPriceCents = 100, Status = "registered" },
-                new ItemEntity { Reference = "AA-002", ItemNumber = 2, Title = "Puzzle", SellerPriceCents = 200, Status = "registered" }
+                new ItemEntity { Reference = "AA-001", Title = "Toy", SellerPriceCents = 100, Status = "registered" },
+                new ItemEntity { Reference = "AA-002", Title = "Puzzle", SellerPriceCents = 200, Status = "registered" }
             ]
         };
         context.Sellers.Add(seller);

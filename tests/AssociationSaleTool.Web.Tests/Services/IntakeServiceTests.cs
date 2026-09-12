@@ -279,7 +279,7 @@ public sealed class IntakeServiceTests
         Assert.Equal(0, seller.FeePaidCents);
         Assert.Equal("deposit_pending", seller.DepositStatus);
         Assert.Collection(
-            seller.Items.OrderBy(x => x.ItemNumber),
+            seller.Items.OrderBy(x => x.Id),
             first =>
             {
                 Assert.Null(first.Reference);
@@ -479,17 +479,15 @@ public sealed class IntakeServiceTests
             ]));
 
         Assert.Collection(
-            createdItems.OrderBy(item => item.ItemNumber),
+            createdItems.OrderBy(item => item.Id),
             first =>
             {
-                Assert.Equal(1, first.ItemNumber);
                 Assert.Null(first.Reference);
                 Assert.Equal(500, first.SellerPriceCents);
                 Assert.Equal("registered", first.Status);
             },
             second =>
             {
-                Assert.Equal(2, second.ItemNumber);
                 Assert.Null(second.Reference);
                 Assert.Equal(600, second.SellerPriceCents);
                 Assert.Equal("registered", second.Status);
@@ -874,7 +872,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = "sold"
@@ -910,7 +907,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = status
@@ -945,7 +941,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = status
@@ -1005,7 +1000,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = "in_stock"
@@ -1117,7 +1111,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "BB001",
-            ItemNumber = 1,
             Title = "Jouet sans prix",
             SellerPriceCents = null,
             Status = "registered"
@@ -1163,7 +1156,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-001",
-                ItemNumber = 1,
                 Title = "Toy piano",
                 SellerPriceCents = 1000,
                 Status = "registered"
@@ -1172,7 +1164,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-002",
-                ItemNumber = 2,
                 Title = "Sold train",
                 SellerPriceCents = 1200,
                 Status = "sold"
@@ -1181,7 +1172,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-003",
-                ItemNumber = 3,
                 Title = "Missing puzzle",
                 SellerPriceCents = 800,
                 Status = "missing"
@@ -1190,7 +1180,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-004",
-                ItemNumber = 4,
                 Title = "Defective game",
                 SellerPriceCents = 600,
                 Status = "defective"
@@ -1461,7 +1450,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-001",
-                ItemNumber = 1,
                 Title = "Toy piano",
                 SellerPriceCents = 1000,
                 Status = "in_stock"
@@ -1470,7 +1458,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-002",
-                ItemNumber = 2,
                 Title = "Sold train",
                 SellerPriceCents = 1200,
                 Status = "sold"
@@ -1479,7 +1466,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-003",
-                ItemNumber = 3,
                 Title = "Missing puzzle",
                 SellerPriceCents = 800,
                 Status = "missing"
@@ -1488,7 +1474,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-004",
-                ItemNumber = 4,
                 Title = "Defective game",
                 SellerPriceCents = 600,
                 Status = "defective"
@@ -1637,7 +1622,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "B001",
-            ItemNumber = 1,
             Title = "Stock B1",
             SellerPriceCents = 100,
             Status = "in_stock"
@@ -1647,7 +1631,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "B002",
-            ItemNumber = 2,
             Title = "Stock B2",
             SellerPriceCents = 100,
             Status = "in_stock"
@@ -1657,7 +1640,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "D001",
-            ItemNumber = 3,
             Title = "Stock D1 (spilled here on an earlier pass)",
             SellerPriceCents = 100,
             Status = "in_stock"
@@ -1691,7 +1673,6 @@ public sealed class IntakeServiceTests
         context.Items.Add(new ItemEntity
         {
             SellerId = seller.Id,
-            ItemNumber = 1,
             Title = "Sans prix",
             SellerPriceCents = null,
             Status = "registered"
@@ -1799,7 +1780,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "B001",
-                ItemNumber = 1,
                 Title = "Puzzle",
                 SellerPriceCents = 500,
                 Status = "registered"
@@ -1808,7 +1788,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = null,
-                ItemNumber = 2,
                 Title = "Sold before this scheme existed",
                 SellerPriceCents = 300,
                 Status = "sold"

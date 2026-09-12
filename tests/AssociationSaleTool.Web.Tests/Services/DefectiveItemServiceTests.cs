@@ -15,7 +15,7 @@ public sealed class DefectiveItemServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context);
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "in_stock");
+        var item = AddItem(context, seller, "AA-001", "Train", 500, "in_stock");
         await context.SaveChangesAsync();
         var service = new DefectiveItemService(context);
 
@@ -31,7 +31,7 @@ public sealed class DefectiveItemServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context);
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "defective");
+        var item = AddItem(context, seller, "AA-001", "Train", 500, "defective");
         await context.SaveChangesAsync();
         var service = new DefectiveItemService(context);
 
@@ -47,7 +47,7 @@ public sealed class DefectiveItemServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context);
-        var item = AddItem(context, seller, "AA-001", 1, "Train", 500, "defective");
+        var item = AddItem(context, seller, "AA-001", "Train", 500, "defective");
         await context.SaveChangesAsync();
         var cashRegisterId = await SeedCashRegisterAsync(context);
         context.Sales.Add(new SaleEntity
@@ -90,10 +90,10 @@ public sealed class DefectiveItemServiceTests
         var secondSeller = new SellerEntity { SellerCode = "BB", FirstName = "Grace", LastName = "Hopper" };
         context.Sellers.AddRange(firstSeller, secondSeller);
         await context.SaveChangesAsync();
-        var referenceMatch = AddItem(context, firstSeller, "AA-001", 1, "Train", 500, "in_stock");
-        var titleMatch = AddItem(context, firstSeller, "AA-002", 2, "Puzzle bois", 600, "defective");
-        var sellerMatch = AddItem(context, secondSeller, "BB-001", 1, "Camion", 700, "in_stock");
-        AddItem(context, firstSeller, "AA-003", 3, "Livre", 800, "registered");
+        var referenceMatch = AddItem(context, firstSeller, "AA-001", "Train", 500, "in_stock");
+        var titleMatch = AddItem(context, firstSeller, "AA-002", "Puzzle bois", 600, "defective");
+        var sellerMatch = AddItem(context, secondSeller, "BB-001", "Camion", 700, "in_stock");
+        AddItem(context, firstSeller, "AA-003", "Livre", 800, "registered");
         await context.SaveChangesAsync();
         var service = new DefectiveItemService(context);
 
@@ -153,7 +153,6 @@ public sealed class DefectiveItemServiceTests
         AppDbContext context,
         SellerEntity seller,
         string reference,
-        int itemNumber,
         string title,
         int sellerPriceCents,
         string status)
@@ -162,7 +161,6 @@ public sealed class DefectiveItemServiceTests
         {
             SellerId = seller.Id,
             Reference = reference,
-            ItemNumber = itemNumber,
             Title = title,
             SellerPriceCents = sellerPriceCents,
             Status = status

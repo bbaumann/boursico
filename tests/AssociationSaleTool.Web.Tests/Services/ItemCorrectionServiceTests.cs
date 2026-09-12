@@ -14,11 +14,11 @@ public sealed class ItemCorrectionServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context);
-        AddItem(context, seller, "AA-000", 0, "Registered hidden", 100, "registered");
+        AddItem(context, seller, "AA-000", "Registered hidden", 100, "registered");
 
         for (var index = 1; index <= 16; index++)
         {
-            AddItem(context, seller, $"AA-{index:000}", index, $"Visible {index}", 100 + index, "in_stock");
+            AddItem(context, seller, $"AA-{index:000}", $"Visible {index}", 100 + index, "in_stock");
         }
 
         await context.SaveChangesAsync();
@@ -38,7 +38,7 @@ public sealed class ItemCorrectionServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context);
-        var item = AddItem(context, seller, "AA-001", 1, "Sold toy", 1200, "sold");
+        var item = AddItem(context, seller, "AA-001", "Sold toy", 1200, "sold");
         await context.SaveChangesAsync();
         var cashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-1");
         var sale = new SaleEntity
@@ -80,7 +80,7 @@ public sealed class ItemCorrectionServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context);
-        var item = AddItem(context, seller, "AA-001", 1, "Refunded toy", 1200, "defective");
+        var item = AddItem(context, seller, "AA-001", "Refunded toy", 1200, "defective");
         await context.SaveChangesAsync();
         var cashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-1");
         var sale = new SaleEntity
@@ -164,7 +164,6 @@ public sealed class ItemCorrectionServiceTests
         AppDbContext context,
         SellerEntity seller,
         string reference,
-        int itemNumber,
         string title,
         int sellerPriceCents,
         string status)
@@ -173,7 +172,6 @@ public sealed class ItemCorrectionServiceTests
         {
             SellerId = seller.Id,
             Reference = reference,
-            ItemNumber = itemNumber,
             Title = title,
             SellerPriceCents = sellerPriceCents,
             Status = status

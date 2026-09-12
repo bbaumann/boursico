@@ -252,7 +252,6 @@ public class OptionsBindingTests
             {
                 SellerId = seller.Id,
                 Reference = "B001",
-                ItemNumber = 1,
                 Title = "Déjà en stock",
                 SellerPriceCents = 100,
                 Status = "in_stock"

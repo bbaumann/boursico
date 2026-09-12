@@ -42,7 +42,7 @@ public sealed class DepositContractModel(IntakeService intakeService, IOptions<P
         }
 
         Seller = seller;
-        Items = seller.Items.OrderBy(x => x.ItemNumber).ToList();
+        Items = seller.Items.OrderBy(x => x.Id).ToList();
         ExpectedFeeCents = SellerFeeCalculator.CalculateExpectedFeeCents(Items.Count);
         PaidFeeCents = seller.FeePaidCents;
         RemainingFeeCents = SellerFeeCalculator.CalculateRemainingFeeCents(ExpectedFeeCents, PaidFeeCents);
