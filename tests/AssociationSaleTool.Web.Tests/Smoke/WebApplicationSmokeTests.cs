@@ -3525,6 +3525,232 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task DepositFinalizationAllocatesConsecutiveReferencesAndItemsReachCheckoutCatalog()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+        long sellerId;
+        long itemOneId;
+        long itemTwoId;
+        long itemThreeId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "K-701",
+                FirstName = "Karine",
+                LastName = "Depot",
+                Phone = "0123456789",
+                PostalAddress = "1 rue du Dépôt",
+                PostalCode = "38000",
+                City = "Grenoble",
+                IdentityDocumentType = "CNI",
+                IdentityDocumentNumber = "K701K701",
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                IdentityDocumentIssuer = "Préfecture 38"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var itemOne = new ItemEntity { SellerId = seller.Id, Title = "Puzzle un", SellerPriceCents = 500, Status = "registered" };
+            var itemTwo = new ItemEntity { SellerId = seller.Id, Title = "Puzzle deux", SellerPriceCents = 600, Status = "registered" };
+            var itemThree = new ItemEntity { SellerId = seller.Id, Title = "Puzzle trois", SellerPriceCents = 700, Status = "registered" };
+            dbContext.Items.AddRange(itemOne, itemTwo, itemThree);
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+            itemOneId = itemOne.Id;
+            itemTwoId = itemTwo.Id;
+            itemThreeId = itemThree.Id;
+        }
+
+        // Items must show no reference at all before allocation - both in the
+        // database and rendered as an em dash on the seller page.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seededItems = await dbContext.Items.Where(x => x.SellerId == sellerId).ToListAsync();
+            Assert.All(seededItems, item => Assert.Null(item.Reference));
+        }
+
+        var detailsResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        detailsResponse.EnsureSuccessStatusCode();
+        var detailsContent = WebUtility.HtmlDecode(await detailsResponse.Content.ReadAsStringAsync());
+        Assert.Equal(3, Regex.Matches(detailsContent, "<td>—</td>").Count);
+
+        var finalizationResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
+            BuildFormContent(detailsContent));
+        finalizationResponse.EnsureSuccessStatusCode();
+        var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
+
+        // Continuer on the fee step is the allocation trigger under test.
+        var feeUpdateResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=UpdateDepositFee",
+            BuildFormContent(finalizationContent, ("DepositFeeInput.FeePaid", "2")));
+        feeUpdateResponse.EnsureSuccessStatusCode();
+        var feeUpdateContent = WebUtility.HtmlDecode(await feeUpdateResponse.Content.ReadAsStringAsync());
+
+        string referenceOne;
+        string referenceTwo;
+        string referenceThree;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var itemOne = await dbContext.Items.SingleAsync(x => x.Id == itemOneId);
+            var itemTwo = await dbContext.Items.SingleAsync(x => x.Id == itemTwoId);
+            var itemThree = await dbContext.Items.SingleAsync(x => x.Id == itemThreeId);
+
+            Assert.NotNull(itemOne.Reference);
+            Assert.NotNull(itemTwo.Reference);
+            Assert.NotNull(itemThree.Reference);
+            referenceOne = itemOne.Reference!;
+            referenceTwo = itemTwo.Reference!;
+            referenceThree = itemThree.Reference!;
+        }
+
+        // Same letter as the first character of the seller code, numbered
+        // consecutively from 001 in item-creation order.
+        Assert.Equal("K001", referenceOne);
+        Assert.Equal("K002", referenceTwo);
+        Assert.Equal("K003", referenceThree);
+
+        var contractResponse = await client.GetAsync($"/vendeurs/{sellerId}/contrat-depot");
+        contractResponse.EnsureSuccessStatusCode();
+        var contractContent = WebUtility.HtmlDecode(await contractResponse.Content.ReadAsStringAsync());
+        Assert.Contains(referenceOne, contractContent);
+        Assert.Contains(referenceTwo, contractContent);
+        Assert.Contains(referenceThree, contractContent);
+
+        var validateResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=ValidateDeposit",
+            BuildFormContent(feeUpdateContent));
+        validateResponse.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = await dbContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+            Assert.Equal("deposit_validated", seller.DepositStatus);
+            Assert.All(seller.Items, item => Assert.Equal("in_stock", item.Status));
+        }
+
+        var checkoutResponse = await client.GetAsync("/caisse");
+        checkoutResponse.EnsureSuccessStatusCode();
+        var checkoutContent = await checkoutResponse.Content.ReadAsStringAsync();
+        Assert.Contains($"\"reference\":\"{referenceOne}\"", checkoutContent);
+        Assert.Contains($"\"reference\":\"{referenceTwo}\"", checkoutContent);
+        Assert.Contains($"\"reference\":\"{referenceThree}\"", checkoutContent);
+    }
+
+    [Fact]
+    public async Task DepositCancellationPreservesReferencesAndTopUpContinuesNumbering()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+        long sellerId;
+        long itemOneId;
+        long itemTwoId;
+        long itemThreeId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "T-702",
+                FirstName = "Theo",
+                LastName = "Topup",
+                Phone = "0123456789",
+                PostalAddress = "2 rue du Dépôt",
+                PostalCode = "38000",
+                City = "Grenoble",
+                IdentityDocumentType = "CNI",
+                IdentityDocumentNumber = "T702T702",
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                IdentityDocumentIssuer = "Préfecture 38",
+                DepositStatus = "deposit_validated"
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            var itemOne = new ItemEntity { SellerId = seller.Id, Reference = "T001", Title = "Camion un", SellerPriceCents = 500, Status = "in_stock" };
+            var itemTwo = new ItemEntity { SellerId = seller.Id, Reference = "T002", Title = "Camion deux", SellerPriceCents = 600, Status = "in_stock" };
+            var itemThree = new ItemEntity { SellerId = seller.Id, Reference = "T003", Title = "Camion trois", SellerPriceCents = 700, Status = "in_stock" };
+            dbContext.Items.AddRange(itemOne, itemTwo, itemThree);
+            await dbContext.SaveChangesAsync();
+
+            sellerId = seller.Id;
+            itemOneId = itemOne.Id;
+            itemTwoId = itemTwo.Id;
+            itemThreeId = itemThree.Id;
+        }
+
+        var pageResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        pageResponse.EnsureSuccessStatusCode();
+        var pageContent = WebUtility.HtmlDecode(await pageResponse.Content.ReadAsStringAsync());
+
+        var cancelResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=CancelDepositValidation",
+            BuildFormContent(pageContent, ("CancellationInput.AdminPassword", "test-password")));
+        cancelResponse.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = await dbContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+            Assert.Equal("deposit_pending", seller.DepositStatus);
+
+            // Load-bearing: the physical labels are already stuck on the toys,
+            // so cancelling the deposit validation must never touch an
+            // already-allocated reference.
+            Assert.Equal("T001", seller.Items.Single(x => x.Id == itemOneId).Reference);
+            Assert.Equal("T002", seller.Items.Single(x => x.Id == itemTwoId).Reference);
+            Assert.Equal("T003", seller.Items.Single(x => x.Id == itemThreeId).Reference);
+            Assert.All(seller.Items, item => Assert.Equal("registered", item.Status));
+        }
+
+        long itemFourId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var itemFour = new ItemEntity { SellerId = sellerId, Title = "Camion quatre", SellerPriceCents = 800, Status = "registered" };
+            dbContext.Items.Add(itemFour);
+            await dbContext.SaveChangesAsync();
+            itemFourId = itemFour.Id;
+        }
+
+        var refreshedResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        refreshedResponse.EnsureSuccessStatusCode();
+        var refreshedContent = WebUtility.HtmlDecode(await refreshedResponse.Content.ReadAsStringAsync());
+        Assert.Contains("<td>—</td>", refreshedContent);
+
+        var finalizationResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
+            BuildFormContent(refreshedContent));
+        finalizationResponse.EnsureSuccessStatusCode();
+        var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
+
+        var feeUpdateResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=UpdateDepositFee",
+            BuildFormContent(finalizationContent, ("DepositFeeInput.FeePaid", "2")));
+        feeUpdateResponse.EnsureSuccessStatusCode();
+
+        using var verificationScope = _factory.Services.CreateScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+
+        // The first three are untouched; the fourth took the next number in
+        // the same letter bucket rather than starting a new one or colliding.
+        Assert.Equal("T001", verifiedSeller.Items.Single(x => x.Id == itemOneId).Reference);
+        Assert.Equal("T002", verifiedSeller.Items.Single(x => x.Id == itemTwoId).Reference);
+        Assert.Equal("T003", verifiedSeller.Items.Single(x => x.Id == itemThreeId).Reference);
+        Assert.Equal("T004", verifiedSeller.Items.Single(x => x.Id == itemFourId).Reference);
+    }
+
+    [Fact]
     public async Task SellerDetailsDoesNotDisplayAdminDefectAction()
     {
         var client = _factory.CreateClient();
