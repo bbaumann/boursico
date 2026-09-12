@@ -6,6 +6,7 @@ using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AssociationSaleTool.Web.Services;
 
@@ -22,13 +23,13 @@ public sealed class IntakeService
         SalePhaseService? salePhaseService = null,
         SellerDuplicateService? sellerDuplicateService = null,
         IserePostalCityLookup? postalCityLookup = null,
-        LabelsOptions? labelsOptions = null)
+        IOptions<LabelsOptions>? labelsOptions = null)
     {
         _dbContext = dbContext;
         _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
         _sellerDuplicateService = sellerDuplicateService ?? new SellerDuplicateService(dbContext);
         _postalCityLookup = postalCityLookup ?? IserePostalCityLookup.Empty;
-        _labelsOptions = labelsOptions ?? new LabelsOptions();
+        _labelsOptions = labelsOptions?.Value ?? new LabelsOptions();
     }
 
     public async Task<List<SellerEntity>> ListSellersAsync(CancellationToken cancellationToken = default)
@@ -417,8 +418,14 @@ public sealed class IntakeService
         }
 
         // Read every letter's high-water mark inside the same transaction that
-        // writes the new references. SQLite serializes writers, so two deposit
-        // desks finalizing at once cannot obtain overlapping runs.
+        // writes the new references. This is EF's default deferred BEGIN, same
+        // as CheckoutService.cs and SaleCorrectionService.cs: it does not lock
+        // out a second concurrent allocation's read, so both can see the same
+        // snapshot. The second writer then fails with SQLITE_BUSY_SNAPSHOT
+        // (busy_timeout does not retry that error) rather than waiting - the
+        // no-overlapping-runs invariant holds because the unique index on
+        // reference rejects the collision, not because this transaction
+        // serializes the two allocations.
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         // One round trip rather than twenty: at event scale this is a few
@@ -432,11 +439,7 @@ public sealed class IntakeService
 
         var usedByLetter = ReferenceAllocator.SafeAlphabet.ToDictionary(
             letter => letter,
-            letter => allocated
-                .Where(reference => reference[0] == letter)
-                .Select(reference => int.Parse(reference[1..]))
-                .DefaultIfEmpty(0)
-                .Max());
+            letter => HighestNumberForLetter(allocated, letter));
 
         var ownLetter = seller.SellerCode[0];
         var existingLetter = seller.Items
@@ -580,6 +583,35 @@ public sealed class IntakeService
     }
 
     private sealed record SellerPostalCity(string PostalCode, string City);
+
+    private static int HighestNumberForLetter(IReadOnlyList<string> allocated, char letter)
+    {
+        var highest = 0;
+        foreach (var reference in allocated)
+        {
+            if (reference.Length == 0 || reference[0] != letter)
+            {
+                continue;
+            }
+
+            // Skip rather than throw on anything that doesn't parse as three
+            // digits, such as a leftover pre-migration "BK014"-style
+            // reference whose letter happens to be in the safe alphabet: a
+            // stale dev database should not take down allocation for the
+            // whole event.
+            if (!int.TryParse(reference[1..], out var number))
+            {
+                continue;
+            }
+
+            if (number > highest)
+            {
+                highest = number;
+            }
+        }
+
+        return highest;
+    }
 
     private static bool SellerCanBeValidated(SellerEntity seller)
     {

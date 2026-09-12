@@ -1,9 +1,11 @@
-﻿using AssociationSaleTool.Web.Data;
+﻿using AssociationSaleTool.Web.Configuration;
+using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AssociationSaleTool.Web.Tests.Services;
 
@@ -1606,6 +1608,73 @@ public sealed class IntakeServiceTests
             .ToListAsync();
 
         Assert.Equal(["B001", "B002"], references);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_TopsUpIntoTheSellerSpilledLetterNotTheOwnLetter()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(
+            context,
+            labelsOptions: Options.Create(new LabelsOptions { SoftCapacityPerLetter = 2 }));
+        var seller = await CreateValidatableSellerAsync(context, service);
+
+        // Seller code is "BB", so its own letter is 'B'. Fill 'B' to the
+        // configured cap of 2, then give the seller one referenced item under
+        // 'D' - simulating an earlier pass that had to spill there - while
+        // leaving 'C' completely empty. If existingLetter were computed
+        // wrong (e.g. left null, or hardcoded to the own letter), the own
+        // letter would still be full and the request would fall through to
+        // the spill tier, which prefers the untouched 'C' over the
+        // near-full 'D'. Only a correctly-derived existingLetter of 'D'
+        // makes the top-up tier win and land the next item in 'D'.
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "B001",
+            ItemNumber = 1,
+            Title = "Stock B1",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "B002",
+            ItemNumber = 2,
+            Title = "Stock B2",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "D001",
+            ItemNumber = 3,
+            Title = "Stock D1 (spilled here on an earlier pass)",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var newReference = await context.Items
+            .Where(x => x.SellerId == seller.Id && x.Title == "Puzzle")
+            .Select(x => x.Reference)
+            .SingleAsync();
+        Assert.Equal("D002", newReference);
     }
 
     [Fact]

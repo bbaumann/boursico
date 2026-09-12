@@ -170,10 +170,20 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         ApplyDepositValidationState(validationState);
         if (DepositValidationMessages.Count == 0)
         {
-            DepositValidationMessages = [
-                "Le dépôt ne peut pas être validé : vérifiez les informations du vendeur et les articles avant de signer le contrat."
-            ];
-            HasSellerDepositValidationMessages = true;
+            // The seller and item data are otherwise valid here - this branch
+            // is reached only when IntakeService's own guard refused the
+            // transition, which today means a registered item still has no
+            // reference. Say that specifically rather than pointing the
+            // operator at data that isn't the problem.
+            var referencesNotYetAllocated = loaded.Items.Any(item => item.Status == "registered" && item.Reference is null);
+            DepositValidationMessages = referencesNotYetAllocated
+                ? [
+                    "Les références des articles n'ont pas encore été attribuées. Terminez l'étape des frais de la finalisation du dépôt avant de valider."
+                ]
+                : [
+                    "Le dépôt ne peut pas être validé : vérifiez les informations du vendeur et les articles avant de signer le contrat."
+                ];
+            HasSellerDepositValidationMessages = !referencesNotYetAllocated;
             HasItemDepositValidationMessages = true;
         }
 
