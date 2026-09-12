@@ -94,7 +94,11 @@ Sizing against 2024 real data (4,222 items, ~196 sellers, ~21 items/seller):
 Let:
 
 - `N` = number of the seller's items with `reference IS NULL`
-- `used(X)` = `MAX(item_number)` over items whose `reference_letter = X`, or `0`
+- `used(X)` = the numeric part of `MAX(reference)` over items whose `reference`
+  starts with `X`, or `0`. Fixed-width zero padding makes the lexicographic
+  maximum equal to the numeric maximum, so one indexed
+  `MAX(reference) WHERE reference LIKE 'X%'` is sufficient and no separate
+  numeric column is needed.
 - `L` = first character of `seller.code`
 - `CAP` = `Labels:SoftCapacityPerLetter` (455)
 
@@ -120,8 +124,9 @@ Allocation for one seller:
 3. Assign numbers `used(chosen) + 1 ... used(chosen) + N` to the reference-less
    items ordered by `item.id` ascending, so the run follows entry order and is
    deterministic.
-4. Write `reference_letter`, `item_number`, and
-   `reference = letter + number.ToString("000")`.
+4. Write `reference = letter + number.ToString("000")`. The reference string is
+   the single source of truth; there is no separate letter or number column to
+   fall out of step with it.
 
 ### Hard cap
 
@@ -196,21 +201,28 @@ the deposit reached the contract step" rides on machinery that already exists.
 
 ## Schema Changes
 
+The two existing reference columns collapse into one.
+
 `item`:
 
 | Column | Change |
 |---|---|
-| `reference` | becomes **nullable**; keeps its unique index |
-| `reference_letter` | **new**, nullable, 1 character, indexed |
-| `item_number` | becomes **nullable**; semantics change from per-seller sequence to per-letter sequence |
+| `reference` | becomes **nullable**; stays `TEXT`; keeps its unique index, which now means unique-when-not-null |
+| `item_number` | **dropped** |
 
 Indexes:
 
 - drop unique `(seller_id, item_number)` - the concept no longer exists
-- add unique `(reference_letter, item_number)`
+- keep unique `reference`, which now carries the whole constraint
+- `reference` also serves the allocation query's `LIKE 'X%'` prefix scan
 
 SQLite treats `NULL`s as distinct in unique indexes, so any number of
-`registered` items may carry `(NULL, NULL)`.
+`registered` items may carry a `NULL` reference while the index still forbids
+two items sharing an allocated one.
+
+Storing only the formatted string rather than a letter/number pair removes the
+possibility of the three fields disagreeing, at the cost of parsing three
+characters during allocation. At ~4,200 rows that cost is irrelevant.
 
 A migration is required. The application is not live, so no data backfill is
 needed.
@@ -235,6 +247,14 @@ needed.
   into `IntakeService`, next to allocation, so both deposit preconditions are
   enforced server-side rather than in the page model. This is a targeted fix to
   a pre-existing soft spot in code this change already touches.
+
+  **The price gate stays attached to deposit validation and must never move to
+  item creation.** CSV/TSV import deliberately creates `registered` items with a
+  null `seller_price_cents` when a form line has a recoverable title but no
+  usable price, flagging them through `import_notes` for an operator to fix
+  later. Blocking creation would break bulk import. A regression test covers
+  this: importing a file containing a priceless line must succeed, and only the
+  subsequent deposit validation may refuse.
 
 **Pages**
 
@@ -270,6 +290,10 @@ needed.
   idempotent across two passes; added items are topped up; cancellation keeps
   references; revalidation allocates only the missing ones.
 - `ItemReferenceTests`: formatting and zero padding.
+- `SellerFormImportServiceTests`: a CSV containing an item line with a missing
+  or invalid price still imports, creating a `registered` item with a null
+  price and an import note. This is the regression guard for moving the price
+  gate into `IntakeService`.
 - Existing `CheckoutServiceTests` must keep passing unchanged - that is the
   evidence the sellability invariant still holds.
 
@@ -279,19 +303,8 @@ needed.
 - References before deposit, and emailing ranges to sellers so they label at
   home. This would force allocation earlier and reintroduce the buffer problem
   this design removes.
-- Generating the label sheets themselves (see open question).
+- **Generating the printable label sheets.** Decided against: the association
+  prints the sheets in advance by its own means. The reference space is fully
+  determined by this specification - 20 letters, `001` to `455` each - so the
+  sheets can be produced by any tool without the application's involvement.
 - Multi-event reference history.
-
-## Open Question
-
-**Should the application generate the printable label sheets?**
-
-The application now owns the reference space but does not produce the labels.
-If the sheets are built by hand in a spreadsheet and the two ever disagree - a
-letter skipped, a number off by one - the mismatch would only surface at the
-deposit desk on the day.
-
-A small print-only page rendering all 20 letters x 455 references in a 65-per-A4
-layout would make the two impossible to desynchronise. It is a modest amount of
-work and reuses the invoice/contract print-CSS approach already in the codebase.
-Left out of this design pending a decision.
