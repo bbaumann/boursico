@@ -243,18 +243,24 @@ needed.
   `AllocateDepositReferencesAsync(sellerId, ct)` performing the transactional
   allocation.
 - `SellerFormImportService`: stop generating references on import.
-- Move the missing-price precondition out of `Pages/Sellers/Details.cshtml.cs:544`
-  into `IntakeService`, next to allocation, so both deposit preconditions are
-  enforced server-side rather than in the page model. This is a targeted fix to
-  a pre-existing soft spot in code this change already touches.
 
-  **The price gate stays attached to deposit validation and must never move to
-  item creation.** CSV/TSV import deliberately creates `registered` items with a
-  null `seller_price_cents` when a form line has a recoverable title but no
-  usable price, flagging them through `import_notes` for an operator to fix
-  later. Blocking creation would break bulk import. A regression test covers
-  this: importing a file containing a priceless line must succeed, and only the
-  subsequent deposit validation may refuse.
+**The missing-price gate needs no change.** It is already enforced server-side
+by `SellerCanBeValidated` in `IntakeService.cs:495`, whose
+`item.SellerPriceCents is >= 0` clause does not match `null`, and which
+`ValidateSellerDepositAsync` consults before allowing the transition. The
+duplicate-looking check in `Pages/Sellers/Details.cshtml.cs:544` is a message
+builder that turns the same rule into specific French errors for the operator -
+a legitimate split, not an unguarded path. Nothing moves.
+
+`AllocateDepositReferencesAsync` reuses the same precondition: it calls
+`SellerCanBeValidated` and refuses to allocate for a seller who could not be
+validated, so references are never burned on an incomplete deposit.
+
+**The price gate must stay attached to deposit validation and must never move
+to item creation.** CSV/TSV import deliberately creates `registered` items with
+a null `seller_price_cents` when a form line has a recoverable title but no
+usable price, flagging them through `import_notes` for an operator to fix
+later. Blocking creation would break bulk import.
 
 **Pages**
 
