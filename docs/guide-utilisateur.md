@@ -123,7 +123,7 @@ Renseigner au minimum le prénom et le nom. Ajouter les informations disponibles
 - nature, numéro, date de délivrance et autorité de délivrance de la pièce d'identité si disponibles ;
 - notes si nécessaire.
 
-À l'enregistrement, l'outil attribue un code vendeur. Ce code sert ensuite à construire les références des articles. Les coordonnées et les informations de pièce d'identité manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
+À l'enregistrement, l'outil attribue un code vendeur. Ce code sert à retrouver le vendeur dans les recherches et les listes ; il n'apparaît pas dans la référence de ses articles, qui n'est attribuée que plus tard, au moment du dépôt. Les coordonnées et les informations de pièce d'identité manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
 
 ### Importer des soumissions de formulaire
 
@@ -169,7 +169,7 @@ Le prix vendeur est aussi le prix imprimé vu par le client dans l'outil actuel.
 
 ### Valider le dépôt vendeur
 
-Les articles ajoutés restent `enregistré` tant que le dépôt du vendeur n'est pas validé. Ils ne sont pas visibles en caisse.
+Les articles ajoutés restent `enregistré` tant que le dépôt du vendeur n'est pas validé. Ils ne sont pas visibles en caisse. Tant qu'ils n'ont pas de référence, l'écran affiche un tiret (`—`) à la place.
 
 Quand le vendeur apporte les jouets :
 
@@ -179,9 +179,10 @@ Quand le vendeur apporte les jouets :
 4. Corriger ou supprimer les lignes incomplètes avant signature.
 5. Cliquer sur `Finaliser le dépôt`.
 6. Vérifier les frais vendeurs attendus, déjà payés et restant à payer. Corriger `Frais payés` si le vendeur règle tout ou partie des frais à ce moment.
-7. Cliquer sur `Continuer`, puis `Imprimer le contrat`.
-8. Faire signer le contrat papier par le vendeur.
-9. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
+7. Cliquer sur `Continuer`. À cette étape, l'outil attribue une référence à chaque article du vendeur qui n'en a pas encore.
+8. Cliquer sur `Imprimer le contrat`. Le contrat imprimé liste les articles avec leur référence.
+9. Faire signer le contrat papier par le vendeur.
+10. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
 
 Les frais restants ne bloquent pas la validation du dépôt. S'il reste un montant à payer, il sera déduit lors du rapprochement vendeur.
 

@@ -27,8 +27,7 @@ CREATE TABLE seller (
 CREATE TABLE item (
     id INTEGER PRIMARY KEY,
     seller_id INTEGER NOT NULL,
-    reference TEXT NOT NULL,
-    item_number INTEGER NOT NULL,
+    reference TEXT NULL,
     title TEXT NOT NULL,
     seller_price_cents INTEGER,
     status TEXT NOT NULL,
@@ -41,8 +40,7 @@ CREATE TABLE item (
         CHECK (status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')),
     CONSTRAINT ck_item_seller_price_cents
         CHECK (seller_price_cents IS NULL OR seller_price_cents >= 0),
-    CONSTRAINT uq_item_reference UNIQUE (reference),
-    CONSTRAINT uq_item_seller_number UNIQUE (seller_id, item_number)
+    CONSTRAINT uq_item_reference UNIQUE (reference)
 );
 
 CREATE TABLE cash_register (

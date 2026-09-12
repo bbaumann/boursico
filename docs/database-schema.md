@@ -76,15 +76,16 @@ Represents one physical toy.
 - `id`
 - `seller_id`
 - `reference`
-- `item_number`
 - `title`
 - `seller_price_cents`
 - `status`
 
 ### Notes
 
-- `reference` is the human-facing code, e.g. `BK014`.
-- `item_number` is the seller-local internal sequence used to build the reference.
+- `reference` is the human-facing code, e.g. `B157`: one letter from the safe
+  alphabet plus a zero-padded 3-digit number. It is nullable and stays `NULL`
+  until the seller's deposit reaches the contract-print step, and is unique
+  whenever it is not null.
 - `title` is the item label shown in search results, carts, and sheets.
 - `seller_price_cents` is both the seller payout price and the printed per-item customer price in V1.
 - money values are stored as integer cents, e.g. `250` for `2.50 EUR`.
@@ -235,8 +236,7 @@ V1 uses a single row with `id = 1`.
 ## Uniqueness Constraints
 
 - `seller.seller_code` unique
-- `item.reference` unique
-- `(item.seller_id, item.item_number)` unique
+- `item.reference` unique whenever not null
 - `cash_register.name` unique
 - `sale_line.item_id` unique only for active payable rows where `corrected_at IS NULL AND refunded_at IS NULL`
 
@@ -263,8 +263,8 @@ V1 uses a single row with `id = 1`.
 ## `item`
 
 - `seller_id`: required
-- `reference`: required
-- `item_number`: required
+- `reference`: optional; null until the seller's deposit reaches the
+  contract-print step, then set once and kept
 - `title`: required
 - `seller_price_cents`: required
 - `status`: required
@@ -366,7 +366,7 @@ V1 should be conservative and prefer restriction over cascading deletion.
 - `seller.seller_code` should not change once items exist for the seller
 - in `presale`, intake staff may still correct unsold item master data if needed
 - in `sale` and `post_sale`, item master data becomes read-only in normal operations
-- when item master data is locked, `item.reference`, `item.item_number`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
+- when item master data is locked, `item.reference`, `item.seller_id`, `item.title`, and `item.seller_price_cents` should not change
 - when item master data is locked, only workflow-driven status transitions remain allowed
 - after `seller.deposit_status = deposit_validated`, normal seller and item edits are locked for that seller even during `presale`
 - admin cancellation may set `seller.deposit_status` back to `deposit_pending` during `presale` after shared-password confirmation; it moves only current `in_stock` items back to `registered` and leaves `sold`, `missing`, and `defective` items unchanged
@@ -388,9 +388,12 @@ These are important invariants even if they are enforced first in application lo
 - `sale.subtotal_seller_price_cents` must equal the sum of its sale lines' `seller_price_at_sale_cents`
 - `sale.checkout_fee_cents` must equal 10 percent of `sale.subtotal_seller_price_cents`, rounded to the nearest cent with midpoint values rounded away from zero
 - `sale.total_paid_cents` must equal `sale.subtotal_seller_price_cents + sale.checkout_fee_cents`
-- `item.reference` must match the event seller code and seller-local item number used to generate it
+- `item.reference`, once allocated, encodes only a letter-bucket and a
+  zero-padded sequence number within it; it is never regenerated or reparsed
+  to recover the seller
 - normal `registered -> in_stock` transition is seller-level: validating the signed seller deposit moves that seller's accepted `registered` items to `in_stock`
 - seller deposit validation requires complete seller contact fields, complete identity document fields, and at least one complete item row
+- an item with `status = registered` must never be moved to `in_stock` while it still has a null `reference`; `IntakeService.ValidateSellerDepositAsync` enforces this server-side, independently of the client-side sequencing between reference allocation and deposit validation
 
 ## Derived Business Meaning
 
@@ -437,8 +440,7 @@ For V1 seller settlement:
 Recommended indexes:
 
 - unique index on `seller.seller_code`
-- unique index on `item.reference`
-- unique index on `(item.seller_id, item.item_number)`
+- unique index on `item.reference` (SQLite treats `NULL` values as distinct, so any number of `registered` items may share a `NULL` reference)
 - unique index on `cash_register.name`
 - unique partial index on `sale_line.item_id` where `corrected_at IS NULL AND refunded_at IS NULL`
 - index on `item.reference`
@@ -457,27 +459,49 @@ These support:
 - post-sale filtering by item status
 - event-level sale listing and export
 - financial closing totals by configured caisse, including initial cash amounts
+- the allocation query's indexed `MAX(reference) WHERE reference LIKE 'X%'` prefix scan per letter, which the `item.reference` index also serves
 
 ## Reference Generation
 
-The schema assumes references are generated from:
-
-- `seller.seller_code`
-- `item.item_number`
+References are no longer derived from the seller code at item creation.
+Instead they are allocated, letter and number together as one string, when a
+seller's deposit reaches the contract-print step.
 
 Final operator-facing format:
 
-- `SELLERCODENNN`
+- `<LETTER><NNN>`
 
 Example:
 
-- `BK014`
+- `B157`
 
-Generation rule:
+`LETTER` is one character of the 20-letter safe alphabet already used for
+seller codes (`B C D E G H J K L M N P R S T U W X Y Z`). `NNN` is the
+number within that letter, zero-padded to exactly 3 digits; the padding is
+load-bearing because `ORDER BY reference` must sort in physical label order.
 
-1. assign the seller code when the seller is created
-2. assign the next seller-local item number when a new item is created
-3. build and store the final reference
+Allocation rule, run once per seller when the deposit's `Continuer` action is
+posted, for every item of that seller with `reference IS NULL`:
+
+1. compute `used(X)`, the numeric part of `MAX(reference)` for each letter
+   `X`, or `0` if the letter is unused; the fixed-width zero padding makes the
+   lexicographic maximum equal to the numeric maximum, so no separate numeric
+   column is needed
+2. choose a letter: top up the seller's existing letter if it has room,
+   otherwise the seller's own letter (the first character of `seller_code`)
+   if it has room, otherwise the least-loaded letter with room, otherwise the
+   seller's own letter past its soft capacity
+3. assign numbers `used(chosen) + 1 ... used(chosen) + N` to the
+   reference-less items in `item.id` order
+4. write `reference = letter + number.ToString("000")`; the reference string
+   is the single source of truth, with no separate letter or number column to
+   fall out of step with it
+
+Soft capacity per letter is 455, configured as
+`Labels:SoftCapacityPerLetter`. The application never reasons about label
+sheets, only about that number. Canceling a validated deposit keeps already
+allocated references; revalidation allocates only for items still lacking
+one.
 
 ## Engine Notes
 

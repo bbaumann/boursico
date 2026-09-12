@@ -30,7 +30,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Validate one signed seller deposit, moving that seller's accepted `registered` items to `in_stock`
 - Allow admin cancellation of a validated deposit with a local admin-password confirmation, reopening only items still `in_stock`
 - Configure physical caisses with a name and initial cash amount (`fond de caisse`) from `/administration`
-- Assign one unique reference per item
+- Allocate each item a unique `<LETTER><NNN>` reference when its seller's deposit reaches the contract-print step, rather than at item creation
 - Store one seller-set printed price per item
 - Search validated `in_stock` items by `reference + title` using a live-filtered table
 - Store the configured physical caisse on every sale
@@ -98,7 +98,6 @@ The following seller fields must no longer be editable in normal operations:
 The following item fields must no longer be editable in normal operations:
 
 - `reference`
-- `item_number`
 - `seller_id`
 - `title`
 - `seller_price`
@@ -253,6 +252,7 @@ Before validation:
 - seller contact and identity document fields may be blank while the record is still a draft
 - items stay excluded from checkout and seller-sheet outputs
 - incomplete or mistaken `registered` items may be corrected or deleted
+- items have no reference yet; the UI shows an em dash (`—`) in its place
 
 When the seller physically gives the toys to the association:
 
@@ -260,10 +260,11 @@ When the seller physically gives the toys to the association:
 2. The operator completes any missing phone, postal address, postal code, city, identity document nature, identity document number, issue date, or issuing authority.
 3. The operator starts `Finaliser le dépôt`.
 4. The operator verifies the expected seller fee, the fee already paid, and the remaining fee, then updates `Frais payés` when the seller pays at deposit time.
-5. The operator prints `Imprimer le contrat`.
-6. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
-7. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
-8. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`.
+5. The operator clicks `Continuer`, which allocates a `<LETTER><NNN>` reference to each of the seller's items that still lacks one.
+6. The operator prints `Imprimer le contrat`, which lists the now-allocated references.
+7. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
+8. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
+9. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`, refusing the move if any of those items still has a null reference.
 
 The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, whether payment is still due, and item prices. It does not print the seller identity document fields. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
 

@@ -168,7 +168,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-014 Use Seller-Centered Item References
 
-- Status: accepted
+- Status: superseded by D-050
 - Key drivers:
   - post-sale physical triage relies on grouping seller items together
   - 26 single-letter buckets are insufficient for 100 to 200 sellers
@@ -203,7 +203,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-017 Item Numbers Are Fixed-Width Per-Seller Sequences
 
-- Status: accepted
+- Status: superseded by D-050
 - Key drivers:
   - fixed-width numbering improves readability and sorting
 - Decision:
@@ -828,3 +828,30 @@ This file captures the main project decisions in a lightweight ADR format.
   - seller payout is now `payable item subtotal - association margin - remaining seller fee`
   - overpaid seller fees still never increase payout
   - refunded or corrected sold items remain excluded from payable subtotal
+
+## D-050 Allocate Letter-Bucket Item References At Deposit
+
+Item references are `<LETTER><NNN>` allocated when a seller's deposit reaches
+the contract-print step, not derived from the seller code at item creation.
+
+This lets the association print all adhesive label sheets before any seller is
+known, which is the only way the labels can exist on the day.
+
+The letter is a physical sort bucket for post-sale recollection, not a seller
+identifier. Volunteers sort unsold items by letter then number into twenty
+piles, so the letters must stay balanced; balance falls out of the existing
+spread order in `SellerCodeGenerator`, whose first letter cycles every twenty
+sellers.
+
+Allocating at deposit rather than at item creation removes the need for a
+numbering buffer: by the time references are assigned, the seller's item list
+is final, so each seller's run is contiguous by construction.
+
+A server-side guard in `IntakeService.ValidateSellerDepositAsync` refuses to
+move a seller's `registered` items to `in_stock` while any of them still has a
+null reference, since allocation and that status transition live in two
+different page handlers and would otherwise be sequenced only by client-side
+convention.
+
+Supersedes [D-014](#d-014-use-seller-centered-item-references) and
+[D-017](#d-017-item-numbers-are-fixed-width-per-seller-sequences).
