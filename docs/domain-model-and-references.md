@@ -254,8 +254,8 @@ This spreads sellers across first letters. It was originally chosen for
 post-sale physical sorting by seller, and it now does double duty: because a
 seller's own item-reference letter defaults to the first character of their
 seller code, this cycling keeps the twenty item-reference letter buckets
-balanced too, with roughly ten sellers behind each letter for the sellers
-seen historically.
+balanced too, with roughly ten sellers behind each letter for a typical
+100-200 seller event.
 
 ## Item Reference Allocation
 

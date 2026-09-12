@@ -831,27 +831,39 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-050 Allocate Letter-Bucket Item References At Deposit
 
-Item references are `<LETTER><NNN>` allocated when a seller's deposit reaches
-the contract-print step, not derived from the seller code at item creation.
-
-This lets the association print all adhesive label sheets before any seller is
-known, which is the only way the labels can exist on the day.
-
-The letter is a physical sort bucket for post-sale recollection, not a seller
-identifier. Volunteers sort unsold items by letter then number into twenty
-piles, so the letters must stay balanced; balance falls out of the existing
-spread order in `SellerCodeGenerator`, whose first letter cycles every twenty
-sellers.
-
-Allocating at deposit rather than at item creation removes the need for a
-numbering buffer: by the time references are assigned, the seller's item list
-is final, so each seller's run is contiguous by construction.
-
-A server-side guard in `IntakeService.ValidateSellerDepositAsync` refuses to
-move a seller's `registered` items to `in_stock` while any of them still has a
-null reference, since allocation and that status transition live in two
-different page handlers and would otherwise be sequenced only by client-side
-convention.
-
-Supersedes [D-014](#d-014-use-seller-centered-item-references) and
-[D-017](#d-017-item-numbers-are-fixed-width-per-seller-sequences).
+- Status: accepted
+- Key drivers:
+  - adhesive label sheets must be printed before any seller is known, which
+    the old seller-code-derived reference could not support
+  - post-sale recollection sorts unsold items by letter then number into
+    twenty parallel piles, so the letter buckets must stay balanced
+  - allocating once a seller's item list is final, at deposit rather than at
+    item creation, makes each seller's run of numbers contiguous with no
+    numbering buffer
+- Decision:
+  - use references in the form `<LETTER><NNN>`: one letter from the existing
+    20-letter safe alphabet plus a number zero-padded to 3 digits
+  - allocate the reference when the seller's deposit reaches the
+    contract-print step (`Continuer` on the fee step), not when the item row
+    is created
+  - choose the letter with a four-tier rule: top up the seller's existing
+    letter if it has room, otherwise the seller's own letter (the first
+    character of their seller code), otherwise the least-loaded letter with
+    room, otherwise the seller's own letter past capacity
+  - cap soft capacity at 455 per letter, exposed as
+    `Labels:SoftCapacityPerLetter` in `appsettings.json`
+  - add a server-side guard in `IntakeService.ValidateSellerDepositAsync`
+    that refuses to move a seller's `registered` items to `in_stock` while
+    any of them still has a null reference, since allocation and that status
+    transition live in two different page handlers and would otherwise be
+    sequenced only by client-side convention
+  - keep already allocated references when a validated deposit is canceled
+- Consequence:
+  - a reference no longer identifies its seller; the letter is a physical
+    sort bucket, and an operator must look up the seller in the
+    administration screens instead
+  - `item.item_number` is dropped, and `item.reference` becomes nullable
+    until allocation
+  - an item shows an em dash (`—`) instead of a reference until its seller's
+    deposit reaches the contract-print step
+  - `D-014` and `D-017` are superseded for current V1
