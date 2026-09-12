@@ -1,5 +1,4 @@
 using AssociationSaleTool.Web.Data;
-using AssociationSaleTool.Web.Domain.Items;
 using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Http;
@@ -106,7 +105,6 @@ public sealed class SellerFormImportService
                 {
                     Seller = seller,
                     SellerId = seller.Id,
-                    Reference = ItemReference.Format(seller.SellerCode, nextItemNumber),
                     ItemNumber = nextItemNumber,
                     Title = row.Title.Trim(),
                     SellerPriceCents = row.SellerPriceCents,

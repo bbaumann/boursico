@@ -104,7 +104,6 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnName("item_number");
 
                     b.Property<string>("Reference")
-                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("reference");
 

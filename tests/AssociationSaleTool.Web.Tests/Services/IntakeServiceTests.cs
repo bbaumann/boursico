@@ -280,13 +280,13 @@ public sealed class IntakeServiceTests
             seller.Items.OrderBy(x => x.ItemNumber),
             first =>
             {
-                Assert.Equal("BB001", first.Reference);
+                Assert.Null(first.Reference);
                 Assert.Equal("registered", first.Status);
                 Assert.Equal(500, first.SellerPriceCents);
             },
             second =>
             {
-                Assert.Equal("BB002", second.Reference);
+                Assert.Null(second.Reference);
                 Assert.Equal("registered", second.Status);
                 Assert.Equal(1200, second.SellerPriceCents);
             });
@@ -454,7 +454,7 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
-    public async Task CreateItemBatchAsync_CreatesMultipleRegisteredItemsForSellerWithSequentialReferences()
+    public async Task CreateItemBatchAsync_CreatesMultipleRegisteredItemsWithoutReferences()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -481,17 +481,42 @@ public sealed class IntakeServiceTests
             first =>
             {
                 Assert.Equal(1, first.ItemNumber);
-                Assert.Equal("BB001", first.Reference);
+                Assert.Null(first.Reference);
                 Assert.Equal(500, first.SellerPriceCents);
                 Assert.Equal("registered", first.Status);
             },
             second =>
             {
                 Assert.Equal(2, second.ItemNumber);
-                Assert.Equal("BB002", second.Reference);
+                Assert.Null(second.Reference);
                 Assert.Equal(600, second.SellerPriceCents);
                 Assert.Equal("registered", second.Status);
             });
+    }
+
+    [Fact]
+    public async Task CreateItemBatchAsync_LeavesReferencesUnassignedUntilDeposit()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(
+            new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+
+        var created = await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Puzzle", 500), new CreateItemRowRequest("Poupée", 300)]));
+
+        Assert.All(created, item => Assert.Null(item.Reference));
+        Assert.All(created, item => Assert.Equal("registered", item.Status));
     }
 
     [Fact]
@@ -766,7 +791,7 @@ public sealed class IntakeServiceTests
         var updatedItem = await context.Items.SingleAsync();
         Assert.Equal("Large toy piano", updatedItem.Title);
         Assert.Equal(1200, updatedItem.SellerPriceCents);
-        Assert.Equal("BB001", updatedItem.Reference);
+        Assert.Null(updatedItem.Reference);
         Assert.Equal("registered", updatedItem.Status);
     }
 

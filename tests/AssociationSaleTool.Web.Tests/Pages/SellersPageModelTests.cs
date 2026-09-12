@@ -92,7 +92,7 @@ public sealed class SellersPageModelTests
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal("BB", (await context.Sellers.SingleAsync()).SellerCode);
         var item = await context.Items.SingleAsync();
-        Assert.Equal("BB001", item.Reference);
+        Assert.Null(item.Reference);
         Assert.Equal("registered", item.Status);
     }
 

@@ -56,7 +56,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("item");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.SellerId).HasColumnName("seller_id").IsRequired();
-            entity.Property(x => x.Reference).HasColumnName("reference").IsRequired();
+            entity.Property(x => x.Reference).HasColumnName("reference");
             entity.Property(x => x.ItemNumber).HasColumnName("item_number").IsRequired();
             entity.Property(x => x.Title).HasColumnName("title").IsRequired();
             entity.Property(x => x.SellerPriceCents).HasColumnName("seller_price_cents");

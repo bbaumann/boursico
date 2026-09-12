@@ -242,7 +242,7 @@ public sealed class SellerFormImportServiceTests
         Assert.Equal(1, result.IgnoredExistingItemCount);
         var updated = await context.Sellers.Include(x => x.Items).SingleAsync();
         Assert.Equal(2, updated.Items.Count);
-        Assert.Contains(updated.Items, item => item.Reference == "AA002" && item.Title == "Jeu PS5");
+        Assert.Contains(updated.Items, item => item.Reference is null && item.Title == "Jeu PS5");
         Assert.Contains("ligne ignorée", updated.ImportNotes);
         Assert.Contains("article déjà présent ignoré - Lego Pirate - 5 €", updated.ImportNotes);
     }

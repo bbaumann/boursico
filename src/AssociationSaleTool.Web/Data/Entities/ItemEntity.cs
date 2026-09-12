@@ -6,7 +6,13 @@ public sealed class ItemEntity
 
     public long SellerId { get; set; }
 
-    public string Reference { get; set; } = string.Empty;
+    /// <summary>
+    /// Null until the seller's deposit reaches the contract-print step, when a
+    /// contiguous run is allocated. An item without a reference is necessarily
+    /// still "registered" under a "deposit_pending" seller, so it can never
+    /// reach checkout.
+    /// </summary>
+    public string? Reference { get; set; }
 
     public int ItemNumber { get; set; }
 
