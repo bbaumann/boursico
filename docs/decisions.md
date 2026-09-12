@@ -836,7 +836,9 @@ This file captures the main project decisions in a lightweight ADR format.
   - adhesive label sheets must be printed before any seller is known, which
     the old seller-code-derived reference could not support
   - post-sale recollection sorts unsold items by letter then number into
-    twenty parallel piles, so the letter buckets must stay balanced
+    twenty parallel piles, so the letter buckets must stay balanced; this
+    falls out for free from `SellerCodeGenerator`'s existing spread order,
+    whose first letter cycles every twenty sellers
   - allocating once a seller's item list is final, at deposit rather than at
     item creation, makes each seller's run of numbers contiguous with no
     numbering buffer
