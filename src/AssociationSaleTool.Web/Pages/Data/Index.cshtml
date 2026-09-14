@@ -79,7 +79,7 @@
                         <tr data-data-list-row
                             data-data-list-filter-text="@item.SearchText"
                             data-data-list-status="@item.Status">
-                            <td data-data-list-sort-value="@item.Reference"><a href="/vendeurs/@item.SellerId">@item.Reference</a></td>
+                            <td data-data-list-sort-value="@item.Reference"><a href="/vendeurs/@item.SellerId">@(string.IsNullOrEmpty(item.Reference) ? "—" : item.Reference)</a></td>
                             <td data-data-list-sort-value="@item.Title">@item.Title</td>
                             <td data-data-list-sort-value="@item.SellerCode @item.SellerName">@item.SellerCode - @item.SellerName</td>
                             <td data-data-list-sort-value="@item.StatusLabel">@item.StatusLabel</td>

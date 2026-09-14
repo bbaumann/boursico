@@ -15,7 +15,12 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                x.Reference,
+                // "in_stock"/"defective" implies a reference was already
+                // allocated: IntakeService.ValidateSellerDepositAsync refuses
+                // to move a registered item to in_stock while its reference
+                // is null, and defective items can only reach that status
+                // from in_stock.
+                x.Reference!,
                 x.Title,
                 x.Status,
                 x.SellerPriceCents!.Value,
@@ -48,7 +53,8 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,
-                x.Reference,
+                // Same guarantee as ListCandidatesAsync above.
+                x.Reference!,
                 x.Title,
                 x.Status,
                 x.SellerPriceCents!.Value,

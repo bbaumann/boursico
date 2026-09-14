@@ -266,7 +266,7 @@
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td>@item.Reference</td>
+                        <td>@(string.IsNullOrEmpty(item.Reference) ? "—" : item.Reference)</td>
                         <td>@item.Title</td>
                         <td>@DetailsModel.FormatPrice(item.SellerPriceCents)</td>
                         <td>@AssociationSaleTool.Web.Infrastructure.ItemStatusDisplay.ToFrenchLabel(item.Status)</td>

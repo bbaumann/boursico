@@ -1,3 +1,4 @@
+using AssociationSaleTool.Web.Configuration;
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Domain.Items;
@@ -5,6 +6,7 @@ using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AssociationSaleTool.Web.Services;
 
@@ -14,17 +16,20 @@ public sealed class IntakeService
     private readonly SalePhaseService _salePhaseService;
     private readonly SellerDuplicateService _sellerDuplicateService;
     private readonly IserePostalCityLookup _postalCityLookup;
+    private readonly LabelsOptions _labelsOptions;
 
     public IntakeService(
         AppDbContext dbContext,
         SalePhaseService? salePhaseService = null,
         SellerDuplicateService? sellerDuplicateService = null,
-        IserePostalCityLookup? postalCityLookup = null)
+        IserePostalCityLookup? postalCityLookup = null,
+        IOptions<LabelsOptions>? labelsOptions = null)
     {
         _dbContext = dbContext;
         _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
         _sellerDuplicateService = sellerDuplicateService ?? new SellerDuplicateService(dbContext);
         _postalCityLookup = postalCityLookup ?? IserePostalCityLookup.Empty;
+        _labelsOptions = labelsOptions?.Value ?? new LabelsOptions();
     }
 
     public async Task<List<SellerEntity>> ListSellersAsync(CancellationToken cancellationToken = default)
@@ -47,7 +52,7 @@ public sealed class IntakeService
     {
         return await _dbContext.Sellers
             .AsNoTracking()
-            .Include(x => x.Items.OrderBy(item => item.ItemNumber))
+            .Include(x => x.Items.OrderBy(item => item.Id))
             .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
     }
 
@@ -170,7 +175,7 @@ public sealed class IntakeService
                 };
 
                 _dbContext.Sellers.Add(seller);
-                AddItemRows(seller, request.Rows, 0);
+                AddItemRows(seller, request.Rows);
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -201,11 +206,7 @@ public sealed class IntakeService
             throw new InvalidOperationException("Seller deposit is already validated.");
         }
 
-        var nextItemNumber = await _dbContext.Items
-            .Where(x => x.SellerId == request.SellerId)
-            .Select(x => (int?)x.ItemNumber)
-            .MaxAsync(cancellationToken) ?? 0;
-        var createdItems = AddItemRows(seller, request.Rows, nextItemNumber);
+        var createdItems = AddItemRows(seller, request.Rows);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return createdItems;
@@ -357,10 +358,18 @@ public sealed class IntakeService
             return SellerDepositStatusChangeResult.NotFound;
         }
 
+        // A direct POST here (bypassing the deposit wizard's fee step, where
+        // AllocateDepositReferencesAsync normally runs first) must not move an
+        // unlabelled item into stock - it would then be sellable with no
+        // reference. Scoped to "registered" because those are exactly the
+        // items this call is about to flip to "in_stock"; an already
+        // sold/missing/defective item from a reopened deposit is untouched
+        // and must not block revalidation even if it predates this scheme.
         if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
             || seller.DepositStatus != SellerDepositStatuses.Pending
             || seller.Items.Count == 0
-            || !SellerCanBeValidated(seller))
+            || !SellerCanBeValidated(seller)
+            || seller.Items.Any(item => item.Status == "registered" && item.Reference is null))
         {
             return SellerDepositStatusChangeResult.NotAllowed;
         }
@@ -372,6 +381,95 @@ public sealed class IntakeService
 
         seller.DepositStatus = SellerDepositStatuses.Validated;
         await _dbContext.SaveChangesAsync(cancellationToken);
+        return SellerDepositStatusChangeResult.Changed;
+    }
+
+    public async Task<SellerDepositStatusChangeResult> AllocateDepositReferencesAsync(
+        long sellerId,
+        CancellationToken cancellationToken = default)
+    {
+        var seller = await _dbContext.Sellers
+            .Include(x => x.Items)
+            .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
+        if (seller is null)
+        {
+            return SellerDepositStatusChangeResult.NotFound;
+        }
+
+        if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
+            || seller.DepositStatus != SellerDepositStatuses.Pending
+            || seller.Items.Count == 0
+            || !SellerCanBeValidated(seller))
+        {
+            return SellerDepositStatusChangeResult.NotAllowed;
+        }
+
+        var pending = seller.Items
+            .Where(item => item.Reference is null)
+            .OrderBy(item => item.Id)
+            .ToList();
+        if (pending.Count == 0)
+        {
+            return SellerDepositStatusChangeResult.Changed;
+        }
+
+        // Read every letter's high-water mark inside the same transaction that
+        // writes the new references. This is EF's default deferred BEGIN, same
+        // as CheckoutService.cs and SaleCorrectionService.cs: it does not lock
+        // out a second concurrent allocation's read, so both can see the same
+        // snapshot. The second writer then fails with SQLITE_BUSY_SNAPSHOT
+        // (busy_timeout does not retry that error) rather than waiting - the
+        // no-overlapping-runs invariant holds because the unique index on
+        // reference rejects the collision, not because this transaction
+        // serializes the two allocations.
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        // One round trip rather than twenty: at event scale this is a few
+        // thousand short strings. Fixed-width zero padding makes the
+        // lexicographic maximum equal the numeric one, so no separate numeric
+        // column is needed.
+        var allocated = await _dbContext.Items
+            .Where(x => x.Reference != null)
+            .Select(x => x.Reference!)
+            .ToListAsync(cancellationToken);
+
+        var usedByLetter = ReferenceAllocator.SafeAlphabet.ToDictionary(
+            letter => letter,
+            letter => HighestNumberForLetter(allocated, letter));
+
+        // SellerCode defaults to string.Empty and the column only enforces
+        // NOT NULL, so a hand-edited database row could carry an empty code.
+        // Fall back to a real bucket letter rather than throwing
+        // IndexOutOfRangeException - unreachable through the app, but the
+        // same class of stale-data trap as the letter guards below.
+        var ownLetter = seller.SellerCode.Length > 0 ? seller.SellerCode[0] : ReferenceAllocator.SafeAlphabet[0];
+        var existingLetter = seller.Items
+            .Where(item => item.Reference is not null)
+            .OrderByDescending(item => item.Id)
+            .Select(item => (char?)item.Reference![0])
+            .FirstOrDefault();
+
+        var chosen = ReferenceAllocator.ChooseLetter(
+            usedByLetter,
+            ownLetter,
+            existingLetter,
+            pending.Count,
+            _labelsOptions.SoftCapacityPerLetter);
+
+        // ChooseLetter can only return a letter outside usedByLetter's keys
+        // if both the existing-letter and own-letter guards in
+        // ReferenceAllocator.SelectLetter were somehow bypassed; treat that
+        // defensively as "unused" rather than crashing deposit finalization
+        // with no operator recovery.
+        var next = usedByLetter.GetValueOrDefault(chosen);
+        foreach (var item in pending)
+        {
+            next++;
+            item.Reference = ItemReference.Format(chosen, next);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return SellerDepositStatusChangeResult.Changed;
     }
 
@@ -492,6 +590,35 @@ public sealed class IntakeService
 
     private sealed record SellerPostalCity(string PostalCode, string City);
 
+    private static int HighestNumberForLetter(IReadOnlyList<string> allocated, char letter)
+    {
+        var highest = 0;
+        foreach (var reference in allocated)
+        {
+            if (reference.Length == 0 || reference[0] != letter)
+            {
+                continue;
+            }
+
+            // Skip rather than throw on anything that doesn't parse as three
+            // digits, such as a leftover pre-migration "BK014"-style
+            // reference whose letter happens to be in the safe alphabet: a
+            // stale dev database should not take down allocation for the
+            // whole event.
+            if (!int.TryParse(reference[1..], out var number))
+            {
+                continue;
+            }
+
+            if (number > highest)
+            {
+                highest = number;
+            }
+        }
+
+        return highest;
+    }
+
     private static bool SellerCanBeValidated(SellerEntity seller)
     {
         return !string.IsNullOrWhiteSpace(seller.FirstName)
@@ -512,21 +639,16 @@ public sealed class IntakeService
 
     private List<ItemEntity> AddItemRows(
         SellerEntity seller,
-        IReadOnlyList<CreateItemRowRequest> rows,
-        int currentMaxItemNumber)
+        IReadOnlyList<CreateItemRowRequest> rows)
     {
         var createdItems = new List<ItemEntity>();
-        var nextItemNumber = currentMaxItemNumber;
 
         foreach (var row in rows)
         {
-            nextItemNumber++;
             var item = new ItemEntity
             {
                 Seller = seller,
                 SellerId = seller.Id,
-                Reference = ItemReference.Format(seller.SellerCode, nextItemNumber),
-                ItemNumber = nextItemNumber,
                 Title = row.Title.Trim(),
                 SellerPriceCents = row.SellerPriceCents,
                 Status = "registered"

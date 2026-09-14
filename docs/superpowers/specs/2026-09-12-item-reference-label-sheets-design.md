@@ -183,10 +183,9 @@ lacking one.
 
 ## The "No Reference" Invariant
 
-An item without a reference must never be sellable. This needs **no new rule**.
-`CheckoutService` already applies the same triple gate in both the catalog
-query (`CheckoutService.cs:38`) and the authoritative save-time re-validation
-(`CheckoutService.cs:284`):
+An item without a reference must never be sellable. `CheckoutService` applies
+a triple gate in both the catalog query (`CheckoutService.cs:38`) and the
+authoritative save-time re-validation (`CheckoutService.cs:284`):
 
 ```
 Status == "in_stock"
@@ -194,10 +193,21 @@ Status == "in_stock"
 && SellerPriceCents.HasValue
 ```
 
-Since references are allocated at deposit, an item with no reference is still
-`registered` and its seller is still `deposit_pending`, so it fails two of the
-three conditions independently. The invariant "has a reference if and only if
-the deposit reached the contract step" rides on machinery that already exists.
+An item with no reference is `registered`, so it needs the "registered" →
+"in_stock" transition to become sellable. That transition happens in exactly
+one place, `IntakeService.ValidateSellerDepositAsync`, and the deposit wizard
+sequences it after the fee step's `AllocateDepositReferencesAsync` call only
+by *client-side* convention - nothing stopped a direct POST to the validate
+handler from moving a seller's items into stock before references existed.
+
+`ValidateSellerDepositAsync` therefore carries an explicit server-side guard:
+it refuses (`SellerDepositStatusChangeResult.NotAllowed`) if any item with
+`Status == "registered"` - i.e. any item it is about to move to `in_stock` -
+still has a null reference. The check is scoped to `"registered"` items only,
+so an already-`sold`/`missing`/`defective` item from a reopened deposit never
+blocks revalidation. Every other service that reads `Item.Reference` on a
+post-deposit status (`in_stock`, `sold`, `missing`, `defective`) relies on this
+guard, not on convention, for the null-forgiving `!` on that column.
 
 ## Schema Changes
 

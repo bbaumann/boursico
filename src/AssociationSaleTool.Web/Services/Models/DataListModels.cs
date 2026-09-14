@@ -3,7 +3,7 @@ namespace AssociationSaleTool.Web.Services.Models;
 public sealed record DataListItemRow(
     long ItemId,
     long SellerId,
-    string Reference,
+    string? Reference,
     string Title,
     string SellerCode,
     string SellerName,

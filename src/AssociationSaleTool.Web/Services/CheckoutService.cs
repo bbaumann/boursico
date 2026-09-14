@@ -40,7 +40,10 @@ public sealed class CheckoutService
             .OrderBy(x => x.Reference)
             .Select(x => new CheckoutCatalogItem(
                 x.Id,
-                x.Reference,
+                // "in_stock" implies a reference was already allocated:
+                // IntakeService.ValidateSellerDepositAsync refuses to move a
+                // registered item to in_stock while its reference is null.
+                x.Reference!,
                 x.Title,
                 x.SellerPriceCents!.Value))
             .ToListAsync(cancellationToken);

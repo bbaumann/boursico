@@ -37,7 +37,6 @@ public sealed class CheckoutServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Train en bois",
             SellerPriceCents = 500,
             Status = "in_stock"
@@ -46,7 +45,6 @@ public sealed class CheckoutServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-002",
-            ItemNumber = 2,
             Title = "Puzzle",
             SellerPriceCents = 650,
             Status = "registered"
@@ -94,7 +92,6 @@ public sealed class CheckoutServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Train en bois",
             SellerPriceCents = 500,
             Status = "in_stock"
@@ -790,7 +787,6 @@ public sealed class CheckoutServiceTests
         {
             SellerId = seller.Id,
             Reference = "BB-001",
-            ItemNumber = 1,
             Title = "Puzzle",
             SellerPriceCents = 500,
             Status = firstStatus
@@ -799,7 +795,6 @@ public sealed class CheckoutServiceTests
         {
             SellerId = seller.Id,
             Reference = "BB-002",
-            ItemNumber = 2,
             Title = "Camion",
             SellerPriceCents = 1000,
             Status = secondStatus

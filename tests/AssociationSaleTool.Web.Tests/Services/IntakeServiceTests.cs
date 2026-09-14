@@ -1,9 +1,11 @@
-﻿using AssociationSaleTool.Web.Data;
+﻿using AssociationSaleTool.Web.Configuration;
+using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Services;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AssociationSaleTool.Web.Tests.Services;
 
@@ -277,16 +279,16 @@ public sealed class IntakeServiceTests
         Assert.Equal(0, seller.FeePaidCents);
         Assert.Equal("deposit_pending", seller.DepositStatus);
         Assert.Collection(
-            seller.Items.OrderBy(x => x.ItemNumber),
+            seller.Items.OrderBy(x => x.Id),
             first =>
             {
-                Assert.Equal("BB001", first.Reference);
+                Assert.Null(first.Reference);
                 Assert.Equal("registered", first.Status);
                 Assert.Equal(500, first.SellerPriceCents);
             },
             second =>
             {
-                Assert.Equal("BB002", second.Reference);
+                Assert.Null(second.Reference);
                 Assert.Equal("registered", second.Status);
                 Assert.Equal(1200, second.SellerPriceCents);
             });
@@ -454,7 +456,7 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
-    public async Task CreateItemBatchAsync_CreatesMultipleRegisteredItemsForSellerWithSequentialReferences()
+    public async Task CreateItemBatchAsync_CreatesMultipleRegisteredItemsWithoutReferences()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -477,21 +479,44 @@ public sealed class IntakeServiceTests
             ]));
 
         Assert.Collection(
-            createdItems.OrderBy(item => item.ItemNumber),
+            createdItems.OrderBy(item => item.Id),
             first =>
             {
-                Assert.Equal(1, first.ItemNumber);
-                Assert.Equal("BB001", first.Reference);
+                Assert.Null(first.Reference);
                 Assert.Equal(500, first.SellerPriceCents);
                 Assert.Equal("registered", first.Status);
             },
             second =>
             {
-                Assert.Equal(2, second.ItemNumber);
-                Assert.Equal("BB002", second.Reference);
+                Assert.Null(second.Reference);
                 Assert.Equal(600, second.SellerPriceCents);
                 Assert.Equal("registered", second.Status);
             });
+    }
+
+    [Fact]
+    public async Task CreateItemBatchAsync_LeavesReferencesUnassignedUntilDeposit()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(
+            new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+
+        var created = await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.InPerson,
+            [new CreateItemRowRequest("Puzzle", 500), new CreateItemRowRequest("Poupée", 300)]));
+
+        Assert.All(created, item => Assert.Null(item.Reference));
+        Assert.All(created, item => Assert.Equal("registered", item.Status));
     }
 
     [Fact]
@@ -766,7 +791,7 @@ public sealed class IntakeServiceTests
         var updatedItem = await context.Items.SingleAsync();
         Assert.Equal("Large toy piano", updatedItem.Title);
         Assert.Equal(1200, updatedItem.SellerPriceCents);
-        Assert.Equal("BB001", updatedItem.Reference);
+        Assert.Null(updatedItem.Reference);
         Assert.Equal("registered", updatedItem.Status);
     }
 
@@ -847,7 +872,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = "sold"
@@ -883,7 +907,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = status
@@ -918,7 +941,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = status
@@ -978,7 +1000,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = "in_stock"
@@ -1050,6 +1071,7 @@ public sealed class IntakeServiceTests
                 new CreateItemRowRequest("Toy piano", 1000),
                 new CreateItemRowRequest("Wooden train", 1200)
             ]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
 
         var result = await service.ValidateSellerDepositAsync(seller.Id);
 
@@ -1089,7 +1111,6 @@ public sealed class IntakeServiceTests
         {
             SellerId = seller.Id,
             Reference = "BB001",
-            ItemNumber = 1,
             Title = "Jouet sans prix",
             SellerPriceCents = null,
             Status = "registered"
@@ -1135,7 +1156,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-001",
-                ItemNumber = 1,
                 Title = "Toy piano",
                 SellerPriceCents = 1000,
                 Status = "registered"
@@ -1144,7 +1164,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-002",
-                ItemNumber = 2,
                 Title = "Sold train",
                 SellerPriceCents = 1200,
                 Status = "sold"
@@ -1153,7 +1172,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-003",
-                ItemNumber = 3,
                 Title = "Missing puzzle",
                 SellerPriceCents = 800,
                 Status = "missing"
@@ -1162,7 +1180,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-004",
-                ItemNumber = 4,
                 Title = "Defective game",
                 SellerPriceCents = 600,
                 Status = "defective"
@@ -1174,7 +1191,9 @@ public sealed class IntakeServiceTests
         Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
         var statusesByReference = await context.Items
             .OrderBy(x => x.Reference)
-            .ToDictionaryAsync(x => x.Reference, x => x.Status);
+            // Every item seeded above has an explicit Reference, so the key is
+            // never null here.
+            .ToDictionaryAsync(x => x.Reference!, x => x.Status);
         Assert.Equal("in_stock", statusesByReference["AA-001"]);
         Assert.Equal("sold", statusesByReference["AA-002"]);
         Assert.Equal("missing", statusesByReference["AA-003"]);
@@ -1315,6 +1334,7 @@ public sealed class IntakeServiceTests
             seller.Id,
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
         await service.ValidateSellerDepositAsync(seller.Id);
 
         var result = await service.UpdateSellerAsync(
@@ -1357,6 +1377,7 @@ public sealed class IntakeServiceTests
             seller.Id,
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
         await service.ValidateSellerDepositAsync(seller.Id);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -1399,6 +1420,7 @@ public sealed class IntakeServiceTests
             seller.Id,
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
         await service.ValidateSellerDepositAsync(seller.Id);
 
         var result = await service.CancelSellerDepositValidationAsync(seller.Id);
@@ -1428,7 +1450,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-001",
-                ItemNumber = 1,
                 Title = "Toy piano",
                 SellerPriceCents = 1000,
                 Status = "in_stock"
@@ -1437,7 +1458,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-002",
-                ItemNumber = 2,
                 Title = "Sold train",
                 SellerPriceCents = 1200,
                 Status = "sold"
@@ -1446,7 +1466,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-003",
-                ItemNumber = 3,
                 Title = "Missing puzzle",
                 SellerPriceCents = 800,
                 Status = "missing"
@@ -1455,7 +1474,6 @@ public sealed class IntakeServiceTests
             {
                 SellerId = seller.Id,
                 Reference = "AA-004",
-                ItemNumber = 4,
                 Title = "Defective game",
                 SellerPriceCents = 600,
                 Status = "defective"
@@ -1470,11 +1488,391 @@ public sealed class IntakeServiceTests
         Assert.Equal("deposit_pending", reopenedSeller.DepositStatus);
         var statusesByReference = reopenedSeller.Items
             .OrderBy(x => x.Reference)
-            .ToDictionary(x => x.Reference, x => x.Status);
+            // Every item seeded above has an explicit Reference, so the key is
+            // never null here.
+            .ToDictionary(x => x.Reference!, x => x.Status);
         Assert.Equal("registered", statusesByReference["AA-001"]);
         Assert.Equal("sold", statusesByReference["AA-002"]);
         Assert.Equal("missing", statusesByReference["AA-003"]);
         Assert.Equal("defective", statusesByReference["AA-004"]);
+    }
+
+    private static async Task<SellerEntity> CreateValidatableSellerAsync(AppDbContext context, IntakeService service)
+    {
+        var seller = await service.CreateSellerAsync(
+            new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+
+        var tracked = await context.Sellers.SingleAsync(x => x.Id == seller.Id);
+        tracked.PostalCode = "38120";
+        tracked.City = "SAINT-EGREVE";
+        tracked.IdentityDocumentType = "CNI";
+        tracked.IdentityDocumentNumber = "123456";
+        tracked.IdentityDocumentIssuedOn = new DateOnly(2020, 1, 1);
+        tracked.IdentityDocumentIssuer = "Mairie";
+        await context.SaveChangesAsync();
+        return tracked;
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_AssignsAContiguousRunInTheSellerOwnLetter()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Puzzle", 500), new CreateItemRowRequest("Poupée", 300)]));
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var references = await context.Items
+            .Where(x => x.SellerId == seller.Id)
+            .OrderBy(x => x.Id)
+            .Select(x => x.Reference)
+            .ToListAsync();
+
+        // Seller code is "BB", so the own letter is 'B'.
+        Assert.Equal(["B001", "B002"], references);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_IsIdempotent()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        await service.AllocateDepositReferencesAsync(seller.Id);
+        await service.AllocateDepositReferencesAsync(seller.Id);
+
+        var references = await context.Items
+            .Where(x => x.SellerId == seller.Id)
+            .Select(x => x.Reference)
+            .ToListAsync();
+
+        Assert.Equal(["B001"], references);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_TopsUpItemsAddedAfterAFirstPass()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Train", 700)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
+
+        var references = await context.Items
+            .Where(x => x.SellerId == seller.Id)
+            .OrderBy(x => x.Id)
+            .Select(x => x.Reference)
+            .ToListAsync();
+
+        Assert.Equal(["B001", "B002"], references);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_TopsUpIntoTheSellerSpilledLetterNotTheOwnLetter()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(
+            context,
+            labelsOptions: Options.Create(new LabelsOptions { SoftCapacityPerLetter = 2 }));
+        var seller = await CreateValidatableSellerAsync(context, service);
+
+        // Seller code is "BB", so its own letter is 'B'. Fill 'B' to the
+        // configured cap of 2, then give the seller one referenced item under
+        // 'D' - simulating an earlier pass that had to spill there - while
+        // leaving 'C' completely empty. If existingLetter were computed
+        // wrong (e.g. left null, or hardcoded to the own letter), the own
+        // letter would still be full and the request would fall through to
+        // the spill tier, which prefers the untouched 'C' over the
+        // near-full 'D'. Only a correctly-derived existingLetter of 'D'
+        // makes the top-up tier win and land the next item in 'D'.
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "B001",
+            Title = "Stock B1",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "B002",
+            Title = "Stock B2",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "D001",
+            Title = "Stock D1 (spilled here on an earlier pass)",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var newReference = await context.Items
+            .Where(x => x.SellerId == seller.Id && x.Title == "Puzzle")
+            .Select(x => x.Reference)
+            .SingleAsync();
+        Assert.Equal("D002", newReference);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_RefusesWhenAnItemHasNoPrice()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Title = "Sans prix",
+            SellerPriceCents = null,
+            Status = "registered"
+        });
+        await context.SaveChangesAsync();
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.NotAllowed, result);
+        Assert.All(await context.Items.ToListAsync(), item => Assert.Null(item.Reference));
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_DoesNotCrashWhenTheSellerHasAStalePreMigrationReference()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+
+        // A stale pre-migration reference such as "AA-001" makes the item's
+        // first character 'A', which is not in ReferenceAllocator.SafeAlphabet
+        // (reserved for the association). This is exactly the shape of a
+        // hand-edited or pre-migration database row: the fix must degrade
+        // into a valid allocation rather than throw KeyNotFoundException from
+        // an unguarded dictionary indexer.
+        context.Items.Add(new ItemEntity
+        {
+            SellerId = seller.Id,
+            Reference = "AA-001",
+            Title = "Ancienne référence",
+            SellerPriceCents = 100,
+            Status = "in_stock"
+        });
+        await context.SaveChangesAsync();
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var newReference = await context.Items
+            .Where(x => x.SellerId == seller.Id && x.Title == "Puzzle")
+            .Select(x => x.Reference)
+            .SingleAsync();
+        Assert.NotNull(newReference);
+        Assert.Contains(newReference![0], AssociationSaleTool.Web.Domain.Items.ReferenceAllocator.SafeAlphabet);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_DoesNotCrashWhenTheSellerCodeIsEmpty()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+
+        // SellerEntity.SellerCode defaults to string.Empty and the column is
+        // NOT NULL only, so a hand-edited database row can carry an empty
+        // seller code. `seller.SellerCode[0]` must not throw
+        // IndexOutOfRangeException in that case.
+        var tracked = await context.Sellers.SingleAsync(x => x.Id == seller.Id);
+        tracked.SellerCode = string.Empty;
+        await context.SaveChangesAsync();
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        var result = await service.AllocateDepositReferencesAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
+        var newReference = await context.Items
+            .Where(x => x.SellerId == seller.Id && x.Title == "Puzzle")
+            .Select(x => x.Reference)
+            .SingleAsync();
+        Assert.NotNull(newReference);
+        Assert.Contains(newReference![0], AssociationSaleTool.Web.Domain.Items.ReferenceAllocator.SafeAlphabet);
+    }
+
+    [Fact]
+    public async Task CancelSellerDepositValidationAsync_KeepsAllocatedReferences()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
+        await service.ValidateSellerDepositAsync(seller.Id);
+
+        await service.CancelSellerDepositValidationAsync(seller.Id);
+
+        // The label is already stuck on the toy, so releasing the number would
+        // be actively wrong.
+        var item = await context.Items.SingleAsync(x => x.SellerId == seller.Id);
+        Assert.Equal("B001", item.Reference);
+        Assert.Equal("registered", item.Status);
+    }
+
+    [Fact]
+    public async Task AllocateDepositReferencesAsync_AfterCancellationOnlyFillsTheNewItems()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
+        await service.ValidateSellerDepositAsync(seller.Id);
+        await service.CancelSellerDepositValidationAsync(seller.Id);
+
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Train", 700)]));
+        await service.AllocateDepositReferencesAsync(seller.Id);
+
+        var references = await context.Items
+            .Where(x => x.SellerId == seller.Id)
+            .OrderBy(x => x.Id)
+            .Select(x => x.Reference)
+            .ToListAsync();
+
+        Assert.Equal(["B001", "B002"], references);
+    }
+
+    [Fact]
+    public async Task ValidateSellerDepositAsync_RefusesWhenARegisteredItemHasNoReference()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Puzzle", 500)]));
+
+        // References were never allocated, simulating a direct POST to the
+        // validate handler that bypasses the fee step's allocation call.
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.NotAllowed, result);
+        var unchangedSeller = await context.Sellers.Include(x => x.Items).SingleAsync();
+        Assert.Equal("deposit_pending", unchangedSeller.DepositStatus);
+        Assert.Equal("registered", Assert.Single(unchangedSeller.Items).Status);
+    }
+
+    [Fact]
+    public async Task ValidateSellerDepositAsync_IgnoresMissingReferencesOnNonRegisteredItemsFromAReopenedDeposit()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+
+        var service = new IntakeService(context);
+        var seller = await CreateValidatableSellerAsync(context, service);
+        context.Items.AddRange(
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = "B001",
+                Title = "Puzzle",
+                SellerPriceCents = 500,
+                Status = "registered"
+            },
+            new ItemEntity
+            {
+                SellerId = seller.Id,
+                Reference = null,
+                Title = "Sold before this scheme existed",
+                SellerPriceCents = 300,
+                Status = "sold"
+            });
+        await context.SaveChangesAsync();
+
+        var result = await service.ValidateSellerDepositAsync(seller.Id);
+
+        Assert.Equal(SellerDepositStatusChangeResult.Changed, result);
     }
 
     private static IserePostalCityLookup CreateLookup(string postalCode, params string[] cities)

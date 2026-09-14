@@ -28,7 +28,10 @@ public sealed class SaleCorrectionService(AppDbContext dbContext)
                 x.Id,
                 x.SaleId,
                 x.ItemId,
-                x.Item.Reference,
+                // "sold" implies a reference was already allocated:
+                // IntakeService.ValidateSellerDepositAsync refuses to move a
+                // registered item to in_stock while its reference is null.
+                x.Item.Reference!,
                 x.Item.Title,
                 x.Item.Seller.SellerCode,
                 $"{x.Item.Seller.FirstName} {x.Item.Seller.LastName}",

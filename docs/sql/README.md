@@ -36,11 +36,18 @@ Some rules remain application-level, especially:
 
 ## 2. Reference And Seller-Code Semantics
 
-The database stores both:
+The database stores the seller code on `seller` and the final item
+`reference` on `item`. There is no per-seller item number: `item.reference`
+is the only reference-related column, and it is nullable.
 
-- the seller code
-- the seller-local item number
-- the final reference
+An item's `reference` is `NULL` from creation until its seller's deposit
+reaches the contract-print step. At that point the application allocates a
+single `<LETTER><NNN>` string per item — one letter from the 20-letter safe
+alphabet plus a zero-padded 3-digit number within that letter — and persists
+it directly; there is no separate letter or number column, and no per-seller
+sequence to derive it from. The letter identifies a physical sort bucket for
+post-sale recollection, not the seller: `seller_code` and `item.reference`
+are independent values after allocation.
 
 The database does not store an `event` table in V1.
 

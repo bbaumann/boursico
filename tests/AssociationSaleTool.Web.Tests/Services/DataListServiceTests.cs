@@ -15,10 +15,10 @@ public sealed class DataListServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context, "DL", "Diane", "Liste");
-        await SeedItemAsync(context, seller, "DL001", 1, "Puzzle rouge", 800, "registered");
-        await SeedItemAsync(context, seller, "DL002", 2, "Train vert", 1200, "in_stock");
-        await SeedItemAsync(context, seller, "DL003", 3, "Camion vendu", 900, "sold");
-        await SeedItemAsync(context, seller, "DL004", 4, "Jeu manquant", 600, "missing");
+        await SeedItemAsync(context, seller, "DL001", "Puzzle rouge", 800, "registered");
+        await SeedItemAsync(context, seller, "DL002", "Train vert", 1200, "in_stock");
+        await SeedItemAsync(context, seller, "DL003", "Camion vendu", 900, "sold");
+        await SeedItemAsync(context, seller, "DL004", "Jeu manquant", 600, "missing");
         var service = new DataListService(context);
 
         var items = await service.ListItemsAsync();
@@ -54,9 +54,9 @@ public sealed class DataListServiceTests
             phone: "0601020304",
             postalAddress: "8 rue de la Paix",
             feePaidCents: 200);
-        await SeedItemAsync(context, seller, "ZX001", 1, "Article vendu", 1000, "sold");
-        await SeedItemAsync(context, seller, "ZX002", 2, "Article retour", 1500, "in_stock");
-        await SeedItemAsync(context, seller, "ZX003", 3, "Article defectueux", 500, "defective");
+        await SeedItemAsync(context, seller, "ZX001", "Article vendu", 1000, "sold");
+        await SeedItemAsync(context, seller, "ZX002", "Article retour", 1500, "in_stock");
+        await SeedItemAsync(context, seller, "ZX003", "Article defectueux", 500, "defective");
         var service = new DataListService(context);
 
         var row = Assert.Single(await service.ListSellersAsync());
@@ -84,8 +84,8 @@ public sealed class DataListServiceTests
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context, "SA", "Samira", "Article");
         var cashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-SALES");
-        var firstItem = await SeedItemAsync(context, seller, "SA001", 1, "Maison bois", 1000, "sold");
-        var secondItem = await SeedItemAsync(context, seller, "SA002", 2, "Robot bleu", 1200, "sold");
+        var firstItem = await SeedItemAsync(context, seller, "SA001", "Maison bois", 1000, "sold");
+        var secondItem = await SeedItemAsync(context, seller, "SA002", "Robot bleu", 1200, "sold");
         var sale = new SaleEntity
         {
             SoldAt = new DateTime(2026, 5, 5, 9, 30, 0, DateTimeKind.Utc),
@@ -182,9 +182,9 @@ public sealed class DataListServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var seller = await SeedSellerAsync(context, "CL", "Claire", "Cloture");
-        var firstItem = await SeedItemAsync(context, seller, "CL001", 1, "Jeu carte", 1000, "defective");
-        var secondItem = await SeedItemAsync(context, seller, "CL002", 2, "Jeu especes", 2000, "sold");
-        var thirdItem = await SeedItemAsync(context, seller, "CL003", 3, "Jeu cheque", 3000, "sold");
+        var firstItem = await SeedItemAsync(context, seller, "CL001", "Jeu carte", 1000, "defective");
+        var secondItem = await SeedItemAsync(context, seller, "CL002", "Jeu especes", 2000, "sold");
+        var thirdItem = await SeedItemAsync(context, seller, "CL003", "Jeu cheque", 3000, "sold");
         var firstCashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-1", 5000, displayOrder: 1);
         var secondCashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-2", 2000, displayOrder: 2);
         context.Sales.AddRange(
@@ -308,7 +308,6 @@ public sealed class DataListServiceTests
         AppDbContext context,
         SellerEntity seller,
         string reference,
-        int itemNumber,
         string title,
         int sellerPriceCents,
         string status)
@@ -317,7 +316,6 @@ public sealed class DataListServiceTests
         {
             SellerId = seller.Id,
             Reference = reference,
-            ItemNumber = itemNumber,
             Title = title,
             SellerPriceCents = sellerPriceCents,
             Status = status

@@ -7,7 +7,7 @@
 <section class="page-card form-card">
     <p class="eyebrow">Saisie</p>
     <h1 class="page-title">Modifier l'article</h1>
-    <p class="seller-meta">@Model.Item!.Reference</p>
+    <p class="seller-meta">@(string.IsNullOrEmpty(Model.Item!.Reference) ? "—" : Model.Item.Reference)</p>
 
     @if (!Model.CanEditItem)
     {

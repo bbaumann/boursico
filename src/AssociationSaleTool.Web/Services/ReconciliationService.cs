@@ -62,7 +62,11 @@ public sealed class ReconciliationService(AppDbContext dbContext)
                 x.SellerId,
                 x.Seller.SellerCode,
                 $"{x.Seller.FirstName} {x.Seller.LastName}",
-                x.Reference,
+                // "in_stock"/"missing" implies a reference was already
+                // allocated: IntakeService.ValidateSellerDepositAsync refuses
+                // to move a registered item to in_stock while its reference
+                // is null, and "missing" is only reached from in_stock.
+                x.Reference!,
                 x.Title,
                 x.Status,
                 x.SellerPriceCents!.Value))
@@ -105,12 +109,12 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             {
                 var payableItems = seller.Items
                     .Where(item => item.Status is "sold" or "missing")
-                    .OrderBy(item => item.ItemNumber)
+                    .OrderBy(item => item.Reference)
                     .Select(BuildPayableItem)
                     .ToList();
                 var returnedItems = seller.Items
                     .Where(item => item.Status is "in_stock" or "defective")
-                    .OrderBy(item => item.ItemNumber)
+                    .OrderBy(item => item.Reference)
                     .Select(BuildReturnedItem)
                     .ToList();
                 var itemSubtotalCents = payableItems.Sum(item => item.PriceCents);
@@ -173,6 +177,10 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         return value.ToLower(FrenchCulture).Contains(normalizedQuery);
     }
 
+    // "sold"/"missing" implies a reference was already allocated:
+    // IntakeService.ValidateSellerDepositAsync refuses to move a registered
+    // item to in_stock while its reference is null, and both statuses are
+    // only reached from in_stock.
     private static SellerSheetItem BuildPayableItem(ItemEntity item)
     {
         var isMissing = item.Status == "missing";
@@ -180,14 +188,14 @@ public sealed class ReconciliationService(AppDbContext dbContext)
 
         if (isMissing)
         {
-            priceCents = item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference);
+            priceCents = item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference!);
         }
         else
         {
             var activeSaleLine = item.SaleLines.SingleOrDefault(line => line.CorrectedAt is null && line.RefundedAt is null);
             if (activeSaleLine is null)
             {
-                throw new ReconciliationSellerSheetDataException(item.Reference);
+                throw new ReconciliationSellerSheetDataException(item.Reference!);
             }
 
             priceCents = activeSaleLine.SellerPriceAtSaleCents;
@@ -195,21 +203,22 @@ public sealed class ReconciliationService(AppDbContext dbContext)
 
         return new SellerSheetItem(
             item.Id,
-            item.Reference,
+            item.Reference!,
             item.Title,
             item.Status,
             priceCents,
             isMissing);
     }
 
+    // Same guarantee as BuildPayableItem above.
     private static SellerSheetItem BuildReturnedItem(ItemEntity item)
     {
         return new SellerSheetItem(
             item.Id,
-            item.Reference,
+            item.Reference!,
             item.Title,
             item.Status,
-            item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference),
+            item.SellerPriceCents ?? throw new ReconciliationSellerSheetDataException(item.Reference!),
             false);
     }
 }

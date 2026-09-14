@@ -44,7 +44,11 @@ public sealed class ItemCorrectionService(AppDbContext dbContext)
                     .OrderByDescending(line => line.RefundedAt)
                     .Select(line => (DateTime?)line.Sale.SoldAt)
                     .FirstOrDefault(),
-                x.Reference,
+                // Any post-deposit status implies a reference was already
+                // allocated: IntakeService.ValidateSellerDepositAsync refuses
+                // to move a registered item to in_stock while its reference
+                // is null.
+                x.Reference!,
                 x.Title,
                 x.Seller.SellerCode,
                 x.Seller.FirstName + " " + x.Seller.LastName,

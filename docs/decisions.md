@@ -168,7 +168,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-014 Use Seller-Centered Item References
 
-- Status: accepted
+- Status: superseded by D-050
 - Key drivers:
   - post-sale physical triage relies on grouping seller items together
   - 26 single-letter buckets are insufficient for 100 to 200 sellers
@@ -203,7 +203,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-017 Item Numbers Are Fixed-Width Per-Seller Sequences
 
-- Status: accepted
+- Status: superseded by D-050
 - Key drivers:
   - fixed-width numbering improves readability and sorting
 - Decision:
@@ -828,3 +828,51 @@ This file captures the main project decisions in a lightweight ADR format.
   - seller payout is now `payable item subtotal - association margin - remaining seller fee`
   - overpaid seller fees still never increase payout
   - refunded or corrected sold items remain excluded from payable subtotal
+
+## D-050 Allocate Letter-Bucket Item References At Deposit
+
+- Status: accepted
+- Key drivers:
+  - adhesive label sheets must be printed before any seller is known, which
+    the old seller-code-derived reference could not support
+  - post-sale recollection sorts unsold items by letter then number into
+    twenty parallel piles, so the letter buckets must stay balanced; this
+    falls out for free from `SellerCodeGenerator`'s existing spread order,
+    whose first letter cycles every twenty sellers
+  - allocating once a seller's item list is final, at deposit rather than at
+    item creation, makes each seller's run of numbers contiguous with no
+    numbering buffer
+- Decision:
+  - use references in the form `<LETTER><NNN>`: one letter from the existing
+    20-letter safe alphabet plus a number zero-padded to 3 digits
+  - allocate the reference when the seller's deposit reaches the
+    contract-print step (`Continuer` on the fee step), not when the item row
+    is created
+  - choose the letter with a four-tier rule: top up the seller's existing
+    letter if it has room, otherwise the seller's own letter (the first
+    character of their seller code), otherwise the least-loaded letter with
+    room, otherwise the seller's own letter past capacity
+  - cap soft capacity at 455 per letter, exposed as
+    `Labels:SoftCapacityPerLetter` in `appsettings.json`
+  - add a server-side guard in `IntakeService.ValidateSellerDepositAsync`
+    that refuses to move a seller's `registered` items to `in_stock` while
+    any of them still has a null reference, since allocation and that status
+    transition live in two different page handlers and would otherwise be
+    sequenced only by client-side convention
+  - keep already allocated references when a validated deposit is canceled
+- Consequence:
+  - a reference no longer identifies its seller; the letter is a physical
+    sort bucket, and an operator must look up the seller in the
+    administration screens instead
+  - `item.item_number` is dropped, and `item.reference` becomes nullable
+    until allocation
+  - an item shows an em dash (`—`) instead of a reference until its seller's
+    deposit reaches the contract-print step
+  - the number part is capped at 999 per letter (20 x 999 against an event of
+    roughly 4,200 items, so this cannot occur in practice); an allocation
+    that would exceed it throws `ReferenceSpaceExhaustedException`, which is
+    deliberately uncaught and has no operator-facing recovery
+  - two deposit desks finalizing the same instant race on the same read
+    snapshot; the loser gets a generic error page but the fee is already
+    saved and allocation is idempotent, so re-clicking `Continuer` succeeds
+  - `D-014` and `D-017` are superseded for current V1

@@ -137,7 +137,7 @@ public sealed class SellerFormImportServiceTests
         var seller = await context.Sellers.Include(x => x.Items).SingleAsync();
         Assert.Equal("Camille", seller.FirstName);
         Assert.Collection(
-            seller.Items.OrderBy(x => x.ItemNumber),
+            seller.Items.OrderBy(x => x.Id),
             first =>
             {
                 Assert.Equal("Puzzle complet", first.Title);
@@ -220,7 +220,6 @@ public sealed class SellerFormImportServiceTests
         seller.Items.Add(new ItemEntity
         {
             Reference = "AA001",
-            ItemNumber = 1,
             Title = "Lego Pirate",
             SellerPriceCents = 500,
             Status = "registered"
@@ -242,7 +241,7 @@ public sealed class SellerFormImportServiceTests
         Assert.Equal(1, result.IgnoredExistingItemCount);
         var updated = await context.Sellers.Include(x => x.Items).SingleAsync();
         Assert.Equal(2, updated.Items.Count);
-        Assert.Contains(updated.Items, item => item.Reference == "AA002" && item.Title == "Jeu PS5");
+        Assert.Contains(updated.Items, item => item.Reference is null && item.Title == "Jeu PS5");
         Assert.Contains("ligne ignorée", updated.ImportNotes);
         Assert.Contains("article déjà présent ignoré - Lego Pirate - 5 €", updated.ImportNotes);
     }
@@ -284,7 +283,7 @@ public sealed class SellerFormImportServiceTests
         Assert.Equal(2, result.CreatedItemCount);
         var updated = await context.Sellers.Include(x => x.Items).SingleAsync();
         Assert.Collection(
-            updated.Items.OrderBy(x => x.ItemNumber),
+            updated.Items.OrderBy(x => x.Id),
             first =>
             {
                 Assert.Equal("Jeu sans prix", first.Title);

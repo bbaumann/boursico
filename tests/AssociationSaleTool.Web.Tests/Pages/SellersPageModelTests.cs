@@ -92,7 +92,7 @@ public sealed class SellersPageModelTests
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal("BB", (await context.Sellers.SingleAsync()).SellerCode);
         var item = await context.Items.SingleAsync();
-        Assert.Equal("BB001", item.Reference);
+        Assert.Null(item.Reference);
         Assert.Equal("registered", item.Status);
     }
 
@@ -242,7 +242,7 @@ public sealed class SellersPageModelTests
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal(2, await context.Items.CountAsync());
         Assert.Collection(
-            await context.Items.OrderBy(x => x.ItemNumber).ToListAsync(),
+            await context.Items.OrderBy(x => x.Id).ToListAsync(),
             first => Assert.Equal(400, first.SellerPriceCents),
             second => Assert.Equal(1000, second.SellerPriceCents));
     }
@@ -821,7 +821,6 @@ public sealed class SellersPageModelTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Toy piano",
             SellerPriceCents = 1000,
             Status = "sold"
@@ -868,6 +867,7 @@ public sealed class SellersPageModelTests
             seller.Id,
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+        await service.AllocateDepositReferencesAsync(seller.Id);
 
         var pageModel = new DetailsModel(service);
 
@@ -877,6 +877,61 @@ public sealed class SellersPageModelTests
         Assert.Equal("/Sellers/Details", redirect.PageName);
         Assert.Equal("in_stock", (await context.Items.SingleAsync()).Status);
         Assert.Equal("deposit_validated", (await context.Sellers.SingleAsync()).DepositStatus);
+    }
+
+    [Fact]
+    public async Task SellerDetailsPage_PostValidateDeposit_ReportsUnallocatedReferencesInsteadOfTheGenericMessage()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
+            IdentityDocumentIssuer: "Préfecture 38"));
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id,
+            IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Toy piano", 1000)]));
+
+        // Deliberately skip AllocateDepositReferencesAsync: the seller and
+        // item data are otherwise complete, so the only reason validation can
+        // refuse is IntakeService's null-reference guard.
+        var pageModel = new DetailsModel(service);
+
+        var result = await pageModel.OnPostValidateDepositAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Contains(
+            "Les références des articles n'ont pas encore été attribuées. Terminez l'étape des frais de la finalisation du dépôt avant de valider.",
+            pageModel.DepositValidationMessages);
+
+        // Neither the seller-record nor the items are actually incomplete
+        // here - IntakeService's own guard refused only because references
+        // are not yet allocated - so neither blocker summary line ("Fiche
+        // vendeur" / "Articles") should show, and the "Corriger les articles
+        // incomplets" link (which points at data that isn't the problem)
+        // must not appear either. Only the specific message above should be
+        // visible to the operator.
+        Assert.False(pageModel.HasSellerDepositValidationMessages);
+        Assert.False(pageModel.HasItemDepositValidationMessages);
+        Assert.Equal("registered", (await context.Items.SingleAsync()).Status);
+        Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
     }
 
     [Fact]

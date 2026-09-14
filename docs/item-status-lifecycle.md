@@ -28,10 +28,13 @@ When the event phase is `sale` or `post_sale`, the following seller fields becom
 The following item fields also become read-only in normal operations:
 
 - `reference`
-- `item_number`
 - `seller_id`
 - `title`
 - `seller_price_cents`
+
+`reference` is nullable and stays `NULL` until the item's seller reaches the
+deposit contract-print step, at which point it is allocated a `<LETTER><NNN>`
+value that does not change afterward.
 
 The application stores one item price: `seller_price_cents`. Sold items keep their read-only sale-time snapshot on `sale_line.seller_price_at_sale_cents`.
 

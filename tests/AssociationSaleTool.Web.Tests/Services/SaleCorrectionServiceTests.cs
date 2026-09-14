@@ -253,7 +253,6 @@ public sealed class SaleCorrectionServiceTests
         {
             SellerId = seller.Id,
             Reference = "AA-001",
-            ItemNumber = 1,
             Title = "Train",
             SellerPriceCents = 500,
             Status = "sold"

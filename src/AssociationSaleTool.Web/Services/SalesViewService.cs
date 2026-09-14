@@ -124,7 +124,10 @@ public sealed class SalesViewService
             .OrderBy(x => x.Item.Reference)
             .Select(x => new SaleDetailLine(
                 x.Id,
-                x.Item.Reference,
+                // A sold item implies a reference was already allocated:
+                // IntakeService.ValidateSellerDepositAsync refuses to move a
+                // registered item to in_stock while its reference is null.
+                x.Item.Reference!,
                 x.Item.Title,
                 x.SellerPriceAtSaleCents,
                 x.CorrectedAt,
@@ -168,7 +171,8 @@ public sealed class SalesViewService
             sale.ChequeBankName ?? string.Empty
         };
 
-        terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference, x.Item.Title }));
+        // Same guarantee as BuildDetail above.
+        terms.AddRange(sale.SaleLines.SelectMany(x => new[] { x.Item.Reference!, x.Item.Title }));
         return string.Join(' ', terms).ToLower(FrenchCulture);
     }
 

@@ -155,6 +155,7 @@ Description : ajouter les jouets prévus pour un vendeur depuis la fiche vendeur
 
 - Les articles sont créés en `enregistré`.
 - Les articles `enregistré` ne sont pas visibles en caisse.
+- Les articles n'ont pas encore de référence ; l'écran affiche un tiret (`—`) à la place.
 - Les prix saisis seront repris dans le contrat et dans les calculs vendeur.
 
 ### Prevente-05 - Finaliser le dépôt vendeur
@@ -172,7 +173,7 @@ Description : confirmer les jouets physiquement déposés, faire signer le contr
 4. Compléter les informations obligatoires du vendeur, y compris les informations de pièce d'identité.
 5. Cliquer sur `Finaliser le dépôt`.
 6. Vérifier les frais vendeur attendus, déjà payés et restant à payer.
-7. Renseigner les frais vendeur payés au dépôt si nécessaire, puis continuer vers le contrat.
+7. Renseigner les frais vendeur payés au dépôt si nécessaire, puis cliquer sur `Continuer`.
 8. Cliquer sur `Imprimer le contrat`.
 9. Faire signer le contrat papier par le vendeur.
 10. Cliquer sur `Valider le dépôt`, puis confirmer que le contrat est signé.
@@ -181,7 +182,8 @@ Description : confirmer les jouets physiquement déposés, faire signer le contr
 
 - La validation est refusée si les informations obligatoires sont manquantes.
 - La validation reste possible si des frais vendeur restent à payer.
-- Le contrat imprimé contient l'identité de l'association, les informations vendeur, les frais vendeur et la liste des articles.
+- Les articles n'ont pas de référence après la simple saisie des articles ; `Continuer` leur attribue une référence.
+- Le contrat imprimé contient l'identité de l'association, les informations vendeur, les frais vendeur et la liste des articles avec leur référence.
 - Après validation, les articles acceptés passent en `en stock`.
 - Après validation, les modifications normales du vendeur et de ses articles sont verrouillées.
 

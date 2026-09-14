@@ -190,11 +190,26 @@ V1 does not track a separate:
 
 References use this format:
 
-- `SELLERCODEITEMNO`
+- `<LETTER><NNN>`
 
 Example:
 
-- `BK014`
+- `B157`
+
+`LETTER` is one character from the safe alphabet below. `NNN` is the number
+within that letter, zero-padded to exactly three digits. The padding is
+load-bearing: `ORDER BY reference` must match physical label order, so `B009`
+must sort before `B010`.
+
+The reference carries no seller information. The letter is a physical sort
+bucket for post-sale recollection, not a seller identifier: an operator can
+always look up the seller in the administration screens. Identifying the
+seller from a stray label is explicitly not a requirement.
+
+An item has no reference until its seller's deposit reaches the
+contract-print step; see Item Reference Allocation below. Until then, screens
+show an em dash (`—`) in its place: on the seller page, on the `/donnees`
+Articles tab, and on the item edit page.
 
 ## Seller Code
 
@@ -215,7 +230,9 @@ Safe alphabet:
 
 - `B C D E G H J K L M N P R S T U W X Y Z`
 
-This gives 20 letters and 400 possible two-letter seller codes.
+This gives 20 letters and 400 possible two-letter seller codes. Item
+references reuse this same 20-letter alphabet for their single leading
+letter.
 
 ### Seller Code Assignment Order
 
@@ -233,32 +250,59 @@ Example prefix sequence:
 - `CC`
 - `DC`
 
-This is done to spread sellers across first letters for post-sale physical sorting.
+This spreads sellers across first letters. It was originally chosen for
+post-sale physical sorting by seller, and it now does double duty: because a
+seller's own item-reference letter defaults to the first character of their
+seller code, this cycling keeps the twenty item-reference letter buckets
+balanced too, with roughly ten sellers behind each letter for a typical
+100-200 seller event.
 
-## Item Number Within Seller
+## Item Reference Allocation
 
-Each seller gets a fixed-width per-seller sequence:
+Item references are allocated when a seller's deposit reaches the
+contract-print step (the `Continuer` action on the fee step), not when the
+item row is created. This is what lets the association print all adhesive
+label sheets weeks before the event, at a time when no seller is yet known.
+By the time allocation runs, the seller's item list is final, so each
+seller's run of numbers is assigned in one contiguous pass; there is no need
+for any numbering buffer.
 
-- `001`
-- `002`
-- `003`
+Choosing the letter for a seller's items follows a four-tier rule:
 
-Later-added items simply continue the sequence.
+1. **Top-up**: if the seller already has referenced items, reuse their most
+   recently allocated letter if it still has room.
+2. **Own letter**: otherwise use the seller's own letter (the first
+   character of their seller code) if it has room.
+3. **Spill**: otherwise use the least-loaded letter that still has room, so
+   the twenty sort piles stay even.
+4. **Relax**: otherwise (every letter full) use the seller's own letter
+   anyway, past its soft capacity.
 
-Example:
+Soft capacity per letter is 455, exposed as `Labels:SoftCapacityPerLetter` in
+`appsettings.json`. It corresponds to the 7 adhesive label sheets of 65
+labels the association prints per letter before the event; the application
+itself never reasons about sheets, only about that number.
 
-- `BK001`
-- `BK002`
-- `BK003`
+Canceling a validated deposit keeps any references already allocated to that
+seller's items; the labels are physically stuck on the toys by then, so
+releasing the numbers would be actively wrong. Revalidating a deposit
+allocates references only for items that still lack one.
 
 ## Why This Reference Scheme Was Chosen
 
-- all items from a seller sort together naturally
-- post-sale triage becomes easier
-- no need for old reserved global-number gaps
-- late-added items are trivial to assign
+- adhesive labels can be printed weeks before the event, when no seller is
+  known yet, because the reference no longer depends on the seller code
+- the letter is a physical sort bucket: after the sale, volunteers sort
+  unsold items by letter then number into twenty piles, and a seller's recap
+  sheet sends one volunteer to collect that seller's items out of the piles
+- twenty letters means twenty volunteers can sort in parallel, so letters
+  must stay reasonably balanced, which the seller-code spread order already
+  provides
+- allocating once the seller's item list is final removes the need for any
+  numbering buffer or reserved-number gaps
+- late-added items are still trivial to assign: they simply top up the
+  seller's existing letter
 - references remain readable and hand-friendly
-- references do not depend on seller names or hash logic
 
 ## Sheet Semantics Derived From The Model
 

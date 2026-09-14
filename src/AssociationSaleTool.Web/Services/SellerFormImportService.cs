@@ -1,5 +1,4 @@
 using AssociationSaleTool.Web.Data;
-using AssociationSaleTool.Web.Domain.Items;
 using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Http;
@@ -96,18 +95,12 @@ public sealed class SellerFormImportService
 
         if (rowsToCreate.Count > 0)
         {
-            var nextItemNumber = seller.Items
-                .Select(item => (int?)item.ItemNumber)
-                .Max() ?? 0;
             foreach (var row in rowsToCreate)
             {
-                nextItemNumber++;
                 _dbContext.Items.Add(new Data.Entities.ItemEntity
                 {
                     Seller = seller,
                     SellerId = seller.Id,
-                    Reference = ItemReference.Format(seller.SellerCode, nextItemNumber),
-                    ItemNumber = nextItemNumber,
                     Title = row.Title.Trim(),
                     SellerPriceCents = row.SellerPriceCents,
                     Status = "registered"
