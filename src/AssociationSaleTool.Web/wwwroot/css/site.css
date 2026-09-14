@@ -430,14 +430,6 @@ textarea.input-validation-error {
   width: 13rem;
 }
 
-.seller-index-phone-column {
-  width: 8rem;
-}
-
-.seller-index-address-column {
-  width: 13rem;
-}
-
 .seller-index-items-column,
 .seller-index-action-column {
   width: 5rem;
@@ -920,6 +912,10 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 
 .seller-detail-card .data-table input {
   min-width: 0;
+}
+
+.seller-detail-card .header-actions {
+  flex-shrink: 0;
 }
 
 .seller-items-table,

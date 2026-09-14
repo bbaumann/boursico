@@ -2713,7 +2713,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             response.EnsureSuccessStatusCode();
             var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
             Assert.Contains("Les informations du vendeur et les articles sont en lecture seule dans le statut actuel de la vente.", content);
-            Assert.DoesNotContain("Modifier le vendeur", content);
+            Assert.DoesNotContain($"/vendeurs/{sellerId}/modifier", content);
             Assert.DoesNotContain("Ajouter des articles", content);
         }
         finally
@@ -2763,7 +2763,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Le contrat de dépôt signé rend le vendeur et ses articles en lecture seule.", content);
         Assert.DoesNotContain("Les informations du vendeur et les articles sont en lecture seule dans le statut actuel de la vente.", content);
-        Assert.DoesNotContain("Modifier le vendeur", content);
+        Assert.DoesNotContain($"/vendeurs/{sellerId}/modifier", content);
         Assert.DoesNotContain("Ajouter des articles", content);
     }
 

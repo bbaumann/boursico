@@ -16,8 +16,6 @@ test("base typography and navigation are readable on common elderly-user display
 
 test("seller index hides secondary contact columns at narrower widths", () => {
   assert.match(sellersIndex, /<col class="seller-index-email-column seller-index-secondary-column" \/>/);
-  assert.match(sellersIndex, /<col class="seller-index-phone-column seller-index-secondary-column" \/>/);
-  assert.match(sellersIndex, /<col class="seller-index-address-column seller-index-secondary-column" \/>/);
   assert.match(sellersIndex, /<th class="seller-index-secondary-column">E-mail<\/th>/);
   assert.match(sellersIndex, /<td class="seller-index-secondary-column">@\(seller\.Email/);
   assert.match(css, /@media\s*\(max-width:\s*980px\)[\s\S]*\.seller-index-secondary-column\s*\{[\s\S]*display:\s*none;/);
@@ -38,4 +36,9 @@ test("seller detail presents deposit next action before contact details on compa
   assert.ok(depositSummaryIndex < contactListIndex, "deposit summary should appear before the contact list");
   assert.match(sellerDetails, /DepositValidationMessages\.Count/);
   assert.match(css, /@media\s*\(max-width:\s*980px\)[\s\S]*\.seller-contact-list\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\);/);
+});
+
+test("seller detail header keeps its actions on a single line", () => {
+  assert.match(sellerDetails, /asp-page="\/Sellers\/Edit" asp-route-id="@Model\.Seller\.Id">Modifier<\/a>/);
+  assert.match(css, /\.seller-detail-card \.header-actions \{\s*flex-shrink:\s*0;/);
 });
