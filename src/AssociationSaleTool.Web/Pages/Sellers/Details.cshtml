@@ -336,7 +336,15 @@
     <section class="subsection">
         <h2>Ajouter des articles</h2>
 
-        <form method="post" class="stack-form">
+        @* The explicit action is load-bearing: without it the browser posts this form to
+           the current URL, query string included. The deposit dialog handlers return
+           Page() rather than redirecting, so after opening the dialog the address bar
+           still carries ?handler=..., and adding items would re-enter that handler
+           instead of creating them. *@
+        <form method="post"
+              asp-page="/Sellers/Details"
+              asp-route-id="@Model.Seller.Id"
+              class="stack-form">
             <div asp-validation-summary="All" class="validation"></div>
 
             <table class="data-table intake-table seller-intake-table" data-item-registration-table>

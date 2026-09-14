@@ -5219,4 +5219,83 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         throw new DirectoryNotFoundException($"Could not find repository directory {Path.Combine(relativePathParts)}.");
     }
+
+    [Fact]
+    public async Task SellerDetails_AddItemsAfterOpeningTheDepositDialog_CreatesTheItems()
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = true });
+        await SetSalePhaseAsync(SalePhase.Presale);
+
+        long sellerId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "UB",
+                FirstName = "Ursule",
+                LastName = "Bonnet",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                PostalCode = "38120",
+                City = "SAINT-EGREVE",
+                IdentityDocumentType = "CNI",
+                IdentityDocumentNumber = "123456",
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 1),
+                IdentityDocumentIssuer = "Mairie",
+                DepositStatus = "deposit_pending"
+            };
+            seller.Items.Add(new ItemEntity { Title = "Premier jouet", SellerPriceCents = 500, Status = "registered" });
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        // The operator opens the deposit dialog. This handler returns Page(), so the
+        // browser's address bar keeps "?handler=BeginDepositFinalization".
+        var dialogUrl = $"/vendeurs/{sellerId}?handler=BeginDepositFinalization";
+        var pageResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        pageResponse.EnsureSuccessStatusCode();
+        var dialogResponse = await client.PostAsync(
+            dialogUrl,
+            BuildFormContent(await pageResponse.Content.ReadAsStringAsync()));
+        dialogResponse.EnsureSuccessStatusCode();
+        var dialogHtml = await dialogResponse.Content.ReadAsStringAsync();
+
+        // The add-items form must carry an explicit action. Without one a browser posts
+        // it to the current URL, query string included, so "Enregistrer le lot" would
+        // re-enter the deposit handler instead of adding items.
+        // Locate the add-items form specifically: several forms on this page share the
+        // stack-form class, so find the one that actually contains the item rows.
+        var rowFieldIndex = dialogHtml.IndexOf("Input.Rows[0].Title", StringComparison.Ordinal);
+        Assert.True(rowFieldIndex > 0, "The add-items form was not rendered.");
+        var formStart = dialogHtml.LastIndexOf("<form", rowFieldIndex, StringComparison.OrdinalIgnoreCase);
+        Assert.True(formStart >= 0, "No form encloses the item rows.");
+        var formTag = dialogHtml[formStart..(dialogHtml.IndexOf('>', formStart) + 1)];
+        var actionMatch = Regex.Match(formTag, "action=\"(?<action>[^\"]*)\"", RegexOptions.IgnoreCase);
+        var action = actionMatch.Success ? WebUtility.HtmlDecode(actionMatch.Groups["action"].Value) : string.Empty;
+        Assert.False(string.IsNullOrEmpty(action), "The add-items form has no action, so it inherits the deposit handler query string.");
+        Assert.DoesNotContain("handler=", action, StringComparison.OrdinalIgnoreCase);
+
+        // Post exactly where a browser would.
+        var addResponse = await client.PostAsync(
+            action,
+            BuildFormContent(
+                dialogHtml,
+                ("Input.Rows[0].Title", "Deuxieme jouet"),
+                ("Input.Rows[0].SellerPrice", "7")));
+        addResponse.EnsureSuccessStatusCode();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var titles = await dbContext.Items
+                .Where(x => x.SellerId == sellerId)
+                .Select(x => x.Title)
+                .ToListAsync();
+            Assert.Contains("Deuxieme jouet", titles);
+            Assert.Equal(2, titles.Count);
+        }
+    }
+
 }
