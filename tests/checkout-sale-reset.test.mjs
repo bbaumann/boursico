@@ -12,15 +12,8 @@ const checkoutPage = readFileSync(
   "utf8");
 
 function extractFunction(name) {
-  const match = siteScript.match(new RegExp(`  function ${name}\\(\\) \\{[\\s\\S]*?\\r?\\n  \\}\\r?\\n`));
+  const match = siteScript.match(new RegExp(`  (?:async )?function ${name}\\(\\) \\{[\\s\\S]*?\\r?\\n  \\}\\r?\\n`));
   assert.ok(match, `Missing function ${name}`);
-  return match[0];
-}
-
-function extractClickHandler(buttonVariable) {
-  const match = siteScript.match(new RegExp(
-    `  ${buttonVariable}\\?\\.addEventListener\\("click", async \\(\\) => \\{[\\s\\S]*?\\r?\\n  \\}\\);\\r?\\n`));
-  assert.ok(match, `Missing click handler for ${buttonVariable}`);
   return match[0];
 }
 
@@ -59,7 +52,7 @@ test("the city list is emptied before the postal code change is replayed", () =>
 });
 
 test("saving without printing resets the sale before reloading", () => {
-  const handler = extractClickHandler("saveSaleButton");
+  const handler = extractFunction("submitSaleWithoutInvoice");
   assert.match(
     handler,
     /if \(response\.status === 201 && payload\.saved\) \{\s*resetCompletedSale\(\);\s*setMessage\("Vente enregistrée\."\);\s*window\.location\.reload\(\);/);
@@ -67,16 +60,16 @@ test("saving without printing resets the sale before reloading", () => {
 
 test("saving with an invoice fills the invoice before resetting, then prints", () => {
   // The invoice lines are built from the cart, so the reset must come after renderInvoice.
-  const handler = extractClickHandler("savePrintButton");
+  const handler = extractFunction("submitSaleWithInvoice");
   assert.match(
     handler,
     /if \(response\.status === 201 && payload\.saved\) \{\s*renderInvoice\(payload, saleDetails\);\s*resetCompletedSale\(\);\s*printInvoiceAndReload\(\);/);
 });
 
 test("a refused or failed save keeps what the operator typed", () => {
-  for (const button of ["saveSaleButton", "savePrintButton"]) {
-    const handler = extractClickHandler(button);
-    assert.equal(handler.match(/resetCompletedSale\(\)/g)?.length, 1, `${button} resets outside the success branch`);
+  for (const submit of ["submitSaleWithoutInvoice", "submitSaleWithInvoice"]) {
+    const handler = extractFunction(submit);
+    assert.equal(handler.match(/resetCompletedSale\(\)/g)?.length, 1, `${submit} resets outside the success branch`);
   }
 });
 

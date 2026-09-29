@@ -474,6 +474,10 @@ function initializeCheckout(root) {
   const modalBackButton = root.querySelector("[data-checkout-modal-back]");
   const saveSaleButton = root.querySelector("[data-checkout-save-sale]");
   const savePrintButton = root.querySelector("[data-checkout-save-print]");
+  const invoiceConfirmation = root.querySelector("[data-checkout-invoice-confirmation]");
+  const invoiceConfirmationPrintButton = root.querySelector("[data-checkout-invoice-confirmation-print]");
+  const invoiceConfirmationWithoutInvoiceButton = root.querySelector("[data-checkout-invoice-confirmation-without-invoice]");
+  const invoiceConfirmationBackButton = root.querySelector("[data-checkout-invoice-confirmation-back]");
   const checkoutWorkflow = root.querySelector("[data-checkout-workflow]");
   const cashRegisterSetup = root.querySelector("[data-checkout-cash-register-setup]");
   const cashRegisterChoice = root.querySelector("[data-checkout-cash-register-choice]");
@@ -1095,17 +1099,42 @@ function initializeCheckout(root) {
 
   modalBackButton?.addEventListener("click", hideModal);
 
-  saveSaleButton?.addEventListener("click", async () => {
+  function isSaleReadyToSave() {
     if (!validateBuyerDetails()) {
-      return;
+      return false;
     }
 
     if (!validatePaymentDetails()) {
-      return;
+      return false;
     }
 
     if (getCashRegisterId().length === 0) {
       refreshCashRegisterState();
+      return false;
+    }
+
+    return true;
+  }
+
+  function showInvoiceConfirmation() {
+    if (!invoiceConfirmation) {
+      submitSaleWithoutInvoice();
+      return;
+    }
+
+    invoiceConfirmation.hidden = false;
+    // Printing is the safe outcome, so a reflex Enter prints the invoice.
+    invoiceConfirmationPrintButton?.focus();
+  }
+
+  function hideInvoiceConfirmation() {
+    if (invoiceConfirmation) {
+      invoiceConfirmation.hidden = true;
+    }
+  }
+
+  async function submitSaleWithoutInvoice() {
+    if (!isSaleReadyToSave()) {
       return;
     }
 
@@ -1132,24 +1161,15 @@ function initializeCheckout(root) {
 
     setMessage("La vente n'a pas pu être enregistrée. Réessayez.");
     hideModal();
-  });
+  }
 
-  savePrintButton?.addEventListener("click", async () => {
+  async function submitSaleWithInvoice() {
     const saleDetails = getSaleDetails();
     if (saleDetails.buyerAddress.length === 0) {
       return;
     }
 
-    if (!validateBuyerDetails()) {
-      return;
-    }
-
-    if (!validatePaymentDetails()) {
-      return;
-    }
-
-    if (getCashRegisterId().length === 0) {
-      refreshCashRegisterState();
+    if (!isSaleReadyToSave()) {
       return;
     }
 
@@ -1179,6 +1199,44 @@ function initializeCheckout(root) {
 
     setMessage("La vente n'a pas pu être enregistrée. Réessayez.");
     hideModal();
+  }
+
+  // A typed address means the buyer probably wants an invoice: saving without one is
+  // confirmed first, since the volunteer may have typed it out of habit or misclicked.
+  saveSaleButton?.addEventListener("click", () => {
+    if (!isSaleReadyToSave()) {
+      return;
+    }
+
+    if (getBuyerAddress().length > 0) {
+      showInvoiceConfirmation();
+      return;
+    }
+
+    submitSaleWithoutInvoice();
+  });
+
+  savePrintButton?.addEventListener("click", submitSaleWithInvoice);
+
+  invoiceConfirmationPrintButton?.addEventListener("click", () => {
+    hideInvoiceConfirmation();
+    submitSaleWithInvoice();
+  });
+
+  invoiceConfirmationWithoutInvoiceButton?.addEventListener("click", () => {
+    hideInvoiceConfirmation();
+    submitSaleWithoutInvoice();
+  });
+
+  invoiceConfirmationBackButton?.addEventListener("click", () => {
+    hideInvoiceConfirmation();
+    saveSaleButton?.focus();
+  });
+
+  invoiceConfirmation?.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      invoiceConfirmationBackButton?.click();
+    }
   });
 
   renderResults();

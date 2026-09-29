@@ -1372,6 +1372,11 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   display: none;
 }
 
+/* Opens on top of the payment dialog. */
+.checkout-invoice-confirmation {
+  z-index: 11;
+}
+
 .checkout-modal-panel {
   width: min(520px, 100%);
   padding: 1.5rem;

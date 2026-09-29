@@ -260,9 +260,13 @@ La facture est optionnelle.
 
 Si le client demande une facture, remplir `Adresse` avec l'adresse client à imprimer.
 
-Ensuite, dans la fenêtre de finalisation, le bouton `Enregistrer et imprimer` devient disponible. L'application enregistre d'abord la vente, crée le numéro de facture, puis ouvre l'impression du navigateur.
+Ensuite, dans la fenêtre de finalisation, le bouton `Valider et imprimer la facture` devient disponible. L'application enregistre d'abord la vente, crée le numéro de facture, puis ouvre l'impression du navigateur. Annuler l'impression n'annule pas la vente : elle reste enregistrée avec son numéro de facture.
 
 Si le champ d'adresse est vide, l'option d'impression reste désactivée.
+
+Si une adresse est saisie et que le bénévole clique sur `Valider sans imprimer`, l'application demande confirmation : `Valider et imprimer la facture`, `Valider sans facture`, ou `Retour` pour revenir au paiement sans rien enregistrer.
+
+Pour imprimer ou réimprimer la facture d'une vente déjà enregistrée, par exemple après une impression annulée ou si le client la demande plus tard, cliquer sur `Liste des ventes` depuis la caisse, ouvrir la vente, puis cliquer sur `Imprimer la facture`. Le numéro de facture déjà attribué est conservé.
 
 La facture contient son numéro unique dans le titre, la date d'émission, le logo de l'Association Familiale, l'identité de l'Association Familiale, un bloc client avec le nom, l'adresse, le code postal et la ville, les lignes d'articles, les totaux HT/TTC et la mention `TVA non applicable en vertu de l'article 293 B du CGI.`
 
