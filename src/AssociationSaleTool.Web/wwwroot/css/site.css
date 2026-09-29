@@ -1392,8 +1392,11 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   z-index: 31;
 }
 
+/* Wide enough for the three action buttons on one line (about 630px); on a narrower
+   window they still wrap. */
 .checkout-modal-panel {
-  width: min(520px, 100%);
+  box-sizing: border-box;
+  width: min(740px, 100%);
   padding: 1.5rem;
   border: 1px solid var(--border);
   border-radius: 8px;

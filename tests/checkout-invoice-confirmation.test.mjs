@@ -74,6 +74,18 @@ test("the confirmation focuses printing, so a reflex Enter prints the invoice", 
   assert.match(show, /invoiceConfirmationPrintButton\?\.focus\(\);/);
 });
 
+test("checkout dialogs are wide enough to keep their three buttons on one line", () => {
+  // Measured in Edge: the three payment buttons need about 630px once buttons use the
+  // page font size; the former 520px panel wrapped them onto two lines.
+  const css = readFileSync(
+    join(process.cwd(), "src", "AssociationSaleTool.Web", "wwwroot", "css", "site.css"),
+    "utf8");
+  const panel = css.match(/(?:^|\n)\.checkout-modal-panel\s*\{([^}]*)\}/);
+  assert.ok(panel, "Missing the checkout dialog panel rule");
+  assert.match(panel[1], /width:\s*min\(740px,\s*100%\);/);
+  assert.match(panel[1], /box-sizing:\s*border-box;/);
+});
+
 test("checkout dialogs cover the sticky main navigation", () => {
   // The navigation is sticky with its own z-index; below it, it stayed clickable during a
   // sale and a volunteer could leave the page mid-payment.
