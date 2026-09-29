@@ -4,6 +4,7 @@
   --ink: #1f231d;
   --muted: #5a6458;
   --accent: #0d5c63;
+  --accent-strong: #09454b;
   --border: rgba(84, 72, 54, 0.18);
 }
 
@@ -1575,7 +1576,7 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   padding: 0.2rem 0.55rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  color: var(--text);
+  color: var(--ink);
   background: #fffdf8;
   font-size: 0.9rem;
   font-weight: 700;
