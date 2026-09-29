@@ -42,11 +42,13 @@ function formatItemRegistrationCount(existingCount, newCount) {
 
 // Counts the rows saving would try to create: a row with only a description or only a
 // price still counts, since the operator means to add it; saving then asks for the rest.
+// Hidden inputs are skipped: ASP.NET renders a non-empty __Invariant field next to every
+// type="number" input, which would make every empty row count.
 function updateItemRegistrationCount(counter) {
   const tbody = counter.closest("form")?.querySelector("[data-item-registration-table] tbody");
   const rows = tbody ? Array.from(tbody.querySelectorAll("tr")) : [];
   const newCount = rows.filter(row =>
-    Array.from(row.querySelectorAll("input")).some(input => input.value.trim() !== "")).length;
+    Array.from(row.querySelectorAll('input:not([type="hidden"])')).some(input => input.value.trim() !== "")).length;
   const existingCount = Number.parseInt(counter.dataset.existingItemCount, 10) || 0;
   counter.textContent = formatItemRegistrationCount(existingCount, newCount);
 }

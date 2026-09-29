@@ -21,9 +21,18 @@ function loadSiteScript() {
   return context;
 }
 
+// Values are visible inputs; { hidden: value } adds a hidden input, like the __Invariant
+// field ASP.NET renders next to every type="number" input.
 function fakeRow(...values) {
-  const inputs = values.map(value => ({ value }));
-  return { querySelectorAll: selector => (selector === "input" ? inputs : []) };
+  const inputs = values.map(value =>
+    typeof value === "object" ? { type: "hidden", value: value.hidden } : { type: "text", value });
+  return {
+    querySelectorAll: selector => {
+      if (selector === "input") return inputs;
+      if (selector === 'input:not([type="hidden"])') return inputs.filter(input => input.type !== "hidden");
+      return [];
+    }
+  };
 }
 
 function fakeForm(existingCount, rows) {
@@ -68,6 +77,20 @@ test("item counter counts rows with a description or a price, not empty ones", (
   updateItemRegistrationCount(counter);
 
   assert.equal(counter.textContent, "14 articles (dont 3 nouveaux)");
+});
+
+test("item counter ignores hidden inputs ASP.NET adds to number fields", () => {
+  const { updateItemRegistrationCount } = loadSiteScript();
+  const invariant = { hidden: "Input.Rows[0].SellerPrice" };
+  const { counter } = fakeForm(0, [
+    fakeRow("Puzzle", "5", invariant),
+    fakeRow("", "", invariant),
+    fakeRow("", "", invariant)
+  ]);
+
+  updateItemRegistrationCount(counter);
+
+  assert.equal(counter.textContent, "1 article");
 });
 
 test("item counter is refreshed on typing and after adding a row", () => {
