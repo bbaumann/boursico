@@ -87,7 +87,7 @@ public sealed class SellerFormImportParserTests
         var incompleteRow = Assert.Single(submission.IncompleteRows);
         Assert.Equal("Puzzle sans prix", incompleteRow.Title);
         Assert.Null(incompleteRow.SellerPriceCents);
-        Assert.Contains(submission.IgnoredItemLines, line => line.RawValue == "4,50" && line.Reason == "titre manquant");
+        Assert.Contains(submission.IgnoredItemLines, line => line.RawValue == "4,50" && line.Reason == "description manquante");
         Assert.Contains("article à corriger", submission.ImportNotes);
         Assert.Contains("prix manquant", submission.ImportNotes);
     }

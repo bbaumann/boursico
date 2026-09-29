@@ -69,7 +69,7 @@ Il prépare les données avant la vente :
 
 Il utilise uniquement l'écran `CAISSE` :
 
-- cherche les articles par référence ou par titre ;
+- cherche les articles par référence ou par description ;
 - ajoute les articles au panier ;
 - finalise la vente ;
 - imprime éventuellement une facture si le client la demande.
@@ -133,11 +133,11 @@ Cliquer sur `Fichier CSV ou TSV`, choisir l'export, puis cliquer sur `Importer l
 
 L'import crée des fiches vendeurs en `Dépôt à valider` quand la soumission contient au moins un prénom et un nom. Les coordonnées et informations de pièce d'identité incomplètes ne bloquent pas l'import : elles seront complétées avec le vendeur avant la signature du contrat.
 
-Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`. Quand une ligne contient un titre mais pas de prix valide, l'article est aussi ajouté en `enregistré` avec un prix `À compléter`, et une note est ajoutée dans `Import à vérifier`. Quand le titre ne peut pas être extrait, la ligne n'est pas importée et reste seulement notée dans `Import à vérifier`.
+Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`. Quand une ligne contient une description mais pas de prix valide, l'article est aussi ajouté en `enregistré` avec un prix `À compléter`, et une note est ajoutée dans `Import à vérifier`. Quand la description ne peut pas être extraite, la ligne n'est pas importée et reste seulement notée dans `Import à vérifier`.
 
 Si une ville reçue ne peut pas être reconnue, le code postal est conservé, la ville reste vide, et la ville reçue est notée dans `Import à vérifier`.
 
-Si une soumission correspond à un vendeur existant, elle n'est pas importée automatiquement. Quand un seul vendeur existant correspond, cliquer sur `Ajouter les articles au vendeur existant` si les articles doivent être ajoutés à cette fiche. Les coordonnées du vendeur existant ne sont pas remplacées. Les articles déjà présents avec le même titre et le même prix sont ignorés. Quand plusieurs vendeurs existants correspondent, cliquer sur `Ignorer cette soumission`.
+Si une soumission correspond à un vendeur existant, elle n'est pas importée automatiquement. Quand un seul vendeur existant correspond, cliquer sur `Ajouter les articles au vendeur existant` si les articles doivent être ajoutés à cette fiche. Les coordonnées du vendeur existant ne sont pas remplacées. Les articles déjà présents avec la même description et le même prix sont ignorés. Quand plusieurs vendeurs existants correspondent, cliquer sur `Ignorer cette soumission`.
 
 ### Éviter les doublons vendeurs
 
@@ -162,7 +162,7 @@ Ouvrir la fiche du vendeur, puis utiliser la section `Ajouter des articles`.
 
 Pour chaque article, saisir :
 
-- le titre ;
+- la description ;
 - le prix vendeur en euros.
 
 Le prix vendeur est aussi le prix imprimé vu par le client dans l'outil actuel. Il sert aussi au calcul du montant à reverser au vendeur si l'article est vendu ou marqué manquant.
@@ -212,7 +212,7 @@ Pour les codes postaux de l'Isère, la ville est proposée automatiquement et pe
 
 ### Chercher un article
 
-Dans `Rechercher un article`, taper une partie de la référence ou du titre.
+Dans `Rechercher un article`, taper une partie de la référence ou de la description.
 
 La table se filtre immédiatement. Seuls les articles `en stock` dont le dépôt vendeur est validé apparaissent. Le bénévole choisit explicitement la bonne ligne. Il n'y a pas besoin de connaître le vendeur.
 
@@ -306,7 +306,7 @@ Cas typique : un bénévole a tapé ou choisi une mauvaise référence, et l'art
 
 Aller dans `ADMIN`, déverrouiller la page, puis utiliser `Correction des articles`.
 
-1. Filtrer les articles affichés par référence, titre, vendeur, statut ou numéro de vente.
+1. Filtrer les articles affichés par référence, description, vendeur, statut ou numéro de vente.
 2. Trouver le mauvais article vendu.
 3. Cliquer sur `Remettre en stock`.
 4. Confirmer l'action.
@@ -327,7 +327,7 @@ Si un défaut est trouvé après l'acceptation de l'article, aller dans `ADMIN`,
 
 Pour un article encore `en stock` :
 
-1. Filtrer les articles affichés par référence, titre, vendeur ou statut.
+1. Filtrer les articles affichés par référence, description, vendeur ou statut.
 2. Cliquer sur `Marquer défectueux`.
 
 Résultat :
@@ -397,7 +397,7 @@ Si tous les articles à rendre sont trouvés, la feuille peut servir de feuille 
 Si un article censé être rendu n'est pas retrouvé physiquement :
 
 1. Revenir dans `RAPPROCHEMENT`.
-2. Filtrer les articles par référence, titre ou vendeur.
+2. Filtrer les articles par référence, description ou vendeur.
 3. Sur l'article `en stock`, cliquer sur `Marquer manquant`.
 4. Réimprimer la feuille du vendeur.
 

@@ -176,7 +176,7 @@ public sealed class ExcelSellerItemParserTests
         var result = await parser.ParseAsync(file);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("La ligne 7 contient un titre sans prix vendeur.", result.Errors);
+        Assert.Contains("La ligne 7 contient une description sans prix vendeur.", result.Errors);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public sealed class ExcelSellerItemParserTests
         var result = await parser.ParseAsync(file);
 
         Assert.False(result.Succeeded);
-        Assert.Contains("La ligne 7 contient un prix vendeur sans titre.", result.Errors);
+        Assert.Contains("La ligne 7 contient un prix vendeur sans description.", result.Errors);
     }
 
     [Fact]

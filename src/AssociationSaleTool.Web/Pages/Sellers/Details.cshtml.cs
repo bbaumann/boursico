@@ -401,13 +401,13 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
 
             if (titleMissing)
             {
-                ModelState.AddModelError($"Input.Rows[{index}].Title", "Le titre est obligatoire lorsqu'un prix est saisi.");
+                ModelState.AddModelError($"Input.Rows[{index}].Title", "La description est obligatoire lorsqu'un prix est saisi.");
                 continue;
             }
 
             if (priceMissing)
             {
-                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur est obligatoire lorsqu'un titre est saisi.");
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur est obligatoire lorsqu'une description est saisie.");
                 continue;
             }
 
@@ -559,7 +559,7 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
 
         if (seller.Items.Any(item => string.IsNullOrWhiteSpace(item.Title)))
         {
-            messages.Add("Tous les articles doivent avoir un titre avant de valider le dépôt.");
+            messages.Add("Tous les articles doivent avoir une description avant de valider le dépôt.");
             hasItemMessages = true;
         }
 

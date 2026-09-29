@@ -317,13 +317,13 @@ public sealed class ExcelSellerItemParser
 
             if (title is null)
             {
-                errors.Add($"La ligne {rowNumber} contient un prix vendeur sans titre.");
+                errors.Add($"La ligne {rowNumber} contient un prix vendeur sans description.");
                 continue;
             }
 
             if (price is null)
             {
-                errors.Add($"La ligne {rowNumber} contient un titre sans prix vendeur.");
+                errors.Add($"La ligne {rowNumber} contient une description sans prix vendeur.");
                 continue;
             }
 

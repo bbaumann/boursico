@@ -182,7 +182,7 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
     {
         if (PriceLikeOnlyPattern().IsMatch(raw))
         {
-            return new ParsedItemLine(null, "titre manquant");
+            return new ParsedItemLine(null, "description manquante");
         }
 
         var match = ItemLinePattern().Match(raw);
@@ -192,7 +192,7 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
             var amount = match.Groups["amount"].Value.Trim();
             if (string.IsNullOrWhiteSpace(matchedTitle))
             {
-                return new ParsedItemLine(null, "titre manquant");
+                return new ParsedItemLine(null, "description manquante");
             }
 
             if (!TryParseWholeEuroPrice(amount, out var priceCents))
@@ -206,7 +206,7 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
         var title = NormalizeItemTitle(raw);
         if (string.IsNullOrWhiteSpace(title))
         {
-            return new ParsedItemLine(null, "titre manquant");
+            return new ParsedItemLine(null, "description manquante");
         }
 
         return new ParsedItemLine(new CreateItemRowRequest(title, null), "prix manquant");

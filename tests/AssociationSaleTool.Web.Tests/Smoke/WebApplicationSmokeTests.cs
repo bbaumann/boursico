@@ -354,7 +354,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.DoesNotContain("form-required-note", content);
-        AssertRequiredFieldMarker(content, "Titre");
+        AssertRequiredFieldMarker(content, "Description");
         AssertRequiredFieldMarker(content, "Prix vendeur");
     }
 

@@ -163,13 +163,13 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
 
             if (titleMissing)
             {
-                ModelState.AddModelError($"Input.Rows[{index}].Title", "Le titre est obligatoire lorsqu'un prix est saisi.");
+                ModelState.AddModelError($"Input.Rows[{index}].Title", "La description est obligatoire lorsqu'un prix est saisi.");
                 continue;
             }
 
             if (priceMissing)
             {
-                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur est obligatoire lorsqu'un titre est saisi.");
+                ModelState.AddModelError($"Input.Rows[{index}].SellerPrice", "Le prix vendeur est obligatoire lorsqu'une description est saisie.");
                 continue;
             }
 

@@ -77,7 +77,7 @@ public sealed class IndexModel(
         await LoadPhaseAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(SearchInput.Query))
         {
-            ModelState.AddModelError("SearchInput.Query", "Saisissez une référence ou un titre.");
+            ModelState.AddModelError("SearchInput.Query", "Saisissez une référence ou une description.");
             await LoadDashboardAsync(cancellationToken);
             return Page();
         }

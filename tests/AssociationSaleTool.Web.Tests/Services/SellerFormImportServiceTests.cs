@@ -157,7 +157,7 @@ public sealed class SellerFormImportServiceTests
             });
         Assert.Contains("prix non accepté", seller.ImportNotes);
         Assert.Contains("prix manquant", seller.ImportNotes);
-        Assert.Contains("titre manquant", seller.ImportNotes);
+        Assert.Contains("description manquante", seller.ImportNotes);
     }
 
     [Fact]

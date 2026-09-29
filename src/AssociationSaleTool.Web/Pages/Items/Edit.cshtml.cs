@@ -84,7 +84,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
 
     public sealed class InputModel
     {
-        [Required(ErrorMessage = "Le titre est obligatoire.")]
+        [Required(ErrorMessage = "La description est obligatoire.")]
         public string Title { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Le prix vendeur est obligatoire.")]
