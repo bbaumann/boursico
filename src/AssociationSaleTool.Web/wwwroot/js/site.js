@@ -711,6 +711,45 @@ function initializeCheckout(root) {
     }
   }
 
+  // The reload after a sale used to be the only thing clearing the previous buyer, and it
+  // is not reliable: Firefox restores typed values on reload, and after printing the reload
+  // waits for an afterprint event. Clear the sale explicitly as soon as it is saved.
+  function resetCompletedSale() {
+    // Without a reload the catalog would still offer the items just sold.
+    const soldItemIds = new Set(cart.map(item => String(item.id)));
+    for (let index = catalog.length - 1; index >= 0; index--) {
+      if (soldItemIds.has(String(catalog[index].id))) {
+        catalog.splice(index, 1);
+      }
+    }
+
+    cart.splice(0, cart.length);
+    setConflictItems([]);
+
+    [buyerNameInput, buyerPostalCodeInput, buyerCityInput, buyerAddressInput, chequeNumberInput, chequeBankNameInput]
+      .forEach(input => {
+        if (input) {
+          input.value = "";
+        }
+      });
+    // The postal city logic copies the city list's value back into an empty city field,
+    // so the list is emptied before it is told the postal code changed.
+    buyerCitySelect?.replaceChildren();
+    buyerPostalCodeInput?.dispatchEvent(new Event("input", { bubbles: true }));
+
+    paymentMethodInputs.forEach(input => {
+      input.checked = input.defaultChecked;
+    });
+    updateChequeDetailsVisibility();
+
+    setBuyerMessage("");
+    setPaymentMessage("");
+    hideModal();
+    clearCheckoutResults();
+    renderCart();
+    updateSavePrintButtonState();
+  }
+
   function showModal(totals, itemCount) {
     if (!modal) {
       return;
@@ -1009,10 +1048,8 @@ function initializeCheckout(root) {
 
     const { response, payload } = await postCheckoutCart("/api/ventes", cart, getSaleDetails());
     if (response.status === 201 && payload.saved) {
-      cart.splice(0, cart.length);
-      setConflictItems([]);
+      resetCompletedSale();
       setMessage("Vente enregistrée.");
-      renderCart();
       window.location.reload();
       return;
     }
@@ -1059,6 +1096,7 @@ function initializeCheckout(root) {
     });
     if (response.status === 201 && payload.saved) {
       renderInvoice(payload, saleDetails);
+      resetCompletedSale();
       printInvoiceAndReload();
       return;
     }

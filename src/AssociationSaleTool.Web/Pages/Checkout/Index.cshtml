@@ -66,7 +66,7 @@
                         <span class="field-label-text">Nom ou structure <span class="required-field-badge">Obligatoire</span></span>
                         <input id="checkout-buyer-name"
                                type="text"
-                               autocomplete="name"
+                               autocomplete="off"
                                maxlength="200"
                                required
                                data-checkout-buyer-name />
@@ -77,7 +77,7 @@
                                type="text"
                                inputmode="numeric"
                                maxlength="5"
-                               autocomplete="postal-code"
+                               autocomplete="off"
                                required
                                data-postal-code-input
                                data-checkout-buyer-postal-code />
@@ -86,7 +86,7 @@
                         <span class="field-label-text">Ville <span class="required-field-badge">Obligatoire</span></span>
                         <input id="checkout-buyer-city"
                                type="text"
-                               autocomplete="address-level2"
+                               autocomplete="off"
                                maxlength="200"
                                required
                                data-city-input
@@ -100,6 +100,7 @@
                     Adresse
                     <textarea id="checkout-buyer-address"
                               rows="3"
+                              autocomplete="off"
                               data-checkout-buyer-address
                               placeholder="Adresse client à imprimer sur la facture"></textarea>
                     <span class="seller-meta">À remplir uniquement si le client demande une facture.</span>
@@ -223,6 +224,7 @@
                         <input type="radio"
                                name="checkout-payment-method"
                                value="card"
+                               autocomplete="off"
                                data-checkout-payment-method
                                checked />
                         CB
@@ -231,6 +233,7 @@
                         <input type="radio"
                                name="checkout-payment-method"
                                value="cash"
+                               autocomplete="off"
                                data-checkout-payment-method />
                         Espèces
                     </label>
@@ -238,6 +241,7 @@
                         <input type="radio"
                                name="checkout-payment-method"
                                value="cheque"
+                               autocomplete="off"
                                data-checkout-payment-method />
                         Chèque
                     </label>
