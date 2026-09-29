@@ -1421,6 +1421,13 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   display: none;
 }
 
+/* Chromium draws a drop-down arrow on inputs bound to a datalist, so testers took the
+   bank field for a closed list. Without it the field looks like the free-text field it
+   is; suggestions still appear while typing. */
+[data-checkout-cheque-bank-name]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+
 .checkout-payment-message {
   min-height: 1.3rem;
   margin: 0.75rem 0 0;
