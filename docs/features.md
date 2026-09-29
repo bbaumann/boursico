@@ -173,11 +173,11 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 - the `Statistiques` tab shows overall sale figures:
   - association revenue by fee: the flat registration fee paid at deposit and deducted at payout (plus the part a payout was too small to recover), the 15% seller margin on sold and missing items, and the 10% client fee net of refunds
   - money from clients: collected by payment method, refunded, and net
-  - amount owed to sellers, number of sellers to pay, and missing items paid to sellers
+  - seller sales: total seller price of the items sold, at the sale price and before margin and fees, the number of sellers with at least one sale, and missing items paid to sellers
   - item counts by status and the sold share of deposited items
   - item and sold-item counts and amounts by price bracket (1–2, 3–5, 6–10, 11–20, over 20 EUR), with a separate line for items without a valid price when there are any
   - sales per buyer city, grouped case-insensitively
-- seller-side statistics (margin, fee deductions, amounts owed, sold prices) reuse the seller sheet calculation, so they always match the `Feuilles vendeurs`
+- seller-side statistics (margin, fee deductions, sold prices) reuse the seller sheet calculation, so they always match the `Feuilles vendeurs`
 
 ### Concurrent Checkout Rule
 

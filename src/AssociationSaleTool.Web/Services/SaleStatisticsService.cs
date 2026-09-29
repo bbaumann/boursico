@@ -20,7 +20,7 @@ public sealed class SaleStatisticsService(AppDbContext dbContext, Reconciliation
         ("Plus de 20 €", int.MaxValue)
     ];
 
-    // Seller-side figures (margin, flat fee deductions, amounts owed, sold prices) come from
+    // Seller-side figures (margin, flat fee deductions, sold prices) come from
     // the seller sheets, so the statistics always agree with what sellers are paid.
     public async Task<SaleStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default)
     {
@@ -59,10 +59,12 @@ public sealed class SaleStatisticsService(AppDbContext dbContext, Reconciliation
             SumByPaymentMethod(sales, SalePaymentMethods.Cash),
             SumByPaymentMethod(sales, SalePaymentMethods.Cheque));
 
+        // Item prices sold on the sellers' behalf, before margin and fees: what matters here
+        // is the sales volume, not the payout.
         var missingItems = sheets.SelectMany(sheet => sheet.PayableItems).Where(item => item.IsMissing).ToList();
-        var sellers = new SaleStatisticsSellerPayouts(
-            sheets.Sum(sheet => sheet.TotalPayableCents),
-            sheets.Count(sheet => sheet.TotalPayableCents > 0),
+        var sellers = new SaleStatisticsSellerSales(
+            sheets.Sum(sheet => sheet.PayableItems.Where(item => !item.IsMissing).Sum(item => item.PriceCents)),
+            sheets.Count(sheet => sheet.PayableItems.Any(item => !item.IsMissing)),
             missingItems.Count,
             missingItems.Sum(item => item.PriceCents));
 

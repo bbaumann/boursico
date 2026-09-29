@@ -370,15 +370,15 @@
             </section>
 
             <section class="subsection">
-                <h2>Dû aux vendeurs</h2>
+                <h2>Ventes des vendeurs</h2>
                 <table class="data-table statistics-table">
                     <tbody>
-                        <tr class="statistics-total-row"><td>Total dû</td><td>@IndexModel.FormatPrice(sellers.OwedCents)</td></tr>
-                        <tr><td>Vendeurs à payer</td><td>@sellers.SellersToPayCount</td></tr>
+                        <tr class="statistics-total-row"><td>Prix des articles vendus</td><td>@IndexModel.FormatPrice(sellers.SoldAmountCents)</td></tr>
+                        <tr><td>Vendeurs ayant vendu au moins un article</td><td>@sellers.SellersWithSalesCount</td></tr>
                         <tr><td>Articles manquants payés aux vendeurs (@sellers.MissingItemCount)</td><td>@IndexModel.FormatPrice(sellers.MissingItemAmountCents)</td></tr>
                     </tbody>
                 </table>
-                <p class="seller-meta">Montant calculé comme sur les feuilles vendeurs : articles vendus et manquants, moins la commission et les frais d'inscription restants.</p>
+                <p class="seller-meta">Prix vendeur des articles vendus, au prix de la vente, avant la commission et les frais d'inscription.</p>
             </section>
 
             <section class="subsection">

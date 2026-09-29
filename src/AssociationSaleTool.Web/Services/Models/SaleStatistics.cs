@@ -3,7 +3,7 @@ namespace AssociationSaleTool.Web.Services.Models;
 public sealed record SaleStatistics(
     SaleStatisticsFees Fees,
     SaleStatisticsClientMoney Clients,
-    SaleStatisticsSellerPayouts Sellers,
+    SaleStatisticsSellerSales Sellers,
     SaleStatisticsItemCounts Items,
     IReadOnlyList<SaleStatisticsPriceBracket> PriceBrackets,
     IReadOnlyList<SaleStatisticsCity> Cities);
@@ -30,9 +30,9 @@ public sealed record SaleStatisticsClientMoney(
     public int NetCents => CollectedCents - RefundedCents;
 }
 
-public sealed record SaleStatisticsSellerPayouts(
-    int OwedCents,
-    int SellersToPayCount,
+public sealed record SaleStatisticsSellerSales(
+    int SoldAmountCents,
+    int SellersWithSalesCount,
     int MissingItemCount,
     int MissingItemAmountCents);
 

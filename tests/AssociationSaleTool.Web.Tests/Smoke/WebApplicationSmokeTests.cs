@@ -338,7 +338,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             "<h2>Recettes de l'association</h2>",
             "<h2>Argent des clients</h2>",
-            "<h2>Dû aux vendeurs</h2>",
+            "<h2>Ventes des vendeurs</h2>",
             "<h2>Articles</h2>",
             "<h2>Répartition des prix</h2>",
             "<h2>Villes des acheteurs</h2>"

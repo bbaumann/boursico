@@ -117,9 +117,11 @@ public sealed class SaleStatisticsServiceTests
         Assert.Equal(2420, clients.ChequeCents);
         Assert.Equal(3, clients.SaleCount);
 
+        // Seller sales count item prices, not the payout: seller B's and C's unpaid flat
+        // fees must not reduce it.
         var sellers = statistics.Sellers;
-        Assert.Equal(3285, sellers.OwedCents);
-        Assert.Equal(2, sellers.SellersToPayCount);
+        Assert.Equal(3800, sellers.SoldAmountCents);
+        Assert.Equal(3, sellers.SellersWithSalesCount);
         Assert.Equal(1, sellers.MissingItemCount);
         Assert.Equal(400, sellers.MissingItemAmountCents);
 
@@ -164,7 +166,7 @@ public sealed class SaleStatisticsServiceTests
 
         Assert.Equal(0, statistics.Fees.TotalCents);
         Assert.Equal(0, statistics.Clients.NetCents);
-        Assert.Equal(0, statistics.Sellers.OwedCents);
+        Assert.Equal(0, statistics.Sellers.SoldAmountCents);
         Assert.Equal(0, statistics.Items.TotalCount);
         Assert.Equal(
             ["1 à 2 €", "3 à 5 €", "6 à 10 €", "11 à 20 €", "Plus de 20 €"],
