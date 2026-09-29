@@ -319,6 +319,41 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task DataPageShowsTheStatisticsTab()
+    {
+        var client = _factory.CreateClient();
+
+        var listContent = WebUtility.HtmlDecode(await client.GetStringAsync("/donnees"));
+        Assert.Contains("href=\"/donnees?onglet=statistiques\"", listContent);
+
+        // Other smoke tests leave sold items without a sale line in the shared database,
+        // which the seller sheets behind these statistics rightly refuse.
+        await EnsureSoldItemsHaveSaleLinesAsync();
+        var response = await client.GetAsync("/donnees?onglet=statistiques");
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+        Assert.Matches("href=\"/donnees\\?onglet=statistiques\"\\s+aria-current=\"page\"", content);
+        foreach (var heading in new[]
+        {
+            "<h2>Recettes de l'association</h2>",
+            "<h2>Argent des clients</h2>",
+            "<h2>Dû aux vendeurs</h2>",
+            "<h2>Articles</h2>",
+            "<h2>Répartition des prix</h2>",
+            "<h2>Villes des acheteurs</h2>"
+        })
+        {
+            Assert.Contains(heading, content);
+        }
+
+        Assert.Contains("Frais d'inscription (2 € par tranche de 15 articles)", content);
+        Assert.Contains("Commission vendeur (15 %)", content);
+        Assert.Contains("Frais client (10 %)", content);
+        Assert.Contains("Plus de 20 €", content);
+    }
+
+    [Fact]
     public async Task CheckoutLocksTheCashRegisterChoiceOnlyDuringTheSalePhase()
     {
         var client = _factory.CreateClient();

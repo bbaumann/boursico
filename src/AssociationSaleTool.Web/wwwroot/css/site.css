@@ -453,6 +453,20 @@ textarea.input-validation-error {
   margin-top: 1.5rem;
 }
 
+.statistics-table {
+  max-width: 48rem;
+}
+
+.statistics-table td:not(:first-child),
+.statistics-table th:not(:first-child) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.statistics-total-row {
+  font-weight: 700;
+}
+
 .data-list-tabs .button-link {
   min-width: 8rem;
   font-weight: 700;

@@ -94,10 +94,11 @@ Il travaille après la vente :
 
 ## Navigation principale
 
-L'application a quatre entrées principales :
+L'application a cinq entrées principales :
 
 - `VENDEURS` : création des vendeurs et saisie des articles.
 - `CAISSE` : vente au client.
+- `DONNÉES` : consultation en lecture seule des articles, vendeurs, ventes, chèques, de la clôture par caisse et des statistiques de la vente.
 - `RAPPROCHEMENT` : feuilles vendeurs et corrections après-vente.
 - `ADMIN` : statut de la vente et corrections de ventes.
 

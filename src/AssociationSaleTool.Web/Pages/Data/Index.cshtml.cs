@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AssociationSaleTool.Web.Pages.Data;
 
-public sealed class IndexModel(DataListService dataListService) : PageModel
+public sealed class IndexModel(DataListService dataListService, SaleStatisticsService saleStatisticsService) : PageModel
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
     private const string ArticlesTab = "articles";
@@ -13,6 +13,7 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
     private const string SalesTab = "ventes";
     private const string ChequesTab = "cheques";
     private const string ClosingTab = "cloture";
+    private const string StatisticsTab = "statistiques";
 
     public string ActiveTab { get; private set; } = ArticlesTab;
 
@@ -25,6 +26,10 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
     public IReadOnlyList<DataListChequeRow> Cheques { get; private set; } = [];
 
     public IReadOnlyList<DataListClosingRow> ClosingRows { get; private set; } = [];
+
+    public SaleStatistics? Statistics { get; private set; }
+
+    public string? StatisticsErrorMessage { get; private set; }
 
     public async Task OnGetAsync(string? onglet, CancellationToken cancellationToken)
     {
@@ -46,6 +51,18 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
                 break;
             case ClosingTab:
                 ClosingRows = await dataListService.ListClosingAsync(cancellationToken);
+                break;
+            case StatisticsTab:
+                try
+                {
+                    Statistics = await saleStatisticsService.GetStatisticsAsync(cancellationToken);
+                }
+                catch (ReconciliationSellerSheetDataException exception)
+                {
+                    StatisticsErrorMessage =
+                        $"Données de vente incohérentes pour l'article {exception.ItemReference}. Les statistiques ne peuvent pas être calculées.";
+                }
+
                 break;
         }
     }
@@ -79,6 +96,13 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
         return $"{paidFeeCents / 100}/{expectedFeeCents / 100}\u20ac";
     }
 
+    public static string FormatPercent(int part, int total)
+    {
+        return total == 0
+            ? "—"
+            : (part / (decimal)total).ToString("0.0 %", FrenchCulture);
+    }
+
     public static string FormatSoldAt(DateTime soldAt)
     {
         return soldAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", FrenchCulture);
@@ -92,6 +116,7 @@ public sealed class IndexModel(DataListService dataListService) : PageModel
             SalesTab => SalesTab,
             ChequesTab => ChequesTab,
             ClosingTab => ClosingTab,
+            StatisticsTab => StatisticsTab,
             _ => ArticlesTab
         };
     }

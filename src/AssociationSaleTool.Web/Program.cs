@@ -81,6 +81,7 @@ builder.Services.AddScoped<SalesViewService>();
 builder.Services.AddScoped<DataListService>();
 builder.Services.AddScoped<CashRegisterService>();
 builder.Services.AddScoped<ReconciliationService>();
+builder.Services.AddScoped<SaleStatisticsService>();
 builder.Services.AddScoped<SalePhaseService>();
 builder.Services.AddScoped<SaleCorrectionService>();
 builder.Services.AddScoped<DefectiveItemService>();

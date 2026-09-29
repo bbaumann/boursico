@@ -159,7 +159,7 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 
 - the main navigation exposes a `DONNÉES` entry
 - the page is read-only and does not expose edit, correction, or workflow actions
-- the page uses five tabs: `Articles`, `Vendeurs`, `Ventes`, `Chèques`, and `Clôture`
+- the page uses six tabs: `Articles`, `Vendeurs`, `Ventes`, `Chèques`, `Clôture`, and `Statistiques`
 - the `Articles` tab lists all item statuses and supports a status filter in addition to live text search
 - article text search matches item reference, title, seller code, seller name, and status
 - the `Vendeurs` tab supports live text search by seller code and seller name only
@@ -170,6 +170,14 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 - the `Clôture` tab shows a global financial row and one row per configured caisse
 - closing rows include sale count, item count, subtotal, association fee, payment-method totals, total collected, refunds paid, net collected, fond de caisse, and expected cash
 - per-caisse sale totals group by `sale.cash_register_id`; per-caisse refunds group by `sale_line.refund_cash_register_id`
+- the `Statistiques` tab shows overall sale figures:
+  - association revenue by fee: the flat registration fee paid at deposit and deducted at payout (plus the part a payout was too small to recover), the 15% seller margin on sold and missing items, and the 10% client fee net of refunds
+  - money from clients: collected by payment method, refunded, and net
+  - amount owed to sellers, number of sellers to pay, and missing items paid to sellers
+  - item counts by status and the sold share of deposited items
+  - item and sold-item counts and amounts by price bracket (1–2, 3–5, 6–10, 11–20, over 20 EUR), with a separate line for items without a valid price when there are any
+  - sales per buyer city, grouped case-insensitively
+- seller-side statistics (margin, fee deductions, amounts owed, sold prices) reuse the seller sheet calculation, so they always match the `Feuilles vendeurs`
 
 ### Concurrent Checkout Rule
 

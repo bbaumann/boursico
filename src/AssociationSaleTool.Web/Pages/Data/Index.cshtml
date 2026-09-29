@@ -1,5 +1,6 @@
 @page "/donnees"
 @model AssociationSaleTool.Web.Pages.Data.IndexModel
+@using AssociationSaleTool.Web.Domain.Sellers
 @{
     ViewData["Title"] = "Données";
 }
@@ -29,6 +30,9 @@
         <a class="@Model.TabClass("cloture")"
            href="/donnees?onglet=cloture"
            aria-current="@Model.TabAriaCurrent("cloture")">Cl&ocirc;ture</a>
+        <a class="@Model.TabClass("statistiques")"
+           href="/donnees?onglet=statistiques"
+           aria-current="@Model.TabAriaCurrent("statistiques")">Statistiques</a>
     </nav>
 
     @if (Model.IsActiveTab("articles"))
@@ -300,5 +304,154 @@
                 </table>
             }
         </section>
+    }
+
+    @if (Model.IsActiveTab("statistiques"))
+    {
+        @if (Model.StatisticsErrorMessage is not null)
+        {
+            <p class="validation">@Model.StatisticsErrorMessage</p>
+        }
+        else if (Model.Statistics is { } statistics)
+        {
+            var fees = statistics.Fees;
+            var clients = statistics.Clients;
+            var sellers = statistics.Sellers;
+            var items = statistics.Items;
+
+            <section class="subsection">
+                <h2>Recettes de l'association</h2>
+                <table class="data-table statistics-table">
+                    <tbody>
+                        <tr>
+                            <td>Frais d'inscription (@(SellerFeeCalculator.FeePerBlockCents / 100) € par tranche de @SellerFeeCalculator.ItemsPerFeeBlock articles), payés au dépôt</td>
+                            <td>@IndexModel.FormatPrice(fees.FlatFeePaidAtDepositCents)</td>
+                        </tr>
+                        <tr>
+                            <td>Frais d'inscription déduits du paiement des vendeurs</td>
+                            <td>@IndexModel.FormatPrice(fees.FlatFeeDeductedAtPayoutCents)</td>
+                        </tr>
+                        <tr>
+                            <td>Commission vendeur (@SellerPayoutCalculator.AssociationMarginPercent %), articles vendus et manquants</td>
+                            <td>@IndexModel.FormatPrice(fees.SellerMarginCents)</td>
+                        </tr>
+                        <tr>
+                            <td>Frais client (10 %), remboursements déduits</td>
+                            <td>@IndexModel.FormatPrice(fees.ClientFeeCents)</td>
+                        </tr>
+                        <tr class="statistics-total-row">
+                            <td>Total</td>
+                            <td>@IndexModel.FormatPrice(fees.TotalCents)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="seller-meta">
+                    Frais d'inscription attendus : @IndexModel.FormatPrice(fees.FlatFeeExpectedCents).
+                    @if (fees.FlatFeeUncollectedCents > 0)
+                    {
+                        <text>Non récupérés : @IndexModel.FormatPrice(fees.FlatFeeUncollectedCents), le paiement de certains vendeurs ne suffisant pas à les couvrir.</text>
+                    }
+                </p>
+            </section>
+
+            <section class="subsection">
+                <h2>Argent des clients</h2>
+                <table class="data-table statistics-table">
+                    <tbody>
+                        <tr><td>Ventes</td><td>@clients.SaleCount</td></tr>
+                        <tr><td>Encaissé</td><td>@IndexModel.FormatPrice(clients.CollectedCents)</td></tr>
+                        <tr><td>dont CB</td><td>@IndexModel.FormatPrice(clients.CardCents)</td></tr>
+                        <tr><td>dont espèces</td><td>@IndexModel.FormatPrice(clients.CashCents)</td></tr>
+                        <tr><td>dont chèques</td><td>@IndexModel.FormatPrice(clients.ChequeCents)</td></tr>
+                        <tr><td>Remboursé</td><td>@IndexModel.FormatPrice(clients.RefundedCents)</td></tr>
+                        <tr class="statistics-total-row"><td>Net</td><td>@IndexModel.FormatPrice(clients.NetCents)</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="subsection">
+                <h2>Dû aux vendeurs</h2>
+                <table class="data-table statistics-table">
+                    <tbody>
+                        <tr class="statistics-total-row"><td>Total dû</td><td>@IndexModel.FormatPrice(sellers.OwedCents)</td></tr>
+                        <tr><td>Vendeurs à payer</td><td>@sellers.SellersToPayCount</td></tr>
+                        <tr><td>Articles manquants payés aux vendeurs (@sellers.MissingItemCount)</td><td>@IndexModel.FormatPrice(sellers.MissingItemAmountCents)</td></tr>
+                    </tbody>
+                </table>
+                <p class="seller-meta">Montant calculé comme sur les feuilles vendeurs : articles vendus et manquants, moins la commission et les frais d'inscription restants.</p>
+            </section>
+
+            <section class="subsection">
+                <h2>Articles</h2>
+                <table class="data-table statistics-table">
+                    <tbody>
+                        <tr class="statistics-total-row"><td>Déposés</td><td>@items.TotalCount</td></tr>
+                        <tr><td>Vendus</td><td>@items.SoldCount (@IndexModel.FormatPercent(items.SoldCount, items.TotalCount))</td></tr>
+                        <tr><td>En stock</td><td>@items.InStockCount</td></tr>
+                        <tr><td>Manquants</td><td>@items.MissingCount</td></tr>
+                        <tr><td>Défectueux</td><td>@items.DefectiveCount</td></tr>
+                        <tr><td>Enregistrés, dépôt non validé</td><td>@items.RegisteredCount</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="subsection">
+                <h2>Répartition des prix</h2>
+                <table class="data-table statistics-table">
+                    <thead>
+                        <tr>
+                            <th>Prix</th>
+                            <th>Articles déposés</th>
+                            <th>Montant déposé</th>
+                            <th>Articles vendus</th>
+                            <th>Montant vendu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var bracket in statistics.PriceBrackets)
+                    {
+                        <tr>
+                            <td>@bracket.Label</td>
+                            <td>@bracket.ItemCount</td>
+                            <td>@IndexModel.FormatPrice(bracket.ItemAmountCents)</td>
+                            <td>@bracket.SoldCount</td>
+                            <td>@IndexModel.FormatPrice(bracket.SoldAmountCents)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="subsection">
+                <h2>Villes des acheteurs</h2>
+                @if (statistics.Cities.Count == 0)
+                {
+                    <p class="empty-state">Aucune vente enregistr&eacute;e.</p>
+                }
+                else
+                {
+                    <table class="data-table statistics-table">
+                        <thead>
+                            <tr>
+                                <th>Ville</th>
+                                <th>Ventes</th>
+                                <th>Part</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var city in statistics.Cities)
+                        {
+                            <tr>
+                                <td>@city.City</td>
+                                <td>@city.SaleCount</td>
+                                <td>@IndexModel.FormatPercent(city.SaleCount, clients.SaleCount)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    <p class="seller-meta">Compté par vente : un même acheteur venu plusieurs fois compte plusieurs fois.</p>
+                }
+            </section>
+        }
     }
 </section>
