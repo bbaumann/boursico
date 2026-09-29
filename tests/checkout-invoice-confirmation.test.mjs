@@ -73,3 +73,25 @@ test("the confirmation focuses printing, so a reflex Enter prints the invoice", 
   assert.match(show, /invoiceConfirmation\.hidden = false;/);
   assert.match(show, /invoiceConfirmationPrintButton\?\.focus\(\);/);
 });
+
+test("checkout dialogs cover the sticky main navigation", () => {
+  // The navigation is sticky with its own z-index; below it, it stayed clickable during a
+  // sale and a volunteer could leave the page mid-payment.
+  const css = readFileSync(
+    join(process.cwd(), "src", "AssociationSaleTool.Web", "wwwroot", "css", "site.css"),
+    "utf8");
+  const zIndexOf = selector => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rule = css.match(new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`));
+    assert.ok(rule, `Missing CSS rule for ${selector}`);
+    const value = rule[1].match(/z-index:\s*(\d+);/);
+    assert.ok(value, `${selector} has no z-index`);
+    return Number(value[1]);
+  };
+
+  const navigation = zIndexOf(".main-navigation");
+  const payment = zIndexOf(".checkout-modal");
+  const confirmation = zIndexOf(".checkout-invoice-confirmation");
+  assert.ok(payment > navigation, `payment dialog (${payment}) must be above the navigation (${navigation})`);
+  assert.ok(confirmation > payment, `invoice confirmation (${confirmation}) must be above the payment dialog (${payment})`);
+});

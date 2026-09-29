@@ -1358,10 +1358,11 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   outline-offset: -2px;
 }
 
+/* Above the sticky .main-navigation (z-index 20), so it cannot be clicked mid-sale. */
 .checkout-modal {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 30;
   display: grid;
   place-items: center;
   padding: 1rem;
@@ -1374,7 +1375,7 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 
 /* Opens on top of the payment dialog. */
 .checkout-invoice-confirmation {
-  z-index: 11;
+  z-index: 31;
 }
 
 .checkout-modal-panel {
