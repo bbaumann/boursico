@@ -83,8 +83,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
                     Input.ImportNotes,
                     Input.IdentityDocumentType,
                     Input.IdentityDocumentNumber,
-                    Input.IdentityDocumentIssuedOn,
-                    Input.IdentityDocumentIssuer),
+                    Input.IdentityDocumentIssuedOn),
                 cancellationToken);
         }
         catch (InvalidSellerPostalCityException exception)
@@ -160,7 +159,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             IdentityDocumentType = seller.IdentityDocumentType,
             IdentityDocumentNumber = seller.IdentityDocumentNumber,
             IdentityDocumentIssuedOn = seller.IdentityDocumentIssuedOn,
-            IdentityDocumentIssuer = seller.IdentityDocumentIssuer,
             FeePaid = EuroPriceInput.FormatFromCents(seller.FeePaidCents),
             Notes = seller.Notes,
             ImportNotes = seller.ImportNotes
@@ -191,8 +189,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         public string? IdentityDocumentNumber { get; set; }
 
         public DateOnly? IdentityDocumentIssuedOn { get; set; }
-
-        public string? IdentityDocumentIssuer { get; set; }
 
         public string? FeePaid { get; set; } = "0";
 

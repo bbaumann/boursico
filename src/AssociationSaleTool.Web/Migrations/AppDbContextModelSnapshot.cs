@@ -331,10 +331,6 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("identity_document_issued_on");
 
-                    b.Property<string>("IdentityDocumentIssuer")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("identity_document_issuer");
-
                     b.Property<string>("IdentityDocumentNumber")
                         .HasColumnType("TEXT")
                         .HasColumnName("identity_document_number");

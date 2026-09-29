@@ -92,7 +92,6 @@ The following seller fields must no longer be editable in normal operations:
 - `identity_document_type`
 - `identity_document_number`
 - `identity_document_issued_on`
-- `identity_document_issuer`
 - `notes`
 
 The following item fields must no longer be editable in normal operations:

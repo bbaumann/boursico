@@ -120,7 +120,7 @@ Renseigner au minimum le prénom et le nom. Ajouter les informations disponibles
 - e-mail si disponible ;
 - téléphone si disponible ;
 - adresse postale, code postal et ville si disponibles ;
-- nature, numéro, date de délivrance et autorité de délivrance de la pièce d'identité si disponibles ;
+- nature, numéro et date de délivrance de la pièce d'identité si disponibles ;
 - notes si nécessaire.
 
 À l'enregistrement, l'outil attribue un code vendeur. Ce code sert à retrouver le vendeur dans les recherches et les listes ; il n'apparaît pas dans la référence de ses articles, qui n'est attribuée que plus tard, au moment du dépôt. Les coordonnées et les informations de pièce d'identité manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
@@ -177,7 +177,7 @@ Quand le vendeur apporte les jouets :
 
 1. Ouvrir sa fiche vendeur.
 2. Relire les articles un par un.
-3. Compléter le téléphone, l'adresse postale, le code postal, la ville et les informations de pièce d'identité du vendeur : nature de la pièce, numéro, date de délivrance et autorité de délivrance.
+3. Compléter le téléphone, l'adresse postale, le code postal, la ville et les informations de pièce d'identité du vendeur : nature de la pièce, numéro et date de délivrance.
 4. Corriger ou supprimer les lignes incomplètes avant signature.
 5. Cliquer sur `Finaliser le dépôt`.
 6. Vérifier les frais vendeurs attendus, déjà payés et restant à payer. Corriger `Frais payés` si le vendeur règle tout ou partie des frais à ce moment.

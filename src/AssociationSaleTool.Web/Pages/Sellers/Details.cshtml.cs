@@ -545,8 +545,6 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             hasSellerMessages = true;
         }
 
-        AddRequiredMessage(messages, seller.IdentityDocumentIssuer, "L'autorité de délivrance est obligatoire.", ref hasSellerMessages);
-
         if (seller.Items.Count == 0)
         {
             messages.Add("Ajoutez au moins un article avant de valider le dépôt.");

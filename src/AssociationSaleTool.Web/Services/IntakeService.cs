@@ -76,7 +76,6 @@ public sealed class IntakeService
         var normalizedPostalCity = NormalizeSellerPostalCity(request.PostalCode, request.City);
         var normalizedIdentityDocumentType = NormalizeOptional(request.IdentityDocumentType);
         var normalizedIdentityDocumentNumber = NormalizeOptional(request.IdentityDocumentNumber);
-        var normalizedIdentityDocumentIssuer = NormalizeOptional(request.IdentityDocumentIssuer);
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
 
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
@@ -100,7 +99,6 @@ public sealed class IntakeService
             IdentityDocumentType = normalizedIdentityDocumentType,
             IdentityDocumentNumber = normalizedIdentityDocumentNumber,
             IdentityDocumentIssuedOn = request.IdentityDocumentIssuedOn,
-            IdentityDocumentIssuer = normalizedIdentityDocumentIssuer,
             FeePaidCents = request.FeePaidCents,
             DepositStatus = SellerDepositStatuses.Pending,
             Notes = NormalizeOptional(request.Notes),
@@ -137,7 +135,6 @@ public sealed class IntakeService
         var normalizedPostalCity = NormalizeSellerPostalCity(request.PostalCode, request.City);
         var normalizedIdentityDocumentType = NormalizeOptional(request.IdentityDocumentType);
         var normalizedIdentityDocumentNumber = NormalizeOptional(request.IdentityDocumentNumber);
-        var normalizedIdentityDocumentIssuer = NormalizeOptional(request.IdentityDocumentIssuer);
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
         EnsureRowsAreValid(request.Rows);
 
@@ -167,7 +164,6 @@ public sealed class IntakeService
                     IdentityDocumentType = normalizedIdentityDocumentType,
                     IdentityDocumentNumber = normalizedIdentityDocumentNumber,
                     IdentityDocumentIssuedOn = request.IdentityDocumentIssuedOn,
-                    IdentityDocumentIssuer = normalizedIdentityDocumentIssuer,
                     FeePaidCents = request.FeePaidCents,
                     DepositStatus = SellerDepositStatuses.Pending,
                     Notes = NormalizeOptional(request.Notes),
@@ -235,7 +231,6 @@ public sealed class IntakeService
         var normalizedPostalCity = NormalizeSellerPostalCity(request.PostalCode, request.City);
         var normalizedIdentityDocumentType = NormalizeOptional(request.IdentityDocumentType);
         var normalizedIdentityDocumentNumber = NormalizeOptional(request.IdentityDocumentNumber);
-        var normalizedIdentityDocumentIssuer = NormalizeOptional(request.IdentityDocumentIssuer);
         EnsureSellerFeePaidIsValid(request.FeePaidCents);
 
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
@@ -256,7 +251,6 @@ public sealed class IntakeService
         seller.IdentityDocumentType = normalizedIdentityDocumentType;
         seller.IdentityDocumentNumber = normalizedIdentityDocumentNumber;
         seller.IdentityDocumentIssuedOn = request.IdentityDocumentIssuedOn;
-        seller.IdentityDocumentIssuer = normalizedIdentityDocumentIssuer;
         seller.FeePaidCents = request.FeePaidCents;
         seller.Notes = NormalizeOptional(request.Notes);
         seller.ImportNotes = NormalizeOptional(request.ImportNotes);
@@ -630,7 +624,6 @@ public sealed class IntakeService
             && !string.IsNullOrWhiteSpace(seller.IdentityDocumentType)
             && !string.IsNullOrWhiteSpace(seller.IdentityDocumentNumber)
             && seller.IdentityDocumentIssuedOn is not null
-            && !string.IsNullOrWhiteSpace(seller.IdentityDocumentIssuer)
             && seller.Items.All(item =>
                 (item.Status is "registered" or "in_stock" or "sold" or "missing" or "defective")
                 && !string.IsNullOrWhiteSpace(item.Title)

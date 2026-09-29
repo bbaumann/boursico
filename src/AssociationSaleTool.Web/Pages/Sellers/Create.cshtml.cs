@@ -66,8 +66,7 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
                     Input.City,
                     IdentityDocumentType: Input.IdentityDocumentType,
                     IdentityDocumentNumber: Input.IdentityDocumentNumber,
-                    IdentityDocumentIssuedOn: Input.IdentityDocumentIssuedOn,
-                    IdentityDocumentIssuer: Input.IdentityDocumentIssuer),
+                    IdentityDocumentIssuedOn: Input.IdentityDocumentIssuedOn),
                 cancellationToken);
         }
         catch (InvalidSellerPostalCityException exception)
@@ -240,8 +239,6 @@ public sealed class CreateModel(IntakeService intakeService) : PageModel
         public string? IdentityDocumentNumber { get; set; }
 
         public DateOnly? IdentityDocumentIssuedOn { get; set; }
-
-        public string? IdentityDocumentIssuer { get; set; }
 
         public string? FeePaid { get; set; } = "0";
 

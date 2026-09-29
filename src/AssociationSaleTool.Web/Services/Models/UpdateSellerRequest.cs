@@ -13,5 +13,4 @@ public sealed record UpdateSellerRequest(
     string? ImportNotes = null,
     string? IdentityDocumentType = null,
     string? IdentityDocumentNumber = null,
-    DateOnly? IdentityDocumentIssuedOn = null,
-    string? IdentityDocumentIssuer = null);
+    DateOnly? IdentityDocumentIssuedOn = null);

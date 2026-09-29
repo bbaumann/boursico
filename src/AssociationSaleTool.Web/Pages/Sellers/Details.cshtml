@@ -219,10 +219,6 @@
             <dt>Date de délivrance</dt>
             <dd>@DetailsModel.FormatDate(Model.Seller.IdentityDocumentIssuedOn)</dd>
         </div>
-        <div>
-            <dt>Autorité de délivrance</dt>
-            <dd>@(Model.Seller.IdentityDocumentIssuer ?? "À compléter")</dd>
-        </div>
     </dl>
 
     <p class="seller-fee-status @(Model.FeeStatus.IsFullyPaid ? "seller-fee-status-paid" : "seller-fee-status-due")">

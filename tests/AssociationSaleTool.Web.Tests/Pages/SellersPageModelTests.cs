@@ -44,8 +44,7 @@ public sealed class SellersPageModelTests
             LastName = "Lovelace",
             IdentityDocumentType = string.Empty,
             IdentityDocumentNumber = string.Empty,
-            IdentityDocumentIssuedOn = null,
-            IdentityDocumentIssuer = string.Empty
+            IdentityDocumentIssuedOn = null
         });
 
         AssertContactFieldsAreOptional(new SellerEditModel.InputModel
@@ -54,8 +53,7 @@ public sealed class SellersPageModelTests
             LastName = "Lovelace",
             IdentityDocumentType = string.Empty,
             IdentityDocumentNumber = string.Empty,
-            IdentityDocumentIssuedOn = null,
-            IdentityDocumentIssuer = string.Empty
+            IdentityDocumentIssuedOn = null
         });
     }
 
@@ -361,8 +359,7 @@ public sealed class SellersPageModelTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"))).Seller!;
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)))).Seller!;
         var rows = Enumerable.Range(1, 16)
             .Select(index => new CreateItemRowRequest($"Toy {index}", 100))
             .ToList();
@@ -409,8 +406,7 @@ public sealed class SellersPageModelTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"))).Seller!;
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)))).Seller!;
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -861,8 +857,7 @@ public sealed class SellersPageModelTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -902,8 +897,7 @@ public sealed class SellersPageModelTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -967,7 +961,7 @@ public sealed class SellersPageModelTests
         Assert.Contains("La nature de la pièce d'identité est obligatoire.", errors);
         Assert.Contains("Le numéro de la pièce d'identité est obligatoire.", errors);
         Assert.Contains("La date de délivrance est obligatoire.", errors);
-        Assert.Contains("L'autorité de délivrance est obligatoire.", errors);
+        Assert.DoesNotContain("L'autorité de délivrance est obligatoire.", errors);
         Assert.Equal("registered", (await context.Items.SingleAsync()).Status);
         Assert.Equal("deposit_pending", (await context.Sellers.SingleAsync()).DepositStatus);
     }
@@ -989,7 +983,6 @@ public sealed class SellersPageModelTests
         Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "La nature de la pièce d'identité est obligatoire.");
         Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "Le numéro de la pièce d'identité est obligatoire.");
         Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "La date de délivrance est obligatoire.");
-        Assert.DoesNotContain(validationResults, result => result.ErrorMessage == "L'autorité de délivrance est obligatoire.");
     }
 
     private static DefaultHttpContext CreateHttpContextWithSession(ISession session)

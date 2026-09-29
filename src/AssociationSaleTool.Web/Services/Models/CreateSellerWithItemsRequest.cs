@@ -15,5 +15,4 @@ public sealed record CreateSellerWithItemsRequest(
     string? ImportNotes = null,
     string? IdentityDocumentType = null,
     string? IdentityDocumentNumber = null,
-    DateOnly? IdentityDocumentIssuedOn = null,
-    string? IdentityDocumentIssuer = null);
+    DateOnly? IdentityDocumentIssuedOn = null);

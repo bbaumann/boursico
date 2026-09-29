@@ -129,7 +129,6 @@ public sealed class IntakeServiceTests
         Assert.Null(seller.IdentityDocumentType);
         Assert.Null(seller.IdentityDocumentNumber);
         Assert.Null(seller.IdentityDocumentIssuedOn);
-        Assert.Null(seller.IdentityDocumentIssuer);
         Assert.Equal("deposit_pending", seller.DepositStatus);
     }
 
@@ -1062,8 +1061,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -1105,8 +1103,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         context.Items.Add(new ItemEntity
         {
             SellerId = seller.Id,
@@ -1149,8 +1146,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         context.Items.AddRange(
             new ItemEntity
             {
@@ -1225,8 +1221,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
 
         var result = await service.ValidateSellerDepositAsync(seller.Id);
 
@@ -1265,7 +1260,6 @@ public sealed class IntakeServiceTests
     [InlineData("identity_document_type")]
     [InlineData("identity_document_number")]
     [InlineData("identity_document_issued_on")]
-    [InlineData("identity_document_issuer")]
     public async Task ValidateSellerDepositAsync_RejectsSellerWithIncompleteIdentityDocumentInformation(string missingField)
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -1289,8 +1283,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: missingField == "identity_document_type" ? null : "CNI",
             IdentityDocumentNumber: missingField == "identity_document_number" ? null : "123456789",
-            IdentityDocumentIssuedOn: missingField == "identity_document_issued_on" ? null : new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: missingField == "identity_document_issuer" ? null : "Préfecture 38"));
+            IdentityDocumentIssuedOn: missingField == "identity_document_issued_on" ? null : new DateOnly(2020, 1, 15)));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -1328,8 +1321,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -1371,8 +1363,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -1414,8 +1405,7 @@ public sealed class IntakeServiceTests
             City: "Grenoble",
             IdentityDocumentType: "CNI",
             IdentityDocumentNumber: "123456789",
-            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-            IdentityDocumentIssuer: "Préfecture 38"));
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
@@ -1508,7 +1498,6 @@ public sealed class IntakeServiceTests
         tracked.IdentityDocumentType = "CNI";
         tracked.IdentityDocumentNumber = "123456";
         tracked.IdentityDocumentIssuedOn = new DateOnly(2020, 1, 1);
-        tracked.IdentityDocumentIssuer = "Mairie";
         await context.SaveChangesAsync();
         return tracked;
     }

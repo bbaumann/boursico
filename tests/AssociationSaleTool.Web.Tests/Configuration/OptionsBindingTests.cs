@@ -242,8 +242,7 @@ public class OptionsBindingTests
                 City: "Grenoble",
                 IdentityDocumentType: "CNI",
                 IdentityDocumentNumber: "123456789",
-                IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15),
-                IdentityDocumentIssuer: "Préfecture 38"));
+                IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)));
 
             // Pre-fill this seller's own letter ('B', from the first
             // generated seller code "BB") right up to the configured

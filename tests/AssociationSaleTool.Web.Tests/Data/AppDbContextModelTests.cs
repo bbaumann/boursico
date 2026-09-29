@@ -91,15 +91,12 @@ public class AppDbContextModelTests
         var documentType = Assert.Single(entityType!.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentType));
         var documentNumber = Assert.Single(entityType.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentNumber));
         var issuedOn = Assert.Single(entityType.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentIssuedOn));
-        var issuer = Assert.Single(entityType.GetProperties(), property => property.Name == nameof(SellerEntity.IdentityDocumentIssuer));
         Assert.Equal("identity_document_type", documentType.GetColumnName());
         Assert.Equal("identity_document_number", documentNumber.GetColumnName());
         Assert.Equal("identity_document_issued_on", issuedOn.GetColumnName());
-        Assert.Equal("identity_document_issuer", issuer.GetColumnName());
         Assert.True(documentType.IsNullable);
         Assert.True(documentNumber.IsNullable);
         Assert.True(issuedOn.IsNullable);
-        Assert.True(issuer.IsNullable);
     }
 
     [Fact]
@@ -125,7 +122,7 @@ public class AppDbContextModelTests
         Assert.Contains("\"identity_document_type\" TEXT NULL", createTableSql);
         Assert.Contains("\"identity_document_number\" TEXT NULL", createTableSql);
         Assert.Contains("\"identity_document_issued_on\" TEXT NULL", createTableSql);
-        Assert.Contains("\"identity_document_issuer\" TEXT NULL", createTableSql);
+        Assert.DoesNotContain("identity_document_issuer", createTableSql);
     }
 
     [Fact]

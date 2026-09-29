@@ -50,7 +50,6 @@ Represents one seller.
 - `identity_document_type`
 - `identity_document_number`
 - `identity_document_issued_on`
-- `identity_document_issuer`
 - `fee_paid_cents`
 - `deposit_status`
 - `notes`
@@ -255,7 +254,6 @@ V1 uses a single row with `id = 1`.
 - `identity_document_type`: optional column; required by the application before deposit validation
 - `identity_document_number`: optional column; required by the application before deposit validation
 - `identity_document_issued_on`: optional date-only column; required by the application before deposit validation
-- `identity_document_issuer`: optional column; required by the application before deposit validation
 - `deposit_status`: required
 - `notes`: optional
 - `import_notes`: optional

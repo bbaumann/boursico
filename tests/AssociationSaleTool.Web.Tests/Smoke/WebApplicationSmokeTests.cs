@@ -254,8 +254,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("name=\"Input.IdentityDocumentNumber\"", createContent);
         Assert.Contains("Date de délivrance", createContent);
         Assert.Contains("name=\"Input.IdentityDocumentIssuedOn\"", createContent);
-        Assert.Contains("Autorité de délivrance", createContent);
-        Assert.Contains("name=\"Input.IdentityDocumentIssuer\"", createContent);
+        Assert.DoesNotContain("Autorité de délivrance", createContent);
+        Assert.DoesNotContain("name=\"Input.IdentityDocumentIssuer\"", createContent);
 
         var sellerId = await GetSellerIdByCodeAsync("SF-001");
         var editResponse = await client.GetAsync($"/vendeurs/{sellerId}/modifier");
@@ -272,8 +272,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("name=\"Input.IdentityDocumentNumber\"", editContent);
         Assert.Contains("Date de délivrance", editContent);
         Assert.Contains("name=\"Input.IdentityDocumentIssuedOn\"", editContent);
-        Assert.Contains("Autorité de délivrance", editContent);
-        Assert.Contains("name=\"Input.IdentityDocumentIssuer\"", editContent);
+        Assert.DoesNotContain("Autorité de délivrance", editContent);
+        Assert.DoesNotContain("name=\"Input.IdentityDocumentIssuer\"", editContent);
     }
 
     [Fact]
@@ -2592,8 +2592,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 City = "Grenoble",
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "123456789",
-                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
-                IdentityDocumentIssuer = "Préfecture 38"
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15)
             };
 
             dbContext.Sellers.Add(seller);
@@ -2621,8 +2620,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("123456789", content);
         Assert.Contains("Date de délivrance", content);
         Assert.Contains("15/01/2020", content);
-        Assert.Contains("Autorité de délivrance", content);
-        Assert.Contains("Préfecture 38", content);
+        Assert.DoesNotContain("Autorité de délivrance", content);
         Assert.Contains("Dépôt à valider", content);
         Assert.Contains("data-seller-deposit-flow", content);
         Assert.Contains("handler=BeginDepositFinalization", content);
@@ -3151,8 +3149,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 City = "Grenoble",
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "123456789",
-                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
-                IdentityDocumentIssuer = "Préfecture 38"
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15)
             };
 
             dbContext.Sellers.Add(seller);
@@ -3261,7 +3258,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("La nature de la pièce d'identité est obligatoire.", rejectedContent);
         Assert.Contains("Le numéro de la pièce d'identité est obligatoire.", rejectedContent);
         Assert.Contains("La date de délivrance est obligatoire.", rejectedContent);
-        Assert.Contains("L'autorité de délivrance est obligatoire.", rejectedContent);
+        Assert.DoesNotContain("L'autorité de délivrance est obligatoire.", rejectedContent);
         Assert.DoesNotContain("data-seller-deposit-auto-open", rejectedContent);
         Assert.Contains("Corriger la fiche vendeur", rejectedContent);
         Assert.Contains($"href=\"/vendeurs/{sellerId}/modifier\"", rejectedContent);
@@ -3294,8 +3291,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 City = "Grenoble",
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "123456789",
-                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
-                IdentityDocumentIssuer = "Préfecture 38"
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15)
             };
 
             dbContext.Sellers.Add(seller);
@@ -3354,8 +3350,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 City = "Grenoble",
                 IdentityDocumentType = "Passeport",
                 IdentityDocumentNumber = "P123456789",
-                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
-                IdentityDocumentIssuer = "Préfecture 38"
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15)
             };
 
             dbContext.Sellers.Add(seller);
@@ -3399,7 +3394,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("Date de délivrance", content);
         Assert.DoesNotContain("15/01/2020", content);
         Assert.DoesNotContain("Autorité de délivrance", content);
-        Assert.DoesNotContain("Préfecture 38", content);
         Assert.Contains("Ce document papier signé constitue la preuve du dépôt.", content);
         Assert.Contains("Frais vendeur : 2.00 € par tranche commencée de 15 articles", content);
         Assert.Contains("Frais attendus : 2.00 €", content);
@@ -3548,8 +3542,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 City = "Grenoble",
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "K701K701",
-                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
-                IdentityDocumentIssuer = "Préfecture 38"
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15)
             };
             dbContext.Sellers.Add(seller);
             await dbContext.SaveChangesAsync();
@@ -3670,7 +3663,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "T702T702",
                 IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
-                IdentityDocumentIssuer = "Préfecture 38",
                 DepositStatus = "deposit_validated"
             };
             dbContext.Sellers.Add(seller);
@@ -5242,7 +5234,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "123456",
                 IdentityDocumentIssuedOn = new DateOnly(2020, 1, 1),
-                IdentityDocumentIssuer = "Mairie",
                 DepositStatus = "deposit_pending"
             };
             seller.Items.Add(new ItemEntity { Title = "Premier jouet", SellerPriceCents = 500, Status = "registered" });

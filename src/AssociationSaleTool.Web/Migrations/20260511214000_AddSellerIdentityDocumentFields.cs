@@ -29,12 +29,6 @@ namespace AssociationSaleTool.Web.Migrations
                 table: "seller",
                 type: "TEXT",
                 nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "identity_document_issuer",
-                table: "seller",
-                type: "TEXT",
-                nullable: true);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -49,10 +43,6 @@ namespace AssociationSaleTool.Web.Migrations
 
             migrationBuilder.DropColumn(
                 name: "identity_document_issued_on",
-                table: "seller");
-
-            migrationBuilder.DropColumn(
-                name: "identity_document_issuer",
                 table: "seller");
         }
     }

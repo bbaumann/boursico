@@ -26,8 +26,6 @@ public sealed class SellerEntity
 
     public DateOnly? IdentityDocumentIssuedOn { get; set; }
 
-    public string? IdentityDocumentIssuer { get; set; }
-
     public int FeePaidCents { get; set; }
 
     public string DepositStatus { get; set; } = "deposit_pending";
