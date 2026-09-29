@@ -277,6 +277,48 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task ItemRegistrationFormsExposeTheExistingItemCountToTheLiveCounter()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "IC-001",
+                FirstName = "Iris",
+                LastName = "Compteur",
+                Phone = "0123",
+                PostalAddress = "1 rue des Tests",
+                PostalCode = "38000",
+                City = "Grenoble"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            dbContext.Items.AddRange(
+                new ItemEntity { SellerId = seller.Id, Title = "Puzzle", SellerPriceCents = 500, Status = "registered" },
+                new ItemEntity { SellerId = seller.Id, Title = "Livre", SellerPriceCents = 200, Status = "registered" });
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        var detailsResponse = await client.GetAsync($"/vendeurs/{sellerId}");
+        detailsResponse.EnsureSuccessStatusCode();
+        var detailsContent = await detailsResponse.Content.ReadAsStringAsync();
+        Assert.Contains("data-item-registration-count", detailsContent);
+        Assert.Contains("data-existing-item-count=\"2\"", detailsContent);
+
+        var createResponse = await client.GetAsync("/vendeurs/creer");
+        createResponse.EnsureSuccessStatusCode();
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        Assert.Contains("data-item-registration-count", createContent);
+        Assert.Contains("data-existing-item-count=\"0\"", createContent);
+    }
+
+    [Fact]
     public async Task RequiredFieldMarkersAreRenderedOnSellerForms()
     {
         var client = _factory.CreateClient();

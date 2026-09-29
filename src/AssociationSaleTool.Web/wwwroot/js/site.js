@@ -30,6 +30,40 @@ function reindexRow(row, nextIndex) {
   });
 }
 
+function formatItemRegistrationCount(existingCount, newCount) {
+  const total = existingCount + newCount;
+  const label = `${total} ${total > 1 ? "articles" : "article"}`;
+  if (existingCount === 0 || newCount === 0) {
+    return label;
+  }
+
+  return `${label} (dont ${newCount} ${newCount > 1 ? "nouveaux" : "nouveau"})`;
+}
+
+// Counts the rows saving would try to create: a row with only a description or only a
+// price still counts, since the operator means to add it; saving then asks for the rest.
+function updateItemRegistrationCount(counter) {
+  const tbody = counter.closest("form")?.querySelector("[data-item-registration-table] tbody");
+  const rows = tbody ? Array.from(tbody.querySelectorAll("tr")) : [];
+  const newCount = rows.filter(row =>
+    Array.from(row.querySelectorAll("input")).some(input => input.value.trim() !== "")).length;
+  const existingCount = Number.parseInt(counter.dataset.existingItemCount, 10) || 0;
+  counter.textContent = formatItemRegistrationCount(existingCount, newCount);
+}
+
+function refreshItemRegistrationCount(element) {
+  const counter = element.closest("form")?.querySelector("[data-item-registration-count]");
+  if (counter) {
+    updateItemRegistrationCount(counter);
+  }
+}
+
+document.addEventListener("input", event => {
+  if (event.target.closest("[data-item-registration-table]")) {
+    refreshItemRegistrationCount(event.target);
+  }
+});
+
 document.addEventListener("click", event => {
   const button = event.target.closest("[data-add-item-row]");
   if (!button) {
@@ -51,6 +85,7 @@ document.addEventListener("click", event => {
   clearRow(row);
   row.querySelectorAll("[data-whole-euro-input]").forEach(initializeWholeEuroInput);
   tbody.appendChild(row);
+  refreshItemRegistrationCount(form);
   row.querySelector("input")?.focus();
 });
 
@@ -1155,6 +1190,7 @@ function initializeDepositContractAutoPrint() {
 
 document.querySelectorAll("[data-postal-city-root]").forEach(initializePostalCityRoot);
 document.querySelectorAll("[data-whole-euro-input]").forEach(initializeWholeEuroInput);
+document.querySelectorAll("[data-item-registration-count]").forEach(updateItemRegistrationCount);
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);
 document.querySelectorAll("[data-seller-deposit-flow]").forEach(initializeSellerDepositFlow);
 document.querySelectorAll("[data-deposit-contract-auto-print]").forEach(initializeDepositContractAutoPrint);

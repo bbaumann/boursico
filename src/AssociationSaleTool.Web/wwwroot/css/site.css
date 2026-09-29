@@ -1106,7 +1106,14 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 
 .item-registration-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-start;
+  gap: 1rem;
+}
+
+.item-registration-count {
+  margin: 0 0 0 auto;
+  font-weight: 700;
 }
 
 .add-row-button {

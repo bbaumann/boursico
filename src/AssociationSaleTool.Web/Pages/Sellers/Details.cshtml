@@ -378,6 +378,10 @@
 
             <div class="item-registration-actions">
                 <button type="button" class="add-row-button" data-add-item-row aria-label="Ajouter une ligne" title="Ajouter une ligne">+</button>
+                <p class="item-registration-count"
+                   data-item-registration-count
+                   data-existing-item-count="@Model.Seller.Items.Count"
+                   aria-live="polite"></p>
             </div>
 
             <div class="form-actions">

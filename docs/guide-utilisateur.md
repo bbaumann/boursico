@@ -167,6 +167,8 @@ Pour chaque article, saisir :
 
 Le prix vendeur est aussi le prix imprimé vu par le client dans l'outil actuel. Il sert aussi au calcul du montant à reverser au vendeur si l'article est vendu ou marqué manquant.
 
+À droite du bouton `+`, un compteur affiche le nombre total d'articles du vendeur, en comptant les lignes en cours de saisie, par exemple `14 articles (dont 3 nouveaux)`. Il se met à jour pendant la saisie et aide le vendeur à savoir combien d'articles il dépose avant d'enregistrer. Le même compteur apparaît lors de la création d'un vendeur.
+
 ### Valider le dépôt vendeur
 
 Les articles ajoutés restent `enregistré` tant que le dépôt du vendeur n'est pas validé. Ils ne sont pas visibles en caisse. Tant qu'ils n'ont pas de référence, l'écran affiche un tiret (`—`) à la place.
