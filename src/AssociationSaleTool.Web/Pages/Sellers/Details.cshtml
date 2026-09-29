@@ -8,7 +8,7 @@
         ? "Le dépôt est validé. Les articles sont en stock et le dépôt reste annulable par un administrateur."
         : depositValidationCount > 0
             ? $"{depositValidationCount} information{(depositValidationCount > 1 ? "s" : string.Empty)} à corriger avant de finaliser le dépôt."
-            : "Le dépôt est prêt dès que le contrat papier est imprimé et signé.";
+            : "Le dépôt sera prêt à être validé quand le contrat papier sera imprimé et signé.";
 }
 
 @if (!string.IsNullOrWhiteSpace(Model.PendingRowsAlert))
