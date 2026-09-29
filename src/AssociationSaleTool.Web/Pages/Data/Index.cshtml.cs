@@ -75,8 +75,8 @@ public sealed class IndexModel(DataListService dataListService, SaleStatisticsSe
     public string TabClass(string tab)
     {
         return IsActiveTab(tab)
-            ? "button-link button-link-solid"
-            : "button-link";
+            ? "data-list-tab data-list-tab-active"
+            : "data-list-tab";
     }
 
     public string? TabAriaCurrent(string tab)

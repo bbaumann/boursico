@@ -446,11 +446,47 @@ textarea.input-validation-error {
   margin-top: 2rem;
 }
 
+/* Navigation between lists, not form actions: a framed segmented control, kept on one
+   line and scrolled sideways on a narrow window. */
 .data-list-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  width: fit-content;
+  max-width: 100%;
   margin-top: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.data-list-tab {
+  flex-shrink: 0;
+  padding: 0.7rem 1.2rem;
+  color: var(--muted);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.data-list-tab + .data-list-tab {
+  border-left: 1px solid var(--border);
+}
+
+.data-list-tab:hover {
+  color: var(--ink);
+  background: rgba(13, 92, 99, 0.08);
+}
+
+.data-list-tab:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+/* As specific as :hover and declared after it, so hovering never repaints the active tab. */
+.data-list-tab.data-list-tab-active {
+  color: #fffdf8;
+  background: var(--accent);
 }
 
 .statistics-table {
@@ -464,11 +500,6 @@ textarea.input-validation-error {
 }
 
 .statistics-total-row {
-  font-weight: 700;
-}
-
-.data-list-tabs .button-link {
-  min-width: 8rem;
   font-weight: 700;
 }
 
