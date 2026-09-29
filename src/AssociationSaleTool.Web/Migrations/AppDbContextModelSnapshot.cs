@@ -323,10 +323,6 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("first_name");
 
-                    b.Property<string>("ImportNotes")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("import_notes");
-
                     b.Property<DateOnly?>("IdentityDocumentIssuedOn")
                         .HasColumnType("TEXT")
                         .HasColumnName("identity_document_issued_on");
@@ -338,6 +334,10 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Property<string>("IdentityDocumentType")
                         .HasColumnType("TEXT")
                         .HasColumnName("identity_document_type");
+
+                    b.Property<string>("ImportNotes")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("import_notes");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -392,32 +392,6 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Navigation("Seller");
                 });
 
-            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.SaleLineEntity", b =>
-                {
-                    b.HasOne("AssociationSaleTool.Web.Data.Entities.ItemEntity", "Item")
-                        .WithMany("SaleLines")
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AssociationSaleTool.Web.Data.Entities.SaleEntity", "Sale")
-                        .WithMany("SaleLines")
-                        .HasForeignKey("SaleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", "RefundCashRegister")
-                        .WithMany("RefundSaleLines")
-                        .HasForeignKey("RefundCashRegisterId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Item");
-
-                    b.Navigation("RefundCashRegister");
-
-                    b.Navigation("Sale");
-                });
-
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.SaleEntity", b =>
                 {
                     b.HasOne("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", "CashRegister")
@@ -427,6 +401,32 @@ namespace AssociationSaleTool.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("CashRegister");
+                });
+
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.SaleLineEntity", b =>
+                {
+                    b.HasOne("AssociationSaleTool.Web.Data.Entities.ItemEntity", "Item")
+                        .WithMany("SaleLines")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", "RefundCashRegister")
+                        .WithMany("RefundSaleLines")
+                        .HasForeignKey("RefundCashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AssociationSaleTool.Web.Data.Entities.SaleEntity", "Sale")
+                        .WithMany("SaleLines")
+                        .HasForeignKey("SaleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("RefundCashRegister");
+
+                    b.Navigation("Sale");
                 });
 
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", b =>
