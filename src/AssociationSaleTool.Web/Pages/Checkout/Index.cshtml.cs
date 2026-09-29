@@ -21,6 +21,10 @@ public sealed class IndexModel(
 
     public string SalePhaseLabel { get; private set; } = string.Empty;
 
+    // During the sale each computer keeps the register it was set up with; changing it goes
+    // through the administration page on that computer.
+    public bool CashRegisterChoiceLocked { get; private set; }
+
     public IReadOnlyList<AssociationSaleTool.Web.Services.Models.CashRegisterOption> CashRegisters { get; private set; } = [];
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
@@ -28,6 +32,7 @@ public sealed class IndexModel(
         var phase = await salePhaseService.GetCurrentPhaseAsync(cancellationToken);
         SaleAllowed = phase != SalePhase.PostSale;
         SalePhaseLabel = SalePhaseDisplay.ToFrenchLabel(phase);
+        CashRegisterChoiceLocked = phase == SalePhase.Sale;
 
         if (!SaleAllowed)
         {

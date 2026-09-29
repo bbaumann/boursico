@@ -190,6 +190,28 @@ else
             }
         </section>
 
+        <section class="subsection" data-device-cash-register-root>
+            <h2>Caisse de cet ordinateur</h2>
+            <p class="seller-meta">Ce réglage ne concerne que l'ordinateur sur lequel cette page est ouverte. Pendant la vente, la caisse d'un ordinateur ne peut être changée qu'ici.</p>
+            <p data-device-cash-register-current role="status"></p>
+            <label for="device-cash-register-select">
+                Caisse
+                <select id="device-cash-register-select" data-device-cash-register-select>
+                    <option value="">Choisir une caisse</option>
+                    @foreach (var cashRegister in Model.CashRegisters.Where(x => x.IsActive))
+                    {
+                        <option value="@cashRegister.Id">@cashRegister.Name</option>
+                    }
+                </select>
+            </label>
+            <div class="form-actions">
+                <button type="button" class="button-link button-link-solid" data-device-cash-register-save>
+                    Changer la caisse de cet ordinateur
+                </button>
+            </div>
+            <p class="validation" data-device-cash-register-message role="status" aria-live="polite"></p>
+        </section>
+
         <section class="subsection" data-item-correction-root>
             <h2>Correction des articles</h2>
             <p class="seller-meta">Utiliser uniquement pour corriger un article non enregistré : le remettre en stock, le marquer défectueux, ou rembourser un article vendu défectueux.</p>

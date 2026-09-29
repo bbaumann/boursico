@@ -206,6 +206,12 @@ Un article `enregistré` n'apparaît ni en caisse ni dans les feuilles vendeurs 
 
 Aller dans `CAISSE` ou ouvrir `/caisse`.
 
+### Choisir la caisse de l'ordinateur
+
+Chaque ordinateur retient sa propre caisse. La première fois, choisir la caisse dans la liste, par exemple `Caisse 1` pour l'ordinateur 1, puis cliquer sur `Utiliser cette caisse`.
+
+En `Prévente`, le choix reste modifiable depuis l'écran de caisse. En `Vente`, un ordinateur qui a déjà une caisse la garde : le choix n'apparaît plus et l'écran affiche seulement la caisse active. Pour changer la caisse d'un ordinateur pendant la vente, ouvrir `Administration` sur cet ordinateur, puis utiliser la section `Caisse de cet ordinateur`. Ce réglage ne concerne que l'ordinateur sur lequel la page est ouverte.
+
 ### Renseigner l'acheteur
 
 Avant de finaliser une vente, remplir les champs `Nom ou structure`, `Code postal` et `Ville`.

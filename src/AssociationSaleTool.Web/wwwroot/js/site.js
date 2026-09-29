@@ -120,6 +120,54 @@ function createCheckoutCell(text) {
   return cell;
 }
 
+// The checkout keeps each computer's cash register in that browser's storage, so this
+// administration section can only change the register of the computer it is opened on.
+function initializeDeviceCashRegister(root) {
+  const select = root.querySelector("[data-device-cash-register-select]");
+  const current = root.querySelector("[data-device-cash-register-current]");
+  const message = root.querySelector("[data-device-cash-register-message]");
+  const saveButton = root.querySelector("[data-device-cash-register-save]");
+
+  if (!select || !saveButton) {
+    return;
+  }
+
+  function findActiveOption(value) {
+    return Array.from(select.options).find(option => option.value !== "" && option.value === value);
+  }
+
+  function showCurrentCashRegister() {
+    const option = findActiveOption(localStorage.getItem(cashRegisterStorageKey)?.trim() || "");
+    select.value = option ? option.value : "";
+    if (current) {
+      current.textContent = option
+        ? `Caisse actuelle de cet ordinateur : ${option.textContent}`
+        : "Aucune caisse active n'est choisie sur cet ordinateur.";
+    }
+  }
+
+  function setMessage(text) {
+    if (message) {
+      message.textContent = text;
+    }
+  }
+
+  saveButton.addEventListener("click", () => {
+    const option = findActiveOption(select.value);
+    if (!option) {
+      setMessage("Choisissez une caisse.");
+      select.focus();
+      return;
+    }
+
+    localStorage.setItem(cashRegisterStorageKey, option.value);
+    showCurrentCashRegister();
+    setMessage(`Cet ordinateur utilise maintenant ${option.textContent}.`);
+  });
+
+  showCurrentCashRegister();
+}
+
 function createCheckoutAddButton(itemId) {
   const addButton = document.createElement("button");
   addButton.type = "button";
@@ -427,6 +475,10 @@ function initializeCheckout(root) {
   const saveSaleButton = root.querySelector("[data-checkout-save-sale]");
   const savePrintButton = root.querySelector("[data-checkout-save-print]");
   const checkoutWorkflow = root.querySelector("[data-checkout-workflow]");
+  const cashRegisterSetup = root.querySelector("[data-checkout-cash-register-setup]");
+  const cashRegisterChoice = root.querySelector("[data-checkout-cash-register-choice]");
+  const cashRegisterLockedHint = root.querySelector("[data-checkout-cash-register-locked-hint]");
+  const cashRegisterChoiceLocked = cashRegisterSetup?.dataset.cashRegisterLocked === "true";
   const cashRegisterSelect = root.querySelector("[data-checkout-cash-register-select]");
   const cashRegisterSaveButton = root.querySelector("[data-checkout-cash-register-save]");
   const cashRegisterMessage = root.querySelector("[data-checkout-cash-register-message]");
@@ -491,6 +543,17 @@ function initializeCheckout(root) {
 
     if (checkoutWorkflow) {
       checkoutWorkflow.hidden = cashRegisterId.length === 0;
+    }
+
+    // During the sale, a computer that already has a register keeps it: the choice is only
+    // offered the first time, or again from the administration page.
+    const isLocked = cashRegisterChoiceLocked && cashRegisterId.length > 0;
+    if (cashRegisterChoice) {
+      cashRegisterChoice.hidden = isLocked;
+    }
+
+    if (cashRegisterLockedHint) {
+      cashRegisterLockedHint.hidden = !isLocked;
     }
 
     if (cashRegisterId.length === 0) {
@@ -1232,6 +1295,7 @@ document.querySelectorAll("[data-postal-city-root]").forEach(initializePostalCit
 document.querySelectorAll("[data-whole-euro-input]").forEach(initializeWholeEuroInput);
 document.querySelectorAll("[data-item-registration-count]").forEach(updateItemRegistrationCount);
 document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);
+document.querySelectorAll("[data-device-cash-register-root]").forEach(initializeDeviceCashRegister);
 document.querySelectorAll("[data-seller-deposit-flow]").forEach(initializeSellerDepositFlow);
 document.querySelectorAll("[data-deposit-contract-auto-print]").forEach(initializeDepositContractAutoPrint);
 

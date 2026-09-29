@@ -29,25 +29,30 @@
 
     @if (Model.SaleAllowed)
     {
-    <section class="subsection cash-register-setup" data-checkout-cash-register-setup>
+    <section class="subsection cash-register-setup"
+             data-checkout-cash-register-setup
+             data-cash-register-locked="@(Model.CashRegisterChoiceLocked ? "true" : "false")">
         <h2>Caisse</h2>
-        <label for="checkout-cash-register-select">
-            Caisse
-            <select id="checkout-cash-register-select"
-                    data-checkout-cash-register-select>
-                <option value="">Choisir une caisse</option>
-                @foreach (var cashRegister in Model.CashRegisters)
-                {
-                    <option value="@cashRegister.Id">@cashRegister.Name</option>
-                }
-            </select>
-        </label>
-        <div class="form-actions">
-            <button type="button" class="button-link button-link-solid" data-checkout-cash-register-save>
-                Utiliser cette caisse
-            </button>
+        <div data-checkout-cash-register-choice>
+            <label for="checkout-cash-register-select">
+                Caisse
+                <select id="checkout-cash-register-select"
+                        data-checkout-cash-register-select>
+                    <option value="">Choisir une caisse</option>
+                    @foreach (var cashRegister in Model.CashRegisters)
+                    {
+                        <option value="@cashRegister.Id">@cashRegister.Name</option>
+                    }
+                </select>
+            </label>
+            <div class="form-actions">
+                <button type="button" class="button-link button-link-solid" data-checkout-cash-register-save>
+                    Utiliser cette caisse
+                </button>
+            </div>
         </div>
         <p class="validation" data-checkout-cash-register-message role="status" aria-live="polite"></p>
+        <p class="seller-meta" data-checkout-cash-register-locked-hint hidden>Pour changer de caisse, passez par l'administration sur cet ordinateur.</p>
     </section>
 
     <div data-checkout-workflow hidden>

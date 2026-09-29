@@ -319,6 +319,61 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task CheckoutLocksTheCashRegisterChoiceOnlyDuringTheSalePhase()
+    {
+        var client = _factory.CreateClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            await SeedCashRegisterAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>(), "Caisse verrou");
+        }
+
+        await SetSalePhaseAsync(SalePhase.Presale);
+        try
+        {
+            var presaleContent = WebUtility.HtmlDecode(await client.GetStringAsync("/caisse"));
+            Assert.Contains("data-cash-register-locked=\"false\"", presaleContent);
+            Assert.Contains("Utiliser cette caisse", presaleContent);
+
+            await SetSalePhaseAsync(SalePhase.Sale);
+            var saleContent = WebUtility.HtmlDecode(await client.GetStringAsync("/caisse"));
+            Assert.Contains("data-cash-register-locked=\"true\"", saleContent);
+            Assert.Contains("data-checkout-cash-register-choice", saleContent);
+            Assert.Contains("Pour changer de caisse, passez par l'administration sur cet ordinateur.", saleContent);
+        }
+        finally
+        {
+            await SetSalePhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Fact]
+    public async Task AdministrationOffersThisComputerCashRegisterChoiceOnlyOnceUnlocked()
+    {
+        var client = _factory.CreateClient();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await SeedCashRegisterAsync(dbContext, "Caisse poste active");
+            if (!await dbContext.CashRegisters.AnyAsync(x => x.Name == "Caisse poste inactive"))
+            {
+                dbContext.CashRegisters.Add(new CashRegisterEntity { Name = "Caisse poste inactive", IsActive = false });
+                await dbContext.SaveChangesAsync();
+            }
+        }
+
+        var gateContent = WebUtility.HtmlDecode(await GetSaleStatusGateAsync(client));
+        Assert.DoesNotContain("Caisse de cet ordinateur", gateContent);
+
+        var content = await UnlockSaleStatusPageAsync(client);
+        var section = Regex.Match(content, "<section class=\"subsection\" data-device-cash-register-root>[\\s\\S]*?</section>");
+        Assert.True(section.Success, "Missing the section for this computer's cash register");
+        Assert.Contains("<h2>Caisse de cet ordinateur</h2>", section.Value);
+        Assert.Contains("Changer la caisse de cet ordinateur", section.Value);
+        Assert.Contains(">Caisse poste active</option>", section.Value);
+        Assert.DoesNotContain("Caisse poste inactive", section.Value);
+    }
+
+    [Fact]
     public async Task RequiredFieldMarkersAreRenderedOnSellerForms()
     {
         var client = _factory.CreateClient();
