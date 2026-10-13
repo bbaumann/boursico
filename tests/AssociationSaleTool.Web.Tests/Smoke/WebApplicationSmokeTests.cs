@@ -1591,8 +1591,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("data-list-closing-table", content);
         Assert.Contains("Toutes les caisses", content);
         Assert.Contains(scenario.CashRegisterName, content);
-        Assert.Contains("9.90 \u20ac", content);
-        Assert.Contains("0.00 \u20ac", content);
+        Assert.Contains("9.90\u20ac", content);
+        Assert.Contains("0.00\u20ac", content);
     }
 
     [Fact]

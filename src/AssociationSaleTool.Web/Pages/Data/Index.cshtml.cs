@@ -91,6 +91,11 @@ public sealed class IndexModel(DataListService dataListService, SaleStatisticsSe
             : $"{priceCents.Value / 100m:0.00} €";
     }
 
+    public static string FormatCompactPrice(int priceCents)
+    {
+        return $"{priceCents / 100m:0.00}€";
+    }
+
     public static string FormatSellerFeeProgress(int paidFeeCents, int expectedFeeCents)
     {
         return $"{paidFeeCents / 100}/{expectedFeeCents / 100}\u20ac";
