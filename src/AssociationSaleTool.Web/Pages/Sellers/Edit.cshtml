@@ -52,7 +52,7 @@
             </label>
             <label>
                 <span class="field-label-text">Téléphone <span class="required-field-badge">Obligatoire</span></span>
-                <input asp-for="Input.Phone" aria-required="true" disabled="@(!Model.CanEditSellerMasterData)" />
+                <input asp-for="Input.Phone" type="tel" inputmode="numeric" pattern="[0-9]*" title="Chiffres uniquement" aria-required="true" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.Phone" class="validation"></span>
             </label>
             <label>
@@ -105,7 +105,13 @@
         <div class="field-grid">
             <label>
                 <span>Nature de la pièce d'identité</span>
-                <input asp-for="Input.IdentityDocumentType" disabled="@(!Model.CanEditSellerMasterData)" />
+                <input asp-for="Input.IdentityDocumentType" autocomplete="off" list="identity-document-type-options" placeholder="Choisissez ou tapez la nature" disabled="@(!Model.CanEditSellerMasterData)" />
+                <datalist id="identity-document-type-options">
+                    <option value="Carte d'identité"></option>
+                    <option value="Passeport"></option>
+                    <option value="Permis de conduire"></option>
+                    <option value="Titre de séjour"></option>
+                </datalist>
                 <span asp-validation-for="Input.IdentityDocumentType" class="validation"></span>
             </label>
             <label>

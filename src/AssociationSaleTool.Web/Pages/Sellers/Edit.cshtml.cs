@@ -176,6 +176,7 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         [EmailAddress(ErrorMessage = "L'adresse e-mail doit être valide.")]
         public string? Email { get; set; }
 
+        [RegularExpression("^[0-9]*$", ErrorMessage = "Le téléphone ne doit contenir que des chiffres.")]
         public string Phone { get; set; } = string.Empty;
 
         public string PostalAddress { get; set; } = string.Empty;
