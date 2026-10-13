@@ -364,7 +364,7 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             remainingFeeCents == 0);
         DepositFeeInput = new DepositFeeInputModel
         {
-            FeePaid = EuroPriceInput.FormatFromCents(seller.FeePaidCents)
+            FeePaid = seller.FeePaidCents == 0 ? null : EuroPriceInput.FormatFromCents(seller.FeePaidCents)
         };
     }
 
