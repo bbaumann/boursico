@@ -12,6 +12,7 @@ public sealed class IndexModel(DataListService dataListService, SaleStatisticsSe
     private const string SellersTab = "vendeurs";
     private const string SalesTab = "ventes";
     private const string ChequesTab = "cheques";
+    private const string ChequesByCashRegisterTab = "cheques-caisse";
     private const string ClosingTab = "cloture";
     private const string StatisticsTab = "statistiques";
 
@@ -24,6 +25,8 @@ public sealed class IndexModel(DataListService dataListService, SaleStatisticsSe
     public IReadOnlyList<DataListSaleRow> Sales { get; private set; } = [];
 
     public IReadOnlyList<DataListChequeRow> Cheques { get; private set; } = [];
+
+    public IReadOnlyList<DataListCashRegisterChequeGroup> ChequesByCashRegister { get; private set; } = [];
 
     public IReadOnlyList<DataListClosingRow> ClosingRows { get; private set; } = [];
 
@@ -48,6 +51,9 @@ public sealed class IndexModel(DataListService dataListService, SaleStatisticsSe
                 break;
             case ChequesTab:
                 Cheques = await dataListService.ListChequesAsync(cancellationToken);
+                break;
+            case ChequesByCashRegisterTab:
+                ChequesByCashRegister = await dataListService.ListChequesByCashRegisterAsync(cancellationToken);
                 break;
             case ClosingTab:
                 ClosingRows = await dataListService.ListClosingAsync(cancellationToken);
@@ -120,6 +126,7 @@ public sealed class IndexModel(DataListService dataListService, SaleStatisticsSe
             SellersTab => SellersTab,
             SalesTab => SalesTab,
             ChequesTab => ChequesTab,
+            ChequesByCashRegisterTab => ChequesByCashRegisterTab,
             ClosingTab => ClosingTab,
             StatisticsTab => StatisticsTab,
             _ => ArticlesTab

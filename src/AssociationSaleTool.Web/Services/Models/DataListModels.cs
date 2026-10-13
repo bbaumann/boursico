@@ -49,6 +49,19 @@ public sealed record DataListChequeRow(
     int TotalPaidCents,
     string SearchText);
 
+public sealed record DataListCashRegisterChequeGroup(
+    long CashRegisterId,
+    string CashRegisterName,
+    IReadOnlyList<DataListCashRegisterChequeRow> Cheques,
+    int TotalCents);
+
+public sealed record DataListCashRegisterChequeRow(
+    long SaleId,
+    string? ChequeBankName,
+    string? ChequeNumber,
+    int TotalPaidCents,
+    string? BuyerName);
+
 public sealed record DataListClosingRow(
     string Label,
     long? CashRegisterId,

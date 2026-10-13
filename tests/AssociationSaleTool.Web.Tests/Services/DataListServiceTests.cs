@@ -177,6 +177,96 @@ public sealed class DataListServiceTests
     }
 
     [Fact]
+    public async Task ListChequesByCashRegisterAsync_GroupsEveryChequeSaleUnderItsCashRegister()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await using var context = await CreateContextAsync(connection);
+        var firstCashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-1", displayOrder: 1);
+        var secondCashRegisterId = await SeedCashRegisterAsync(context, "CAISSE-2", displayOrder: 2);
+        await SeedCashRegisterAsync(context, "CAISSE-3", displayOrder: 3);
+        context.Sales.AddRange(
+            new SaleEntity
+            {
+                SoldAt = new DateTime(2026, 5, 5, 10, 0, 0, DateTimeKind.Utc),
+                CashRegisterId = firstCashRegisterId,
+                TotalPaidCents = 3300,
+                PaymentMethod = SalePaymentMethods.Cheque,
+                ChequeNumber = "0002",
+                ChequeBankName = "Banque B",
+                BuyerName = " Alice Martin "
+            },
+            new SaleEntity
+            {
+                SoldAt = new DateTime(2026, 5, 5, 11, 0, 0, DateTimeKind.Utc),
+                CashRegisterId = firstCashRegisterId,
+                TotalPaidCents = 1100,
+                PaymentMethod = SalePaymentMethods.Cheque,
+                ChequeNumber = "0009",
+                ChequeBankName = "Banque A"
+            },
+            new SaleEntity
+            {
+                SoldAt = new DateTime(2026, 5, 5, 12, 0, 0, DateTimeKind.Utc),
+                CashRegisterId = firstCashRegisterId,
+                TotalPaidCents = 1320,
+                PaymentMethod = SalePaymentMethods.Cash
+            },
+            new SaleEntity
+            {
+                SoldAt = new DateTime(2026, 5, 5, 13, 0, 0, DateTimeKind.Utc),
+                CashRegisterId = secondCashRegisterId,
+                TotalPaidCents = 2200,
+                PaymentMethod = SalePaymentMethods.Cheque,
+                ChequeNumber = " ",
+                ChequeBankName = null,
+                BuyerName = "Bruno Durand"
+            });
+        await context.SaveChangesAsync();
+        var service = new DataListService(context);
+
+        var groups = await service.ListChequesByCashRegisterAsync();
+
+        Assert.Collection(
+            groups,
+            first =>
+            {
+                Assert.Equal("CAISSE-1", first.CashRegisterName);
+                Assert.Equal(4400, first.TotalCents);
+                Assert.Collection(
+                    first.Cheques,
+                    cheque =>
+                    {
+                        Assert.Equal("Banque A", cheque.ChequeBankName);
+                        Assert.Equal("0009", cheque.ChequeNumber);
+                        Assert.Equal(1100, cheque.TotalPaidCents);
+                        Assert.Null(cheque.BuyerName);
+                    },
+                    cheque =>
+                    {
+                        Assert.Equal("Banque B", cheque.ChequeBankName);
+                        Assert.Equal("0002", cheque.ChequeNumber);
+                        Assert.Equal(3300, cheque.TotalPaidCents);
+                        Assert.Equal("Alice Martin", cheque.BuyerName);
+                    });
+            },
+            second =>
+            {
+                Assert.Equal("CAISSE-2", second.CashRegisterName);
+                Assert.Equal(2200, second.TotalCents);
+                var cheque = Assert.Single(second.Cheques);
+                Assert.Null(cheque.ChequeBankName);
+                Assert.Null(cheque.ChequeNumber);
+                Assert.Equal("Bruno Durand", cheque.BuyerName);
+            },
+            third =>
+            {
+                Assert.Equal("CAISSE-3", third.CashRegisterName);
+                Assert.Empty(third.Cheques);
+                Assert.Equal(0, third.TotalCents);
+            });
+    }
+
+    [Fact]
     public async Task ListClosingAsync_ReturnsPerCashRegisterThenGlobalMoneyTotals()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

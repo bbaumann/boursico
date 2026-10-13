@@ -158,6 +158,47 @@ public sealed class DataListService(AppDbContext dbContext)
             .ToList();
     }
 
+    // Unlike ListChequesAsync, keeps cheques with missing details so each total matches the
+    // cheques expected in that cash register on the closing tab.
+    public async Task<IReadOnlyList<DataListCashRegisterChequeGroup>> ListChequesByCashRegisterAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var cashRegisters = await dbContext.CashRegisters
+            .AsNoTracking()
+            .OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+
+        var chequeSales = await dbContext.Sales
+            .AsNoTracking()
+            .Where(x => x.PaymentMethod == SalePaymentMethods.Cheque)
+            .ToListAsync(cancellationToken);
+
+        return cashRegisters
+            .Select(cashRegister =>
+            {
+                var cheques = chequeSales
+                    .Where(sale => sale.CashRegisterId == cashRegister.Id)
+                    .Select(sale => new DataListCashRegisterChequeRow(
+                        sale.Id,
+                        TrimToNull(sale.ChequeBankName),
+                        TrimToNull(sale.ChequeNumber),
+                        sale.TotalPaidCents,
+                        TrimToNull(sale.BuyerName)))
+                    .OrderBy(cheque => cheque.ChequeBankName ?? string.Empty, StringComparer.Create(FrenchCulture, ignoreCase: true))
+                    .ThenBy(cheque => cheque.ChequeNumber ?? string.Empty, StringComparer.Ordinal)
+                    .ThenBy(cheque => cheque.SaleId)
+                    .ToList();
+
+                return new DataListCashRegisterChequeGroup(
+                    cashRegister.Id,
+                    cashRegister.Name,
+                    cheques,
+                    cheques.Sum(cheque => cheque.TotalPaidCents));
+            })
+            .ToList();
+    }
+
     public async Task<IReadOnlyList<DataListClosingRow>> ListClosingAsync(CancellationToken cancellationToken = default)
     {
         var sales = await dbContext.Sales
@@ -193,6 +234,11 @@ public sealed class DataListService(AppDbContext dbContext)
         rows.Add(BuildClosingRow(GlobalClosingLabel, null, cashRegisters.Sum(x => x.InitialCashCents), isGlobal: true, sales, refundedLines));
 
         return rows;
+    }
+
+    private static string? TrimToNull(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static string FormatSellerName(SellerEntity seller)

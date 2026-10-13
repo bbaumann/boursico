@@ -159,7 +159,7 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 
 - the main navigation exposes a `DONNÉES` entry
 - the page is read-only and does not expose edit, correction, or workflow actions
-- the page uses six tabs: `Articles`, `Vendeurs`, `Ventes`, `Chèques`, `Clôture`, and `Statistiques`
+- the page uses seven tabs: `Articles`, `Vendeurs`, `Ventes`, `Chèques`, `Chèques par caisse`, `Clôture`, and `Statistiques`
 - the `Articles` tab lists all item statuses and supports a status filter in addition to live text search
 - article text search matches item reference, title, seller code, seller name, and status
 - the `Vendeurs` tab supports live text search by seller code and seller name only
@@ -167,6 +167,7 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 - invoice address details, cheque number, and bank name stay visible in checkout sales history, but are not part of the general data-list sale search
 - the `Chèques` tab lists only cheque-payment sales with stored cheque number and bank name
 - cheque rows show sale id, cheque number, bank name, and total paid amount, with the sale id linking to read-only sale detail
+- the `Chèques par caisse` tab shows one section per configured caisse, listing its cheque sales sorted by bank then cheque number, with bank, cheque number, amount, buyer name, and a total line; unlike `Chèques`, it keeps cheques with missing details so each total matches the caisse's expected cheques on `Clôture`
 - the `Clôture` tab shows one row per configured caisse, then a `Toutes les caisses` total row set apart by a heavy top border
 - closing columns lead with what the drawer should hold (expected cash, cheques, and card), then a heavy vertical separator, then the details: sale count, fond de caisse, cash sales, and refunds paid
 - per-caisse sale totals group by `sale.cash_register_id`; per-caisse refunds group by `sale_line.refund_cash_register_id`

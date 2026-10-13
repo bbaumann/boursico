@@ -27,6 +27,9 @@
         <a class="@Model.TabClass("cheques")"
            href="/donnees?onglet=cheques"
            aria-current="@Model.TabAriaCurrent("cheques")">Ch&egrave;ques</a>
+        <a class="@Model.TabClass("cheques-caisse")"
+           href="/donnees?onglet=cheques-caisse"
+           aria-current="@Model.TabAriaCurrent("cheques-caisse")">Ch&egrave;ques par caisse</a>
         <a class="@Model.TabClass("cloture")"
            href="/donnees?onglet=cloture"
            aria-current="@Model.TabAriaCurrent("cloture")">Cl&ocirc;ture</a>
@@ -260,6 +263,58 @@
                 </div>
             }
         </section>
+    }
+
+    @if (Model.IsActiveTab("cheques-caisse"))
+    {
+        @if (Model.ChequesByCashRegister.Count == 0)
+        {
+            <section class="subsection">
+                <p class="empty-state">Aucune caisse configur&eacute;e.</p>
+            </section>
+        }
+
+        @foreach (var group in Model.ChequesByCashRegister)
+        {
+            <section class="subsection">
+                <h2>@group.CashRegisterName</h2>
+                @if (group.Cheques.Count == 0)
+                {
+                    <p class="empty-state">Aucun ch&egrave;que dans cette caisse.</p>
+                }
+                else
+                {
+                    <div class="data-list-scroll">
+                    <table class="data-table data-list-table data-list-register-cheque-table">
+                        <thead>
+                            <tr>
+                                <th>Banque</th>
+                                <th>N&deg; ch&egrave;que</th>
+                                <th>Montant</th>
+                                <th>Acheteur</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var cheque in group.Cheques)
+                        {
+                            <tr>
+                                <td>@(cheque.ChequeBankName ?? "Non renseignée")</td>
+                                <td>@(cheque.ChequeNumber ?? "Non renseigné")</td>
+                                <td>@IndexModel.FormatCompactPrice(cheque.TotalPaidCents)</td>
+                                <td>@(cheque.BuyerName ?? "Non renseigné")</td>
+                            </tr>
+                        }
+                            <tr class="data-list-total-row">
+                                <td colspan="2">Total (@group.Cheques.Count ch&egrave;que@(group.Cheques.Count > 1 ? "s" : ""))</td>
+                                <td>@IndexModel.FormatCompactPrice(group.TotalCents)</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                }
+            </section>
+        }
     }
 
     @if (Model.IsActiveTab("cloture"))

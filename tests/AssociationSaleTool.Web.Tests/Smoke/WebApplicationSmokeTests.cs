@@ -1604,6 +1604,29 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task DataListsChequesByCashRegisterTabShowsEachChequeUnderItsCashRegister()
+    {
+        var client = _factory.CreateClient();
+        var scenario = await SeedDataListScenarioAsync();
+
+        var response = await client.GetAsync("/donnees?onglet=cheques-caisse");
+
+        response.EnsureSuccessStatusCode();
+        var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        Assert.Contains("Chèques par caisse", content);
+        Assert.Contains("data-list-register-cheque-table", content);
+        Assert.Contains(scenario.CashRegisterName, content);
+        Assert.Contains("CH-123", content);
+        Assert.Contains("banque cachée", content);
+        Assert.Contains("MJC Centre", content);
+        Assert.Contains("9.90€", content);
+        Assert.True(
+            content.IndexOf(scenario.CashRegisterName, StringComparison.Ordinal)
+                < content.IndexOf("CH-123", StringComparison.Ordinal),
+            "The cheque should be listed under its cash register.");
+    }
+
+    [Fact]
     public async Task SalesViewDetailPageShowsReadonlyRefundedDefectiveSale()
     {
         var client = _factory.CreateClient();

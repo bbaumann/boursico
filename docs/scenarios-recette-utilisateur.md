@@ -6,10 +6,12 @@ Il a servi à la première session de recette en juin 2026 et a été mis à jou
 
 ## Nouveautés depuis la recette du 17 septembre 2026
 
-Ces changements du 29 septembre 2026 répondent aux retours de la recette du 17 septembre. Les changements du 12 et du 14 septembre, listés dans le tableau suivant, n'étaient pas non plus dans la version jouée le 17 septembre.
+Les changements du 29 septembre 2026 répondent aux retours de la recette du 17 septembre. Les changements du 12 et du 14 septembre, listés dans le tableau suivant, n'étaient pas non plus dans la version jouée le 17 septembre.
 
 | Date | Changement | Scénarios concernés |
 | --- | --- | --- |
+| 13/10/2026 | Nouvel onglet `Chèques par caisse` dans `DONNÉES` : pour chaque caisse, la liste des chèques (banque, numéro, montant, acheteur) et leur total, pour contrôler les chèques à la clôture. | PostVente-08 |
+| 13/10/2026 | L'onglet `Clôture` commence par les montants attendus dans chaque caisse (espèces, chèques, CB), séparés des colonnes de détail par un trait vertical ; les caisses sont listées d'abord et la ligne `Toutes les caisses` en dernier. Les colonnes `Articles`, `Sous-total`, `Frais`, `Encaissé` et `Net` sont retirées. | PostVente-07 |
 | 29/09/2026 | La base de données repart de zéro avec cette version : une base créée par une version précédente n'est pas reprise et doit être supprimée avant le premier démarrage. | Installation-01 |
 | 29/09/2026 | Le champ `Autorité de délivrance` de la pièce d'identité est supprimé : il n'est plus demandé à la création, à la modification ni à la finalisation du dépôt. | Prevente-03, Prevente-05 |
 | 29/09/2026 | La colonne `Titre` des articles devient `Article` quand le tableau n'a pas de titre de section (création d'un vendeur, `DONNÉES`) et `Description` ailleurs ; les messages et les aides de recherche disent « description » au lieu de « titre ». | Prevente-01, Prevente-02, Prevente-04, Vente-02, Vente-07, Vente-08, PostVente-04 |
@@ -779,12 +781,16 @@ Description : contrôler les ventes payées par chèque.
 3. Filtrer par vente, numéro, banque ou montant.
 4. Comparer les numéros, banques et montants avec les chèques physiques.
 5. Ouvrir les ventes liées si un contrôle détaillé est nécessaire.
+6. Aller dans l'onglet `Chèques par caisse`.
+7. Pour chaque caisse, pointer les chèques physiques de la caisse avec la liste (banque, numéro, montant, acheteur).
 
 #### Critères d'acceptation
 
 - Seules les ventes payées par chèque apparaissent.
 - Chaque ligne affiche le numéro de vente, le numéro de chèque, la banque et le montant.
 - Le numéro de vente permet d'ouvrir le détail en lecture seule.
+- `Chèques par caisse` affiche une section par caisse configurée, avec ses chèques triés par banque puis par numéro et une ligne de total.
+- Le total des chèques d'une caisse est égal à sa colonne `Chèques attendus` dans `Clôture` ; un chèque sans banque ou sans numéro y figure avec la mention `Non renseigné(e)`.
 
 ### PostVente-09 - Consulter les statistiques de la vente
 

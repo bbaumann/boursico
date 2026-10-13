@@ -614,8 +614,13 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   border-right: 3px solid var(--ink);
 }
 
-/* Strong horizontal split between the individual drawers and the total line. */
-.data-list-closing-global-row td {
+.data-list-register-cheque-table {
+  min-width: 0;
+}
+
+/* Strong horizontal split between the individual lines and the total line. */
+.data-list-closing-global-row td,
+.data-list-total-row td {
   border-top: 3px solid var(--ink);
   font-weight: 700;
 }
