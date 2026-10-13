@@ -109,7 +109,7 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             new CreateItemBatchRequest(id, IntakeMode.EmailPreregistration, rowsToCreate),
             cancellationToken);
 
-        return RedirectToPage("/Sellers/Details", new { id });
+        return RedirectToPage("/Sellers/Details", null, new { id }, "articles");
     }
 
     public async Task<IActionResult> OnPostDeleteItemAsync(long id, long itemId, CancellationToken cancellationToken)
