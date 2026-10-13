@@ -67,6 +67,7 @@
             }
             else
             {
+                <div class="data-list-scroll">
                 <table class="data-table data-list-table" data-data-list-table>
                     <thead>
                         <tr>
@@ -92,6 +93,7 @@
                     }
                     </tbody>
                 </table>
+                </div>
             }
         </section>
     }
@@ -117,6 +119,7 @@
             }
             else
             {
+                <div class="data-list-scroll">
                 <table class="data-table data-list-table data-list-seller-table" data-data-list-table>
                     <thead>
                         <tr>
@@ -152,6 +155,7 @@
                     }
                     </tbody>
                 </table>
+                </div>
             }
         </section>
     }
@@ -177,6 +181,7 @@
             }
             else
             {
+                <div class="data-list-scroll">
                 <table class="data-table data-list-table data-list-sale-table" data-data-list-table>
                     <thead>
                         <tr>
@@ -204,6 +209,7 @@
                     }
                     </tbody>
                 </table>
+                </div>
             }
         </section>
     }
@@ -229,6 +235,7 @@
             }
             else
             {
+                <div class="data-list-scroll">
                 <table class="data-table data-list-table data-list-cheque-table" data-data-list-table>
                     <thead>
                         <tr>
@@ -250,6 +257,7 @@
                     }
                     </tbody>
                 </table>
+                </div>
             }
         </section>
     }
@@ -263,6 +271,7 @@
             }
             else
             {
+                <div class="data-list-scroll">
                 <table class="data-table data-list-table data-list-closing-table" data-list-closing-table>
                     <thead>
                         <tr>
@@ -302,6 +311,7 @@
                     }
                     </tbody>
                 </table>
+                </div>
             }
         </section>
     }
@@ -321,6 +331,7 @@
 
             <section class="subsection">
                 <h2>Recettes de l'association</h2>
+                <div class="data-list-scroll">
                 <table class="data-table statistics-table">
                     <tbody>
                         <tr>
@@ -345,6 +356,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
                 <p class="seller-meta">
                     Frais d'inscription attendus : @IndexModel.FormatPrice(fees.FlatFeeExpectedCents).
                     @if (fees.FlatFeeUncollectedCents > 0)
@@ -356,6 +368,7 @@
 
             <section class="subsection">
                 <h2>Argent des clients</h2>
+                <div class="data-list-scroll">
                 <table class="data-table statistics-table">
                     <tbody>
                         <tr><td>Ventes</td><td>@clients.SaleCount</td></tr>
@@ -367,10 +380,12 @@
                         <tr class="statistics-total-row"><td>Net</td><td>@IndexModel.FormatPrice(clients.NetCents)</td></tr>
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <section class="subsection">
                 <h2>Ventes des vendeurs</h2>
+                <div class="data-list-scroll">
                 <table class="data-table statistics-table">
                     <tbody>
                         <tr class="statistics-total-row"><td>Prix des articles vendus</td><td>@IndexModel.FormatPrice(sellers.SoldAmountCents)</td></tr>
@@ -378,11 +393,13 @@
                         <tr><td>Articles manquants payés aux vendeurs (@sellers.MissingItemCount)</td><td>@IndexModel.FormatPrice(sellers.MissingItemAmountCents)</td></tr>
                     </tbody>
                 </table>
+                </div>
                 <p class="seller-meta">Prix vendeur des articles vendus, au prix de la vente, avant la commission et les frais d'inscription.</p>
             </section>
 
             <section class="subsection">
                 <h2>Articles</h2>
+                <div class="data-list-scroll">
                 <table class="data-table statistics-table">
                     <tbody>
                         <tr class="statistics-total-row"><td>Déposés</td><td>@items.TotalCount</td></tr>
@@ -393,10 +410,12 @@
                         <tr><td>Enregistrés, dépôt non validé</td><td>@items.RegisteredCount</td></tr>
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <section class="subsection">
                 <h2>Répartition des prix</h2>
+                <div class="data-list-scroll">
                 <table class="data-table statistics-table">
                     <thead>
                         <tr>
@@ -420,6 +439,7 @@
                     }
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <section class="subsection">
@@ -430,6 +450,7 @@
                 }
                 else
                 {
+                    <div class="data-list-scroll">
                     <table class="data-table statistics-table">
                         <thead>
                             <tr>
@@ -449,6 +470,7 @@
                         }
                         </tbody>
                     </table>
+                    </div>
                     <p class="seller-meta">Compté par vente : un même acheteur venu plusieurs fois compte plusieurs fois.</p>
                 }
             </section>

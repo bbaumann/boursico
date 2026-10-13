@@ -586,6 +586,20 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   overflow-x: auto;
 }
 
+/* Frozen header row: each table scrolls inside its own box so the sticky header has a
+   scroll container to stick to (the page wrapper's overflow-x would otherwise defeat it). */
+.data-list-scroll {
+  max-height: 75vh;
+  overflow: auto;
+}
+
+.data-list-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fffcf5;
+}
+
 .data-list-table {
   min-width: 760px;
   margin-top: 1rem;
