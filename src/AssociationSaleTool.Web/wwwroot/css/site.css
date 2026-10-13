@@ -605,6 +605,21 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   margin-top: 1rem;
 }
 
+.data-list-closing-table {
+  min-width: 0;
+}
+
+/* Strong vertical split between what the drawer should hold and the details behind it. */
+.data-list-closing-table .data-list-closing-split {
+  border-right: 3px solid var(--ink);
+}
+
+/* Strong horizontal split between the individual drawers and the total line. */
+.data-list-closing-global-row td {
+  border-top: 3px solid var(--ink);
+  font-weight: 700;
+}
+
 .data-list-seller-table {
   min-width: 0;
   table-layout: fixed;

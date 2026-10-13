@@ -1593,6 +1593,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(scenario.CashRegisterName, content);
         Assert.Contains("9.90\u20ac", content);
         Assert.Contains("0.00\u20ac", content);
+        Assert.Contains("Ch\u00e8ques attendus", content);
+        Assert.Contains("CB attendue", content);
+        Assert.DoesNotContain("Sous-total", content);
+        Assert.DoesNotContain("Encaiss\u00e9", content);
+        Assert.True(
+            content.IndexOf(scenario.CashRegisterName, StringComparison.Ordinal)
+                < content.IndexOf("Toutes les caisses", StringComparison.Ordinal),
+            "Each cash register should be listed before the total line.");
     }
 
     [Fact]

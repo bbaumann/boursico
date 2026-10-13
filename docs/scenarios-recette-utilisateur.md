@@ -753,16 +753,17 @@ Description : lire le bilan financier système avant comparaison avec la réalit
 
 1. Ouvrir `DONNÉES`.
 2. Aller dans l'onglet `Clôture`.
-3. Vérifier la ligne `Toutes les caisses`.
-4. Vérifier les lignes par caisse.
-5. Comparer les colonnes `CB`, `Fond`, `Espèces`, `Espèces attendues`, `Chèques`, `Encaissé`, `Remboursé` et `Net` avec le contenu physique des caisses.
+3. Vérifier les lignes par caisse.
+4. Vérifier la ligne `Toutes les caisses`.
+5. Comparer les colonnes `Espèces attendues`, `Chèques attendus` et `CB attendue` avec le contenu physique des caisses.
+6. Utiliser les colonnes de détail `Ventes`, `Fond`, `Espèces` et `Remboursé` pour expliquer un écart.
 
 #### Critères d'acceptation
 
-- La page affiche une ligne `Toutes les caisses` puis une ligne par caisse configurée.
+- La page affiche une ligne par caisse configurée puis, en dernier et séparée par un trait épais, la ligne `Toutes les caisses`.
+- Les trois montants attendus sont à gauche, séparés des colonnes de détail par un trait vertical épais.
 - `Espèces attendues` = `Fond` + `Espèces` − `Remboursé` ; tous les remboursements sont considérés rendus en espèces par la caisse choisie.
 - Les remboursements sont déduits de la caisse qui a physiquement remboursé, pas de celle qui a vendu.
-- `Net` = `Encaissé` − `Remboursé`.
 
 ### PostVente-08 - Vérifier les chèques
 

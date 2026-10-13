@@ -180,19 +180,17 @@ public sealed class DataListService(AppDbContext dbContext)
             .Where(line => line.RefundedAt is not null && line.RefundTotalCents is not null)
             .ToList();
 
-        var rows = new List<DataListClosingRow>
-        {
-            BuildClosingRow(GlobalClosingLabel, null, cashRegisters.Sum(x => x.InitialCashCents), isGlobal: true, sales, refundedLines)
-        };
-
-        rows.AddRange(cashRegisters.Select(cashRegister =>
-            BuildClosingRow(
+        var rows = cashRegisters
+            .Select(cashRegister => BuildClosingRow(
                 cashRegister.Name,
                 cashRegister.Id,
                 cashRegister.InitialCashCents,
                 isGlobal: false,
                 sales.Where(sale => sale.CashRegisterId == cashRegister.Id),
-                refundedLines.Where(line => line.RefundCashRegisterId == cashRegister.Id))));
+                refundedLines.Where(line => line.RefundCashRegisterId == cashRegister.Id)))
+            .ToList();
+
+        rows.Add(BuildClosingRow(GlobalClosingLabel, null, cashRegisters.Sum(x => x.InitialCashCents), isGlobal: true, sales, refundedLines));
 
         return rows;
     }

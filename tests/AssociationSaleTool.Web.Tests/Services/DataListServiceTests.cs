@@ -177,7 +177,7 @@ public sealed class DataListServiceTests
     }
 
     [Fact]
-    public async Task ListClosingAsync_ReturnsGlobalAndPerCashRegisterMoneyTotals()
+    public async Task ListClosingAsync_ReturnsPerCashRegisterThenGlobalMoneyTotals()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
@@ -232,23 +232,6 @@ public sealed class DataListServiceTests
 
         Assert.Collection(
             rows,
-            global =>
-            {
-                Assert.True(global.IsGlobal);
-                Assert.Equal("Toutes les caisses", global.Label);
-                Assert.Equal(2, global.SaleCount);
-                Assert.Equal(3, global.ItemCount);
-                Assert.Equal(6000, global.SubtotalSellerPriceCents);
-                Assert.Equal(600, global.CheckoutFeeCents);
-                Assert.Equal(6600, global.TotalCollectedCents);
-                Assert.Equal(1100, global.RefundTotalCents);
-                Assert.Equal(5500, global.NetCollectedCents);
-                Assert.Equal(3300, global.CardTotalCents);
-                Assert.Equal(0, global.CashTotalCents);
-                Assert.Equal(3300, global.ChequeTotalCents);
-                Assert.Equal(7000, global.InitialCashCents);
-                Assert.Equal(5900, global.ExpectedCashCents);
-            },
             firstCheckout =>
             {
                 Assert.False(firstCheckout.IsGlobal);
@@ -276,6 +259,23 @@ public sealed class DataListServiceTests
                 Assert.Equal(3300, secondCheckout.ChequeTotalCents);
                 Assert.Equal(2000, secondCheckout.InitialCashCents);
                 Assert.Equal(900, secondCheckout.ExpectedCashCents);
+            },
+            global =>
+            {
+                Assert.True(global.IsGlobal);
+                Assert.Equal("Toutes les caisses", global.Label);
+                Assert.Equal(2, global.SaleCount);
+                Assert.Equal(3, global.ItemCount);
+                Assert.Equal(6000, global.SubtotalSellerPriceCents);
+                Assert.Equal(600, global.CheckoutFeeCents);
+                Assert.Equal(6600, global.TotalCollectedCents);
+                Assert.Equal(1100, global.RefundTotalCents);
+                Assert.Equal(5500, global.NetCollectedCents);
+                Assert.Equal(3300, global.CardTotalCents);
+                Assert.Equal(0, global.CashTotalCents);
+                Assert.Equal(3300, global.ChequeTotalCents);
+                Assert.Equal(7000, global.InitialCashCents);
+                Assert.Equal(5900, global.ExpectedCashCents);
             });
     }
 

@@ -167,8 +167,8 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 - invoice address details, cheque number, and bank name stay visible in checkout sales history, but are not part of the general data-list sale search
 - the `Chèques` tab lists only cheque-payment sales with stored cheque number and bank name
 - cheque rows show sale id, cheque number, bank name, and total paid amount, with the sale id linking to read-only sale detail
-- the `Clôture` tab shows a global financial row and one row per configured caisse
-- closing rows include sale count, item count, subtotal, association fee, payment-method totals, total collected, refunds paid, net collected, fond de caisse, and expected cash
+- the `Clôture` tab shows one row per configured caisse, then a `Toutes les caisses` total row set apart by a heavy top border
+- closing columns lead with what the drawer should hold (expected cash, cheques, and card), then a heavy vertical separator, then the details: sale count, fond de caisse, cash sales, and refunds paid
 - per-caisse sale totals group by `sale.cash_register_id`; per-caisse refunds group by `sale_line.refund_cash_register_id`
 - the `Statistiques` tab shows overall sale figures:
   - association revenue by fee: the flat registration fee paid at deposit and deducted at payout (plus the part a payout was too small to recover), the 15% seller margin on sold and missing items, and the 10% client fee net of refunds

@@ -276,18 +276,13 @@
                     <thead>
                         <tr>
                             <th>Caisse</th>
+                            <th>Esp&egrave;ces attendues</th>
+                            <th>Ch&egrave;ques attendus</th>
+                            <th class="data-list-closing-split">CB attendue</th>
                             <th>Ventes</th>
-                            <th>Articles</th>
-                            <th>Sous-total</th>
-                            <th>Frais</th>
-                            <th>CB</th>
                             <th>Fond</th>
                             <th>Esp&egrave;ces</th>
-                            <th>Esp&egrave;ces attendues</th>
-                            <th>Ch&egrave;ques</th>
-                            <th>Encaiss&eacute;</th>
                             <th>Rembours&eacute;</th>
-                            <th>Net</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -295,18 +290,13 @@
                     {
                         <tr class="@(row.IsGlobal ? "data-list-closing-global-row" : null)">
                             <td>@row.Label</td>
-                            <td>@row.SaleCount</td>
-                            <td>@row.ItemCount</td>
-                            <td>@IndexModel.FormatCompactPrice(row.SubtotalSellerPriceCents)</td>
-                            <td>@IndexModel.FormatCompactPrice(row.CheckoutFeeCents)</td>
-                            <td>@IndexModel.FormatCompactPrice(row.CardTotalCents)</td>
-                            <td>@IndexModel.FormatCompactPrice(row.InitialCashCents)</td>
-                            <td>@IndexModel.FormatCompactPrice(row.CashTotalCents)</td>
                             <td>@IndexModel.FormatCompactPrice(row.ExpectedCashCents)</td>
                             <td>@IndexModel.FormatCompactPrice(row.ChequeTotalCents)</td>
-                            <td>@IndexModel.FormatCompactPrice(row.TotalCollectedCents)</td>
+                            <td class="data-list-closing-split">@IndexModel.FormatCompactPrice(row.CardTotalCents)</td>
+                            <td>@row.SaleCount</td>
+                            <td>@IndexModel.FormatCompactPrice(row.InitialCashCents)</td>
+                            <td>@IndexModel.FormatCompactPrice(row.CashTotalCents)</td>
                             <td>@IndexModel.FormatCompactPrice(row.RefundTotalCents)</td>
-                            <td>@IndexModel.FormatCompactPrice(row.NetCollectedCents)</td>
                         </tr>
                     }
                     </tbody>
