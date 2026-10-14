@@ -2758,7 +2758,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 City = "Grenoble",
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "123456789",
-                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15)
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                // Its item already carries a reference: the deposit was started.
+                DepositStartedAt = DateTime.UtcNow
             };
 
             dbContext.Sellers.Add(seller);
@@ -3315,7 +3317,9 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 City = "Grenoble",
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "123456789",
-                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15)
+                IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
+                // Its item already carries a reference: the deposit was started.
+                DepositStartedAt = DateTime.UtcNow
             };
 
             dbContext.Sellers.Add(seller);

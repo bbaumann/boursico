@@ -12,9 +12,13 @@ using Microsoft.Extensions.Options;
 
 namespace AssociationSaleTool.Web.Pages.Sellers;
 
-public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOptions>? adminOptions = null) : PageModel
+public sealed class DetailsModel(
+    IntakeService intakeService,
+    DepositDeskService depositDeskService,
+    IOptions<AdminOptions>? adminOptions = null) : PageModel
 {
     private const int DefaultRowCount = 10;
+    private const string DepositNotStartedMessage = "Commencez le dépôt pour attribuer les références avant de le finaliser.";
     private const string DuplicateRowsAlertMessage = "Ce vendeur existe déjà. Les articles saisis ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.";
     private readonly AdminOptions _adminOptions = adminOptions?.Value ?? new AdminOptions();
 
@@ -57,6 +61,11 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
 
     [TempData]
     public string? DepositSuccessMessage { get; set; }
+
+    [TempData]
+    public string? AllocationMessage { get; set; }
+
+    public bool IsDepositStarted => Seller?.DepositStartedAt is not null;
 
     public IReadOnlyList<string> DepositValidationMessages { get; private set; } = [];
 
@@ -105,11 +114,120 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             return Page();
         }
 
-        await intakeService.CreateItemBatchAsync(
-            new CreateItemBatchRequest(id, IntakeMode.EmailPreregistration, rowsToCreate),
+        var desk = await depositDeskService.GetCurrentDeskAsync(DepositDeskCookie.Read(Request), cancellationToken);
+        var result = await intakeService.CreateItemBatchAsync(
+            new CreateItemBatchRequest(id, IntakeMode.EmailPreregistration, rowsToCreate, OpenDeskId(desk)),
             cancellationToken);
+        if (result.Status == DepositAllocationStatus.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (result.Status != DepositAllocationStatus.Done)
+        {
+            // Nothing was saved: the rows the operator typed stay in Input so
+            // they can re-submit once the desk problem is solved.
+            ModelState.AddModelError(
+                string.Empty,
+                ToAllocationError(result.Status, desk.State, "Les articles ne peuvent pas être ajoutés dans le statut actuel de la vente."));
+            return Page();
+        }
+
+        if (result.AssignedReferences.Count > 0)
+        {
+            AllocationMessage = ToAllocationMessage(result);
+        }
 
         return RedirectToPage("/Sellers/Details", null, new { id }, "articles");
+    }
+
+    public async Task<IActionResult> OnPostStartDepositAsync(long id, CancellationToken cancellationToken)
+    {
+        var desk = await depositDeskService.GetCurrentDeskAsync(DepositDeskCookie.Read(Request), cancellationToken);
+        var result = await intakeService.StartDepositAsync(id, OpenDeskId(desk), cancellationToken);
+        if (result.Status == DepositAllocationStatus.NotFound)
+        {
+            return NotFound();
+        }
+
+        if (result.Status == DepositAllocationStatus.Done)
+        {
+            AllocationMessage = ToAllocationMessage(result);
+            return RedirectToPage("/Sellers/Details", null, new { id }, "articles");
+        }
+
+        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (loaded is null)
+        {
+            return NotFound();
+        }
+
+        PopulateSellerState(loaded);
+        Input = CreateDefaultInput();
+        await PopulatePermissionStateAsync(loaded, cancellationToken);
+        var notAllowedMessage = loaded.DepositStartedAt is not null
+            ? "Le dépôt est déjà commencé."
+            : "Le dépôt ne peut pas être commencé dans le statut actuel de la vente.";
+        ModelState.AddModelError(string.Empty, ToAllocationError(result.Status, desk.State, notAllowedMessage));
+        return Page();
+    }
+
+    public static string ToAllocationMessage(DepositAllocationResult result)
+    {
+        var parts = new List<string>();
+        var references = result.AssignedReferences;
+        if (references.Count == 1)
+        {
+            parts.Add($"Référence attribuée : {references[0]}.");
+        }
+        else if (references.Count > 1)
+        {
+            // A run split across letters cannot be written as a range.
+            var contiguous = references
+                .Skip(1)
+                .Select((reference, index) => (Previous: references[index], Current: reference))
+                .All(pair => pair.Current[0] == pair.Previous[0]
+                    && int.Parse(pair.Current[1..], CultureInfo.InvariantCulture) == int.Parse(pair.Previous[1..], CultureInfo.InvariantCulture) + 1);
+            parts.Add(contiguous
+                ? $"Références attribuées : {references[0]} à {references[^1]}."
+                : $"Références attribuées : {string.Join(", ", references)}.");
+        }
+        else
+        {
+            parts.Add("Dépôt commencé. Chaque article enregistré recevra sa référence.");
+        }
+
+        foreach (var letter in result.TakenLetters)
+        {
+            parts.Add($"Allez chercher la planche {letter}.");
+        }
+
+        return string.Join(" ", parts);
+    }
+
+    private static long? OpenDeskId(CurrentDesk desk)
+    {
+        return desk.State == DeskState.Open ? desk.DeskId : null;
+    }
+
+    // Maps every refusal; notAllowedMessage covers NotAllowed, whose wording
+    // depends on what the operator was doing.
+    private static string ToAllocationError(DepositAllocationStatus status, DeskState deskState, string notAllowedMessage)
+    {
+        return status switch
+        {
+            DepositAllocationStatus.NoDesk or DepositAllocationStatus.DeskClosed when deskState == DeskState.Closed =>
+                "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.",
+            DepositAllocationStatus.NoDesk or DepositAllocationStatus.DeskClosed =>
+                "Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.",
+            DepositAllocationStatus.NoLabelsLeft =>
+                "Plus aucune étiquette disponible pour ce poste. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.",
+            DepositAllocationStatus.Conflict =>
+                "Un autre poste vient de modifier ces lettres. Réessayez.",
+            DepositAllocationStatus.NotAllowed => notAllowedMessage,
+            DepositAllocationStatus.NotFound => "Vendeur introuvable.",
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
+        };
     }
 
     public async Task<IActionResult> OnPostDeleteItemAsync(long id, long itemId, CancellationToken cancellationToken)
@@ -170,16 +288,16 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         ApplyDepositValidationState(validationState);
         if (DepositValidationMessages.Count == 0)
         {
-            // The seller and item data are otherwise valid here - this branch
-            // is reached only when IntakeService's own guard refused the
-            // transition, which today means a registered item still has no
-            // reference. Say that specifically rather than pointing the
-            // operator at data that isn't the problem.
+            // The seller and item data are otherwise valid and the deposit is
+            // started here - this branch is reached only when IntakeService's
+            // own guard refused the transition, which today means a registered
+            // item still has no reference. It is the last line of defense, as
+            // a started deposit labels every row it saves. Say that
+            // specifically rather than pointing the operator at data that
+            // isn't the problem.
             var referencesNotYetAllocated = loaded.Items.Any(item => item.Status == "registered" && item.Reference is null);
             DepositValidationMessages = referencesNotYetAllocated
-                ? [
-                    "Les références des articles n'ont pas encore été attribuées. Terminez l'étape des frais de la finalisation du dépôt avant de valider."
-                ]
+                ? [DepositNotStartedMessage]
                 : [
                     "Le dépôt ne peut pas être validé : vérifiez les informations du vendeur et les articles avant de signer le contrat."
                 ];
@@ -340,7 +458,13 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
     private void PopulateSellerState(SellerEntity seller)
     {
         Seller = seller;
-        Items = seller.Items.OrderBy(x => x.Id).ToList();
+        // By reference once labelled, so the operator matches toys to the
+        // peeled run in order; unlabelled rows follow in creation order.
+        Items = seller.Items
+            .OrderBy(item => item.Reference is null)
+            .ThenBy(item => item.Reference, StringComparer.Ordinal)
+            .ThenBy(item => item.Id)
+            .ToList();
         var expectedFeeCents = SellerFeeCalculator.CalculateExpectedFeeCents(seller.Items.Count);
         var remainingFeeCents = SellerFeeCalculator.CalculateRemainingFeeCents(expectedFeeCents, seller.FeePaidCents);
         FeeStatus = new SellerFeeStatus(
@@ -559,6 +683,13 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
         {
             messages.Add("Tous les prix vendeur doivent être supérieurs ou égaux à zéro.");
             hasItemMessages = true;
+        }
+
+        // Not an item blocker: no row is incomplete, so the page must not show
+        // the "Articles" summary or the "Corriger les articles" link for it.
+        if (seller.DepositStartedAt is null)
+        {
+            messages.Add(DepositNotStartedMessage);
         }
 
         return new DepositValidationState(messages, hasSellerMessages, hasItemMessages);

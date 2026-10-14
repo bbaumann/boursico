@@ -42,6 +42,11 @@
         </p>
     }
 
+    @if (!string.IsNullOrWhiteSpace(Model.AllocationMessage))
+    {
+        <p class="success-message deposit-allocation-message" role="status">@Model.AllocationMessage</p>
+    }
+
     <section class="subsection seller-deposit-panel">
         <div>
             <h2>Dépôt vendeur</h2>
@@ -89,6 +94,15 @@
             </div>
         }
         <div class="form-actions seller-deposit-actions">
+            @if (Model.CanEditItemMasterData && !Model.IsDepositValidated && !Model.IsDepositStarted)
+            {
+                <form method="post"
+                      asp-page-handler="StartDeposit"
+                      asp-route-id="@Model.Seller.Id"
+                      class="inline-form">
+                    <button type="submit" class="button-link button-link-solid">Commencer le dépôt</button>
+                </form>
+            }
             @if (Model.CanValidateDeposit)
             {
                 <div class="seller-deposit-flow"
