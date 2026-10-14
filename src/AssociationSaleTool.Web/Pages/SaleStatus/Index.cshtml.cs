@@ -15,6 +15,7 @@ public sealed class IndexModel(
     CashRegisterService cashRegisterService,
     DefectiveItemService defectiveItemService,
     ItemCorrectionService itemCorrectionService,
+    DepositDeskService depositDeskService,
     IOptions<AdminOptions> adminOptions) : PageModel
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
@@ -41,6 +42,18 @@ public sealed class IndexModel(
     public IReadOnlyList<CashRegisterOption> RefundCashRegisters { get; private set; } = [];
 
     public IReadOnlyList<CashRegisterAdminRow> CashRegisters { get; private set; } = [];
+
+    public int LabelsPerLetter { get; private set; }
+
+    public IReadOnlyList<ReferenceLetterRow> ReferenceLetters { get; private set; } = [];
+
+    public IReadOnlyList<OpenDeskRow> OpenDesks { get; private set; } = [];
+
+    [BindProperty]
+    public string? LabelsPerLetterInput { get; set; }
+
+    [BindProperty]
+    public long DeskId { get; set; }
 
     [BindProperty]
     public PhaseInputModel Input { get; set; } = new();
@@ -130,6 +143,45 @@ public sealed class IndexModel(
         ModelState.AddModelError("CashRegisterInput.Name", ToCashRegisterValidationMessage(result));
         await LoadPageAsync(cancellationToken);
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostSaveLabelsPerLetterAsync(CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        var result = int.TryParse(LabelsPerLetterInput, NumberStyles.None, FrenchCulture, out var value)
+            ? await depositDeskService.SetLabelsPerLetterAsync(value, cancellationToken)
+            : new LabelsPerLetterUpdateResult(LabelsPerLetterUpdateStatus.OutOfRange);
+
+        if (result.Status == LabelsPerLetterUpdateStatus.Saved)
+        {
+            SuccessMessage = "Nombre d'étiquettes par lettre enregistré.";
+            return RedirectToPage();
+        }
+
+        ModelState.AddModelError(
+            nameof(LabelsPerLetterInput),
+            result.Status == LabelsPerLetterUpdateStatus.BelowUsed
+                ? $"Le nombre d'étiquettes par lettre ne peut pas être inférieur à {result.HighestUsed}, déjà utilisé pour la lettre {result.Letter}."
+                : "Le nombre d'étiquettes par lettre doit être compris entre 1 et 999.");
+        await LoadPageAsync(cancellationToken);
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostForceCloseDeskAsync(CancellationToken cancellationToken)
+    {
+        if (!UnlockPageIfSessionAllows())
+        {
+            return Page();
+        }
+
+        SuccessMessage = await depositDeskService.CloseDeskAsync(DeskId, cancellationToken)
+            ? "Poste fermé. Ses lettres sont de nouveau disponibles."
+            : "Ce poste était déjà fermé.";
+        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostCorrectSaleLineAsync(
@@ -277,6 +329,10 @@ public sealed class IndexModel(
         ItemCorrectionCandidates = await itemCorrectionService.ListCandidatesAsync(cancellationToken);
         RefundCashRegisters = await saleCorrectionService.ListRefundCashRegistersAsync(cancellationToken);
         CashRegisters = await cashRegisterService.ListCashRegistersAsync(cancellationToken);
+        LabelsPerLetter = await depositDeskService.GetLabelsPerLetterAsync(cancellationToken);
+        LabelsPerLetterInput ??= LabelsPerLetter.ToString(FrenchCulture);
+        ReferenceLetters = await depositDeskService.ListLettersAsync(cancellationToken);
+        OpenDesks = await depositDeskService.ListOpenDesksAsync(cancellationToken);
     }
 
     private bool UnlockPageIfSessionAllows()

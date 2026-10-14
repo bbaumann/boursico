@@ -190,6 +190,74 @@ else
             }
         </section>
 
+        <section class="subsection">
+            <h2>Postes de dépôt et étiquettes</h2>
+
+            <form method="post" asp-page-handler="SaveLabelsPerLetter" class="stack-form">
+                <label for="labels-per-letter">
+                    Étiquettes imprimées par lettre
+                    <input id="labels-per-letter" name="LabelsPerLetterInput" value="@Model.LabelsPerLetterInput"
+                           type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
+                </label>
+                <span asp-validation-for="LabelsPerLetterInput" class="validation"></span>
+                <p class="seller-meta">Augmentez ce nombre si vous imprimez des planches supplémentaires. Il ne peut pas descendre sous un numéro déjà utilisé.</p>
+                <button type="submit" class="button-link">Enregistrer</button>
+            </form>
+
+            <div class="data-list-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Lettre</th><th>Utilisées</th><th>Restantes</th><th>Poste</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var letter in Model.ReferenceLetters)
+                {
+                    <tr>
+                        <td>@letter.Letter</td>
+                        <td>@letter.Used</td>
+                        <td>@(letter.LabelsLeft == 0 ? "Épuisée" : letter.LabelsLeft.ToString())</td>
+                        <td>@(letter.HeldByDeskName ?? "Libre")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            </div>
+
+            <h3>Postes ouverts</h3>
+            @if (Model.OpenDesks.Count == 0)
+            {
+                <p class="empty-state">Aucun poste ouvert.</p>
+            }
+            else
+            {
+                <div class="data-list-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Poste</th><th>Lettres</th><th>Ouvert le</th><th>Dernière activité</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var desk in Model.OpenDesks)
+                    {
+                        <tr>
+                            <td>@desk.Name</td>
+                            <td>@(desk.Letters.Count == 0 ? "Aucune" : string.Join(", ", desk.Letters))</td>
+                            <td>@desk.OpenedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                            <td>@desk.LastActivityAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                            <td>
+                                <form method="post" asp-page-handler="ForceCloseDesk" class="inline-form" data-desk-name="@desk.Name"
+                                      onsubmit="return confirm('Forcer la fermeture de ce poste ? Ses lettres redeviendront disponibles pour les autres postes.');">
+                                    <input type="hidden" name="DeskId" value="@desk.Id" />
+                                    <button type="submit" class="button-link">Forcer la fermeture</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                </div>
+            }
+        </section>
+
         <section class="subsection" data-device-cash-register-root>
             <h2>Caisse de cet ordinateur</h2>
             <p class="seller-meta">Ce réglage ne concerne que l'ordinateur sur lequel cette page est ouverte. Pendant la vente, la caisse d'un ordinateur ne peut être changée qu'ici.</p>

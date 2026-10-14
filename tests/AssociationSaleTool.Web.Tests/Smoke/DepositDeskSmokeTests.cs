@@ -263,4 +263,59 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
         Assert.Contains("Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.", content);
         Assert.Contains("value=\"Train refusé\"", content);
     }
+
+    private async Task UnlockAdminAsync(HttpClient client)
+    {
+        var token = await AntiforgeryTokenAsync(client, "/administration");
+        await client.PostAsync("/administration?handler=Unlock", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token,
+            ["PasswordInput.Password"] = "test-password"
+        }));
+    }
+
+    [Fact]
+    public async Task AdminForceCloseMakesTheDeskComputerSeeItsDeskClosed()
+    {
+        // ASCII name: the match runs on raw HTML, where Razor encodes accents.
+        var deskClient = await ClientWithOpenDeskAsync("PosteAFermer");
+        var admin = CreateClient();
+        await UnlockAdminAsync(admin);
+        var adminPage = await admin.GetStringAsync("/administration");
+        Assert.Contains("data-desk-name=\"PosteAFermer\"", adminPage);
+        long deskId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Data.AppDbContext>();
+            deskId = db.DepositDesks.Single(desk => desk.Name == "PosteAFermer").Id;
+        }
+        var token = await AntiforgeryTokenAsync(admin, "/administration");
+
+        await admin.PostAsync("/administration?handler=ForceCloseDesk", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token,
+            ["DeskId"] = deskId.ToString()
+        }));
+
+        var sellers = WebUtility.HtmlDecode(await deskClient.GetStringAsync("/vendeurs"));
+        Assert.Contains("Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.", sellers);
+    }
+
+    [Fact]
+    public async Task AdminCannotSetLabelsPerLetterAboveTheFormatLimit()
+    {
+        var admin = CreateClient();
+        await UnlockAdminAsync(admin);
+        var token = await AntiforgeryTokenAsync(admin, "/administration");
+
+        var response = await admin.PostAsync("/administration?handler=SaveLabelsPerLetter", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token,
+            ["LabelsPerLetterInput"] = "1000"
+        }));
+
+        Assert.Contains(
+            "Le nombre d'étiquettes par lettre doit être compris entre 1 et 999.",
+            WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()));
+    }
 }
