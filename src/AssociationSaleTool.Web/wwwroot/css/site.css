@@ -1999,3 +1999,25 @@ body:has(.seller-sheets-print-root) .page-frame {
     flex-direction: column;
   }
 }
+
+.deposit-desk-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  width: min(var(--page-max-width), calc(100% - 3rem));
+  margin: 0.75rem auto 0;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.deposit-desk-warning {
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+.deposit-desk-letters-callout {
+  font-size: 1.5rem;
+  font-weight: 700;
+}

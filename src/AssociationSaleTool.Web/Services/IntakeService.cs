@@ -646,7 +646,7 @@ public sealed class IntakeService
         return createdItems;
     }
 
-    private static bool IsUniqueConstraintFailure(DbUpdateException exception)
+    internal static bool IsUniqueConstraintFailure(DbUpdateException exception)
     {
         return exception.InnerException is SqliteException sqliteException
             && sqliteException.SqliteErrorCode == 19;

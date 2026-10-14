@@ -1,0 +1,66 @@
+@page "/vendeurs/poste"
+@model AssociationSaleTool.Web.Pages.Sellers.DeskModel
+@using AssociationSaleTool.Web.Services.Models
+@{
+    ViewData["Title"] = "Poste de dépôt";
+}
+
+<section class="page-card">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Dépôt</p>
+            <h1 class="page-title">Poste de dépôt</h1>
+            <p class="seller-meta">Un poste par ordinateur. Chaque poste reçoit ses lettres d'étiquettes : ne prenez que les planches de ces lettres.</p>
+        </div>
+    </div>
+
+    <div asp-validation-summary="ModelOnly" class="validation"></div>
+
+    @if (Model.JustOpenedLetters.Count > 0)
+    {
+        <p class="deposit-desk-letters-callout">
+            Allez chercher les planches @string.Join(" et ", Model.JustOpenedLetters).
+        </p>
+    }
+
+    @if (Model.Desk.State == DeskState.Open)
+    {
+        <section class="subsection">
+            <h2>@Model.Desk.Name</h2>
+            @if (Model.Desk.Letters.Count == 0)
+            {
+                <p class="validation">Aucune lettre disponible pour ce poste. Une lettre lui sera attribuée dès qu'un autre poste en libère une.</p>
+            }
+            else
+            {
+                <ul class="deposit-desk-letter-list">
+                    @foreach (var letter in Model.Desk.Letters)
+                    {
+                        <li><strong>@letter.Letter</strong> : @letter.LabelsLeft étiquettes restantes</li>
+                    }
+                </ul>
+            }
+            <form method="post" asp-page-handler="Close" class="inline-form"
+                  onsubmit="return confirm('Fermer ce poste ? Rapportez ses planches d\'étiquettes sur la table centrale.');">
+                <button type="submit" class="button-link">Fermer le poste</button>
+            </form>
+            <p class="seller-meta">Fermez le poste avant de ranger l'ordinateur, et rapportez ses planches sur la table centrale.</p>
+        </section>
+    }
+    else
+    {
+        <section class="subsection">
+            @if (Model.Desk.State == DeskState.Closed)
+            {
+                <p class="validation">Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.</p>
+            }
+            <form method="post" asp-page-handler="Open" class="stack-form">
+                <label>
+                    <span>Nom du poste (facultatif)</span>
+                    <input asp-for="DeskName" autocomplete="off" placeholder="Poste 1" />
+                </label>
+                <button type="submit" class="button-link button-link-solid">Ouvrir un poste</button>
+            </form>
+        </section>
+    }
+</section>
