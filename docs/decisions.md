@@ -831,7 +831,7 @@ This file captures the main project decisions in a lightweight ADR format.
 
 ## D-050 Allocate Letter-Bucket Item References At Deposit
 
-- Status: accepted
+- Status: partly superseded by D-051 (allocation moment, letter choice, soft capacity setting); the reference format and the validation guard still apply
 - Key drivers:
   - adhesive label sheets must be printed before any seller is known, which
     the old seller-code-derived reference could not support
@@ -876,3 +876,58 @@ This file captures the main project decisions in a lightweight ADR format.
     snapshot; the loser gets a generic error page but the fee is already
     saved and allocation is idempotent, so re-clicking `Continuer` succeeds
   - `D-014` and `D-017` are superseded for current V1
+
+## D-051 Deposit Desks Own Reference Letters
+
+- Status: accepted
+- Key drivers:
+  - at the deposit desk the operator checks each toy and sticks its label
+    immediately, so the reference must exist before the contract step that
+    D-050 allocated at
+  - 2 to about 10 deposit desks work at once, varying over the two deposit
+    days, and each letter's pre-printed sheets can only be on one desk, so
+    sheets must not travel between desks while sellers are served
+  - most toys are pre-registered, so getting their labels must cost one action
+    per seller, not one per toy
+  - deleting a labelled toy (refused or forgotten) is routine, so a number must
+    never be handed out twice
+- Decision:
+  - a deposit desk (`Poste de dépôt`) is created when a computer opens it on
+    `/vendeurs/poste`; it is identified by a random token in an `HttpOnly`
+    cookie, and there is no desk configuration ahead of time
+  - an open desk automatically receives `Labels:LettersPerDesk` letters (2),
+    the free non-exhausted letters with the fewest numbers used; a letter is
+    held by at most one open desk, enforced server-side
+  - `Commencer le dépôt` allocates one consecutive run for every existing row
+    of the seller from the desk's letters; once started, each saved row gets
+    the desk's next number in the same save
+  - letter choice for a run: the seller's latest letter if the desk holds it
+    and it fits, otherwise the desk's letter with the most room if it fits,
+    otherwise split across the desk's letters and then freshly taken free
+    letters
+  - exhausted letters are released and replaced automatically after an
+    allocation
+  - a per-letter counter `reference_letter.last_number` only increases, so
+    deleted items never free their number
+  - `labels_per_letter` is one value for all letters, stored on `event_state`
+    and edited from `/administration`; it cannot go below a number already
+    used or above 999, and exhaustion is computed from it
+  - a desk closes itself with `Fermer le poste`, or an admin force-closes it
+    from `/administration`; there is no takeover and no automatic timeout,
+    because the lock follows the physical sheets rather than the computer
+  - every allocation request is refused unless its cookie resolves to an open
+    desk, so a computer whose desk was force-closed cannot hand out numbers
+- Consequence:
+  - screen and sheet always agree because only one desk draws from a letter,
+    so no numbering buffer is needed
+  - the reference letter no longer depends on the seller code; the seller code
+    remains the seller identifier only
+  - pre-registered references are no longer known before the seller reaches a
+    desk
+  - a seller's references can span two letters when a letter runs out
+    mid-seller or the seller returns to another desk; the contract and recap
+    sheet list every reference, so collection still works
+  - letter balance comes from always taking the least-used free letters,
+    rather than from the seller-code spread order
+  - D-050's allocation at the contract step, its four-tier seller-code letter
+    choice, and `Labels:SoftCapacityPerLetter` are superseded
