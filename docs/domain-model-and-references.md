@@ -206,10 +206,11 @@ bucket for post-sale recollection, not a seller identifier: an operator can
 always look up the seller in the administration screens. Identifying the
 seller from a stray label is explicitly not a requirement.
 
-An item has no reference until its seller's deposit reaches the
-contract-print step; see Item Reference Allocation below. Until then, screens
-show an em dash (`—`) in its place: on the seller page, on the `/donnees`
-Articles tab, and on the item edit page.
+An item has no reference until its seller's deposit is started at a deposit
+desk (`Commencer le dépôt`), or until the row is saved on an already started
+deposit; see Item Reference Allocation below. Until then, screens show an em
+dash (`—`) in its place: on the seller page, on the `/donnees` Articles tab,
+and on the item edit page.
 
 ## Seller Code
 
@@ -251,57 +252,90 @@ Example prefix sequence:
 - `DC`
 
 This spreads sellers across first letters. It was originally chosen for
-post-sale physical sorting by seller, and it now does double duty: because a
-seller's own item-reference letter defaults to the first character of their
-seller code, this cycling keeps the twenty item-reference letter buckets
-balanced too, with roughly ten sellers behind each letter for a typical
-100-200 seller event.
+post-sale physical sorting by seller. The seller code no longer influences the
+item-reference letter, which is decided by the deposit desk (see Item
+Reference Allocation below); it remains the seller's identifier.
 
 ## Item Reference Allocation
 
-Item references are allocated when a seller's deposit reaches the
-contract-print step (the `Continuer` action on the fee step), not when the
-item row is created. This is what lets the association print all adhesive
-label sheets weeks before the event, at a time when no seller is yet known.
-By the time allocation runs, the seller's item list is final, so each
-seller's run of numbers is assigned in one contiguous pass; there is no need
-for any numbering buffer.
+Item references are allocated at the deposit desk, while the toy is in the
+operator's hands, so that its label can be stuck straight away. The full
+design is in `docs/superpowers/specs/2026-10-13-deposit-desk-letters-design.md`
+(decision D-051, which replaces D-050).
 
-Choosing the letter for a seller's items follows a four-tier rule:
+### Deposit desks own letters
 
-1. **Top-up**: if the seller already has referenced items, reuse their most
-   recently allocated letter if it still has room.
-2. **Own letter**: otherwise use the seller's own letter (the first
-   character of their seller code) if it has room.
-3. **Spill**: otherwise use the least-loaded letter that still has room, so
-   the twenty sort piles stay even.
-4. **Relax**: otherwise (every letter full) use the seller's own letter
-   anyway, past its soft capacity.
+A deposit desk is one computer at one physical queue, opened on
+`/vendeurs/poste`. Opening a desk assigns it `Labels:LettersPerDesk` letters
+(default 2): the free, non-exhausted letters with the fewest numbers used, ties
+broken by alphabet order. At most one open desk holds a letter at any time
+(enforced by the server), so label sheets never travel between desks and the
+next number the application gives is always the next label on the sheet in
+front of the operator. The desk is identified by an `HttpOnly`,
+`SameSite=Strict` cookie `poste-depot` valid for 4 days. A desk is closed by
+itself (`Fermer le poste`) or by an admin (`Forcer la fermeture` on
+`/administration`); its letters then become free.
 
-Soft capacity per letter is 455, exposed as `Labels:SoftCapacityPerLetter` in
-`appsettings.json`. It corresponds to the 7 adhesive label sheets of 65
-labels the association prints per letter before the event; the application
-itself never reasons about sheets, only about that number.
+### Per-letter counters and labels per letter
 
-Canceling a validated deposit keeps any references already allocated to that
-seller's items; the labels are physically stuck on the toys by then, so
-releasing the numbers would be actively wrong. Revalidating a deposit
-allocates references only for items that still lack one.
+Each letter has a `last_number` that only increases: deleting an item never
+lowers it, so a number whose label was already peeled is never handed out
+again. The number of labels printed per letter is a single setting, default
+455 (7 sheets of 65), stored in the database and edited on `/administration`
+(`Étiquettes par lettre`, between 1 and 999, never below the highest number
+already used). It replaces the old `Labels:SoftCapacityPerLetter`. A letter is
+exhausted when its counter reaches that number; exhaustion is computed, so
+raising the setting makes exhausted letters usable again.
+
+### When references are allocated
+
+- `Commencer le dépôt` on a seller's page gives every row that has no
+  reference the desk's next numbers, in row creation order, in one run, and
+  marks the deposit as started.
+- Once started, saving a new row gives it the next number in the same save.
+- Nothing is allocated on a non-started deposit, nor by the fee step's
+  `Continuer`. `Finaliser le dépôt` is refused until the deposit is started.
+- Allocation only happens during `presale`.
+
+### Choosing letters for a run
+
+Among the letters the desk holds that are not exhausted:
+
+1. **Seller's letter**: if the seller already has references and the desk
+   holds the letter of their most recent one with room for the whole run, use it.
+2. **One letter for the whole run**: otherwise the held letter with the most
+   room, if it can take the whole run.
+3. **Split**: otherwise fill the seller's letter, then the other held letters
+   from most room to least, then free letters taken on the spot (least used
+   first).
+4. **No room**: if that cannot provide the whole run, nothing is allocated and
+   the save is refused.
+
+After every allocation, exhausted held letters are released, and the desk takes
+free letters (least used first) to get back to `LettersPerDesk` usable letters;
+the page tells the operator which sheet to fetch.
+
+Canceling a validated deposit keeps the references and the started marker; the
+labels are physically stuck on the toys by then, so releasing the numbers would
+be actively wrong. Rows added afterwards get a reference when saved.
 
 ## Why This Reference Scheme Was Chosen
 
 - adhesive labels can be printed weeks before the event, when no seller is
-  known yet, because the reference no longer depends on the seller code
+  known yet, because the reference does not depend on the seller code
+- the operator sticks each label at the moment the toy is checked, which
+  requires the number to be known then, not at contract print
+- letters are owned by one open desk each, so a letter's sheets sit on one
+  desk and screen and sheet never disagree; no numbering buffer is needed
 - the letter is a physical sort bucket: after the sale, volunteers sort
   unsold items by letter then number into twenty piles, and a seller's recap
   sheet sends one volunteer to collect that seller's items out of the piles
-- twenty letters means twenty volunteers can sort in parallel, so letters
-  must stay reasonably balanced, which the seller-code spread order already
-  provides
-- allocating once the seller's item list is final removes the need for any
-  numbering buffer or reserved-number gaps
-- late-added items are still trivial to assign: they simply top up the
-  seller's existing letter
+- twenty letters means twenty volunteers can sort in parallel; assigning the
+  least-used free letters to new desks keeps the buckets reasonably balanced
+- a pre-registered seller's run is allocated in one click and is not split
+  while the desk has a letter that can take it
+- late-added items stay next to the seller's run in the same letter when it
+  has room
 - references remain readable and hand-friendly
 
 ## Sheet Semantics Derived From The Model

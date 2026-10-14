@@ -171,18 +171,20 @@ Description : confirmer les jouets physiquement déposés, faire signer le contr
 2. Vérifier les articles apportés physiquement.
 3. Supprimer ou corriger les articles créés par erreur avant validation.
 4. Compléter les informations obligatoires du vendeur, y compris les informations de pièce d'identité.
-5. Cliquer sur `Finaliser le dépôt`.
-6. Vérifier les frais vendeur attendus, déjà payés et restant à payer.
-7. Renseigner les frais vendeur payés au dépôt si nécessaire, puis cliquer sur `Continuer`.
-8. Cliquer sur `Imprimer le contrat`.
-9. Faire signer le contrat papier par le vendeur.
-10. Cliquer sur `Valider le dépôt`, puis confirmer que le contrat est signé.
+5. Avoir un poste de dépôt ouvert sur l'ordinateur, puis cliquer sur `Commencer le dépôt` : chaque article reçoit sa référence et l'opérateur colle les étiquettes correspondantes.
+6. Cliquer sur `Finaliser le dépôt`.
+7. Vérifier les frais vendeur attendus, déjà payés et restant à payer.
+8. Renseigner les frais vendeur payés au dépôt si nécessaire, puis cliquer sur `Continuer`.
+9. Cliquer sur `Imprimer le contrat`.
+10. Faire signer le contrat papier par le vendeur.
+11. Cliquer sur `Valider le dépôt`, puis confirmer que le contrat est signé.
 
 #### Critères d'acceptation
 
 - La validation est refusée si les informations obligatoires sont manquantes.
 - La validation reste possible si des frais vendeur restent à payer.
-- Les articles n'ont pas de référence après la simple saisie des articles ; `Continuer` leur attribue une référence.
+- Les articles n'ont pas de référence après la simple saisie des articles ; `Commencer le dépôt` leur attribue une référence (et l'enregistrement d'une ligne ajoutée ensuite, une fois le dépôt commencé). `Continuer` n'attribue plus de référence.
+- `Finaliser le dépôt` est refusé tant que le dépôt n'est pas commencé.
 - Le contrat imprimé contient l'identité de l'association, les informations vendeur, les frais vendeur et la liste des articles avec leur référence.
 - Après validation, les articles acceptés passent en `en stock`.
 - Après validation, les modifications normales du vendeur et de ses articles sont verrouillées.

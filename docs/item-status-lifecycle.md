@@ -32,9 +32,11 @@ The following item fields also become read-only in normal operations:
 - `title`
 - `seller_price_cents`
 
-`reference` is nullable and stays `NULL` until the item's seller reaches the
-deposit contract-print step, at which point it is allocated a `<LETTER><NNN>`
-value that does not change afterward.
+`reference` is nullable and stays `NULL` until the item's seller starts their
+deposit at a deposit desk (`Commencer le dépôt`), or until the row is saved
+when it is added to an already started deposit. It is then allocated a
+`<LETTER><NNN>` value from the letters held by that desk, which does not change
+afterward.
 
 The application stores one item price: `seller_price_cents`. Sold items keep their read-only sale-time snapshot on `sale_line.seller_price_at_sale_cents`.
 

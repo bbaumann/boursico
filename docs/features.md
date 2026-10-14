@@ -30,7 +30,9 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Validate one signed seller deposit, moving that seller's accepted `registered` items to `in_stock`
 - Allow admin cancellation of a validated deposit with a local admin-password confirmation, reopening only items still `in_stock`
 - Configure physical caisses with a name and initial cash amount (`fond de caisse`) from `/administration`
-- Allocate each item a unique `<LETTER><NNN>` reference when its seller's deposit reaches the contract-print step, rather than at item creation
+- Open a deposit desk per computer on `/vendeurs/poste`; each open desk owns two reference letters, and a desk banner on the seller pages shows its letters and labels left
+- Start a seller's deposit with `Commencer le dépôt`, which allocates the desk's next `<LETTER><NNN>` references to all existing rows in one run; rows added later get their reference when saved
+- Set the number of labels per letter and see letters and open desks on `/administration`, where an admin can force-close a desk
 - Store one seller-set printed price per item
 - Search validated `in_stock` items by `reference + title` using a live-filtered table
 - Store the configured physical caisse on every sale
@@ -264,15 +266,27 @@ Before validation:
 
 When the seller physically gives the toys to the association:
 
-1. The operator opens the seller detail page.
-2. The operator completes any missing phone, postal address, postal code, city, identity document nature, identity document number, issue date, or issuing authority.
-3. The operator starts `Finaliser le dépôt`.
-4. The operator verifies the expected seller fee, the fee already paid, and the remaining fee, then updates `Frais payés` when the seller pays at deposit time.
-5. The operator clicks `Continuer`, which allocates a `<LETTER><NNN>` reference to each of the seller's items that still lacks one.
-6. The operator prints `Imprimer le contrat`, which lists the now-allocated references.
-7. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
-8. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
-9. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`, refusing the move if any of those items still has a null reference.
+1. The operator's computer has an open deposit desk (`/vendeurs/poste`), which holds two letters.
+2. The operator opens the seller detail page and clicks `Commencer le dépôt`; every existing row receives the desk's next numbers in one consecutive run, shown on screen.
+3. The operator peels that many labels and sticks each on the matching toy, using the list sorted by reference.
+4. A toy that was not registered is added as a row; saving it gives it the next number, and the operator peels the next label.
+5. A refused or forgotten toy is deleted; its label is thrown away and its number is never reused.
+6. The operator completes any missing phone, postal address, postal code, city, identity document nature, identity document number, issue date, or issuing authority, then starts `Finaliser le dépôt`. It is refused until the deposit is started.
+7. The operator verifies the expected seller fee, the fee already paid, and the remaining fee, then updates `Frais payés` when the seller pays at deposit time, and clicks `Continuer`. `Continuer` no longer allocates references.
+8. The operator prints `Imprimer le contrat`, which lists the allocated references.
+9. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
+10. The operator clicks `Valider le dépôt`, then confirms `Le contrat est signé`.
+11. The application sets `seller.deposit_status = deposit_validated` and moves that seller's `registered` items to `in_stock`, refusing the move if any of those items still has a null reference.
+
+Deposit desks:
+
+- Any computer can open a desk on `/vendeurs/poste` (optional name, otherwise `Poste N`). A computer that already holds an open desk cannot open a second one. The desk is identified by the `poste-depot` cookie (`HttpOnly`, `SameSite=Strict`, 4 days).
+- Opening assigns two letters (`Labels:LettersPerDesk`): the free, non-exhausted letters with the fewest numbers used. The page tells the operator which sheets to fetch (`Allez chercher les planches B et C.`). With fewer free letters than needed the desk opens with what is available, possibly none; `Commencer le dépôt` and adding rows to a started deposit are then refused until a letter is free.
+- A desk is closed with `Fermer le poste` (after a confirmation reminding the volunteer to bring the sheets back to the central table) or by an admin with `Forcer la fermeture` on `/administration`. Closing frees the letters. There is no takeover after a crash and no automatic timeout.
+- Allocation requires an open desk. With no desk the page shows `Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.`; with a closed desk, `Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.`. Nothing is written in either case.
+- Seller pages (`/vendeurs` and below) show a banner with the desk name and letters, `Plus que N étiquettes en X.` when a held letter has 20 or fewer labels left, and the closed-desk or no-desk message.
+- When no held letter can provide the numbers needed, the save is refused: `Plus aucune étiquette disponible pour ce poste. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.`
+- `/administration` has a `Postes de dépôt et étiquettes` section: `Étiquettes imprimées par lettre` (default 455, 1 to 999, not below the highest number already used), one row per letter (used, left or `Épuisée`, holding desk or `Libre`), and the open desks with their last activity.
 
 The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, whether payment is still due, and item prices. It does not print the seller identity document fields. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
 

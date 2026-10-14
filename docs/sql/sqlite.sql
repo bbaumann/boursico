@@ -15,6 +15,7 @@ CREATE TABLE seller (
     city TEXT NOT NULL,
     fee_paid_cents INTEGER NOT NULL DEFAULT 0,
     deposit_status TEXT NOT NULL DEFAULT 'deposit_pending',
+    deposit_started_at TEXT NULL,
     notes TEXT,
     import_notes TEXT,
     CONSTRAINT ck_seller_fee_paid_cents
@@ -125,11 +126,34 @@ CREATE TABLE sale_line (
 CREATE TABLE event_state (
     id INTEGER PRIMARY KEY,
     sale_phase TEXT NOT NULL,
+    labels_per_letter INTEGER NOT NULL DEFAULT 455,
     updated_at TEXT NOT NULL,
     CONSTRAINT ck_event_state_singleton
         CHECK (id = 1),
+    CONSTRAINT ck_event_state_labels_per_letter
+        CHECK (labels_per_letter BETWEEN 1 AND 999),
     CONSTRAINT ck_event_state_sale_phase
         CHECK (sale_phase IN ('presale', 'sale', 'post_sale'))
+);
+
+CREATE TABLE deposit_desk (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    token TEXT NOT NULL,
+    opened_at TEXT NOT NULL,
+    closed_at TEXT NULL,
+    last_activity_at TEXT NOT NULL,
+    CONSTRAINT uq_deposit_desk_token UNIQUE (token)
+);
+
+CREATE TABLE reference_letter (
+    letter TEXT PRIMARY KEY,
+    last_number INTEGER NOT NULL DEFAULT 0,
+    held_by_desk_id INTEGER NULL,
+    CONSTRAINT ck_reference_letter_last_number
+        CHECK (last_number BETWEEN 0 AND 999),
+    CONSTRAINT fk_reference_letter_desk
+        FOREIGN KEY (held_by_desk_id) REFERENCES deposit_desk(id)
 );
 
 CREATE INDEX idx_item_title ON item(title);
@@ -142,7 +166,11 @@ CREATE INDEX idx_sale_line_sale_id ON sale_line(sale_id);
 CREATE INDEX idx_sale_line_refund_cash_register_id ON sale_line(refund_cash_register_id);
 CREATE UNIQUE INDEX idx_sale_line_active_item_id ON sale_line(item_id) WHERE corrected_at IS NULL AND refunded_at IS NULL;
 
-INSERT INTO event_state (id, sale_phase, updated_at)
-VALUES (1, 'presale', '2026-05-04T00:00:00Z');
+INSERT INTO event_state (id, sale_phase, labels_per_letter, updated_at)
+VALUES (1, 'presale', 455, '2026-05-04T00:00:00Z');
+
+INSERT INTO reference_letter (letter) VALUES
+    ('B'), ('C'), ('D'), ('E'), ('G'), ('H'), ('J'), ('K'), ('L'), ('M'),
+    ('N'), ('P'), ('R'), ('S'), ('T'), ('U'), ('W'), ('X'), ('Y'), ('Z');
 
 COMMIT;

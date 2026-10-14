@@ -52,16 +52,18 @@ Represents one seller.
 - `identity_document_issued_on`
 - `fee_paid_cents`
 - `deposit_status`
+- `deposit_started_at`
 - `notes`
 - `import_notes`
 
 ### Notes
 
-- `seller_code` is the two-letter safe code used in item references.
+- `seller_code` is the two-letter safe code that identifies the seller. It does not influence item references.
 - No stored `display_name` is required; it can be derived when needed.
 - `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
 - The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
 - `deposit_status` stores the operational seller deposit gate and defaults to `deposit_pending`.
+- `deposit_started_at` is null until the operator clicks `Commencer le dépôt` on the seller page; once set, saving new item rows allocates their references in the same save. Canceling a validated deposit keeps it.
 - `import_notes` stores durable warnings from the external form import, such as ignored item lines or a submitted city that could not be reconciled.
 - Phone, postal address, postal code, city, and identity document fields may be blank while `deposit_status = deposit_pending`; the application requires them before deposit validation.
 - The signed paper deposit contract is the legal proof of deposit and price agreement; V1 does not store a contract number, signed timestamp, or contract snapshot.
@@ -83,8 +85,8 @@ Represents one physical toy.
 
 - `reference` is the human-facing code, e.g. `B157`: one letter from the safe
   alphabet plus a zero-padded 3-digit number. It is nullable and stays `NULL`
-  until the seller's deposit reaches the contract-print step, and is unique
-  whenever it is not null.
+  until the seller's deposit is started at a deposit desk (or, for a row added
+  after that, until the row is saved), and is unique whenever it is not null.
 - `title` is the item label shown in search results, carts, and sheets.
 - `seller_price_cents` is both the seller payout price and the printed per-item customer price in V1.
 - money values are stored as integer cents, e.g. `250` for `2.50 EUR`.
@@ -196,17 +198,49 @@ V1 uses a single row with `id = 1`.
 
 - `id`
 - `sale_phase`
+- `labels_per_letter`
 - `updated_at`
 
 ### Notes
 
 - `sale_phase` values are `presale`, `sale`, and `post_sale`.
 - a new database starts in `presale`.
+- `labels_per_letter` is the number of pre-printed labels per reference letter, between 1 and 999, default 455, edited on `/administration`. A letter is exhausted when its `last_number` reaches it; exhaustion is computed, never stored.
 - phase changes are made through `/administration` and require `Admin:SharedPassword`.
+
+## `deposit_desk`
+
+Represents one computer at one physical deposit queue.
+
+### Columns
+
+- `id`
+- `name`: required, trimmed, non-blank
+- `token`: required, unique, random; stored in the `poste-depot` cookie
+- `opened_at`: UTC
+- `closed_at`: null while the desk is open
+- `last_activity_at`: UTC, updated by each successful allocation
+
+## `reference_letter`
+
+One row per letter of the 20-letter safe alphabet, seeded by the migration.
+
+### Columns
+
+- `letter`: primary key, one character
+- `last_number`: required, default `0`, check `0..999`; only ever increases
+- `held_by_desk_id`: nullable foreign key to `deposit_desk`; null when the letter is free
+
+### Notes
+
+- at most one open desk holds a letter. Taking a free letter is a conditional update on `held_by_desk_id IS NULL`, so two desks racing for the same letter cannot both succeed.
+- `held_by_desk_id` is also a concurrency token: a stale write fails and the allocation is retried by the operator.
+- deleting an item never decreases `last_number`, so a number whose label was already peeled is never handed out again.
 
 ## Relationships
 
 - one `seller` has many `item`
+- one `deposit_desk` holds zero or more `reference_letter` rows (normally two)
 - one `cash_register` has many `sale`
 - one `cash_register` may have many refunding `sale_line` rows
 - one `sale` has many `sale_line`
@@ -223,10 +257,13 @@ V1 uses a single row with `id = 1`.
 - `cash_register.id`
 - `sale_line.id`
 - `event_state.id`
+- `deposit_desk.id`
+- `reference_letter.letter`
 
 ## Foreign Keys
 
 - `item.seller_id -> seller.id`
+- `reference_letter.held_by_desk_id -> deposit_desk.id`
 - `sale.cash_register_id -> cash_register.id`
 - `sale_line.sale_id -> sale.id`
 - `sale_line.item_id -> item.id`
@@ -236,6 +273,7 @@ V1 uses a single row with `id = 1`.
 
 - `seller.seller_code` unique
 - `item.reference` unique whenever not null
+- `deposit_desk.token` unique
 - `cash_register.name` unique
 - `sale_line.item_id` unique only for active payable rows where `corrected_at IS NULL AND refunded_at IS NULL`
 
@@ -255,14 +293,15 @@ V1 uses a single row with `id = 1`.
 - `identity_document_number`: optional column; required by the application before deposit validation
 - `identity_document_issued_on`: optional date-only column; required by the application before deposit validation
 - `deposit_status`: required
+- `deposit_started_at`: optional
 - `notes`: optional
 - `import_notes`: optional
 
 ## `item`
 
 - `seller_id`: required
-- `reference`: optional; null until the seller's deposit reaches the
-  contract-print step, then set once and kept
+- `reference`: optional; null until the seller's deposit is started at a
+  deposit desk, then set once and kept
 - `title`: required
 - `seller_price_cents`: required
 - `status`: required
@@ -295,6 +334,7 @@ V1 uses a single row with `id = 1`.
 ## `event_state`
 
 - `sale_phase`: required
+- `labels_per_letter`: required
 - `updated_at`: required
 
 ## `cash_register`
@@ -389,9 +429,11 @@ These are important invariants even if they are enforced first in application lo
 - `item.reference`, once allocated, encodes only a letter-bucket and a
   zero-padded sequence number within it; it is never regenerated or reparsed
   to recover the seller
+- `reference_letter.last_number` never decreases and never exceeds `event_state.labels_per_letter` through allocation; `labels_per_letter` cannot be set below the highest `last_number`
+- at most one open `deposit_desk` holds a given letter
 - normal `registered -> in_stock` transition is seller-level: validating the signed seller deposit moves that seller's accepted `registered` items to `in_stock`
 - seller deposit validation requires complete seller contact fields, complete identity document fields, and at least one complete item row
-- an item with `status = registered` must never be moved to `in_stock` while it still has a null `reference`; `IntakeService.ValidateSellerDepositAsync` enforces this server-side, independently of the client-side sequencing between reference allocation and deposit validation
+- an item with `status = registered` must never be moved to `in_stock` while it still has a null `reference`; `IntakeService.ValidateSellerDepositAsync` enforces this server-side, independently of the sequencing between `Commencer le dépôt` and deposit validation
 
 ## Derived Business Meaning
 
@@ -457,13 +499,15 @@ These support:
 - post-sale filtering by item status
 - event-level sale listing and export
 - financial closing totals by configured caisse, including initial cash amounts
-- the allocation query's indexed `MAX(reference) WHERE reference LIKE 'X%'` prefix scan per letter, which the `item.reference` index also serves
+- sorting a seller's items by `reference`, which the `item.reference` index serves; allocation itself reads only the 20 `reference_letter` rows
 
 ## Reference Generation
 
-References are no longer derived from the seller code at item creation.
-Instead they are allocated, letter and number together as one string, when a
-seller's deposit reaches the contract-print step.
+References are no longer derived from the seller code. Each open deposit desk
+owns a few letters (`Labels:LettersPerDesk`, default 2), and a reference is
+allocated, letter and number together as one string, from the desk's letters
+when rows are saved at that desk. See `docs/domain-model-and-references.md`
+and `docs/superpowers/specs/2026-10-13-deposit-desk-letters-design.md`.
 
 Final operator-facing format:
 
@@ -478,28 +522,31 @@ seller codes (`B C D E G H J K L M N P R S T U W X Y Z`). `NNN` is the
 number within that letter, zero-padded to exactly 3 digits; the padding is
 load-bearing because `ORDER BY reference` must sort in physical label order.
 
-Allocation rule, run once per seller when the deposit's `Continuer` action is
-posted, for every item of that seller with `reference IS NULL`:
+Allocation rule, run inside the transaction that saves the rows, at the open
+desk resolved from the `poste-depot` cookie, only during `presale`:
 
-1. compute `used(X)`, the numeric part of `MAX(reference)` for each letter
-   `X`, or `0` if the letter is unused; the fixed-width zero padding makes the
-   lexicographic maximum equal to the numeric maximum, so no separate numeric
-   column is needed
-2. choose a letter: top up the seller's existing letter if it has room,
-   otherwise the seller's own letter (the first character of `seller_code`)
-   if it has room, otherwise the least-loaded letter with room, otherwise the
-   seller's own letter past its soft capacity
-3. assign numbers `used(chosen) + 1 ... used(chosen) + N` to the
-   reference-less items in `item.id` order
+1. `Commencer le dépôt` allocates a run to every row of the seller that has no
+   reference, in `item.id` order, and sets `seller.deposit_started_at`. Once
+   the deposit is started, saving a new row allocates its reference in the
+   same save. Saving rows on a non-started deposit allocates nothing.
+2. the next number in a letter is `reference_letter.last_number + 1`; the
+   counter is incremented, never decremented
+3. choose the letter(s): the seller's most recent letter if the desk holds it
+   and it has room for the whole run; otherwise the usable held letter with the
+   most room if it can take the whole run; otherwise split across the seller's
+   letter, the other held letters (most room first) and free letters taken on
+   the spot (least used first); if that cannot provide the run, nothing is
+   written
 4. write `reference = letter + number.ToString("000")`; the reference string
    is the single source of truth, with no separate letter or number column to
    fall out of step with it
+5. release held letters that are now exhausted and top the desk back up to
+   `Labels:LettersPerDesk` usable letters
 
-Soft capacity per letter is 455, configured as
-`Labels:SoftCapacityPerLetter`. The application never reasons about label
-sheets, only about that number. Canceling a validated deposit keeps already
-allocated references; revalidation allocates only for items still lacking
-one.
+A letter is exhausted when `last_number >= event_state.labels_per_letter`
+(default 455, edited on `/administration`). The application never reasons
+about label sheets, only about that number. Canceling a validated deposit keeps
+the references and the started marker.
 
 ## Engine Notes
 
