@@ -58,6 +58,17 @@ Each database file represents one event operationally, and event metadata such a
 
 The app is expected to generate and persist the final reference rather than deriving it on every read.
 
+### Databases created before deposit desks
+
+The EF Core migrations were reset to a single `InitialCreate`, and that
+migration was regenerated again when deposit desks took over the reference
+letters. `Program.cs` runs `MigrateAsync()` at startup, so a database created
+by an earlier build (with another `InitialCreate` id in
+`__EFMigrationsHistory`) fails at startup with "table already exists". Such a
+database must be deleted (the `.db`, `.db-wal` and `.db-shm` files) before the
+first start of this version, not migrated. This applies to the recette server
+as well.
+
 ## 3. Autocomplete Indexing Limits
 
 Normal B-tree indexes help well for:

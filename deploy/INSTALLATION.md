@@ -183,6 +183,12 @@ L'ancien dossier est conservé sous `/opt/bourse-ancien` : gardez-le jusqu'à
 confirmation que la nouvelle version fonctionne. Les éventuelles évolutions
 de la base de données sont appliquées automatiquement au premier démarrage.
 
+> **Version avec les postes de dépôt (lettres de référence par poste)** : sa
+> base de données n'est pas compatible avec celle des versions précédentes.
+> Avant le premier démarrage, ne copiez pas l'ancien dossier `data/` :
+> supprimez la base (`data/bourse-aux-jouets.db`, `-wal` et `-shm`) pour
+> qu'elle soit recréée vide. Faites-le avant l'événement, jamais pendant.
+
 ---
 
 ## 7. Dépannage
