@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AssociationSaleTool.Web.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261014182347_InitialCreate")]
+    [Migration("20261014194942_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -71,6 +71,7 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("ClosedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("TEXT")
                         .HasColumnName("closed_at");
 
@@ -484,6 +485,7 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnName("city");
 
                     b.Property<DateTime?>("DepositStartedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("TEXT")
                         .HasColumnName("deposit_started_at");
 

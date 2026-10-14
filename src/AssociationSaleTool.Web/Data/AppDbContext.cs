@@ -42,7 +42,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.IdentityDocumentIssuedOn).HasColumnName("identity_document_issued_on");
             entity.Property(x => x.FeePaidCents).HasColumnName("fee_paid_cents").HasDefaultValue(0).IsRequired();
             entity.Property(x => x.DepositStatus).HasColumnName("deposit_status").HasDefaultValue(SellerDepositStatuses.Pending).IsRequired();
-            entity.Property(x => x.DepositStartedAt).HasColumnName("deposit_started_at");
+            entity.Property(x => x.DepositStartedAt).HasColumnName("deposit_started_at").IsConcurrencyToken();
             entity.Property(x => x.Notes).HasColumnName("notes");
             entity.Property(x => x.ImportNotes).HasColumnName("import_notes");
 
@@ -215,7 +215,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Name).HasColumnName("name").IsRequired();
             entity.Property(x => x.Token).HasColumnName("token").IsRequired();
             entity.Property(x => x.OpenedAt).HasColumnName("opened_at").IsRequired();
-            entity.Property(x => x.ClosedAt).HasColumnName("closed_at");
+            entity.Property(x => x.ClosedAt).HasColumnName("closed_at").IsConcurrencyToken();
             entity.Property(x => x.LastActivityAt).HasColumnName("last_activity_at").IsRequired();
 
             entity.HasIndex(x => x.Token).IsUnique();

@@ -63,7 +63,7 @@ Represents one seller.
 - `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
 - The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
 - `deposit_status` stores the operational seller deposit gate and defaults to `deposit_pending`.
-- `deposit_started_at` is null until the operator clicks `Commencer le dépôt` on the seller page; once set, saving new item rows allocates their references in the same save. Canceling a validated deposit keeps it.
+- `deposit_started_at` is null until the operator clicks `Commencer le dépôt` on the seller page; once set, saving new item rows allocates their references in the same save. Canceling a validated deposit keeps it. It is a concurrency token: if two desks start the same seller at once, the second save fails as a conflict instead of overwriting the references the first desk already showed.
 - `import_notes` stores durable warnings from the external form import, such as ignored item lines or a submitted city that could not be reconciled.
 - Phone, postal address, postal code, city, and identity document fields may be blank while `deposit_status = deposit_pending`; the application requires them before deposit validation.
 - The signed paper deposit contract is the legal proof of deposit and price agreement; V1 does not store a contract number, signed timestamp, or contract snapshot.
@@ -218,7 +218,7 @@ Represents one computer at one physical deposit queue.
 - `name`: required, trimmed, non-blank
 - `token`: required, unique, random; stored in the `poste-depot` cookie
 - `opened_at`: UTC
-- `closed_at`: null while the desk is open
+- `closed_at`: null while the desk is open; a concurrency token, so an allocation that read the desk as open fails if the desk was closed before its save (the allocation always writes `last_activity_at`, so the desk row is part of every allocation's save)
 - `last_activity_at`: UTC, updated by each successful allocation
 
 ## `reference_letter`
@@ -233,8 +233,8 @@ One row per letter of the 20-letter safe alphabet, seeded by the migration.
 
 ### Notes
 
-- at most one open desk holds a letter. Taking a free letter is a conditional update on `held_by_desk_id IS NULL`, so two desks racing for the same letter cannot both succeed.
-- `held_by_desk_id` is also a concurrency token: a stale write fails and the allocation is retried by the operator.
+- at most one open desk holds a letter. Taking a letter relies on optimistic concurrency tokens on both `held_by_desk_id` and `last_number`: each update carries the values read (for a free letter, `held_by_desk_id IS NULL`), so two desks racing for the same letter, or numbering in the same letter, cannot both succeed. A stale write fails, nothing in that save is written, and the operator re-submits.
+- two related tokens guard the same save: `seller.deposit_started_at` (the same seller started at two desks at once: the second start fails instead of overwriting the first desk's references) and `deposit_desk.closed_at` (a desk closed while an allocation was running).
 - deleting an item never decreases `last_number`, so a number whose label was already peeled is never handed out again.
 
 ## Relationships

@@ -1652,6 +1652,75 @@ public sealed class IntakeServiceTests
     }
 
     [Fact]
+    public async Task StartDepositAsync_WhenTheSameSellerWasStartedAtAnotherDeskFirstReturnsConflictAndKeepsTheFirstReferences()
+    {
+        // Two desks holding different letters start the same seller at once.
+        // Neither the letter tokens nor the reference index fire, so only the
+        // seller's start marker can stop the second save overwriting the
+        // references the first desk already showed.
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var first = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        await first.Database.EnsureCreatedAsync();
+        await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        var oneLetter = Options.Create(new LabelsOptions { LettersPerDesk = 1 });
+        var deskA = (await new DepositDeskService(first, oneLetter).OpenDeskAsync("A")).DeskId;
+        var deskB = (await new DepositDeskService(first, oneLetter).OpenDeskAsync("B")).DeskId;
+        var firstService = new IntakeService(first, labelsOptions: oneLetter);
+        var secondService = new IntakeService(second, labelsOptions: oneLetter);
+        var seller = await CreateValidatableSellerAsync(first, firstService);
+        await firstService.CreateItemBatchAsync(new CreateItemBatchRequest(
+            seller.Id, IntakeMode.EmailPreregistration,
+            [new CreateItemRowRequest("Puzzle", 500), new CreateItemRowRequest("Train", 700)]));
+        // The second desk has already read the seller as not started.
+        await second.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == seller.Id);
+
+        var firstResult = await firstService.StartDepositAsync(seller.Id, deskA);
+        var result = await secondService.StartDepositAsync(seller.Id, deskB);
+
+        Assert.Equal(DepositAllocationStatus.Done, firstResult.Status);
+        Assert.Equal(DepositAllocationStatus.Conflict, result.Status);
+        Assert.Empty(second.ChangeTracker.Entries());
+        first.ChangeTracker.Clear();
+        var references = await first.Items
+            .Where(x => x.SellerId == seller.Id)
+            .OrderBy(x => x.Id)
+            .Select(x => x.Reference)
+            .ToListAsync();
+        Assert.Equal(firstResult.AssignedReferences, references);
+        var deskBLetter = await first.ReferenceLetters.SingleAsync(x => x.HeldByDeskId == deskB);
+        Assert.Equal(0, deskBLetter.LastNumber);
+    }
+
+    [Fact]
+    public async Task StartDepositAsync_OnADeskClosedSinceItWasReadReturnsConflictAndLeavesNoLetterHeldByIt()
+    {
+        // The desk is read as open, then force-closed elsewhere, then the
+        // allocation takes a free letter. The desk's closed_at token makes
+        // that save fail instead of leaving a letter held by a closed desk.
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var first = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        await first.Database.EnsureCreatedAsync();
+        await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        var noLetters = Options.Create(new LabelsOptions { LettersPerDesk = 0 });
+        var oneLetter = Options.Create(new LabelsOptions { LettersPerDesk = 1 });
+        var deskId = (await new DepositDeskService(first, noLetters).OpenDeskAsync("A")).DeskId;
+        var firstService = new IntakeService(first, labelsOptions: oneLetter);
+        var secondService = new IntakeService(second, labelsOptions: oneLetter);
+        var seller = await CreateValidatableSellerAsync(first, firstService);
+        await second.DepositDesks.SingleAsync(x => x.Id == deskId);
+
+        Assert.True(await new DepositDeskService(first, noLetters).CloseDeskAsync(deskId));
+        var result = await secondService.StartDepositAsync(seller.Id, deskId);
+
+        Assert.Equal(DepositAllocationStatus.Conflict, result.Status);
+        first.ChangeTracker.Clear();
+        Assert.False(await first.ReferenceLetters.AnyAsync(x => x.HeldByDeskId == deskId));
+        Assert.Null((await first.Sellers.SingleAsync(x => x.Id == seller.Id)).DepositStartedAt);
+    }
+
+    [Fact]
     public async Task CreateItemBatchAsync_BeforeTheStartLeavesReferencesEmpty()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

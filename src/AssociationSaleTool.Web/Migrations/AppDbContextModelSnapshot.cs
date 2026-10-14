@@ -68,6 +68,7 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("ClosedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("TEXT")
                         .HasColumnName("closed_at");
 
@@ -481,6 +482,7 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnName("city");
 
                     b.Property<DateTime?>("DepositStartedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("TEXT")
                         .HasColumnName("deposit_started_at");
 
