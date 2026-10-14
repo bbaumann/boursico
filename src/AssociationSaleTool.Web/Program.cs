@@ -71,6 +71,7 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 });
 builder.Services.AddScoped<IntakeService>();
 builder.Services.AddScoped<DepositDeskService>();
+builder.Services.AddScoped<ReferenceAllocationService>();
 builder.Services.AddScoped<SellerDuplicateService>();
 builder.Services.AddSingleton(_ => IserePostalCityLookup.LoadFromJsonFile(
     Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "data", "isere-postal-cities.json")));
