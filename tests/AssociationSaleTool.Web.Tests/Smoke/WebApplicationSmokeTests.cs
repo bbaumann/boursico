@@ -1620,9 +1620,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("banque cachée", content);
         Assert.Contains("MJC Centre", content);
         Assert.Contains("9.90€", content);
+        var registerIndex = content.IndexOf(scenario.CashRegisterName, StringComparison.Ordinal);
+        Assert.True(registerIndex >= 0, "The cash register should be listed.");
         Assert.True(
-            content.IndexOf(scenario.CashRegisterName, StringComparison.Ordinal)
-                < content.IndexOf("CH-123", StringComparison.Ordinal),
+            content.IndexOf("CH-123", registerIndex, StringComparison.Ordinal) > registerIndex,
             "The cheque should be listed under its cash register.");
     }
 
