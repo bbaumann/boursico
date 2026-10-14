@@ -11,4 +11,10 @@ public sealed class LabelsOptions
     /// reasons about sheets - only about this number.
     /// </summary>
     public int SoftCapacityPerLetter { get; init; } = 455;
+
+    /// <summary>
+    /// How many reference letters an open deposit desk holds. Each letter's
+    /// pre-printed sheets sit on that desk while it is open.
+    /// </summary>
+    public int LettersPerDesk { get; init; } = 2;
 }
