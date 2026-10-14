@@ -30,6 +30,12 @@ public sealed class SellerEntity
 
     public string DepositStatus { get; set; } = "deposit_pending";
 
+    /// <summary>
+    /// Set by "Commencer le dépôt" at a deposit desk. From then on, every row
+    /// saved for this seller receives its reference in the same save.
+    /// </summary>
+    public DateTime? DepositStartedAt { get; set; }
+
     public string? Notes { get; set; }
 
     public string? ImportNotes { get; set; }

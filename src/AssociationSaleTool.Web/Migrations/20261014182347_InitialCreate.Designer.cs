@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AssociationSaleTool.Web.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260929074921_InitialCreate")]
+    [Migration("20261014182347_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -64,10 +64,55 @@ namespace AssociationSaleTool.Web.Migrations
                         });
                 });
 
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.DepositDeskEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("closed_at");
+
+                    b.Property<DateTime>("LastActivityAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_activity_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("OpenedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("opened_at");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("token");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.ToTable("deposit_desk", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_deposit_desk_name_not_blank", "length(trim(name)) > 0");
+                        });
+                });
+
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.EventStateEntity", b =>
                 {
                     b.Property<int>("Id")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("LabelsPerLetter")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(455)
+                        .HasColumnName("labels_per_letter");
 
                     b.Property<string>("SalePhase")
                         .IsRequired()
@@ -82,6 +127,8 @@ namespace AssociationSaleTool.Web.Migrations
 
                     b.ToTable("event_state", null, t =>
                         {
+                            t.HasCheckConstraint("ck_event_state_labels_per_letter", "labels_per_letter BETWEEN 1 AND 999");
+
                             t.HasCheckConstraint("ck_event_state_sale_phase", "sale_phase IN ('presale', 'sale', 'post_sale')");
 
                             t.HasCheckConstraint("ck_event_state_singleton", "Id = 1");
@@ -91,6 +138,7 @@ namespace AssociationSaleTool.Web.Migrations
                         new
                         {
                             Id = 1,
+                            LabelsPerLetter = 455,
                             SalePhase = "presale",
                             UpdatedAt = new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
@@ -140,6 +188,137 @@ namespace AssociationSaleTool.Web.Migrations
                             t.HasCheckConstraint("ck_item_seller_price_cents", "seller_price_cents IS NULL OR seller_price_cents >= 0");
 
                             t.HasCheckConstraint("ck_item_status", "status IN ('registered', 'in_stock', 'sold', 'missing', 'defective')");
+                        });
+                });
+
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.ReferenceLetterEntity", b =>
+                {
+                    b.Property<string>("Letter")
+                        .HasMaxLength(1)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("letter");
+
+                    b.Property<long?>("HeldByDeskId")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("held_by_desk_id");
+
+                    b.Property<int>("LastNumber")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0)
+                        .HasColumnName("last_number");
+
+                    b.HasKey("Letter");
+
+                    b.HasIndex("HeldByDeskId");
+
+                    b.ToTable("reference_letter", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_reference_letter_last_number", "last_number BETWEEN 0 AND 999");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Letter = "B",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "C",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "D",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "E",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "G",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "H",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "J",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "K",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "L",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "M",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "N",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "P",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "R",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "S",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "T",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "U",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "W",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "X",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "Y",
+                            LastNumber = 0
+                        },
+                        new
+                        {
+                            Letter = "Z",
+                            LastNumber = 0
                         });
                 });
 
@@ -304,6 +483,10 @@ namespace AssociationSaleTool.Web.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("city");
 
+                    b.Property<DateTime?>("DepositStartedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("deposit_started_at");
+
                     b.Property<string>("DepositStatus")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -395,6 +578,16 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Navigation("Seller");
                 });
 
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.ReferenceLetterEntity", b =>
+                {
+                    b.HasOne("AssociationSaleTool.Web.Data.Entities.DepositDeskEntity", "HeldByDesk")
+                        .WithMany("Letters")
+                        .HasForeignKey("HeldByDeskId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("HeldByDesk");
+                });
+
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.SaleEntity", b =>
                 {
                     b.HasOne("AssociationSaleTool.Web.Data.Entities.CashRegisterEntity", "CashRegister")
@@ -437,6 +630,11 @@ namespace AssociationSaleTool.Web.Migrations
                     b.Navigation("RefundSaleLines");
 
                     b.Navigation("Sales");
+                });
+
+            modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.DepositDeskEntity", b =>
+                {
+                    b.Navigation("Letters");
                 });
 
             modelBuilder.Entity("AssociationSaleTool.Web.Data.Entities.ItemEntity", b =>

@@ -1,4 +1,5 @@
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Items;
 using AssociationSaleTool.Web.Domain.Sellers;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<CashRegisterEntity> CashRegisters => Set<CashRegisterEntity>();
 
     public DbSet<EventStateEntity> EventState => Set<EventStateEntity>();
+
+    public DbSet<DepositDeskEntity> DepositDesks => Set<DepositDeskEntity>();
+
+    public DbSet<ReferenceLetterEntity> ReferenceLetters => Set<ReferenceLetterEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +42,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.IdentityDocumentIssuedOn).HasColumnName("identity_document_issued_on");
             entity.Property(x => x.FeePaidCents).HasColumnName("fee_paid_cents").HasDefaultValue(0).IsRequired();
             entity.Property(x => x.DepositStatus).HasColumnName("deposit_status").HasDefaultValue(SellerDepositStatuses.Pending).IsRequired();
+            entity.Property(x => x.DepositStartedAt).HasColumnName("deposit_started_at");
             entity.Property(x => x.Notes).HasColumnName("notes");
             entity.Property(x => x.ImportNotes).HasColumnName("import_notes");
 
@@ -183,12 +189,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).ValueGeneratedNever();
             entity.Property(x => x.SalePhase).HasColumnName("sale_phase").IsRequired();
+            entity.Property(x => x.LabelsPerLetter).HasColumnName("labels_per_letter").HasDefaultValue(455).IsRequired();
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
 
             entity.HasData(new EventStateEntity
             {
                 Id = 1,
                 SalePhase = "presale",
+                LabelsPerLetter = 455,
                 UpdatedAt = new DateTime(2026, 5, 4, 0, 0, 0, DateTimeKind.Utc)
             });
 
@@ -196,6 +204,53 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             {
                 table.HasCheckConstraint("ck_event_state_singleton", "Id = 1");
                 table.HasCheckConstraint("ck_event_state_sale_phase", "sale_phase IN ('presale', 'sale', 'post_sale')");
+                table.HasCheckConstraint("ck_event_state_labels_per_letter", "labels_per_letter BETWEEN 1 AND 999");
+            });
+        });
+
+        modelBuilder.Entity<DepositDeskEntity>(entity =>
+        {
+            entity.ToTable("deposit_desk");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasColumnName("name").IsRequired();
+            entity.Property(x => x.Token).HasColumnName("token").IsRequired();
+            entity.Property(x => x.OpenedAt).HasColumnName("opened_at").IsRequired();
+            entity.Property(x => x.ClosedAt).HasColumnName("closed_at");
+            entity.Property(x => x.LastActivityAt).HasColumnName("last_activity_at").IsRequired();
+
+            entity.HasIndex(x => x.Token).IsUnique();
+
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("ck_deposit_desk_name_not_blank", "length(trim(name)) > 0");
+            });
+        });
+
+        modelBuilder.Entity<ReferenceLetterEntity>(entity =>
+        {
+            entity.ToTable("reference_letter");
+            entity.HasKey(x => x.Letter);
+            entity.Property(x => x.Letter).HasColumnName("letter").HasMaxLength(1);
+            // Both are concurrency tokens: two desks writing the same letter
+            // from one stale read fail with DbUpdateConcurrencyException
+            // instead of both believing they hold it or both using a number.
+            entity.Property(x => x.LastNumber).HasColumnName("last_number").HasDefaultValue(0).IsRequired().IsConcurrencyToken();
+            entity.Property(x => x.HeldByDeskId).HasColumnName("held_by_desk_id").IsConcurrencyToken();
+
+            entity.HasOne(x => x.HeldByDesk)
+                .WithMany(x => x.Letters)
+                .HasForeignKey(x => x.HeldByDeskId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasData(DeskLetterPicker.SafeAlphabet.Select(letter => new ReferenceLetterEntity
+            {
+                Letter = letter.ToString(),
+                LastNumber = 0
+            }));
+
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("ck_reference_letter_last_number", "last_number BETWEEN 0 AND 999");
             });
         });
     }

@@ -452,4 +452,47 @@ public class AppDbContextModelTests
         Assert.Contains("CHECK (refund_checkout_fee_cents IS NULL OR refund_checkout_fee_cents >= 0)", createTableSql);
         Assert.Contains("CHECK (refund_total_cents IS NULL OR refund_total_cents >= 0)", createTableSql);
     }
+
+    [Fact]
+    public async Task NewDatabase_SeedsTheTwentyReferenceLettersFreeAndUnused()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var context = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        await context.Database.EnsureCreatedAsync();
+
+        var letters = await context.ReferenceLetters.OrderBy(x => x.Letter).ToListAsync();
+
+        Assert.Equal("BCDEGHJKLMNPRSTUWXYZ", string.Concat(letters.Select(x => x.Letter)));
+        Assert.All(letters, letter =>
+        {
+            Assert.Equal(0, letter.LastNumber);
+            Assert.Null(letter.HeldByDeskId);
+        });
+    }
+
+    [Fact]
+    public async Task NewDatabase_DefaultsLabelsPerLetterTo455()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var context = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        await context.Database.EnsureCreatedAsync();
+
+        Assert.Equal(455, (await context.EventState.SingleAsync()).LabelsPerLetter);
+    }
+
+    [Fact]
+    public async Task ReferenceLetter_RejectsANumberAbove999()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var context = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        await context.Database.EnsureCreatedAsync();
+
+        var letter = await context.ReferenceLetters.SingleAsync(x => x.Letter == "B");
+        letter.LastNumber = 1000;
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+    }
 }

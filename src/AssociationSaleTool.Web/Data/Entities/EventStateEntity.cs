@@ -6,5 +6,7 @@ public sealed class EventStateEntity
 
     public string SalePhase { get; set; } = string.Empty;
 
+    public int LabelsPerLetter { get; set; } = 455;
+
     public DateTime UpdatedAt { get; set; }
 }

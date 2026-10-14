@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace AssociationSaleTool.Web.Migrations
 {
     /// <inheritdoc />
@@ -31,16 +33,36 @@ namespace AssociationSaleTool.Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "deposit_desk",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    name = table.Column<string>(type: "TEXT", nullable: false),
+                    token = table.Column<string>(type: "TEXT", nullable: false),
+                    opened_at = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    closed_at = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    last_activity_at = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_deposit_desk", x => x.Id);
+                    table.CheckConstraint("ck_deposit_desk_name_not_blank", "length(trim(name)) > 0");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "event_state",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false),
                     sale_phase = table.Column<string>(type: "TEXT", nullable: false),
+                    labels_per_letter = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 455),
                     updated_at = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_event_state", x => x.Id);
+                    table.CheckConstraint("ck_event_state_labels_per_letter", "labels_per_letter BETWEEN 1 AND 999");
                     table.CheckConstraint("ck_event_state_sale_phase", "sale_phase IN ('presale', 'sale', 'post_sale')");
                     table.CheckConstraint("ck_event_state_singleton", "Id = 1");
                 });
@@ -64,6 +86,7 @@ namespace AssociationSaleTool.Web.Migrations
                     identity_document_issued_on = table.Column<DateOnly>(type: "TEXT", nullable: true),
                     fee_paid_cents = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
                     deposit_status = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "deposit_pending"),
+                    deposit_started_at = table.Column<DateTime>(type: "TEXT", nullable: true),
                     notes = table.Column<string>(type: "TEXT", nullable: true),
                     import_notes = table.Column<string>(type: "TEXT", nullable: true)
                 },
@@ -105,6 +128,26 @@ namespace AssociationSaleTool.Web.Migrations
                         name: "FK_sale_cash_register_cash_register_id",
                         column: x => x.cash_register_id,
                         principalTable: "cash_register",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "reference_letter",
+                columns: table => new
+                {
+                    letter = table.Column<string>(type: "TEXT", maxLength: 1, nullable: false),
+                    last_number = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
+                    held_by_desk_id = table.Column<long>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_reference_letter", x => x.letter);
+                    table.CheckConstraint("ck_reference_letter_last_number", "last_number BETWEEN 0 AND 999");
+                    table.ForeignKey(
+                        name: "FK_reference_letter_deposit_desk_held_by_desk_id",
+                        column: x => x.held_by_desk_id,
+                        principalTable: "deposit_desk",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -180,13 +223,46 @@ namespace AssociationSaleTool.Web.Migrations
 
             migrationBuilder.InsertData(
                 table: "event_state",
-                columns: new[] { "Id", "sale_phase", "updated_at" },
-                values: new object[] { 1, "presale", new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc) });
+                columns: new[] { "Id", "labels_per_letter", "sale_phase", "updated_at" },
+                values: new object[] { 1, 455, "presale", new DateTime(2026, 5, 4, 0, 0, 0, 0, DateTimeKind.Utc) });
+
+            migrationBuilder.InsertData(
+                table: "reference_letter",
+                columns: new[] { "letter", "held_by_desk_id" },
+                values: new object[,]
+                {
+                    { "B", null },
+                    { "C", null },
+                    { "D", null },
+                    { "E", null },
+                    { "G", null },
+                    { "H", null },
+                    { "J", null },
+                    { "K", null },
+                    { "L", null },
+                    { "M", null },
+                    { "N", null },
+                    { "P", null },
+                    { "R", null },
+                    { "S", null },
+                    { "T", null },
+                    { "U", null },
+                    { "W", null },
+                    { "X", null },
+                    { "Y", null },
+                    { "Z", null }
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_cash_register_name",
                 table: "cash_register",
                 column: "name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_deposit_desk_token",
+                table: "deposit_desk",
+                column: "token",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -209,6 +285,11 @@ namespace AssociationSaleTool.Web.Migrations
                 name: "IX_item_title",
                 table: "item",
                 column: "title");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_reference_letter_held_by_desk_id",
+                table: "reference_letter",
+                column: "held_by_desk_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_sale_cash_register_id",
@@ -258,7 +339,13 @@ namespace AssociationSaleTool.Web.Migrations
                 name: "event_state");
 
             migrationBuilder.DropTable(
+                name: "reference_letter");
+
+            migrationBuilder.DropTable(
                 name: "sale_line");
+
+            migrationBuilder.DropTable(
+                name: "deposit_desk");
 
             migrationBuilder.DropTable(
                 name: "item");
