@@ -271,20 +271,6 @@ public sealed class DetailsModel(IntakeService intakeService, IOptions<AdminOpti
             return Page();
         }
 
-        var allocation = await intakeService.AllocateDepositReferencesAsync(id, cancellationToken);
-        if (allocation == SellerDepositStatusChangeResult.NotFound)
-        {
-            return NotFound();
-        }
-
-        if (allocation == SellerDepositStatusChangeResult.NotAllowed)
-        {
-            ModelState.AddModelError(
-                string.Empty,
-                "Les références des articles n'ont pas pu être attribuées. Vérifiez la fiche vendeur et les articles.");
-            return Page();
-        }
-
         var updated = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
         if (updated is null)
         {

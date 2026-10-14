@@ -655,7 +655,7 @@ public sealed class SellersPageModelTests
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
 
         var pageModel = new ItemEditModel(service)
         {
@@ -721,7 +721,7 @@ public sealed class SellersPageModelTests
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
 
         var pageModel = new ItemEditModel(service)
         {
@@ -754,7 +754,7 @@ public sealed class SellersPageModelTests
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
 
         var pageModel = new ItemEditModel(service)
         {
@@ -789,7 +789,7 @@ public sealed class SellersPageModelTests
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.InPerson,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
 
         var pageModel = new DetailsModel(service);
 
@@ -861,8 +861,8 @@ public sealed class SellersPageModelTests
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
-        await service.AllocateDepositReferencesAsync(seller.Id);
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
+        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync(null)).DeskId);
 
         var pageModel = new DetailsModel(service);
 
@@ -903,7 +903,7 @@ public sealed class SellersPageModelTests
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]));
 
-        // Deliberately skip AllocateDepositReferencesAsync: the seller and
+        // Deliberately skip StartDepositAsync: the seller and
         // item data are otherwise complete, so the only reason validation can
         // refuse is IntakeService's null-reference guard.
         var pageModel = new DetailsModel(service);
@@ -944,7 +944,7 @@ public sealed class SellersPageModelTests
         var item = (await service.CreateItemBatchAsync(new CreateItemBatchRequest(
             seller.Id,
             IntakeMode.EmailPreregistration,
-            [new CreateItemRowRequest("Toy piano", 1000)]))).Single();
+            [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
 
         var pageModel = new DetailsModel(service);
 

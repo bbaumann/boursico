@@ -75,6 +75,19 @@ public sealed class SellerFormImportService
                 "Les articles ne peuvent pas être ajoutés dans le statut actuel de la vente.");
         }
 
+        // Rows appended here get no reference, and once the deposit is started
+        // nothing would give them one: they are added from the seller page,
+        // where saving them at a desk allocates their references.
+        if (seller.DepositStartedAt is not null)
+        {
+            return new SellerFormDuplicateAppendResult(
+                SellerFormDuplicateAppendOutcome.NotAllowed,
+                seller,
+                0,
+                0,
+                "Le dépôt de ce vendeur est commencé : ajoutez les articles depuis sa fiche.");
+        }
+
         var existingKeys = seller.Items
             .Select(item => (Title: item.Title.Trim(), item.SellerPriceCents))
             .ToHashSet();

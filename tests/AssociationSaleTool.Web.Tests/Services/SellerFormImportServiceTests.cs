@@ -299,6 +299,43 @@ public sealed class SellerFormImportServiceTests
     }
 
     [Fact]
+    public async Task AppendDuplicateItemsAsync_RefusesWhenTheSellerDepositIsStarted()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var seller = new SellerEntity
+        {
+            SellerCode = "AA",
+            FirstName = "Sarah",
+            LastName = "Bulteau",
+            Phone = "0600000000",
+            DepositStartedAt = new DateTime(2026, 10, 14, 9, 0, 0, DateTimeKind.Utc)
+        };
+        context.Sellers.Add(seller);
+        await context.SaveChangesAsync();
+        var service = new SellerFormImportService(context, new SellerFormImportParser());
+
+        var result = await service.AppendDuplicateItemsAsync(
+            seller.Id,
+            [new CreateItemRowRequest("Jeu PS5", 500)],
+            "Import formulaire : ligne ignorée.");
+
+        // Rows added here would get no reference, and a started deposit has
+        // no step left that allocates them.
+        Assert.Equal(SellerFormDuplicateAppendOutcome.NotAllowed, result.Outcome);
+        Assert.Equal("Le dépôt de ce vendeur est commencé : ajoutez les articles depuis sa fiche.", result.Message);
+        context.ChangeTracker.Clear();
+        Assert.Empty(await context.Items.ToListAsync());
+        Assert.Null((await context.Sellers.SingleAsync()).ImportNotes);
+    }
+
+    [Fact]
     public async Task ImportAsync_ExposesOnlyIgnoreForSeveralDuplicateMatches()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

@@ -12,24 +12,28 @@ namespace AssociationSaleTool.Web.Services;
 
 public sealed class IntakeService
 {
+    private static readonly ReferenceAllocationResult NothingAllocated =
+        new(ReferenceAllocationStatus.Allocated, [], []);
+
     private readonly AppDbContext _dbContext;
     private readonly SalePhaseService _salePhaseService;
     private readonly SellerDuplicateService _sellerDuplicateService;
     private readonly IserePostalCityLookup _postalCityLookup;
-    private readonly LabelsOptions _labelsOptions;
+    private readonly ReferenceAllocationService _referenceAllocationService;
 
     public IntakeService(
         AppDbContext dbContext,
         SalePhaseService? salePhaseService = null,
         SellerDuplicateService? sellerDuplicateService = null,
         IserePostalCityLookup? postalCityLookup = null,
-        IOptions<LabelsOptions>? labelsOptions = null)
+        IOptions<LabelsOptions>? labelsOptions = null,
+        ReferenceAllocationService? referenceAllocationService = null)
     {
         _dbContext = dbContext;
         _salePhaseService = salePhaseService ?? new SalePhaseService(dbContext);
         _sellerDuplicateService = sellerDuplicateService ?? new SellerDuplicateService(dbContext);
         _postalCityLookup = postalCityLookup ?? IserePostalCityLookup.Empty;
-        _labelsOptions = labelsOptions?.Value ?? new LabelsOptions();
+        _referenceAllocationService = referenceAllocationService ?? new ReferenceAllocationService(dbContext, labelsOptions);
     }
 
     public async Task<List<SellerEntity>> ListSellersAsync(CancellationToken cancellationToken = default)
@@ -187,7 +191,7 @@ public sealed class IntakeService
         throw new InvalidOperationException("Le code vendeur n'a pas pu être attribué. Réessayez l'enregistrement.");
     }
 
-    public async Task<List<ItemEntity>> CreateItemBatchAsync(CreateItemBatchRequest request, CancellationToken cancellationToken = default)
+    public async Task<DepositAllocationResult> CreateItemBatchAsync(CreateItemBatchRequest request, CancellationToken cancellationToken = default)
     {
         if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken))
         {
@@ -196,16 +200,23 @@ public sealed class IntakeService
 
         EnsureRowsAreValid(request.Rows);
 
-        var seller = await _dbContext.Sellers.SingleAsync(x => x.Id == request.SellerId, cancellationToken);
+        var seller = await _dbContext.Sellers
+            .Include(x => x.Items)
+            .SingleAsync(x => x.Id == request.SellerId, cancellationToken);
         if (seller.DepositStatus != SellerDepositStatuses.Pending)
         {
             throw new InvalidOperationException("Seller deposit is already validated.");
         }
 
+        var sellerLetter = LatestReferenceLetter(seller);
         var createdItems = AddItemRows(seller, request.Rows);
+        if (seller.DepositStartedAt is null)
+        {
+            // Before the start, rows wait for the reference run the start gives.
+            return await SaveAllocationAsync(createdItems, NothingAllocated, cancellationToken);
+        }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        return createdItems;
+        return await AllocateAndSaveAsync(request.DepositDeskId, sellerLetter, createdItems, cancellationToken);
     }
 
     public async Task<UpdateSellerResult> UpdateSellerAsync(long sellerId, UpdateSellerRequest request, CancellationToken cancellationToken = default)
@@ -352,8 +363,8 @@ public sealed class IntakeService
             return SellerDepositStatusChangeResult.NotFound;
         }
 
-        // A direct POST here (bypassing the deposit wizard's fee step, where
-        // AllocateDepositReferencesAsync normally runs first) must not move an
+        // A direct POST here (for a deposit never started at a desk, where
+        // StartDepositAsync gives the references) must not move an
         // unlabelled item into stock - it would then be sellable with no
         // reference. Scoped to "registered" because those are exactly the
         // items this call is about to flip to "in_stock"; an already
@@ -378,8 +389,9 @@ public sealed class IntakeService
         return SellerDepositStatusChangeResult.Changed;
     }
 
-    public async Task<SellerDepositStatusChangeResult> AllocateDepositReferencesAsync(
+    public async Task<DepositAllocationResult> StartDepositAsync(
         long sellerId,
+        long? depositDeskId,
         CancellationToken cancellationToken = default)
     {
         var seller = await _dbContext.Sellers
@@ -387,84 +399,24 @@ public sealed class IntakeService
             .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
         if (seller is null)
         {
-            return SellerDepositStatusChangeResult.NotFound;
+            return DepositAllocationResult.Failed(DepositAllocationStatus.NotFound);
         }
 
         if (!await _salePhaseService.CanEditItemMasterDataAsync(cancellationToken)
             || seller.DepositStatus != SellerDepositStatuses.Pending
-            || seller.Items.Count == 0
-            || !SellerCanBeValidated(seller))
+            || seller.DepositStartedAt is not null)
         {
-            return SellerDepositStatusChangeResult.NotAllowed;
+            return DepositAllocationResult.Failed(DepositAllocationStatus.NotAllowed);
         }
 
+        // Only unreferenced rows: the allocation service numbers every item it
+        // is given, and a reference already on a label must never change.
         var pending = seller.Items
             .Where(item => item.Reference is null)
             .OrderBy(item => item.Id)
             .ToList();
-        if (pending.Count == 0)
-        {
-            return SellerDepositStatusChangeResult.Changed;
-        }
-
-        // Read every letter's high-water mark inside the same transaction that
-        // writes the new references. This is EF's default deferred BEGIN, same
-        // as CheckoutService.cs and SaleCorrectionService.cs: it does not lock
-        // out a second concurrent allocation's read, so both can see the same
-        // snapshot. The second writer then fails with SQLITE_BUSY_SNAPSHOT
-        // (busy_timeout does not retry that error) rather than waiting - the
-        // no-overlapping-runs invariant holds because the unique index on
-        // reference rejects the collision, not because this transaction
-        // serializes the two allocations.
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-        // One round trip rather than twenty: at event scale this is a few
-        // thousand short strings. Fixed-width zero padding makes the
-        // lexicographic maximum equal the numeric one, so no separate numeric
-        // column is needed.
-        var allocated = await _dbContext.Items
-            .Where(x => x.Reference != null)
-            .Select(x => x.Reference!)
-            .ToListAsync(cancellationToken);
-
-        var usedByLetter = ReferenceAllocator.SafeAlphabet.ToDictionary(
-            letter => letter,
-            letter => HighestNumberForLetter(allocated, letter));
-
-        // SellerCode defaults to string.Empty and the column only enforces
-        // NOT NULL, so a hand-edited database row could carry an empty code.
-        // Fall back to a real bucket letter rather than throwing
-        // IndexOutOfRangeException - unreachable through the app, but the
-        // same class of stale-data trap as the letter guards below.
-        var ownLetter = seller.SellerCode.Length > 0 ? seller.SellerCode[0] : ReferenceAllocator.SafeAlphabet[0];
-        var existingLetter = seller.Items
-            .Where(item => item.Reference is not null)
-            .OrderByDescending(item => item.Id)
-            .Select(item => (char?)item.Reference![0])
-            .FirstOrDefault();
-
-        var chosen = ReferenceAllocator.ChooseLetter(
-            usedByLetter,
-            ownLetter,
-            existingLetter,
-            pending.Count,
-            _labelsOptions.SoftCapacityPerLetter);
-
-        // ChooseLetter can only return a letter outside usedByLetter's keys
-        // if both the existing-letter and own-letter guards in
-        // ReferenceAllocator.SelectLetter were somehow bypassed; treat that
-        // defensively as "unused" rather than crashing deposit finalization
-        // with no operator recovery.
-        var next = usedByLetter.GetValueOrDefault(chosen);
-        foreach (var item in pending)
-        {
-            next++;
-            item.Reference = ItemReference.Format(chosen, next);
-        }
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return SellerDepositStatusChangeResult.Changed;
+        seller.DepositStartedAt = DateTime.UtcNow;
+        return await AllocateAndSaveAsync(depositDeskId, LatestReferenceLetter(seller), pending, cancellationToken);
     }
 
     public async Task<SellerDepositStatusChangeResult> CancelSellerDepositValidationAsync(
@@ -584,33 +536,73 @@ public sealed class IntakeService
 
     private sealed record SellerPostalCity(string PostalCode, string City);
 
-    private static int HighestNumberForLetter(IReadOnlyList<string> allocated, char letter)
+    /// <summary>
+    /// Gives the items references from the desk's letters and saves them with
+    /// everything else tracked. A refusal clears the tracker so nothing
+    /// (rows, start marker, letter counters) is written.
+    /// </summary>
+    private async Task<DepositAllocationResult> AllocateAndSaveAsync(
+        long? depositDeskId,
+        char? sellerLetter,
+        IReadOnlyList<ItemEntity> items,
+        CancellationToken cancellationToken)
     {
-        var highest = 0;
-        foreach (var reference in allocated)
+        var allocation = await _referenceAllocationService.AllocateAsync(
+            depositDeskId, sellerLetter, items, cancellationToken);
+        if (allocation.Status != ReferenceAllocationStatus.Allocated)
         {
-            if (reference.Length == 0 || reference[0] != letter)
-            {
-                continue;
-            }
-
-            // Skip rather than throw on anything that doesn't parse as three
-            // digits, such as a leftover pre-migration "BK014"-style
-            // reference whose letter happens to be in the safe alphabet: a
-            // stale dev database should not take down allocation for the
-            // whole event.
-            if (!int.TryParse(reference[1..], out var number))
-            {
-                continue;
-            }
-
-            if (number > highest)
-            {
-                highest = number;
-            }
+            _dbContext.ChangeTracker.Clear();
+            return DepositAllocationResult.Failed(ToDepositStatus(allocation.Status));
         }
 
-        return highest;
+        return await SaveAllocationAsync(items, allocation, cancellationToken);
+    }
+
+    private async Task<DepositAllocationResult> SaveAllocationAsync(
+        IReadOnlyList<ItemEntity> items,
+        ReferenceAllocationResult allocation,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+            when (exception is DbUpdateConcurrencyException || IsUniqueConstraintFailure(exception))
+        {
+            // Another desk wrote one of these letters since we read it: either
+            // the same reference (item.reference unique index) or the same
+            // letter (reference_letter concurrency tokens). Nothing was saved,
+            // and the operator re-submits.
+            _dbContext.ChangeTracker.Clear();
+            return DepositAllocationResult.Failed(DepositAllocationStatus.Conflict);
+        }
+
+        return new DepositAllocationResult(
+            DepositAllocationStatus.Done,
+            items,
+            allocation.AssignedReferences,
+            allocation.TakenLetters);
+    }
+
+    private static char? LatestReferenceLetter(SellerEntity seller)
+    {
+        return seller.Items
+            .Where(item => item.Reference is not null)
+            .OrderByDescending(item => item.Id)
+            .Select(item => (char?)item.Reference![0])
+            .FirstOrDefault();
+    }
+
+    private static DepositAllocationStatus ToDepositStatus(ReferenceAllocationStatus status)
+    {
+        return status switch
+        {
+            ReferenceAllocationStatus.NoDesk => DepositAllocationStatus.NoDesk,
+            ReferenceAllocationStatus.DeskClosed => DepositAllocationStatus.DeskClosed,
+            ReferenceAllocationStatus.NoLabelsLeft => DepositAllocationStatus.NoLabelsLeft,
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
+        };
     }
 
     private static bool SellerCanBeValidated(SellerEntity seller)

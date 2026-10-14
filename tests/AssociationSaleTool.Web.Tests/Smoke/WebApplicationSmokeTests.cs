@@ -1,6 +1,8 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Items;
 using AssociationSaleTool.Web.Services;
+using AssociationSaleTool.Web.Services.Models;
 using AssociationSaleTool.Web.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -3723,8 +3725,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             itemThreeId = itemThree.Id;
         }
 
-        // Items must show no reference at all before allocation - both in the
-        // database and rendered as an em dash on the seller page.
+        // Items must show no reference at all before the deposit starts - both
+        // in the database and rendered as an em dash on the seller page.
         using (var scope = _factory.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -3737,18 +3739,17 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var detailsContent = WebUtility.HtmlDecode(await detailsResponse.Content.ReadAsStringAsync());
         Assert.Equal(3, Regex.Matches(detailsContent, "<td>—</td>").Count);
 
-        var finalizationResponse = await client.PostAsync(
-            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
-            BuildFormContent(detailsContent));
-        finalizationResponse.EnsureSuccessStatusCode();
-        var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
-
-        // Continuer on the fee step is the allocation trigger under test.
-        var feeUpdateResponse = await client.PostAsync(
-            $"/vendeurs/{sellerId}?handler=UpdateDepositFee",
-            BuildFormContent(finalizationContent, ("DepositFeeInput.FeePaid", "2")));
-        feeUpdateResponse.EnsureSuccessStatusCode();
-        var feeUpdateContent = WebUtility.HtmlDecode(await feeUpdateResponse.Content.ReadAsStringAsync());
+        // Starting the deposit at a desk is the allocation trigger under test.
+        long deskId;
+        IReadOnlyList<char> deskLetters;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var desk = await scope.ServiceProvider.GetRequiredService<DepositDeskService>().OpenDeskAsync("Poste K-701");
+            deskId = desk.DeskId;
+            deskLetters = desk.Letters;
+            var start = await scope.ServiceProvider.GetRequiredService<IntakeService>().StartDepositAsync(sellerId, deskId);
+            Assert.Equal(DepositAllocationStatus.Done, start.Status);
+        }
 
         string referenceOne;
         string referenceTwo;
@@ -3768,11 +3769,24 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             referenceThree = itemThree.Reference!;
         }
 
-        // Same letter as the first character of the seller code, numbered
-        // consecutively from 001 in item-creation order.
-        Assert.Equal("K001", referenceOne);
-        Assert.Equal("K002", referenceTwo);
-        Assert.Equal("K003", referenceThree);
+        // One of the desk's letters, numbered consecutively in item-creation
+        // order. The class shares one database, so the run's start is not fixed.
+        Assert.Contains(referenceOne[0], deskLetters);
+        var firstNumber = int.Parse(referenceOne[1..], CultureInfo.InvariantCulture);
+        Assert.Equal(ItemReference.Format(referenceOne[0], firstNumber + 1), referenceTwo);
+        Assert.Equal(ItemReference.Format(referenceOne[0], firstNumber + 2), referenceThree);
+
+        var finalizationResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
+            BuildFormContent(detailsContent));
+        finalizationResponse.EnsureSuccessStatusCode();
+        var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
+
+        var feeUpdateResponse = await client.PostAsync(
+            $"/vendeurs/{sellerId}?handler=UpdateDepositFee",
+            BuildFormContent(finalizationContent, ("DepositFeeInput.FeePaid", "2")));
+        feeUpdateResponse.EnsureSuccessStatusCode();
+        var feeUpdateContent = WebUtility.HtmlDecode(await feeUpdateResponse.Content.ReadAsStringAsync());
 
         var contractResponse = await client.GetAsync($"/vendeurs/{sellerId}/contrat-depot");
         contractResponse.EnsureSuccessStatusCode();
@@ -3792,6 +3806,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var seller = await dbContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
             Assert.Equal("deposit_validated", seller.DepositStatus);
             Assert.All(seller.Items, item => Assert.Equal("in_stock", item.Status));
+            Assert.Equal([referenceOne, referenceTwo, referenceThree], seller.Items.OrderBy(x => x.Id).Select(x => x.Reference));
+
+            // Free the desk's letters for the other tests sharing this database.
+            await scope.ServiceProvider.GetRequiredService<DepositDeskService>().CloseDeskAsync(deskId);
         }
 
         var checkoutResponse = await client.GetAsync("/caisse");
@@ -3827,7 +3845,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
                 IdentityDocumentType = "CNI",
                 IdentityDocumentNumber = "T702T702",
                 IdentityDocumentIssuedOn = new DateOnly(2020, 1, 15),
-                DepositStatus = "deposit_validated"
+                DepositStatus = "deposit_validated",
+                DepositStartedAt = DateTime.UtcNow
             };
             dbContext.Sellers.Add(seller);
             await dbContext.SaveChangesAsync();
@@ -3836,6 +3855,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var itemTwo = new ItemEntity { SellerId = seller.Id, Reference = "T002", Title = "Camion deux", SellerPriceCents = 600, Status = "in_stock" };
             var itemThree = new ItemEntity { SellerId = seller.Id, Reference = "T003", Title = "Camion trois", SellerPriceCents = 700, Status = "in_stock" };
             dbContext.Items.AddRange(itemOne, itemTwo, itemThree);
+
+            // These numbers came from the T counter, so it has moved past them.
+            var letterT = await dbContext.ReferenceLetters.SingleAsync(x => x.Letter == "T");
+            letterT.LastNumber = Math.Max(letterT.LastNumber, 3);
             await dbContext.SaveChangesAsync();
 
             sellerId = seller.Id;
@@ -3858,6 +3881,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var seller = await dbContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
             Assert.Equal("deposit_pending", seller.DepositStatus);
+            Assert.NotNull(seller.DepositStartedAt);
 
             // Load-bearing: the physical labels are already stuck on the toys,
             // so cancelling the deposit validation must never touch an
@@ -3868,20 +3892,31 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.All(seller.Items, item => Assert.Equal("registered", item.Status));
         }
 
-        long itemFourId;
+        // A row added after the start gets its reference as it is saved: the
+        // next number of a letter the desk holds.
+        long deskId;
+        string referenceFour;
         using (var scope = _factory.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var itemFour = new ItemEntity { SellerId = sellerId, Title = "Camion quatre", SellerPriceCents = 800, Status = "registered" };
-            dbContext.Items.Add(itemFour);
-            await dbContext.SaveChangesAsync();
-            itemFourId = itemFour.Id;
+            var desk = await scope.ServiceProvider.GetRequiredService<DepositDeskService>().OpenDeskAsync("Poste T-702");
+            deskId = desk.DeskId;
+            var lastNumbersBefore = (await dbContext.ReferenceLetters.AsNoTracking().ToListAsync())
+                .ToDictionary(x => x.Letter[0], x => x.LastNumber);
+
+            var added = await scope.ServiceProvider.GetRequiredService<IntakeService>().CreateItemBatchAsync(
+                new CreateItemBatchRequest(sellerId, IntakeMode.EmailPreregistration, [new CreateItemRowRequest("Camion quatre", 800)], deskId));
+
+            Assert.Equal(DepositAllocationStatus.Done, added.Status);
+            referenceFour = Assert.Single(added.AssignedReferences);
+            Assert.Contains(referenceFour[0], desk.Letters);
+            Assert.Equal(ItemReference.Format(referenceFour[0], lastNumbersBefore[referenceFour[0]] + 1), referenceFour);
         }
 
         var refreshedResponse = await client.GetAsync($"/vendeurs/{sellerId}");
         refreshedResponse.EnsureSuccessStatusCode();
         var refreshedContent = WebUtility.HtmlDecode(await refreshedResponse.Content.ReadAsStringAsync());
-        Assert.Contains("<td>—</td>", refreshedContent);
+        Assert.DoesNotContain("<td>—</td>", refreshedContent);
 
         var finalizationResponse = await client.PostAsync(
             $"/vendeurs/{sellerId}?handler=BeginDepositFinalization",
@@ -3889,6 +3924,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         finalizationResponse.EnsureSuccessStatusCode();
         var finalizationContent = WebUtility.HtmlDecode(await finalizationResponse.Content.ReadAsStringAsync());
 
+        // The fee step no longer allocates: it leaves every reference as it is.
         var feeUpdateResponse = await client.PostAsync(
             $"/vendeurs/{sellerId}?handler=UpdateDepositFee",
             BuildFormContent(finalizationContent, ("DepositFeeInput.FeePaid", "2")));
@@ -3898,12 +3934,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var verificationContext = verificationScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var verifiedSeller = await verificationContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
 
-        // The first three are untouched; the fourth took the next number in
-        // the same letter bucket rather than starting a new one or colliding.
         Assert.Equal("T001", verifiedSeller.Items.Single(x => x.Id == itemOneId).Reference);
         Assert.Equal("T002", verifiedSeller.Items.Single(x => x.Id == itemTwoId).Reference);
         Assert.Equal("T003", verifiedSeller.Items.Single(x => x.Id == itemThreeId).Reference);
-        Assert.Equal("T004", verifiedSeller.Items.Single(x => x.Id == itemFourId).Reference);
+        Assert.Equal(referenceFour, verifiedSeller.Items.Single(x => x.Title == "Camion quatre").Reference);
+
+        // Free the desk's letters for the other tests sharing this database.
+        await verificationScope.ServiceProvider.GetRequiredService<DepositDeskService>().CloseDeskAsync(deskId);
     }
 
     [Fact]

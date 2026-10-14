@@ -7,10 +7,11 @@ public sealed class ItemEntity
     public long SellerId { get; set; }
 
     /// <summary>
-    /// Null until the seller's deposit reaches the contract-print step, when a
-    /// contiguous run is allocated. An item without a reference is necessarily
-    /// still "registered" under a "deposit_pending" seller, so it can never
-    /// reach checkout.
+    /// Null until the seller's deposit is started at a desk: the start gives
+    /// the existing rows a consecutive run from the desk's letters, and a row
+    /// added after the start gets its reference as it is saved. An item
+    /// without a reference is necessarily still "registered" under a
+    /// "deposit_pending" seller, so it can never reach checkout.
     /// </summary>
     public string? Reference { get; set; }
 
