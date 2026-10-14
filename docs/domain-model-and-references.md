@@ -282,7 +282,7 @@ Each letter has a `last_number` that only increases: deleting an item never
 lowers it, so a number whose label was already peeled is never handed out
 again. The number of labels printed per letter is a single setting, default
 455 (7 sheets of 65), stored in the database and edited on `/administration`
-(`Étiquettes par lettre`, between 1 and 999, never below the highest number
+(`Étiquettes imprimées par lettre`, between 1 and 999, never below the highest number
 already used). It replaces the old `Labels:SoftCapacityPerLetter`. A letter is
 exhausted when its counter reaches that number; exhaustion is computed, so
 raising the setting makes exhausted letters usable again.

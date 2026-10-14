@@ -168,8 +168,8 @@ Description : ajouter les jouets prévus pour un vendeur depuis la fiche vendeur
 2. Dans `Ajouter des articles`, saisir la description (colonne `Description`) et le prix vendeur de chaque article. Utiliser `+` pour ajouter des lignes.
 3. Pendant la saisie, observer le compteur à droite du bouton `+` : remplir une ligne, en effacer une, ajouter une ligne vide.
 4. Cliquer sur `Enregistrer le lot`.
-5. Contrôle de régression : cliquer sur `Finaliser le dépôt`, cliquer sur `Retour` pour fermer la fenêtre, puis ajouter un nouveau lot avec `Enregistrer le lot`.
-6. Cliquer sur `Commencer le dépôt` (voir Prevente-05), puis ajouter encore un article avec `Enregistrer le lot`.
+5. Cliquer sur `Commencer le dépôt` (voir Prevente-05), puis ajouter encore un article avec `Enregistrer le lot`.
+6. Contrôle de régression, sur un vendeur dont la fiche est complète (téléphone, adresse, code postal, ville et pièce d'identité) : cliquer sur `Finaliser le dépôt`, cliquer sur `Retour` pour fermer la fenêtre, puis ajouter un nouveau lot avec `Enregistrer le lot`.
 
 #### Critères d'acceptation
 
