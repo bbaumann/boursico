@@ -16,7 +16,7 @@
         <a href="/vendeurs/poste">@desk.Name · lettres @string.Join(", ", desk.Letters.Select(x => x.Letter))</a>
         @foreach (var letter in desk.Letters.Where(x => x.LabelsLeft <= DepositDeskService.LowLabelsThreshold))
         {
-            <span class="deposit-desk-warning">Plus que @letter.LabelsLeft étiquettes en @letter.Letter.</span>
+            <span class="deposit-desk-warning">@DeskLetterDisplay.LowLabelsWarning(letter.Letter, letter.LabelsLeft)</span>
         }
     }
     else if (desk.State == DeskState.Closed)

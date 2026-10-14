@@ -1,5 +1,6 @@
 @page "/vendeurs/poste"
 @model AssociationSaleTool.Web.Pages.Sellers.DeskModel
+@using AssociationSaleTool.Web.Infrastructure
 @using AssociationSaleTool.Web.Services.Models
 @{
     ViewData["Title"] = "Poste de dépôt";
@@ -36,7 +37,7 @@
                 <ul class="deposit-desk-letter-list">
                     @foreach (var letter in Model.Desk.Letters)
                     {
-                        <li><strong>@letter.Letter</strong> : @letter.LabelsLeft étiquettes restantes</li>
+                        <li><strong>@letter.Letter</strong> : @DeskLetterDisplay.LabelsLeft(letter.LabelsLeft)</li>
                     }
                 </ul>
             }

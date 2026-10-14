@@ -892,6 +892,27 @@ public sealed class SellersPageModelTests
         Assert.Equal("Dépôt commencé. Chaque article enregistré recevra sa référence.", DetailsModel.ToAllocationMessage(none));
     }
 
+    [Theory]
+    [InlineData(DeskState.Open)]
+    [InlineData(DeskState.Closed)]
+    [InlineData(DeskState.None)]
+    public void SellerDetailsPage_ToAllocationError_ReportsAClosedDeskWhateverThePageLoadSaw(DeskState deskState)
+    {
+        // The desk can be closed between page load and save: the cookie still
+        // shows it open, but the save refused it as closed.
+        Assert.Equal(
+            "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.",
+            DetailsModel.ToAllocationError(DepositAllocationStatus.DeskClosed, deskState, "refusé"));
+    }
+
+    [Theory]
+    [InlineData(DeskState.Closed, "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.")]
+    [InlineData(DeskState.None, "Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.")]
+    public void SellerDetailsPage_ToAllocationError_ReportsNoDeskFromTheCookieState(DeskState deskState, string expected)
+    {
+        Assert.Equal(expected, DetailsModel.ToAllocationError(DepositAllocationStatus.NoDesk, deskState, "refusé"));
+    }
+
     [Fact]
     public async Task SellerDetailsPage_PostValidateDeposit_ReportsANotStartedDepositInsteadOfTheGenericMessage()
     {

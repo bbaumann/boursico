@@ -212,13 +212,17 @@ public sealed class DetailsModel(
 
     // Maps every refusal; notAllowedMessage covers NotAllowed, whose wording
     // depends on what the operator was doing.
-    private static string ToAllocationError(DepositAllocationStatus status, DeskState deskState, string notAllowedMessage)
+    public static string ToAllocationError(DepositAllocationStatus status, DeskState deskState, string notAllowedMessage)
     {
+        // DeskClosed comes from the save itself, so it wins over what the
+        // cookie showed at page load (the desk may have closed in between).
         return status switch
         {
-            DepositAllocationStatus.NoDesk or DepositAllocationStatus.DeskClosed when deskState == DeskState.Closed =>
+            DepositAllocationStatus.DeskClosed =>
                 "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.",
-            DepositAllocationStatus.NoDesk or DepositAllocationStatus.DeskClosed =>
+            DepositAllocationStatus.NoDesk when deskState == DeskState.Closed =>
+                "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.",
+            DepositAllocationStatus.NoDesk =>
                 "Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.",
             DepositAllocationStatus.NoLabelsLeft =>
                 "Plus aucune étiquette disponible pour ce poste. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.",
