@@ -967,6 +967,14 @@ This file captures the main project decisions in a lightweight ADR format.
     the first is derived from a null `deposit_started_at`, so
     `deposit_status` keeps its two stored values and every server-side rule
     is unchanged
+  - finalization blockers (missing seller fields, incomplete items) are listed
+    as soon as the seller page opens instead of after a refused click;
+    `Finaliser le dépôt` is disabled while any blocker remains
+  - the deposit order is 1. complete the seller file, 2. label the toys,
+    3. finalize; while the file is incomplete `Compléter la fiche vendeur` is
+    the only green action and taking letters and labelling become secondary
+    buttons, still enabled so a seller missing a document can still be
+    labelled
 - Consequence:
   - pre-registered items can still be typed away from the deposit tables
   - taking letters stays an explicit click rather than a side effect of

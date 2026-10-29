@@ -197,7 +197,84 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         Assert.Contains("seller-deposit-status-not-started", details);
         Assert.Contains("Dépôt non commencé", details);
-        Assert.Contains("Étiquetez les jouets quand le vendeur les apporte.", details);
+    }
+
+    [Fact]
+    public async Task SellerDetailsListsMissingSellerFieldsOnOpeningAndGreysOutFinalization()
+    {
+        var client = _factory.CreateClient();
+        long notStartedId;
+        long startedId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            // Imported-like sellers: no phone, address or identity document yet.
+            var notStarted = new SellerEntity { SellerCode = "MF-001", FirstName = "Ines", LastName = "Incomplete" };
+            notStarted.Items.Add(new ItemEntity { Title = "Toupie", SellerPriceCents = 300, Status = "registered" });
+            var started = new SellerEntity
+            {
+                SellerCode = "MF-002", FirstName = "Igor", LastName = "Incomplet", DepositStartedAt = DateTime.UtcNow
+            };
+            started.Items.Add(new ItemEntity { Reference = "Z901", Title = "Puzzle", SellerPriceCents = 500, Status = "registered" });
+            dbContext.Sellers.AddRange(notStarted, started);
+            await dbContext.SaveChangesAsync();
+            notStartedId = notStarted.Id;
+            startedId = started.Id;
+        }
+
+        await using var desk = await OpenClientDeskAsync(client, startedId);
+
+        // No click on `Finaliser le dépôt`: the blockers show as soon as the page opens.
+        var startedPage = WebUtility.HtmlDecode(await client.GetStringAsync($"/vendeurs/{startedId}"));
+        Assert.Contains("data-seller-deposit-blockers", startedPage);
+        Assert.Contains("Le téléphone est obligatoire.", startedPage);
+        Assert.Contains("La date de délivrance est obligatoire.", startedPage);
+        Assert.Contains("class=\"button-link button-link-solid\" href=\"/vendeurs/" + startedId + "/modifier\">Compléter la fiche vendeur</a>", startedPage);
+        Assert.Matches(@"data-seller-deposit-begin disabled=""disabled"">", startedPage);
+
+        // The order is 1. complete the file, 2. label, 3. finalize: before labelling,
+        // completing the file is the green action and labelling steps back.
+        var notStartedPage = WebUtility.HtmlDecode(await client.GetStringAsync($"/vendeurs/{notStartedId}"));
+        Assert.Contains("class=\"button-link button-link-solid\" href=\"/vendeurs/" + notStartedId + "/modifier\">Compléter la fiche vendeur</a>", notStartedPage);
+        Assert.Contains("<button type=\"submit\" class=\"button-link\">Étiqueter les jouets</button>", notStartedPage);
+        Assert.DoesNotContain("<li>Étiquetez les jouets avant de finaliser le dépôt.</li>", notStartedPage);
+        Assert.Matches(@"data-seller-deposit-begin disabled=""disabled"">", notStartedPage);
+    }
+
+    [Fact]
+    public async Task SellerDetailsMakesLabellingTheGreenActionOnceTheSellerFileIsComplete()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "MF-003",
+                FirstName = "Clara",
+                LastName = "Complete",
+                Phone = "0612345678",
+                PostalAddress = "3 rue des Tests",
+                PostalCode = "38000",
+                City = "Grenoble",
+                IdentityDocumentType = "CNI",
+                IdentityDocumentNumber = "987654321",
+                IdentityDocumentIssuedOn = new DateOnly(2021, 3, 4)
+            };
+            seller.Items.Add(new ItemEntity { Title = "Train", SellerPriceCents = 700, Status = "registered" });
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        await using var desk = await OpenClientDeskAsync(client, sellerId);
+        var page = WebUtility.HtmlDecode(await client.GetStringAsync($"/vendeurs/{sellerId}"));
+
+        Assert.DoesNotContain("data-seller-deposit-blockers", page);
+        Assert.DoesNotContain("Compléter la fiche vendeur", page);
+        Assert.Contains("<button type=\"submit\" class=\"button-link button-link-solid\">Étiqueter les jouets</button>", page);
+        Assert.Matches(@"data-seller-deposit-begin disabled=""disabled"">", page);
     }
 
     [Fact]
@@ -3472,7 +3549,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("La date de délivrance est obligatoire.", rejectedContent);
         Assert.DoesNotContain("L'autorité de délivrance est obligatoire.", rejectedContent);
         Assert.DoesNotContain("data-seller-deposit-auto-open", rejectedContent);
-        Assert.Contains("Corriger la fiche vendeur", rejectedContent);
+        Assert.Contains("Compléter la fiche vendeur", rejectedContent);
         Assert.Contains($"href=\"/vendeurs/{sellerId}/modifier\"", rejectedContent);
 
         using var verificationScope = _factory.Services.CreateScope();

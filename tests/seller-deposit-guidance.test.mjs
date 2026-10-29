@@ -34,7 +34,7 @@ test("seller deposit blockers are grouped by action area", () => {
   assert.match(sellerDetailsPage, /class="seller-deposit-blocker-summary"/);
   assert.match(sellerDetailsPage, /Fiche vendeur/);
   assert.match(sellerDetailsPage, /Articles/);
-  assert.match(sellerDetailsPage, /Corriger la fiche vendeur/);
+  assert.match(sellerDetailsPage, /Compléter la fiche vendeur/);
   assert.match(sellerDetailsPage, /Corriger les articles incomplets/);
   assert.match(sellerDetailsPage, /class="seller-deposit-blocker-detail"/);
 });

@@ -6,7 +6,7 @@
 @model AssociationSaleTool.Web.Pages.Sellers.DetailsModel
 @{
     ViewData["Title"] = "Détail du vendeur";
-    var depositValidationCount = Model.DepositValidationMessages.Count;
+    var depositValidationCount = Model.VisibleDepositBlockers.Count;
     var depositSummary = Model.IsDepositValidated
         ? "Le dépôt est validé. Les articles sont en stock et le dépôt reste annulable par un administrateur."
         : depositValidationCount > 0
@@ -59,9 +59,9 @@
             </p>
             <p class="seller-deposit-summary">@depositSummary</p>
         </div>
-        @if (Model.DepositValidationMessages.Count > 0)
+        @if (Model.VisibleDepositBlockers.Count > 0)
         {
-            <div class="validation" role="alert">
+            <div class="validation" role="status" data-seller-deposit-blockers>
                 <p>Corrigez les points ci-dessous avant de finaliser le dépôt.</p>
                 <div class="seller-deposit-blocker-summary">
                     @if (Model.HasSellerDepositValidationMessages)
@@ -80,7 +80,7 @@
                     }
                 </div>
                 <ul class="seller-deposit-blocker-detail">
-                    @foreach (var message in Model.DepositValidationMessages)
+                    @foreach (var message in Model.VisibleDepositBlockers)
                     {
                         <li>@message</li>
                     }
@@ -88,7 +88,7 @@
                 <div class="form-actions seller-deposit-validation-actions">
                     @if (Model.HasSellerDepositValidationMessages && Model.CanEditSellerMasterData)
                     {
-                        <a class="button-link button-link-solid" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Corriger la fiche vendeur</a>
+                        <a class="@Model.NextStepButtonClass(isSellerFileStep: true)" asp-page="/Sellers/Edit" asp-route-id="@Model.Seller.Id">Compléter la fiche vendeur</a>
                     }
                     @if (Model.HasItemDepositValidationMessages && Model.CanEditItemMasterData)
                     {
@@ -134,7 +134,7 @@
                       asp-page-handler="OpenDesk"
                       asp-route-id="@Model.Seller.Id"
                       class="inline-form">
-                    <button type="submit" class="button-link button-link-solid">Prendre des lettres</button>
+                    <button type="submit" class="@Model.NextStepButtonClass(isSellerFileStep: false)">Prendre des lettres</button>
                 </form>
             }
             @if (Model.CanEditItemMasterData && !Model.IsDepositValidated && !Model.IsDepositStarted)
@@ -143,7 +143,7 @@
                       asp-page-handler="StartDeposit"
                       asp-route-id="@Model.Seller.Id"
                       class="inline-form">
-                    <button type="submit" class="button-link button-link-solid" disabled="@(!Model.IsDeskOpen)">Étiqueter les jouets</button>
+                    <button type="submit" class="@Model.NextStepButtonClass(isSellerFileStep: false)" disabled="@(!Model.IsDeskOpen)">Étiqueter les jouets</button>
                 </form>
             }
             @if (Model.CanValidateDeposit)
@@ -156,7 +156,7 @@
                           asp-page-handler="BeginDepositFinalization"
                           asp-route-id="@Model.Seller.Id"
                           class="inline-form">
-                        <button type="submit" class="button-link button-link-solid" data-seller-deposit-begin disabled="@(!Model.IsDeskOpen)">
+                        <button type="submit" class="button-link button-link-solid" data-seller-deposit-begin disabled="@(!Model.CanBeginDepositFinalization)">
                             Finaliser le dépôt
                         </button>
                     </form>

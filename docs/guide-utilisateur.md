@@ -194,15 +194,15 @@ Avant de ranger l'ordinateur, cliquer sur `Libérer les lettres` (sur n'importe 
 
 Sur un dépôt déjà commencé, `Enregistrer le lot` est grisé tant que l'ordinateur n'a pas de lettres, car chaque ligne enregistrée reçoit une étiquette. Avant `Étiqueter les jouets`, on peut saisir et enregistrer des articles sans lettres.
 
-Quand le vendeur apporte les jouets :
+Quand le vendeur apporte les jouets, le dépôt se fait dans cet ordre : compléter la fiche vendeur, étiqueter les jouets, puis finaliser. À chaque étape, un seul bouton est en vert.
 
 1. Ouvrir sa fiche vendeur.
-2. Cliquer sur `Étiqueter les jouets`. Chaque article déjà enregistré reçoit sa référence, à la suite, dans une seule série affichée à l'écran (par exemple `12 jouets étiquetés : B001 à B012.`, affiché au-dessus du tableau des articles avec la consigne de collage ; les jouets concernés sont surlignés dans le tableau). Décoller autant d'étiquettes de la planche et coller chacune sur le jouet correspondant, en s'aidant de la liste triée par référence. Pour un vendeur sans article saisi à l'avance, le dépôt est simplement marqué comme commencé.
-3. Pour un jouet qui n'était pas enregistré, ajouter une ligne et l'enregistrer : elle reçoit la référence suivante, et l'on décolle l'étiquette suivante de la planche.
-4. Pour un jouet refusé ou oublié, supprimer sa ligne et jeter son étiquette. Son numéro n'est jamais réutilisé.
-5. Compléter le téléphone, l'adresse postale, le code postal, la ville et les informations de pièce d'identité du vendeur : nature de la pièce, numéro et date de délivrance.
+2. Compléter le téléphone, l'adresse postale, le code postal, la ville et les informations de pièce d'identité du vendeur : nature de la pièce, numéro et date de délivrance. Dès l'ouverture de la fiche, l'encart `Dépôt vendeur` liste ce qui manque, avec le bouton vert `Compléter la fiche vendeur` : tant que la fiche est incomplète, c'est la première chose à faire, et `Étiqueter les jouets` passe en bouton secondaire et le lien `Corriger les articles incomplets` si des articles sont incomplets.
+3. Cliquer sur `Étiqueter les jouets`. Chaque article déjà enregistré reçoit sa référence, à la suite, dans une seule série affichée à l'écran (par exemple `12 jouets étiquetés : B001 à B012.`, affiché au-dessus du tableau des articles avec la consigne de collage ; les jouets concernés sont surlignés dans le tableau). Décoller autant d'étiquettes de la planche et coller chacune sur le jouet correspondant, en s'aidant de la liste triée par référence. Pour un vendeur sans article saisi à l'avance, le dépôt est simplement marqué comme commencé.
+4. Pour un jouet qui n'était pas enregistré, ajouter une ligne et l'enregistrer : elle reçoit la référence suivante, et l'on décolle l'étiquette suivante de la planche.
+5. Pour un jouet refusé ou oublié, supprimer sa ligne et jeter son étiquette. Son numéro n'est jamais réutilisé.
 6. Corriger ou supprimer les lignes incomplètes avant signature.
-7. Cliquer sur `Finaliser le dépôt`. Si le dépôt n'est pas commencé, l'outil répond `Étiquetez les jouets avant de finaliser le dépôt.`
+7. Cliquer sur `Finaliser le dépôt`. Le bouton reste grisé tant que les jouets ne sont pas étiquetés, qu'il manque une information du vendeur ou d'un article, ou que l'ordinateur n'a pas de lettres.
 8. Vérifier les frais vendeurs attendus, déjà payés et restant à payer. Corriger `Frais payés` si le vendeur règle tout ou partie des frais à ce moment.
 9. Cliquer sur `Continuer`. Cette étape n'attribue plus de références : elle enregistre les frais et passe à l'impression.
 10. Cliquer sur `Imprimer le contrat`. Le contrat imprimé liste les articles avec leur référence.
