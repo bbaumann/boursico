@@ -40,7 +40,10 @@ public sealed class IndexModel(
     public string? SuccessMessage { get; set; }
 
     [TempData]
-    public string? CorrectedSellerCode { get; set; }
+    public string? CorrectedSellerId { get; set; }
+
+    [TempData]
+    public string? CorrectedSellerName { get; set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
@@ -91,7 +94,7 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostMarkMissingAsync(
         long itemId,
-        string? sellerCode,
+        long? sellerId,
         CancellationToken cancellationToken)
     {
         if (!UnlockPageIfSessionAllows())
@@ -112,14 +115,14 @@ public sealed class IndexModel(
             result,
             "Article marqué manquant.",
             "L'article ne peut pas être marqué manquant dans son état actuel.",
-            sellerCode,
+            sellerId,
             cancellationToken);
 
     }
 
     public async Task<IActionResult> OnPostMarkInStockAsync(
         long itemId,
-        string? sellerCode,
+        long? sellerId,
         CancellationToken cancellationToken)
     {
         if (!UnlockPageIfSessionAllows())
@@ -140,7 +143,7 @@ public sealed class IndexModel(
             result,
             "Article remis en stock.",
             "L'article ne peut pas être remis en stock dans son état actuel.",
-            sellerCode,
+            sellerId,
             cancellationToken);
 
     }
@@ -152,7 +155,7 @@ public sealed class IndexModel(
 
     public static string BuildCorrectionFilterText(ReconciliationItemSearchResult item)
     {
-        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName}".ToLower(FrenchCulture);
+        return $"{item.Reference} {item.Title} {item.SellerName}".ToLower(FrenchCulture);
     }
 
     private async Task LoadDashboardAsync(CancellationToken cancellationToken)
@@ -178,13 +181,19 @@ public sealed class IndexModel(
         ReconciliationStatusChangeResult result,
         string successMessage,
         string notAllowedMessage,
-        string? sellerCode,
+        long? sellerId,
         CancellationToken cancellationToken)
     {
         if (result == ReconciliationStatusChangeResult.Changed)
         {
             SuccessMessage = successMessage;
-            CorrectedSellerCode = sellerCode?.Trim().ToUpperInvariant();
+            CorrectedSellerId = sellerId?.ToString(CultureInfo.InvariantCulture);
+            if (sellerId is not null)
+            {
+                CorrectedSellerName = (await reconciliationService.ListSellerSheetOptionsAsync(cancellationToken))
+                    .FirstOrDefault(x => x.SellerId == sellerId)?.SellerName;
+            }
+
             return RedirectToPage();
         }
 
@@ -204,7 +213,7 @@ public sealed class IndexModel(
 
     public sealed class SheetInputModel
     {
-        public string? SellerCode { get; set; }
+        public long? SellerId { get; set; }
     }
 
     public sealed class SearchInputModel

@@ -38,7 +38,7 @@ public sealed class DataListService(AppDbContext dbContext)
                     item.SellerPriceCents,
                     // Registered items have no reference yet; BuildSearchText
                     // already drops blank terms, so an empty string is a no-op.
-                    BuildSearchText(item.Reference ?? string.Empty, item.Title, item.Seller.SellerCode, sellerName, statusLabel, item.Status));
+                    BuildSearchText(item.Reference ?? string.Empty, item.Title, sellerName, statusLabel, item.Status));
             })
             .ToList();
     }
@@ -48,7 +48,9 @@ public sealed class DataListService(AppDbContext dbContext)
         var sellers = await dbContext.Sellers
             .AsNoTracking()
             .Include(x => x.Items)
-            .OrderBy(x => x.SellerCode)
+            .OrderBy(x => x.LastName)
+            .ThenBy(x => x.FirstName)
+            .ThenBy(x => x.Id)
             .ToListAsync(cancellationToken);
 
         return sellers
@@ -73,7 +75,7 @@ public sealed class DataListService(AppDbContext dbContext)
                     expectedFeeCents,
                     seller.FeePaidCents,
                     remainingFeeCents,
-                    BuildSearchText(seller.SellerCode, sellerName));
+                    BuildSearchText(sellerName));
             })
             .ToList();
     }

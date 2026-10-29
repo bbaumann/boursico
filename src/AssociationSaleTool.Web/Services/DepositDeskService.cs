@@ -16,7 +16,7 @@ public sealed class DepositDeskService(AppDbContext dbContext, IOptions<LabelsOp
 
     private readonly int _lettersPerDesk = (labelsOptions?.Value ?? new LabelsOptions()).LettersPerDesk;
 
-    public async Task<OpenDeskResult> OpenDeskAsync(string? name, CancellationToken cancellationToken = default)
+    public async Task<OpenDeskResult> OpenDeskAsync(CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
         var deskCount = await dbContext.DepositDesks.CountAsync(cancellationToken);
@@ -26,7 +26,7 @@ public sealed class DepositDeskService(AppDbContext dbContext, IOptions<LabelsOp
 
         var desk = new DepositDeskEntity
         {
-            Name = string.IsNullOrWhiteSpace(name) ? $"Poste {deskCount + 1}" : name.Trim(),
+            Name = $"Poste {deskCount + 1}",
             Token = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)),
             OpenedAt = now,
             LastActivityAt = now

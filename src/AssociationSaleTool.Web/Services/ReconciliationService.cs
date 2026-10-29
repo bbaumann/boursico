@@ -29,7 +29,6 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             .Where(x =>
                 ContainsNormalized(x.Reference, normalizedQuery) ||
                 ContainsNormalized(x.Title, normalizedQuery) ||
-                ContainsNormalized(x.SellerCode, normalizedQuery) ||
                 ContainsNormalized(x.SellerName, normalizedQuery))
             .OrderBy(x => x.Reference)
             .Take(25)
@@ -43,9 +42,11 @@ public sealed class ReconciliationService(AppDbContext dbContext)
             .AsNoTracking()
             .Where(x => x.Items.Any(item => SellerSheetStatuses.Contains(item.Status)
                 && item.SellerPriceCents.HasValue))
-            .OrderBy(x => x.SellerCode)
+            .OrderBy(x => x.LastName)
+            .ThenBy(x => x.FirstName)
+            .ThenBy(x => x.Id)
             .Select(x => new SellerSheetOption(
-                x.SellerCode,
+                x.Id,
                 $"{x.FirstName} {x.LastName}"))
             .ToListAsync(cancellationToken);
     }
@@ -88,20 +89,19 @@ public sealed class ReconciliationService(AppDbContext dbContext)
     }
 
     public async Task<List<SellerSheet>> ListSellerSheetsAsync(
-        string? sellerCode = null,
+        long? sellerId = null,
         CancellationToken cancellationToken = default)
     {
-        var normalizedSellerCode = string.IsNullOrWhiteSpace(sellerCode)
-            ? null
-            : sellerCode.Trim().ToUpperInvariant();
 
         var sellers = await dbContext.Sellers
             .AsNoTracking()
             .Include(x => x.Items)
             .ThenInclude(x => x.SaleLines)
-            .Where(x => normalizedSellerCode == null || x.SellerCode == normalizedSellerCode)
+            .Where(x => sellerId == null || x.Id == sellerId)
             .Where(x => x.Items.Any(item => SellerSheetStatuses.Contains(item.Status)))
-            .OrderBy(x => x.SellerCode)
+            .OrderBy(x => x.LastName)
+            .ThenBy(x => x.FirstName)
+            .ThenBy(x => x.Id)
             .ToListAsync(cancellationToken);
 
         return sellers

@@ -41,7 +41,9 @@ public sealed class IntakeService
         return await _dbContext.Sellers
             .AsNoTracking()
             .Include(x => x.Items)
-            .OrderBy(x => x.SellerCode)
+            .OrderBy(x => x.LastName)
+            .ThenBy(x => x.FirstName)
+            .ThenBy(x => x.Id)
             .ToListAsync(cancellationToken);
     }
 

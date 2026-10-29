@@ -113,7 +113,7 @@
                                         @foreach (var match in row.DuplicateMatches)
                                         {
                                             <p>
-                                                <strong>@match.SellerCode - @match.FirstName @match.LastName</strong><br />
+                                                <strong>@match.FirstName @match.LastName</strong><br />
                                                 @(string.IsNullOrWhiteSpace(match.Phone) ? "Téléphone à compléter" : match.Phone) -
                                                 @match.ItemCount article@(match.ItemCount > 1 ? "s" : "")
                                             </p>

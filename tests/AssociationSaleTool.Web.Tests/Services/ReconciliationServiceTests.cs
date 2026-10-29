@@ -283,7 +283,7 @@ public sealed class ReconciliationServiceTests
 
         var sheets = await service.ListSellerSheetsAsync();
 
-        Assert.Equal(["AA", "BB", "CC", "EE"], sheets.Select(sheet => sheet.SellerCode));
+        Assert.Equal(["Grace Hopper", "Katherine Johnson", "Hedy Lamarr", "Ada Lovelace"], sheets.Select(sheet => sheet.SellerName));
     }
 
     [Fact]
@@ -381,7 +381,7 @@ public sealed class ReconciliationServiceTests
     }
 
     [Fact]
-    public async Task ListSellerSheetsAsync_FiltersByTrimmedUppercaseSellerCode()
+    public async Task ListSellerSheetsAsync_FiltersBySellerId()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -403,13 +403,13 @@ public sealed class ReconciliationServiceTests
 
         var service = new ReconciliationService(context);
 
-        var sheet = Assert.Single(await service.ListSellerSheetsAsync(" aa "));
+        var sheet = Assert.Single(await service.ListSellerSheetsAsync(firstSeller.Id));
 
-        Assert.Equal("AA", sheet.SellerCode);
+        Assert.Equal(firstSeller.Id, sheet.SellerId);
     }
 
     [Fact]
-    public async Task ListSellerSheetsAsync_TreatsWhitespaceSellerCodeAsNoFilter()
+    public async Task ListSellerSheetsAsync_WithoutSellerListsEverySellerByLastName()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -431,9 +431,9 @@ public sealed class ReconciliationServiceTests
 
         var service = new ReconciliationService(context);
 
-        var sheets = await service.ListSellerSheetsAsync("   ");
+        var sheets = await service.ListSellerSheetsAsync();
 
-        Assert.Equal(["AA", "BB"], sheets.Select(sheet => sheet.SellerCode));
+        Assert.Equal(["Grace Hopper", "Ada Lovelace"], sheets.Select(sheet => sheet.SellerName));
     }
 
     [Fact]
@@ -459,8 +459,8 @@ public sealed class ReconciliationServiceTests
 
         var options = await service.ListSellerSheetOptionsAsync();
 
-        Assert.Equal(["AA", "BB", "DD"], options.Select(option => option.SellerCode));
-        Assert.Equal(["Ada Lovelace", "Grace Hopper", "Hedy Lamarr"], options.Select(option => option.SellerName));
+        Assert.Equal([secondSeller.Id, defectiveSeller.Id, firstSeller.Id], options.Select(option => option.SellerId));
+        Assert.Equal(["Grace Hopper", "Hedy Lamarr", "Ada Lovelace"], options.Select(option => option.SellerName));
     }
 
     [Fact]

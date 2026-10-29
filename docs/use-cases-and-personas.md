@@ -134,7 +134,7 @@ Description : créer un vendeur sans passer par l'import, ou compléter les info
 
 #### Critères d'acceptation
 
-- Le vendeur reçoit un code vendeur.
+- Le vendeur est enregistré et se retrouve par son nom.
 - Les doublons évidents sont signalés avant enregistrement.
 - Les champs incomplets restent acceptés tant que le dépôt n'est pas validé.
 
@@ -171,7 +171,7 @@ Description : confirmer les jouets physiquement déposés, faire signer le contr
 2. Vérifier les articles apportés physiquement.
 3. Supprimer ou corriger les articles créés par erreur avant validation.
 4. Compléter les informations obligatoires du vendeur, y compris les informations de pièce d'identité.
-5. Avoir un poste de dépôt ouvert sur l'ordinateur, puis cliquer sur `Commencer le dépôt` : chaque article reçoit sa référence et l'opérateur colle les étiquettes correspondantes.
+5. Avoir un poste de dépôt ouvert sur l'ordinateur, puis cliquer sur `Étiqueter les jouets` : chaque article reçoit sa référence et l'opérateur colle les étiquettes correspondantes.
 6. Cliquer sur `Finaliser le dépôt`.
 7. Vérifier les frais vendeur attendus, déjà payés et restant à payer.
 8. Renseigner les frais vendeur payés au dépôt si nécessaire, puis cliquer sur `Continuer`.
@@ -183,7 +183,7 @@ Description : confirmer les jouets physiquement déposés, faire signer le contr
 
 - La validation est refusée si les informations obligatoires sont manquantes.
 - La validation reste possible si des frais vendeur restent à payer.
-- Les articles n'ont pas de référence après la simple saisie des articles ; `Commencer le dépôt` leur attribue une référence (et l'enregistrement d'une ligne ajoutée ensuite, une fois le dépôt commencé). `Continuer` n'attribue plus de référence.
+- Les articles n'ont pas de référence après la simple saisie des articles ; `Étiqueter les jouets` leur attribue une référence (et l'enregistrement d'une ligne ajoutée ensuite, une fois le dépôt commencé). `Continuer` n'attribue plus de référence.
 - `Finaliser le dépôt` est refusé tant que le dépôt n'est pas commencé.
 - Le contrat imprimé contient l'identité de l'association, les informations vendeur, les frais vendeur et la liste des articles avec leur référence.
 - Après validation, les articles acceptés passent en `en stock`.
@@ -526,7 +526,7 @@ Description : produire les feuilles utilisées pour rassembler les articles et p
 
 1. Ouvrir `RAPPROCHEMENT`.
 2. Cliquer sur `Imprimer toutes les feuilles`.
-3. Tester aussi l'impression d'une seule feuille avec `Code ou nom du vendeur`.
+3. Tester aussi l'impression d'une seule feuille avec `Vendeur`.
 
 #### Critères d'acceptation
 
@@ -566,7 +566,7 @@ Description : un article encore en stock ne peut pas être retrouvé pendant le 
 #### Étapes
 
 1. Ouvrir `RAPPROCHEMENT`.
-2. Filtrer par code vendeur, nom, référence ou titre.
+2. Filtrer par nom du vendeur, référence ou titre.
 3. Sur l'article `en stock`, cliquer sur `Marquer manquant`.
 4. Réimprimer la fiche vendeur.
 

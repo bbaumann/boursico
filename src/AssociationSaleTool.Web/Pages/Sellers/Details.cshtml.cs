@@ -1,5 +1,6 @@
 using System.Globalization;
 using AssociationSaleTool.Web.Configuration;
+using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
 using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Infrastructure;
@@ -8,6 +9,7 @@ using AssociationSaleTool.Web.Services.Models;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace AssociationSaleTool.Web.Pages.Sellers;
@@ -15,10 +17,12 @@ namespace AssociationSaleTool.Web.Pages.Sellers;
 public sealed class DetailsModel(
     IntakeService intakeService,
     DepositDeskService depositDeskService,
+    AppDbContext dbContext,
     IOptions<AdminOptions>? adminOptions = null) : PageModel
 {
-    private const int DefaultRowCount = 10;
-    private const string DepositNotStartedMessage = "Commencez le dépôt pour attribuer les références avant de le finaliser.";
+    private const int DefaultRowCount = 5;
+    private const string NoOpenDeskMessage = "Prenez des lettres pour continuer le dépôt.";
+    private const string DepositNotStartedMessage = "Étiquetez les jouets avant de finaliser le dépôt.";
     private const string DuplicateRowsAlertMessage = "Ce vendeur existe déjà. Les articles saisis ont été ajoutés au formulaire ci-dessous. Vérifiez puis enregistrez le lot.";
     private readonly AdminOptions _adminOptions = adminOptions?.Value ?? new AdminOptions();
 
@@ -64,6 +68,27 @@ public sealed class DetailsModel(
 
     [TempData]
     public string? AllocationMessage { get; set; }
+
+    [TempData]
+    public string? DeskMessage { get; set; }
+
+    // Comma-joined, since TempData only round-trips simple types.
+    [TempData]
+    public string? LabelledReferences { get; set; }
+
+    public bool IsJustLabelled(string? reference)
+    {
+        return reference is not null
+            && LabelledReferences is not null
+            && LabelledReferences.Split(',').Contains(reference, StringComparer.Ordinal);
+    }
+
+    public CurrentDesk Desk { get; private set; } = CurrentDesk.None;
+
+    public bool IsDeskOpen => Desk.State == DeskState.Open;
+
+    public IEnumerable<DeskLetterInfo> LowLabelLetters =>
+        Desk.Letters.Where(x => x.LabelsLeft <= DepositDeskService.LowLabelsThreshold);
 
     public bool IsDepositStarted => Seller?.DepositStartedAt is not null;
 
@@ -136,6 +161,7 @@ public sealed class DetailsModel(
         if (result.AssignedReferences.Count > 0)
         {
             AllocationMessage = ToAllocationMessage(result);
+            LabelledReferences = string.Join(",", result.AssignedReferences);
         }
 
         return RedirectToPage("/Sellers/Details", null, new { id }, "articles");
@@ -153,6 +179,7 @@ public sealed class DetailsModel(
         if (result.Status == DepositAllocationStatus.Done)
         {
             AllocationMessage = ToAllocationMessage(result);
+            LabelledReferences = string.Join(",", result.AssignedReferences);
             return RedirectToPage("/Sellers/Details", null, new { id }, "articles");
         }
 
@@ -166,21 +193,85 @@ public sealed class DetailsModel(
         Input = CreateDefaultInput();
         await PopulatePermissionStateAsync(loaded, cancellationToken);
         var notAllowedMessage = loaded.DepositStartedAt is not null
-            ? "Le dépôt est déjà commencé."
-            : "Le dépôt ne peut pas être commencé dans le statut actuel de la vente.";
+            ? "Les jouets de ce vendeur sont déjà étiquetés."
+            : "Les jouets ne peuvent pas être étiquetés dans le statut actuel de la vente.";
         ModelState.AddModelError(string.Empty, ToAllocationError(result.Status, desk.State, notAllowedMessage));
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostOpenDeskAsync(long id, CancellationToken cancellationToken)
+    {
+        var current = await depositDeskService.GetCurrentDeskAsync(DepositDeskCookie.Read(Request), cancellationToken);
+        if (current.State == DeskState.Open)
+        {
+            return RedirectToPage("/Sellers/Details", new { id });
+        }
+
+        OpenDeskResult opened;
+        try
+        {
+            opened = await depositDeskService.OpenDeskAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+            when (exception is DbUpdateConcurrencyException || IntakeService.IsUniqueConstraintFailure(exception))
+        {
+            // The failed desk stays tracked as Added in the scoped context: drop it
+            // so nothing is retried and the page queries on this request stay clean.
+            dbContext.ChangeTracker.Clear();
+            return await PageWithErrorAsync(id, "Un autre ordinateur vient de prendre ces lettres. Réessayez.", cancellationToken);
+        }
+
+        DepositDeskCookie.Write(Response, opened.Token);
+        DeskMessage = opened.Letters.Count == 0
+            ? "Aucune lettre libre pour l'instant : cet ordinateur en recevra une dès qu'un autre ordinateur en libère une."
+            : $"Allez chercher les planches {string.Join(" et ", opened.Letters)}.";
+        return RedirectToPage("/Sellers/Details", new { id });
+    }
+
+    public async Task<IActionResult> OnPostReleaseDeskAsync(long id, CancellationToken cancellationToken)
+    {
+        var current = await depositDeskService.GetCurrentDeskAsync(DepositDeskCookie.Read(Request), cancellationToken);
+        if (current.State == DeskState.Open && current.DeskId is { } deskId)
+        {
+            await depositDeskService.CloseDeskAsync(deskId, cancellationToken);
+            DeskMessage = current.Letters.Count == 0
+                ? "Lettres libérées."
+                : $"Lettres {string.Join(" et ", current.Letters.Select(x => x.Letter))} libérées. Rapportez leurs planches sur la table centrale.";
+        }
+
+        DepositDeskCookie.Delete(Response);
+        return RedirectToPage("/Sellers/Details", new { id });
+    }
+
+    private async Task<IActionResult> PageWithErrorAsync(long id, string message, CancellationToken cancellationToken)
+    {
+        var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
+        if (loaded is null)
+        {
+            return NotFound();
+        }
+
+        PopulateSellerState(loaded);
+        Input = CreateDefaultInput();
+        await PopulatePermissionStateAsync(loaded, cancellationToken);
+        ModelState.AddModelError(string.Empty, message);
         return Page();
     }
 
     public static string ToAllocationMessage(DepositAllocationResult result)
     {
-        var parts = new List<string>();
         var references = result.AssignedReferences;
+        if (references.Count == 0)
+        {
+            return "Dépôt commencé : aucun jouet à étiqueter pour l'instant. Chaque jouet ajouté recevra son étiquette à l'enregistrement.";
+        }
+
+        var parts = new List<string>();
         if (references.Count == 1)
         {
-            parts.Add($"Référence attribuée : {references[0]}.");
+            parts.Add($"1 jouet étiqueté : {references[0]}.");
         }
-        else if (references.Count > 1)
+        else
         {
             // A run split across letters cannot be written as a range.
             var contiguous = references
@@ -189,18 +280,22 @@ public sealed class DetailsModel(
                 .All(pair => pair.Current[0] == pair.Previous[0]
                     && int.Parse(pair.Current[1..], CultureInfo.InvariantCulture) == int.Parse(pair.Previous[1..], CultureInfo.InvariantCulture) + 1);
             parts.Add(contiguous
-                ? $"Références attribuées : {references[0]} à {references[^1]}."
-                : $"Références attribuées : {string.Join(", ", references)}.");
-        }
-        else
-        {
-            parts.Add("Dépôt commencé. Chaque article enregistré recevra sa référence.");
+                ? $"{references.Count} jouets étiquetés : {references[0]} à {references[^1]}."
+                : $"{references.Count} jouets étiquetés : {string.Join(", ", references)}.");
         }
 
         foreach (var letter in result.TakenLetters)
         {
             parts.Add($"Allez chercher la planche {letter}.");
         }
+
+        var letters = references.Select(reference => reference[0]).Distinct().ToList();
+        var sheets = letters.Count == 1
+            ? $"de la planche {letters[0]}"
+            : $"des planches {string.Join(" et ", letters)}";
+        parts.Add(references.Count == 1
+            ? $"Décollez l'étiquette suivante {sheets} et collez-la sur le jouet surligné ci-dessous."
+            : $"Décollez les étiquettes {sheets} dans l'ordre et collez-les sur les jouets surlignés ci-dessous.");
 
         return string.Join(" ", parts);
     }
@@ -219,15 +314,15 @@ public sealed class DetailsModel(
         return status switch
         {
             DepositAllocationStatus.DeskClosed =>
-                "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.",
+                "Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.",
             DepositAllocationStatus.NoDesk when deskState == DeskState.Closed =>
-                "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.",
+                "Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.",
             DepositAllocationStatus.NoDesk =>
-                "Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.",
+                "Prenez des lettres pour attribuer des références.",
             DepositAllocationStatus.NoLabelsLeft =>
-                "Plus aucune étiquette disponible pour ce poste. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.",
+                "Plus aucune étiquette disponible dans les lettres de cet ordinateur. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.",
             DepositAllocationStatus.Conflict =>
-                "Un autre poste vient de modifier ces lettres. Réessayez.",
+                "Un autre ordinateur vient de modifier ces lettres. Réessayez.",
             DepositAllocationStatus.NotAllowed => notAllowedMessage,
             DepositAllocationStatus.NotFound => "Vendeur introuvable.",
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
@@ -328,6 +423,12 @@ public sealed class DetailsModel(
         if (!CanValidateDeposit)
         {
             ModelState.AddModelError(string.Empty, "Le dépôt ne peut pas être finalisé dans le statut actuel de la vente.");
+            return Page();
+        }
+
+        if (!IsDeskOpen)
+        {
+            ModelState.AddModelError(string.Empty, NoOpenDeskMessage);
             return Page();
         }
 
@@ -484,6 +585,7 @@ public sealed class DetailsModel(
 
     private async Task PopulatePermissionStateAsync(SellerEntity seller, CancellationToken cancellationToken)
     {
+        Desk = await depositDeskService.GetCurrentDeskAsync(DepositDeskCookie.Read(Request), cancellationToken);
         var canEditCurrentPhase = await intakeService.CanEditItemMasterDataAsync(cancellationToken);
         var isPendingDeposit = seller.DepositStatus == SellerDepositStatuses.Pending;
         CanEditItemMasterData = canEditCurrentPhase && isPendingDeposit;

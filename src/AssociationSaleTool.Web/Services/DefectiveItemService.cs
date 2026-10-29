@@ -43,7 +43,6 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
             .Where(x =>
                 EF.Functions.Like(x.Reference, pattern)
                 || EF.Functions.Like(x.Title, pattern)
-                || EF.Functions.Like(x.Seller.SellerCode, pattern)
                 || EF.Functions.Like(x.Seller.FirstName + " " + x.Seller.LastName, pattern)
                 || EF.Functions.Like(x.Seller.LastName + " " + x.Seller.FirstName, pattern))
             .OrderBy(x => x.Reference)

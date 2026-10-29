@@ -42,7 +42,7 @@ public sealed class DataListDefectiveStatusSmokeTests : IClassFixture<IntakeWebA
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Défectueux", content);
-        Assert.Contains($"href=\"/vendeurs/{seller.SellerId}\">{seller.SellerCode}</a>", content);
+        Assert.Contains($"href=\"/vendeurs/{seller.SellerId}\">Denise Defaut</a>", content);
         Assert.Matches("data-list-defective-count-column[^>]*>1", content);
     }
 

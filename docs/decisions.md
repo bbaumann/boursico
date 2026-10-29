@@ -583,7 +583,7 @@ This file captures the main project decisions in a lightweight ADR format.
   - keep the feature available to operators without the shared admin password
   - use initial tabs `Articles`, `Vendeurs`, `Ventes`, and `Chèques`; D-045 later adds the read-only `Clôture` tab
   - list all item statuses on the `Articles` tab and provide a status filter
-  - search sellers only by seller code and seller name
+  - search sellers only by seller code and seller name; D-052 later drops the seller code
   - search sales only by sale id, buyer details, payment method, item reference, and item title
   - list registered cheques on a dedicated tab by sale id, cheque number, bank name, and sale total amount
   - do not expose edit, correction, deletion, phase, or reconciliation actions from this page
@@ -931,3 +931,41 @@ This file captures the main project decisions in a lightweight ADR format.
     rather than from the seller-code spread order
   - D-050's allocation at the contract step, its four-tier seller-code letter
     choice, and `Labels:SoftCapacityPerLetter` are superseded
+
+## D-052 The Deposit Desk Lives On The Seller Page And The Seller Code Is Hidden
+
+- Status: accepted
+- Key drivers:
+  - review of D-051 found the desk treated as a feature (its own page, a banner
+    above the menu, an optional name) when operators only need two things: to
+    know their letters and to free them
+  - since D-051 the seller code no longer appears in item references, so
+    showing it next to the seller name only invites confusion
+- Decision:
+  - the operator never sees the word `poste`: the desk is opened with
+    `Prendre des lettres` and closed with `Libérer les lettres`, both on the
+    seller detail page, which shows `Lettres de cet ordinateur : B, C`;
+    `/vendeurs/poste` and the banner are removed
+  - desks are always named `Poste N`, shown only on the admin tab to tell
+    computers apart; there is no custom name
+  - without an open desk, `Étiqueter les jouets` and `Finaliser le dépôt` are
+    disabled and `Prendre des lettres` sits next to them; `Finaliser le dépôt` is
+    also refused server-side; on a started deposit `Enregistrer le lot` is
+    disabled, while rows can still be saved before the deposit starts
+  - the admin force-close is renamed `Libérer les lettres`
+  - the seller code stays as an internal identifier (and still spreads letter
+    choice) but is never displayed or searched; seller lists sort by last name,
+    and the reconciliation page picks a single seller sheet from a `Vendeur`
+    list keyed by seller id (`/rapprochement/feuilles?vendeur=<id>`)
+  - `/administration` is split into tabs (`?onglet=vente|caisses|lettres|articles`)
+  - item entry forms show 5 empty rows instead of 10
+  - `Commencer le dépôt` is renamed `Étiqueter les jouets`, after what the click
+    does; its result is shown above the articles table the redirect scrolls to,
+    and the rows that just got a reference are highlighted
+- Consequence:
+  - pre-registered items can still be typed away from the deposit tables
+  - taking letters stays an explicit click rather than a side effect of
+    `Étiqueter les jouets`, so a computer never holds letters, and keeps them
+    from other computers, without the volunteer knowing it
+  - two sellers with the same name are told apart by phone or e-mail, not by
+    code

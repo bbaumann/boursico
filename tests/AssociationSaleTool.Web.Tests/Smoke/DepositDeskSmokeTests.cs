@@ -19,74 +19,102 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
         return factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
     }
 
-    private static async Task<HttpResponseMessage> PostDeskAsync(HttpClient client, string handler, Dictionary<string, string>? fields = null)
+    private static async Task<HttpResponseMessage> PostDeskAsync(HttpClient client, long sellerId, string handler)
     {
-        var form = new Dictionary<string, string>(fields ?? [])
+        var form = new Dictionary<string, string>
         {
-            ["__RequestVerificationToken"] = await AntiforgeryTokenAsync(client, "/vendeurs/poste")
+            ["__RequestVerificationToken"] = await AntiforgeryTokenAsync(client, $"/vendeurs/{sellerId}")
         };
-        return await client.PostAsync($"/vendeurs/poste?handler={handler}", new FormUrlEncodedContent(form));
+        return await client.PostAsync($"/vendeurs/{sellerId}?handler={handler}", new FormUrlEncodedContent(form));
+    }
+
+    private static async Task<string> PageAfterAsync(HttpResponseMessage response)
+    {
+        return WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
-    public async Task SellerPagesShowThatNoDeskIsOpen()
+    public async Task WithoutADeskTheSellerPageDisablesTheDepositActionsAndOffersToOpenOne()
     {
         var client = CreateClient();
+        var sellerId = await SeedPreregisteredSellerAsync(1);
 
-        var content = WebUtility.HtmlDecode(await client.GetStringAsync("/vendeurs"));
+        var content = WebUtility.HtmlDecode(await client.GetStringAsync($"/vendeurs/{sellerId}"));
 
-        Assert.Contains("Aucun poste de dépôt ouvert sur cet ordinateur.", content);
-        Assert.Contains("href=\"/vendeurs/poste\"", content);
+        Assert.Contains("Prenez des lettres pour étiqueter les jouets ou finaliser le dépôt.", content);
+        Assert.Contains("Prendre des lettres</button>", content);
+        Assert.Matches(@"disabled=""disabled"">Étiqueter les jouets</button>", content);
+        Assert.Matches(@"data-seller-deposit-begin disabled=""disabled"">", content);
+        Assert.DoesNotContain("data-deposit-desk-banner", content);
     }
 
     [Fact]
-    public async Task OpeningADeskShowsItsLettersInTheBannerAndClosingItRemovesTheCookie()
+    public async Task OpeningADeskShowsItsLettersOnTheSellerPageAndReleasingThemRemovesTheCookie()
     {
         var client = CreateClient();
-        var closed = false;
+        var sellerId = await SeedPreregisteredSellerAsync(1);
+        var released = false;
 
         try
         {
-            var opened = await PostDeskAsync(client, "Open", new() { ["DeskName"] = "Poste test" });
-            var page = WebUtility.HtmlDecode(await opened.Content.ReadAsStringAsync());
+            var page = await PageAfterAsync(await PostDeskAsync(client, sellerId, "OpenDesk"));
 
-            Assert.Contains("Poste test · lettres", page);
-            Assert.Contains("Allez chercher les planches", page);
+            Assert.Matches(@"Allez chercher les planches [A-Z] et [A-Z]\.", page);
+            Assert.Matches(@"Lettres de cet ordinateur :\s+<strong>[A-Z], [A-Z]</strong>", page);
+            Assert.DoesNotContain("Poste ", page);
+            Assert.Contains("Libérer les lettres</button>", page);
+            Assert.DoesNotContain("Prendre des lettres</button>", page);
+            Assert.Contains("Étiqueter les jouets</button>", page);
+            Assert.DoesNotMatch(@"disabled=""disabled"">Étiqueter les jouets</button>", page);
 
-            var closedResponse = await PostDeskAsync(client, "Close");
-            closed = true;
+            var afterRelease = await PageAfterAsync(await PostDeskAsync(client, sellerId, "ReleaseDesk"));
+            released = true;
 
-            Assert.Contains(
-                "Aucun poste de dépôt ouvert sur cet ordinateur.",
-                WebUtility.HtmlDecode(await closedResponse.Content.ReadAsStringAsync()));
+            Assert.Matches(@"Lettres [A-Z] et [A-Z] libérées\. Rapportez leurs planches sur la table centrale\.", afterRelease);
+            Assert.Contains("Prenez des lettres pour étiqueter les jouets ou finaliser le dépôt.", afterRelease);
         }
         finally
         {
-            if (!closed)
+            if (!released)
             {
-                await PostDeskAsync(client, "Close");
+                await PostDeskAsync(client, sellerId, "ReleaseDesk");
             }
         }
     }
 
     [Fact]
-    public async Task AComputerHoldingAnOpenDeskCannotOpenASecondOne()
+    public async Task AComputerHoldingAnOpenDeskDoesNotOpenASecondOne()
     {
         var client = CreateClient();
+        var sellerId = await SeedPreregisteredSellerAsync(1);
 
         try
         {
-            await PostDeskAsync(client, "Open", new() { ["DeskName"] = "Premier poste" });
-            var second = await PostDeskAsync(client, "Open", new() { ["DeskName"] = "Second poste" });
-            var page = WebUtility.HtmlDecode(await second.Content.ReadAsStringAsync());
+            await PostDeskAsync(client, sellerId, "OpenDesk");
+            var openBefore = OpenDeskCount();
+            await PostDeskAsync(client, sellerId, "OpenDesk");
 
-            Assert.Contains("Un poste est déjà ouvert sur cet ordinateur.", page);
-            Assert.DoesNotContain("Second poste", page);
+            Assert.Equal(openBefore, OpenDeskCount());
         }
         finally
         {
-            await PostDeskAsync(client, "Close");
+            await PostDeskAsync(client, sellerId, "ReleaseDesk");
         }
+    }
+
+    private int OpenDeskCount()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Data.AppDbContext>();
+        return db.DepositDesks.Count(desk => desk.ClosedAt == null);
+    }
+
+    // The desk this test just opened: the newest one, tests of a class run one at a time.
+    private long NewestDeskId()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Data.AppDbContext>();
+        return db.DepositDesks.OrderByDescending(desk => desk.Id).First().Id;
     }
 
     private async Task<long> SeedPreregisteredSellerAsync(int itemCount)
@@ -102,10 +130,10 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
         return seller.Id;
     }
 
-    private async Task<HttpClient> ClientWithOpenDeskAsync(string deskName = "")
+    private async Task<HttpClient> ClientWithOpenDeskAsync(long sellerId)
     {
         var client = CreateClient();
-        await PostDeskAsync(client, "Open", new() { ["DeskName"] = deskName });
+        await PostDeskAsync(client, sellerId, "OpenDesk");
         return client;
     }
 
@@ -115,7 +143,7 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
     {
         using var scope = factory.Services.CreateScope();
         var desks = scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Services.DepositDeskService>();
-        var desk = await desks.OpenDeskAsync(null);
+        var desk = await desks.OpenDeskAsync();
         try
         {
             var start = await scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Services.IntakeService>()
@@ -143,11 +171,11 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
     [Fact]
     public async Task StartingADepositShowsTheAllocatedReferences()
     {
-        var client = await ClientWithOpenDeskAsync();
+        var sellerId = await SeedPreregisteredSellerAsync(3);
+        var client = await ClientWithOpenDeskAsync(sellerId);
         try
         {
-            var sellerId = await SeedPreregisteredSellerAsync(3);
-            Assert.Contains("Commencer le dépôt</button>", WebUtility.HtmlDecode(await client.GetStringAsync($"/vendeurs/{sellerId}")));
+            Assert.Contains("Étiqueter les jouets</button>", WebUtility.HtmlDecode(await client.GetStringAsync($"/vendeurs/{sellerId}")));
             var token = await AntiforgeryTokenAsync(client, $"/vendeurs/{sellerId}");
 
             var response = await client.PostAsync($"/vendeurs/{sellerId}?handler=StartDeposit", new FormUrlEncodedContent(new Dictionary<string, string>
@@ -156,12 +184,17 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
             }));
             var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
-            Assert.Matches(@"Références attribuées : [A-Z]\d{3} à [A-Z]\d{3}\.", content);
-            Assert.DoesNotContain("Commencer le dépôt</button>", content);
+            Assert.Matches(@"3 jouets étiquetés : [A-Z]\d{3} à [A-Z]\d{3}\.", content);
+            Assert.Contains("collez-les sur les jouets surlignés ci-dessous.", content);
+            Assert.Equal(3, Regex.Matches(content, "class=\"seller-item-just-labelled\"").Count);
+            // The message sits in the articles section the redirect scrolls to.
+            Assert.True(content.IndexOf("deposit-allocation-message", StringComparison.Ordinal)
+                > content.IndexOf("id=\"articles\"", StringComparison.Ordinal));
+            Assert.DoesNotContain("Étiqueter les jouets</button>", content);
         }
         finally
         {
-            await PostDeskAsync(client, "Close");
+            await PostDeskAsync(client, sellerId, "ReleaseDesk");
         }
     }
 
@@ -178,17 +211,17 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
         }));
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
-        Assert.Contains("Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.", content);
-        Assert.Contains("Commencer le dépôt</button>", content);
+        Assert.Contains("Prenez des lettres pour attribuer des références.", content);
+        Assert.Contains("Étiqueter les jouets</button>", content);
     }
 
     [Fact]
     public async Task FinalizingANotStartedDepositIsRefused()
     {
-        var client = await ClientWithOpenDeskAsync();
+        var sellerId = await SeedPreregisteredSellerAsync(1);
+        var client = await ClientWithOpenDeskAsync(sellerId);
         try
         {
-            var sellerId = await SeedPreregisteredSellerAsync(1);
             var token = await AntiforgeryTokenAsync(client, $"/vendeurs/{sellerId}");
 
             var response = await client.PostAsync($"/vendeurs/{sellerId}?handler=BeginDepositFinalization", new FormUrlEncodedContent(new Dictionary<string, string>
@@ -197,12 +230,12 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
             }));
 
             Assert.Contains(
-                "Commencez le dépôt pour attribuer les références avant de le finaliser.",
+                "Étiquetez les jouets avant de finaliser le dépôt.",
                 WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()));
         }
         finally
         {
-            await PostDeskAsync(client, "Close");
+            await PostDeskAsync(client, sellerId, "ReleaseDesk");
         }
     }
 
@@ -211,18 +244,19 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
     {
         var sellerId = await SeedPreregisteredSellerAsync(1);
         await StartDepositWithoutClientDeskAsync(sellerId);
-        var client = await ClientWithOpenDeskAsync();
+        var client = await ClientWithOpenDeskAsync(sellerId);
         try
         {
             var response = await PostItemRowAsync(client, sellerId, "Toupie ajoutée", "4");
             var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
-            Assert.Matches(@"Référence attribuée : [A-Z]\d{3}\.", content);
+            Assert.Matches(@"1 jouet étiqueté : [A-Z]\d{3}\.", content);
+            Assert.Equal(1, Regex.Matches(content, "class=\"seller-item-just-labelled\"").Count);
             Assert.Contains("Toupie ajoutée", content);
         }
         finally
         {
-            await PostDeskAsync(client, "Close");
+            await PostDeskAsync(client, sellerId, "ReleaseDesk");
         }
     }
 
@@ -236,7 +270,7 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
         var response = await PostItemRowAsync(client, sellerId, "Puzzle refusé", "5");
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
-        Assert.Contains("Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.", content);
+        Assert.Contains("Prenez des lettres pour attribuer des références.", content);
         Assert.Contains("value=\"Puzzle refusé\"", content);
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Data.AppDbContext>();
@@ -248,19 +282,18 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
     {
         var sellerId = await SeedPreregisteredSellerAsync(1);
         await StartDepositWithoutClientDeskAsync(sellerId);
-        var client = await ClientWithOpenDeskAsync("PosteFermeAilleurs");
+        var client = await ClientWithOpenDeskAsync(sellerId);
+        var deskId = NewestDeskId();
         using (var scope = factory.Services.CreateScope())
         {
             // An administrator closes this desk from another computer: the cookie stays.
-            var db = scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Data.AppDbContext>();
-            var deskId = db.DepositDesks.Single(desk => desk.Name == "PosteFermeAilleurs").Id;
             await scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Services.DepositDeskService>().CloseDeskAsync(deskId);
         }
 
         var response = await PostItemRowAsync(client, sellerId, "Train refusé", "6");
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
-        Assert.Contains("Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.", content);
+        Assert.Contains("Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.", content);
         Assert.Contains("value=\"Train refusé\"", content);
     }
 
@@ -277,19 +310,14 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
     [Fact]
     public async Task AdminForceCloseMakesTheDeskComputerSeeItsDeskClosed()
     {
-        // ASCII name: the match runs on raw HTML, where Razor encodes accents.
-        var deskClient = await ClientWithOpenDeskAsync("PosteAFermer");
+        var sellerId = await SeedPreregisteredSellerAsync(1);
+        var deskClient = await ClientWithOpenDeskAsync(sellerId);
+        var deskId = NewestDeskId();
         var admin = CreateClient();
         await UnlockAdminAsync(admin);
-        var adminPage = await admin.GetStringAsync("/administration");
-        Assert.Contains("data-desk-name=\"PosteAFermer\"", adminPage);
-        long deskId;
-        using (var scope = factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AssociationSaleTool.Web.Data.AppDbContext>();
-            deskId = db.DepositDesks.Single(desk => desk.Name == "PosteAFermer").Id;
-        }
-        var token = await AntiforgeryTokenAsync(admin, "/administration");
+        var adminPage = await admin.GetStringAsync("/administration?onglet=lettres");
+        Assert.Contains($"name=\"DeskId\" value=\"{deskId}\"", adminPage);
+        var token = await AntiforgeryTokenAsync(admin, "/administration?onglet=lettres");
 
         await admin.PostAsync("/administration?handler=ForceCloseDesk", new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -297,8 +325,9 @@ public sealed class DepositDeskSmokeTests(IntakeWebApplicationFactory factory) :
             ["DeskId"] = deskId.ToString()
         }));
 
-        var sellers = WebUtility.HtmlDecode(await deskClient.GetStringAsync("/vendeurs"));
-        Assert.Contains("Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.", sellers);
+        var sellerPage = WebUtility.HtmlDecode(await deskClient.GetStringAsync($"/vendeurs/{sellerId}"));
+        Assert.Contains("Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer le dépôt.", sellerPage);
+        Assert.Contains("Prendre des lettres</button>", sellerPage);
     }
 
     [Fact]

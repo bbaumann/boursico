@@ -41,7 +41,7 @@ public sealed class DataListServiceTests
     }
 
     [Fact]
-    public async Task ListSellersAsync_SearchTextContainsCodeAndNameOnly()
+    public async Task ListSellersAsync_SearchTextContainsNameOnly()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
@@ -70,7 +70,7 @@ public sealed class DataListServiceTests
         Assert.Equal(200, row.ExpectedFeeCents);
         Assert.Equal(200, row.PaidFeeCents);
         Assert.Equal(0, row.RemainingFeeCents);
-        Assert.Contains("zx", row.SearchText);
+        Assert.DoesNotContain("zx", row.SearchText);
         Assert.Contains("zo\u00e9 martin", row.SearchText);
         Assert.DoesNotContain("0601020304", row.SearchText);
         Assert.DoesNotContain("zoe@example", row.SearchText);

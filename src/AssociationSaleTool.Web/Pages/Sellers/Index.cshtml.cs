@@ -21,6 +21,6 @@ public sealed class IndexModel(IntakeService intakeService) : PageModel
 
     public static string BuildSellerFilterText(SellerEntity seller)
     {
-        return $"{seller.SellerCode} {seller.FirstName} {seller.LastName}".ToLower(FrenchCulture);
+        return $"{seller.FirstName} {seller.LastName}".ToLower(FrenchCulture);
     }
 }

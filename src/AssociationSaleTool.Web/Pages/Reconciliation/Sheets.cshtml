@@ -29,9 +29,9 @@
 else if (Model.Sheets.Count == 0)
 {
     <section class="page-card">
-        @if (!string.IsNullOrWhiteSpace(Model.RequestedSellerCode))
+        @if (Model.RequestedSellerId is not null)
         {
-            <p class="empty-state">Aucune feuille vendeur pour le code @Model.RequestedSellerCode.</p>
+            <p class="empty-state">Aucune feuille à imprimer pour ce vendeur.</p>
         }
         else
         {
@@ -47,7 +47,7 @@ else
             <header class="seller-sheet-header">
                 <div>
                     <p class="eyebrow">Feuille vendeur</p>
-                    <h1 class="page-title">@sheet.SellerCode - @sheet.SellerName</h1>
+                    <h1 class="page-title">@sheet.SellerName</h1>
                 </div>
                 <dl class="seller-sheet-contact">
                     @if (!string.IsNullOrWhiteSpace(sheet.Email))
