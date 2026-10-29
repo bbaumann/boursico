@@ -161,6 +161,46 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task SellersIndexAndDetailsShowTheThreeDepositStates()
+    {
+        var client = _factory.CreateClient();
+        long notStartedId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var notStarted = new SellerEntity { SellerCode = "DS-001", FirstName = "Nadia", LastName = "Etatun" };
+            var started = new SellerEntity
+            {
+                SellerCode = "DS-002", FirstName = "Paul", LastName = "Etatdeux", DepositStartedAt = DateTime.UtcNow
+            };
+            var validated = new SellerEntity
+            {
+                SellerCode = "DS-003",
+                FirstName = "Vera",
+                LastName = "Etattrois",
+                DepositStartedAt = DateTime.UtcNow,
+                DepositStatus = "deposit_validated"
+            };
+            dbContext.Sellers.AddRange(notStarted, started, validated);
+            await dbContext.SaveChangesAsync();
+            notStartedId = notStarted.Id;
+        }
+
+        var index = WebUtility.HtmlDecode(await client.GetStringAsync("/vendeurs"));
+
+        Assert.Contains("<th>Dépôt</th>", index);
+        Assert.Matches(@"Nadia Etatun</td>[\s\S]*?seller-deposit-status-not-started"">Dépôt non commencé</span>", index);
+        Assert.Matches(@"Paul Etatdeux</td>[\s\S]*?seller-deposit-status-pending"">Dépôt à valider</span>", index);
+        Assert.Matches(@"Vera Etattrois</td>[\s\S]*?seller-deposit-status-validated"">Dépôt validé</span>", index);
+
+        var details = WebUtility.HtmlDecode(await client.GetStringAsync($"/vendeurs/{notStartedId}"));
+
+        Assert.Contains("seller-deposit-status-not-started", details);
+        Assert.Contains("Dépôt non commencé", details);
+        Assert.Contains("Étiquetez les jouets quand le vendeur les apporte.", details);
+    }
+
+    [Fact]
     public async Task SellerPriceInputsUseFrenchWholeEuroBrowserValidation()
     {
         var client = _factory.CreateClient();

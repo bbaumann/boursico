@@ -132,7 +132,7 @@ Si les vendeurs ont rempli un formulaire en ligne externe, exporter les réponse
 
 Cliquer sur `Fichier CSV ou TSV`, choisir l'export, puis cliquer sur `Importer les nouvelles soumissions`.
 
-L'import crée des fiches vendeurs en `Dépôt à valider` quand la soumission contient au moins un prénom et un nom. Les coordonnées et informations de pièce d'identité incomplètes ne bloquent pas l'import : elles seront complétées avec le vendeur avant la signature du contrat.
+L'import crée des fiches vendeurs en `Dépôt non commencé` quand la soumission contient au moins un prénom et un nom. Les coordonnées et informations de pièce d'identité incomplètes ne bloquent pas l'import : elles seront complétées avec le vendeur avant la signature du contrat.
 
 Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`. Quand une ligne contient une description mais pas de prix valide, l'article est aussi ajouté en `enregistré` avec un prix `À compléter`, et une note est ajoutée dans `Import à vérifier`. Quand la description ne peut pas être extraite, la ligne n'est pas importée et reste seulement notée dans `Import à vérifier`.
 
@@ -170,6 +170,12 @@ Le prix vendeur est aussi le prix imprimé vu par le client dans l'outil actuel.
 À droite du bouton `+`, un compteur affiche le nombre total d'articles du vendeur, en comptant les lignes en cours de saisie, par exemple `14 articles (dont 3 nouveaux)`. Il se met à jour pendant la saisie et aide le vendeur à savoir combien d'articles il dépose avant d'enregistrer. Le même compteur apparaît lors de la création d'un vendeur.
 
 ### Valider le dépôt vendeur
+
+La fiche vendeur et la colonne `Dépôt` de la liste `VENDEURS` indiquent où en est chaque vendeur :
+
+- `Dépôt non commencé` : les jouets ne sont pas encore étiquetés ;
+- `Dépôt à valider` : les jouets sont étiquetés, il reste à finaliser et faire signer le contrat ;
+- `Dépôt validé` : le contrat est signé et les articles sont en vente.
 
 Les articles ajoutés restent `enregistré` tant que le dépôt du vendeur n'est pas validé. Ils ne sont pas visibles en caisse. Tant qu'ils n'ont pas de référence, l'écran affiche un tiret (`—`) à la place : la référence est attribuée au moment où l'on clique sur `Étiqueter les jouets`, ou à l'enregistrement d'une ligne ajoutée après ce clic.
 

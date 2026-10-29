@@ -31,6 +31,7 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Allow admin cancellation of a validated deposit with a local admin-password confirmation, reopening only items still `in_stock`
 - Configure physical caisses with a name and initial cash amount (`fond de caisse`) from `/administration`
 - Take reference letters for a computer from any seller detail page (`Prendre des lettres`, internally an open deposit desk); each computer then owns two letters, which the seller detail page shows with the labels left and a `Libérer les lettres` button
+- Show each seller's deposit state on the seller page and in a `Dépôt` column of the `VENDEURS` list: `Dépôt non commencé`, `Dépôt à valider` (toys labelled) or `Dépôt validé`
 - Start a seller's deposit with `Étiqueter les jouets`, which allocates the desk's next `<LETTER><NNN>` references to all existing rows in one run; rows added later get their reference when saved
 - Set the number of labels per letter and see letters and open desks on `/administration`, where an admin can free a desk's letters
 - Store one seller-set printed price per item

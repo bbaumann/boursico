@@ -439,6 +439,10 @@ textarea.input-validation-error {
   width: 5rem;
 }
 
+.seller-index-deposit-column {
+  width: 11rem;
+}
+
 .subsection {
   margin-top: 2rem;
 }
@@ -851,6 +855,20 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 .seller-deposit-status-validated {
   color: #1f6b3a;
   background: rgba(31, 107, 58, 0.1);
+}
+
+.seller-deposit-status-not-started {
+  color: var(--muted);
+  background: rgba(90, 100, 88, 0.12);
+}
+
+.seller-deposit-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .seller-deposit-actions {

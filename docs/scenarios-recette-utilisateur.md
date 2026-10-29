@@ -10,7 +10,7 @@ Les changements du 29 septembre 2026 répondent aux retours de la recette du 17 
 
 | Date | Changement | Scénarios concernés |
 | --- | --- | --- |
-| 29/10/2026 | Le poste de dépôt disparaît de l'écran : chaque ordinateur prend ses lettres d'étiquettes depuis la fiche vendeur avec `Prendre des lettres`, et les rend avec `Libérer les lettres` (qui remplace `Fermer le poste` et `Forcer la fermeture`). Plus de page `/vendeurs/poste`, plus de bandeau, plus de nom de poste. Sans lettres, `Commencer le dépôt` et `Finaliser le dépôt` sont grisés et `Prendre des lettres` est à côté ; avec des lettres, la fiche affiche `Lettres de cet ordinateur : B, C`. Le formulaire d'articles propose 5 lignes au lieu de 10. La page `ADMIN` est découpée en onglets (`Statut de la vente`, `Caisses`, `Lettres et étiquettes`, `Correction des articles`). Le code vendeur n'est plus affiché nulle part : les listes et recherches se font par nom, et la feuille d'un seul vendeur se choisit dans une liste `Vendeur`. `Commencer le dépôt` devient `Étiqueter les jouets` ; après le clic, le résultat (`12 jouets étiquetés : B001 à B012.` et la consigne de collage) s'affiche au-dessus du tableau des articles, où la page descend, et les jouets qui viennent de recevoir leur étiquette sont surlignés. | Prevente-03, Prevente-04, Prevente-05, Prevente-09, Prevente-10, Prevente-11, Vente-08, Vente-09, Vente-10, Vente-11, Vente-12, PostVente-02, PostVente-04 |
+| 29/10/2026 | Le poste de dépôt disparaît de l'écran : chaque ordinateur prend ses lettres d'étiquettes depuis la fiche vendeur avec `Prendre des lettres`, et les rend avec `Libérer les lettres` (qui remplace `Fermer le poste` et `Forcer la fermeture`). Plus de page `/vendeurs/poste`, plus de bandeau, plus de nom de poste. Sans lettres, `Commencer le dépôt` et `Finaliser le dépôt` sont grisés et `Prendre des lettres` est à côté ; avec des lettres, la fiche affiche `Lettres de cet ordinateur : B, C`. Le formulaire d'articles propose 5 lignes au lieu de 10. La page `ADMIN` est découpée en onglets (`Statut de la vente`, `Caisses`, `Lettres et étiquettes`, `Correction des articles`). Le code vendeur n'est plus affiché nulle part : les listes et recherches se font par nom, et la feuille d'un seul vendeur se choisit dans une liste `Vendeur`. `Commencer le dépôt` devient `Étiqueter les jouets` ; après le clic, le résultat (`12 jouets étiquetés : B001 à B012.` et la consigne de collage) s'affiche au-dessus du tableau des articles, où la page descend, et les jouets qui viennent de recevoir leur étiquette sont surlignés. Le dépôt d'un vendeur a trois états à l'écran : `Dépôt non commencé` (jouets pas encore étiquetés), `Dépôt à valider` et `Dépôt validé` ; la liste `VENDEURS` les affiche dans une nouvelle colonne `Dépôt`. | Prevente-01, Prevente-03, Prevente-04, Prevente-05, Prevente-09, Prevente-10, Prevente-11, Vente-08, Vente-09, Vente-10, Vente-11, Vente-12, PostVente-02, PostVente-04 |
 | 14/10/2026 | Les références ne sont plus attribuées à l'étape `Frais` : chaque ordinateur de dépôt ouvre un poste (`/vendeurs/poste`) qui reçoit deux lettres d'étiquettes ; `Commencer le dépôt` donne à tous les articles du vendeur leurs références d'un coup, et une ligne ajoutée ensuite reçoit sa référence à l'enregistrement. `Continuer` n'attribue plus rien et `Finaliser le dépôt` exige un dépôt commencé. Les compteurs de lettres ne diminuent jamais. L'administration règle `Étiquettes imprimées par lettre`, voit les lettres et les postes ouverts, et peut `Forcer la fermeture` d'un poste. Un bandeau de poste apparaît sur les pages vendeurs. | Prevente-04, Prevente-05, Prevente-06, Prevente-07, Prevente-10, Prevente-11 |
 | 13/10/2026 | Nouvel onglet `Chèques par caisse` dans `DONNÉES` : pour chaque caisse, la liste des chèques (banque, numéro, montant, acheteur) et leur total, pour contrôler les chèques à la clôture. | PostVente-08 |
 | 13/10/2026 | L'onglet `Clôture` commence par les montants attendus dans chaque caisse (espèces, chèques, CB), séparés des colonnes de détail par un trait vertical ; les caisses sont listées d'abord et la ligne `Toutes les caisses` en dernier. Les colonnes `Articles`, `Sous-total`, `Frais`, `Encaissé` et `Net` sont retirées. | PostVente-07 |
@@ -99,7 +99,7 @@ Description : importer les soumissions CSV ou TSV produites par le formulaire in
 
 #### Critères d'acceptation
 
-- Les soumissions avec prénom et nom créent des vendeurs en `Dépôt à valider`.
+- Les soumissions avec prénom et nom créent des vendeurs en `Dépôt non commencé`.
 - Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`.
 - Une ligne avec une description mais sans prix valide crée un article `enregistré` avec le prix `À compléter` et une note dans `Import à vérifier`.
 - Une ligne sans description récupérable n'est pas importée et apparaît seulement dans `Import à vérifier`.
@@ -117,7 +117,7 @@ Description : traiter une soumission qui semble correspondre à un vendeur déj�
 #### Étapes
 
 1. Importer un fichier contenant une soumission déjà connue.
-2. Examiner la ligne marquée comme doublon possible : elle liste les vendeurs existants correspondants avec code, nom, téléphone et nombre d'articles.
+2. Examiner la ligne marquée comme doublon possible : elle liste les vendeurs existants correspondants avec nom, téléphone et nombre d'articles.
 3. Si un seul vendeur correspond, cliquer sur `Ajouter les articles au vendeur existant`, puis sur `Ouvrir le vendeur` pour contrôler.
 4. Si plusieurs vendeurs correspondent, cliquer sur `Ignorer cette soumission` et traiter le cas manuellement.
 
@@ -154,7 +154,7 @@ Description : créer un vendeur sans passer par l'import, ou compléter les info
 - Seuls le prénom et le nom bloquent l'enregistrement. Les autres champs marqués `Obligatoire` peuvent rester vides tant que le dépôt n'est pas validé.
 - Les doublons évidents sont signalés avant enregistrement dans une liste `Vendeurs existants` avec un lien `Ouvrir ce vendeur`.
 - Sans téléphone saisi, le doublon est détecté sur le prénom et le nom seuls.
-- La liste `VENDEURS` se filtre par nom et affiche nom, e-mail et nombre d'articles.
+- La liste `VENDEURS` se filtre par nom et affiche nom, e-mail, nombre d'articles et l'état du dépôt (colonne `Dépôt`) : un vendeur qui vient d'être créé est en `Dépôt non commencé`.
 
 ### Prevente-04 - Ajouter les articles d'un vendeur
 
@@ -217,6 +217,7 @@ Description : confirmer les jouets physiquement déposés, attribuer les référ
 - Tant qu'il manque une information, `Finaliser le dépôt` n'ouvre pas la fenêtre et affiche un résumé `Fiche vendeur` et/ou `Articles` avec la liste des points à corriger.
 - La validation est refusée tant qu'un article a un prix `À compléter`.
 - La validation reste possible si des frais vendeur restent à payer ; l'étape `Frais` affiche alors `Déduit au rapprochement`.
+- Avant `Étiqueter les jouets`, la fiche affiche `Dépôt non commencé` et `Étiquetez les jouets quand le vendeur les apporte.` ; après le clic, elle affiche `Dépôt à valider`, comme la colonne `Dépôt` de la liste `VENDEURS`.
 - Avant `Étiqueter les jouets`, les articles n'ont pas de référence. Après le clic, chaque article du vendeur a une référence de la forme une lettre plus trois chiffres, par exemple `B157`, et la page descend au tableau des articles, où s'affichent la série et la consigne (`12 jouets étiquetés : B001 à B012. Décollez les étiquettes de la planche B dans l'ordre et collez-les sur les jouets surlignés ci-dessous.`) ; les jouets étiquetés sont surlignés. Le bouton `Étiqueter les jouets` disparaît.
 - Les articles d'un même vendeur démarrés ensemble portent la même lettre et des numéros qui se suivent, sauf si la lettre n'a pas assez de place : la série est alors répartie sur plusieurs lettres et la page dit `Allez chercher la planche R.` pour une lettre nouvellement prise.
 - La lettre vient du poste : elle sert au tri physique des invendus après la vente.
@@ -225,7 +226,7 @@ Description : confirmer les jouets physiquement déposés, attribuer les référ
 - Sans lettres sur l'ordinateur, `Étiqueter les jouets` et `Finaliser le dépôt` sont grisés, `Prendre des lettres` est proposé à côté, et aucune référence n'est créée.
 - Le contrat imprimé contient l'identité de l'association, les informations vendeur, les frais vendeur et la liste des articles avec leur référence. Il n'imprime pas la pièce d'identité ni le statut de l'événement.
 - `Valider le dépôt` reste grisé tant que la case de signature n'est pas cochée.
-- Après validation, le message `Dépôt validé : N articles sont maintenant en stock.` s'affiche et les articles passent en `en stock`.
+- Après validation, le message `Dépôt validé : N articles sont maintenant en stock.` s'affiche, les articles passent en `en stock` et le vendeur passe en `Dépôt validé` dans la liste `VENDEURS`.
 - Après validation, les modifications normales du vendeur et de ses articles sont verrouillées.
 - Si deux ordinateurs prennent la même lettre au même instant, l'un affiche un message demandant de réessayer ; recliquer aboutit sans perte de données.
 

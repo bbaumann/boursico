@@ -49,6 +49,8 @@ Seller deposits use a separate seller-level operational status:
 - `deposit_pending`: the seller has not yet signed a deposit contract; contact fields may still be incomplete, and their items remain draft `registered` rows
 - `deposit_validated`: the seller has signed the paper deposit contract; accepted items have been moved to `in_stock`
 
+On screen the seller page and the `VENDEURS` list show three deposit states, derived without a third stored value: `Dépôt non commencé` (`deposit_pending` and `deposit_started_at` null: toys not labelled yet), `Dépôt à valider` (`deposit_pending` with `deposit_started_at` set) and `Dépôt validé`. A cancelled validation keeps its labels, so it returns to `Dépôt à valider`.
+
 The signed paper contract is the legal proof of deposit and price agreement. The database status only gates normal app workflow.
 
 ## Status Summary

@@ -1,4 +1,5 @@
 @page "/vendeurs"
+@using AssociationSaleTool.Web.Domain.Sellers
 @model AssociationSaleTool.Web.Pages.Sellers.IndexModel
 @{
     ViewData["Title"] = "Vendeurs";
@@ -45,6 +46,7 @@
                 <col class="seller-index-name-column" />
                 <col class="seller-index-email-column seller-index-secondary-column" />
                 <col class="seller-index-items-column" />
+                <col class="seller-index-deposit-column" />
                 <col class="seller-index-action-column" />
             </colgroup>
             <thead>
@@ -52,6 +54,7 @@
                     <th>Nom</th>
                     <th class="seller-index-secondary-column">E-mail</th>
                     <th>Articles</th>
+                    <th>Dépôt</th>
                     <th></th>
                 </tr>
             </thead>
@@ -62,6 +65,9 @@
                     <td>@seller.FirstName @seller.LastName</td>
                     <td class="seller-index-secondary-column">@(seller.Email ?? "—")</td>
                     <td>@seller.Items.Count</td>
+                    <td>
+                        <span class="seller-deposit-badge @SellerDepositStatuses.ToCssClass(seller.DepositStatus, seller.DepositStartedAt)">@SellerDepositStatuses.ToFrenchLabel(seller.DepositStatus, seller.DepositStartedAt)</span>
+                    </td>
                     <td><a asp-page="/Sellers/Details" asp-route-id="@seller.Id">Ouvrir</a></td>
                 </tr>
             }
