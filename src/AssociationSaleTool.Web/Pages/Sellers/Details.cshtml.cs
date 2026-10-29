@@ -98,6 +98,23 @@ public sealed class DetailsModel(
 
     public bool HasItemDepositValidationMessages { get; private set; }
 
+    // Before labelling, "not started" is already told by the status and the
+    // greyed-out button, so it is not listed as a point to correct.
+    public IReadOnlyList<string> VisibleDepositBlockers => IsDepositStarted
+        ? DepositValidationMessages
+        : DepositValidationMessages.Where(message => message != DepositNotStartedMessage).ToList();
+
+    public bool CanBeginDepositFinalization => IsDeskOpen && DepositValidationMessages.Count == 0;
+
+    // The deposit runs 1. complete the seller file, 2. label the toys,
+    // 3. finalize: while the file is incomplete, completing it is the only
+    // green action and the later steps step back to secondary buttons.
+    public string NextStepButtonClass(bool isSellerFileStep)
+    {
+        var isNextStep = HasSellerDepositValidationMessages == isSellerFileStep;
+        return isNextStep ? "button-link button-link-solid" : "button-link";
+    }
+
     public async Task<IActionResult> OnGetAsync(long id, CancellationToken cancellationToken)
     {
         var loaded = await intakeService.GetSellerWithItemsAsync(id, cancellationToken);
@@ -593,6 +610,14 @@ public sealed class DetailsModel(
         CanValidateDeposit = canEditCurrentPhase && isPendingDeposit;
         CanCancelDepositValidation = canEditCurrentPhase
             && seller.DepositStatus == SellerDepositStatuses.Validated;
+        // Blockers are shown as soon as the page opens, not only after a
+        // refused `Finaliser le dépôt`, so the operator completes the seller
+        // file while the seller is still at the desk.
+        if (CanValidateDeposit)
+        {
+            ApplyDepositValidationState(BuildDepositValidationState(seller));
+        }
+
         ReadOnlyMessage = !isPendingDeposit
             ? "Le contrat de dépôt signé rend le vendeur et ses articles en lecture seule."
             : !canEditCurrentPhase

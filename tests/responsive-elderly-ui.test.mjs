@@ -34,7 +34,7 @@ test("seller detail presents deposit next action before contact details on compa
   assert.ok(depositPanelIndex < readOnlyMessageIndex, "deposit panel should appear before the read-only message");
   assert.ok(depositPanelIndex < contactListIndex, "deposit panel should appear before the contact list");
   assert.ok(depositSummaryIndex < contactListIndex, "deposit summary should appear before the contact list");
-  assert.match(sellerDetails, /DepositValidationMessages\.Count/);
+  assert.match(sellerDetails, /VisibleDepositBlockers\.Count/);
   assert.match(css, /@media\s*\(max-width:\s*980px\)[\s\S]*\.seller-contact-list\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\);/);
 });
 
