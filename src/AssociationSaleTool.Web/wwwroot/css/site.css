@@ -11,6 +11,9 @@
 
 html {
   font-size: 18px;
+  /* Anchor jumps (e.g. #articles after labelling) land below the sticky
+     .main-navigation: its 1rem offset plus its ~4.8rem height, with room to spare. */
+  scroll-padding-top: 7rem;
 }
 
 body {
@@ -423,10 +426,6 @@ textarea.input-validation-error {
   overflow-wrap: anywhere;
 }
 
-.seller-index-code-column {
-  width: 5rem;
-}
-
 .seller-index-name-column {
   width: 10rem;
 }
@@ -438,10 +437,6 @@ textarea.input-validation-error {
 .seller-index-items-column,
 .seller-index-action-column {
   width: 5rem;
-}
-
-.seller-index-code-cell {
-  font-weight: 700;
 }
 
 .subsection {
@@ -660,7 +655,6 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   width: 10.25rem;
 }
 
-.data-list-seller-table .data-list-code-column,
 .data-list-seller-table .data-list-phone-column {
   white-space: nowrap;
 }
@@ -1704,6 +1698,11 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
     width: min(100% - 2rem, var(--page-max-width));
   }
 
+  /* The navigation scrolls away at this width, so anchors need no offset. */
+  html {
+    scroll-padding-top: 0;
+  }
+
   .main-navigation {
     position: static;
     display: grid;
@@ -1735,10 +1734,6 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 
   .seller-index-secondary-column {
     display: none;
-  }
-
-  .seller-index-code-column {
-    width: 5.8rem;
   }
 
   .seller-index-name-column {
@@ -2000,16 +1995,19 @@ body:has(.seller-sheets-print-root) .page-frame {
   }
 }
 
-.deposit-desk-banner {
+.deposit-desk-box {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem 1rem;
-  width: min(var(--page-max-width), calc(100% - 3rem));
-  margin: 0.75rem auto 0;
   padding: 0.5rem 1rem;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--panel);
+}
+
+.deposit-desk-box p {
+  margin: 0;
 }
 
 .deposit-desk-warning {
@@ -2017,7 +2015,22 @@ body:has(.seller-sheets-print-root) .page-frame {
   color: var(--accent-strong);
 }
 
-.deposit-desk-letters-callout {
-  font-size: 1.5rem;
+.deposit-allocation-message {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-left: 6px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.seller-items-table tr.seller-item-just-labelled td {
+  background: #fff3b0;
+  font-weight: 700;
+}
+
+.deposit-desk-message {
+  font-size: 1.25rem;
   font-weight: 700;
 }

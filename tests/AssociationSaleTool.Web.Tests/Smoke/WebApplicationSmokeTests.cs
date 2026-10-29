@@ -94,7 +94,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellersIndexRendersLiveSearchHooksForCodeAndName()
+    public async Task SellersIndexRendersLiveSearchHooksForName()
     {
         var client = _factory.CreateClient();
         using (var scope = _factory.Services.CreateScope())
@@ -126,15 +126,15 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("data-seller-search-root", content);
         Assert.Contains("data-seller-search", content);
-        Assert.Contains("placeholder=\"Code ou nom\"", content);
+        Assert.Contains("placeholder=\"Nom\"", content);
         Assert.Contains("Aucun vendeur ne correspond à cette recherche.", content);
         Assert.Contains("data-seller-row", content);
-        Assert.Contains("data-seller-filter-text=\"sl-101 ariane martin\"", content);
-        Assert.Contains("data-seller-filter-text=\"sl-202 bruno durand\"", content);
+        Assert.Contains("data-seller-filter-text=\"ariane martin\"", content);
+        Assert.Contains("data-seller-filter-text=\"bruno durand\"", content);
     }
 
     [Fact]
-    public async Task SellersIndexConstrainsSellerCodeColumnForLegacyLongCodes()
+    public async Task SellersIndexDoesNotShowTheTechnicalSellerCode()
     {
         var client = _factory.CreateClient();
         using (var scope = _factory.Services.CreateScope())
@@ -156,8 +156,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("seller-index-table", content);
-        Assert.Contains("seller-index-code-column", content);
-        Assert.Contains("class=\"seller-index-code-cell\">DL4BCF74</td>", content);
+        Assert.DoesNotContain("seller-index-code-column", content);
+        Assert.DoesNotContain("DL4BCF74", content);
     }
 
     [Fact]
@@ -401,7 +401,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var gateContent = WebUtility.HtmlDecode(await GetSaleStatusGateAsync(client));
         Assert.DoesNotContain("Caisse de cet ordinateur", gateContent);
 
-        var content = await UnlockSaleStatusPageAsync(client);
+        var content = await UnlockSaleStatusPageAsync(client, "caisses");
         var section = Regex.Match(content, "<section class=\"subsection\" data-device-cash-register-root>[\\s\\S]*?</section>");
         Assert.True(section.Success, "Missing the section for this computer's cash register");
         Assert.Contains("<h2>Caisse de cet ordinateur</h2>", section.Value);
@@ -687,7 +687,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         var client = _factory.CreateClient();
         var cashRegisterName = $"CAISSE-ACTIVE-{Guid.NewGuid():N}";
 
-        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        var dashboardContent = await UnlockSaleStatusPageAsync(client, "caisses");
         var response = await client.PostAsync(
             $"{AdminPath}?handler=SaveCashRegister",
             BuildCashRegisterCreateFormContent(dashboardContent, cashRegisterName));
@@ -946,7 +946,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             saleId = sale.Id;
         }
 
-        var content = await UnlockSaleStatusPageAsync(client);
+        var content = await UnlockSaleStatusPageAsync(client, "articles");
 
         Assert.Contains("Correction des articles", content);
         Assert.Contains("data-item-correction-root", content);
@@ -1013,7 +1013,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             await dbContext.SaveChangesAsync();
         }
 
-        var content = await UnlockSaleStatusPageAsync(client);
+        var content = await UnlockSaleStatusPageAsync(client, "articles");
 
         Assert.Contains("Article tardif à contrôler", content);
         Assert.Contains("Marquer défectueux", content);
@@ -1156,7 +1156,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             saleLineId = sale.SaleLines.Single().Id;
         }
 
-        var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        var dashboardContent = await UnlockSaleStatusPageAsync(client, "articles");
         Assert.Contains("Annuler le remboursement", dashboardContent);
 
         var response = await client.PostAsync(
@@ -1488,7 +1488,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task DataListsSellersTabSearchesByCodeAndNameOnly()
+    public async Task DataListsSellersTabSearchesByNameOnly()
     {
         var client = _factory.CreateClient();
         var scenario = await SeedDataListScenarioAsync();
@@ -1498,13 +1498,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
         Assert.Contains("Vendeurs", content);
-        Assert.Contains(scenario.SellerCode, content);
+        Assert.DoesNotContain(scenario.SellerCode, content);
         Assert.Contains("Diane Liste", content);
         Assert.Contains("diane.liste@example.test", content);
         Assert.Contains("0606060606", content);
         Assert.Contains("data-list-seller-table", content);
-        Assert.Equal(11, CountSortableDataListHeaders(content));
-        Assert.Contains("data-list-code-column", content);
+        Assert.Equal(10, CountSortableDataListHeaders(content));
+        Assert.DoesNotContain("data-list-code-column", content);
         Assert.Contains("data-list-name-column", content);
         Assert.Contains("data-list-email-column", content);
         Assert.Contains("data-list-phone-column", content);
@@ -1515,13 +1515,13 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains("title=\"Manquants\">Manq.</abbr>", content);
         Assert.Contains("title=\"D\u00e9fectueux\">D\u00e9f.</abbr>", content);
         Assert.Contains("data-list-fee-column", content);
-        Assert.Contains($"href=\"/vendeurs/{scenario.SellerId}\">{scenario.SellerCode}</a>", content);
+        Assert.Contains($"href=\"/vendeurs/{scenario.SellerId}\">Diane Liste</a>", content);
         Assert.Contains("0/2\u20ac", content);
         Assert.DoesNotContain("0.00 € / 2.00 €", content);
-        Assert.Contains($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste\"", content);
-        Assert.DoesNotContain($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste diane.liste@example.test", content);
-        Assert.DoesNotContain($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste 0606060606", content);
-        Assert.DoesNotContain($"data-data-list-filter-text=\"{scenario.SellerCode.ToLowerInvariant()} diane liste rue lecture", content);
+        Assert.Contains($"data-data-list-filter-text=\"diane liste\"", content);
+        Assert.DoesNotContain($"data-data-list-filter-text=\"diane liste diane.liste@example.test", content);
+        Assert.DoesNotContain($"data-data-list-filter-text=\"diane liste 0606060606", content);
+        Assert.DoesNotContain($"data-data-list-filter-text=\"diane liste rue lecture", content);
     }
 
     [Fact]
@@ -1786,8 +1786,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             Assert.Contains("Correction des articles", content);
             Assert.Contains("href=\"/rapprochement/feuilles\"", content);
             Assert.Contains("Imprimer toutes les feuilles", content);
-            Assert.Contains("Code ou nom du vendeur", content);
-            Assert.Contains("list=\"seller-sheet-options\"", content);
+            Assert.Contains(">Vendeur</label>", content);
+            Assert.Contains("<option value=\"\">Choisir un vendeur</option>", content);
             Assert.Contains("Imprimer une feuille", content);
             Assert.Contains("data-reconciliation-root", content);
             Assert.Contains("data-reconciliation-search", content);
@@ -1905,10 +1905,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             var gateContent = await GetReconciliationGateAsync(client);
             _ = await UnlockReconciliationDashboardAsync(client);
             var markMissingResponse = await client.PostAsync(
-                $"/rapprochement?handler=MarkMissing&itemId={inStockItemId}&sellerCode=RO-002",
+                $"/rapprochement?handler=MarkMissing&itemId={inStockItemId}",
                 BuildFormContent(gateContent));
             var markInStockResponse = await client.PostAsync(
-                $"/rapprochement?handler=MarkInStock&itemId={missingItemId}&sellerCode=RO-002",
+                $"/rapprochement?handler=MarkInStock&itemId={missingItemId}",
                 BuildFormContent(gateContent));
 
             foreach (var response in new[] { markMissingResponse, markInStockResponse })
@@ -1976,10 +1976,11 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             var content = await UnlockReconciliationDashboardAsync(client);
 
-            Assert.Contains("<datalist id=\"seller-sheet-options\">", content);
-            Assert.Contains("value=\"RA-010 - Alice Autocomplete\"", content);
-            Assert.Contains("data-reconciliation-filter-text=\"ra-010-001 camion filtrable ra-010 alice autocomplete\"", content);
-            Assert.Contains("data-reconciliation-filter-text=\"ra-010-002 puzzle deja manquant ra-010 alice autocomplete\"", content);
+            Assert.Contains("<select name=\"vendeur\" id=\"SheetInput_SellerId\" required>", content);
+            Assert.Contains($"<option value=\"{await SellerIdByCodeAsync("RA-010")}\">Alice Autocomplete</option>", content);
+            Assert.DoesNotContain("RA-010 - ", content);
+            Assert.Contains("data-reconciliation-filter-text=\"ra-010-001 camion filtrable alice autocomplete\"", content);
+            Assert.Contains("data-reconciliation-filter-text=\"ra-010-002 puzzle deja manquant alice autocomplete\"", content);
             Assert.Contains("Marquer manquant", content);
             Assert.Contains("Remettre en stock", content);
         }
@@ -2081,10 +2082,10 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             "/rapprochement?handler=Search",
             BuildFormContent(await GetReconciliationGateAsync(client), ("SearchInput.Query", "RL-001")));
         var markMissingResponse = await client.PostAsync(
-            $"/rapprochement?handler=MarkMissing&itemId={inStockItemId}&sellerCode=RL-001",
+            $"/rapprochement?handler=MarkMissing&itemId={inStockItemId}",
             BuildFormContent(await GetReconciliationGateAsync(client)));
         var markInStockResponse = await client.PostAsync(
-            $"/rapprochement?handler=MarkInStock&itemId={missingItemId}&sellerCode=RL-001",
+            $"/rapprochement?handler=MarkInStock&itemId={missingItemId}",
             BuildFormContent(await GetReconciliationGateAsync(client)));
 
         foreach (var response in new[] { searchResponse, markMissingResponse, markInStockResponse })
@@ -2209,7 +2210,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             var dashboardContent = await UnlockReconciliationDashboardAsync(client);
             var response = await client.PostAsync(
-                "/rapprochement?handler=MarkMissing&sellerCode=RC-002",
+                $"/rapprochement?handler=MarkMissing&sellerId={await SellerIdByCodeAsync("RC-002")}",
                 BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
 
             response.EnsureSuccessStatusCode();
@@ -2217,7 +2218,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
             Assert.Contains("Article marqué manquant.", content);
-            Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-002\"", content);
+            Assert.Contains($"href=\"/rapprochement/feuilles?vendeur={await SellerIdByCodeAsync("RC-002")}\"", content);
 
             using (var scope = _factory.Services.CreateScope())
             {
@@ -2271,7 +2272,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             var dashboardContent = await UnlockReconciliationDashboardAsync(client);
             var response = await client.PostAsync(
-                "/rapprochement?handler=MarkInStock&sellerCode=RC-003",
+                $"/rapprochement?handler=MarkInStock&sellerId={await SellerIdByCodeAsync("RC-003")}",
                 BuildFormContent(dashboardContent, ("itemId", itemId.ToString())));
 
             response.EnsureSuccessStatusCode();
@@ -2279,7 +2280,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
             var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
             Assert.Contains("Article remis en stock.", content);
-            Assert.Contains("href=\"/rapprochement/feuilles?codeVendeur=RC-003\"", content);
+            Assert.Contains($"href=\"/rapprochement/feuilles?vendeur={await SellerIdByCodeAsync("RC-003")}\"", content);
 
             using (var scope = _factory.Services.CreateScope())
             {
@@ -2401,7 +2402,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             await dbContext.SaveChangesAsync();
         }
 
-        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-FEE");
+        var response = await client.GetAsync($"/rapprochement/feuilles?vendeur={await SellerIdByCodeAsync("RS-FEE")}");
 
         response.EnsureSuccessStatusCode();
 
@@ -2422,7 +2423,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task ReconciliationSheetsPageFiltersBySellerCodeWhenUnlocked()
+    public async Task ReconciliationSheetsPageFiltersBySellerWhenUnlocked()
     {
         await SetSalePhaseAsync(SalePhase.PostSale);
         try
@@ -2443,14 +2444,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             null,
             ("RS-202-001", "Article autre vendeur", "missing", 400));
 
-        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-201%20-%20Claire%20Filtre");
+        var response = await client.GetAsync($"/rapprochement/feuilles?vendeur={await SellerIdByCodeAsync("RS-201")}");
 
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("RS-201", content);
+        Assert.Contains("Claire Filtre", content);
         Assert.Contains("Article cible", content);
-        Assert.DoesNotContain("RS-202", content);
+        Assert.DoesNotContain("Denis Filtre", content);
         Assert.DoesNotContain("Article autre vendeur", content);
         }
         finally
@@ -2460,19 +2461,19 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task ReconciliationSheetsPageShowsFrenchMessageForUnknownSellerCode()
+    public async Task ReconciliationSheetsPageShowsFrenchMessageForUnknownSeller()
     {
         await SetSalePhaseAsync(SalePhase.PostSale);
         try
         {
         var (client, _) = await UnlockReconciliationDashboardAsync();
 
-        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-404");
+        var response = await client.GetAsync("/rapprochement/feuilles?vendeur=999999");
 
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("Aucune feuille vendeur pour le code RS-404.", content);
+        Assert.Contains("Aucune feuille à imprimer pour ce vendeur.", content);
         }
         finally
         {
@@ -2514,7 +2515,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             await dbContext.SaveChangesAsync();
         }
 
-        var response = await client.GetAsync("/rapprochement/feuilles?codeVendeur=RS-500");
+        var response = await client.GetAsync($"/rapprochement/feuilles?vendeur={await SellerIdByCodeAsync("RS-500")}");
 
         response.EnsureSuccessStatusCode();
 
@@ -2587,8 +2588,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.DoesNotContain("Mode de saisie", content);
         Assert.DoesNotContain("value=\"InPerson\"", content);
         Assert.DoesNotContain("name=\"Input.IntakeMode\"", content);
-        Assert.Contains("name=\"Input.Rows[9].Title\"", content);
-        Assert.DoesNotContain("name=\"Input.Rows[10].Title\"", content);
+        Assert.Contains("name=\"Input.Rows[4].Title\"", content);
+        Assert.DoesNotContain("name=\"Input.Rows[5].Title\"", content);
         Assert.Contains("data-item-registration-table", content);
         Assert.Contains("data-add-item-row", content);
     }
@@ -2777,6 +2778,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             sellerId = seller.Id;
         }
 
+        await using var desk = await OpenClientDeskAsync(client, sellerId);
         var response = await client.GetAsync($"/vendeurs/{sellerId}");
 
         response.EnsureSuccessStatusCode();
@@ -2971,7 +2973,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
-    public async Task SellerDetailsDisplaysTenDefaultRegistrationRowsAndAddRowButton()
+    public async Task SellerDetailsDisplaysFiveDefaultRegistrationRowsAndAddRowButton()
     {
         var client = _factory.CreateClient();
         long sellerId;
@@ -2998,8 +3000,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         response.EnsureSuccessStatusCode();
 
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-        Assert.Contains("name=\"Input.Rows[9].Title\"", content);
-        Assert.DoesNotContain("name=\"Input.Rows[10].Title\"", content);
+        Assert.Contains("name=\"Input.Rows[4].Title\"", content);
+        Assert.DoesNotContain("name=\"Input.Rows[5].Title\"", content);
         Assert.Contains("data-item-registration-table", content);
         Assert.Contains("data-add-item-row", content);
         Assert.Contains("aria-label=\"Ajouter une ligne\"", content);
@@ -3184,8 +3186,6 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
 
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains(".seller-index-table", content);
-        Assert.Contains(".seller-index-code-column", content);
-        Assert.Contains(".seller-index-code-cell", content);
         Assert.Contains("overflow-wrap: anywhere;", content);
         Assert.Contains("table-layout: fixed;", content);
     }
@@ -3338,6 +3338,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             sellerId = seller.Id;
         }
 
+        await using var desk = await OpenClientDeskAsync(client, sellerId);
         var response = await client.GetAsync($"/vendeurs/{sellerId}");
 
         response.EnsureSuccessStatusCode();
@@ -3406,6 +3407,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             sellerId = seller.Id;
         }
 
+        await using var desk = await OpenClientDeskAsync(client, sellerId);
         var response = await client.GetAsync($"/vendeurs/{sellerId}");
 
         response.EnsureSuccessStatusCode();
@@ -3480,6 +3482,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             sellerId = seller.Id;
         }
 
+        await using var desk = await OpenClientDeskAsync(client, sellerId);
         var response = await client.GetAsync($"/vendeurs/{sellerId}");
 
         response.EnsureSuccessStatusCode();
@@ -3748,7 +3751,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         IReadOnlyList<char> deskLetters;
         using (var scope = _factory.Services.CreateScope())
         {
-            var desk = await scope.ServiceProvider.GetRequiredService<DepositDeskService>().OpenDeskAsync("Poste K-701");
+            var desk = await scope.ServiceProvider.GetRequiredService<DepositDeskService>().OpenDeskAsync();
             deskId = desk.DeskId;
             deskLetters = desk.Letters;
             var start = await scope.ServiceProvider.GetRequiredService<IntakeService>().StartDepositAsync(sellerId, deskId);
@@ -3903,7 +3906,7 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         using (var scope = _factory.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var desk = await scope.ServiceProvider.GetRequiredService<DepositDeskService>().OpenDeskAsync("Poste T-702");
+            var desk = await scope.ServiceProvider.GetRequiredService<DepositDeskService>().OpenDeskAsync();
             deskId = desk.DeskId;
             var lastNumbersBefore = (await dbContext.ReferenceLetters.AsNoTracking().ToListAsync())
                 .ToDictionary(x => x.Letter[0], x => x.LastNumber);
@@ -4435,7 +4438,8 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         return gateContent;
     }
 
-    private static async Task<string> UnlockSaleStatusPageAsync(HttpClient client)
+    // The administration page shows one tab at a time; onglet picks which.
+    private static async Task<string> UnlockSaleStatusPageAsync(HttpClient client, string? onglet = null)
     {
         var gateContent = await GetSaleStatusGateAsync(client);
 
@@ -4444,6 +4448,12 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
             BuildFormContent(gateContent, ("PasswordInput.Password", "test-password")));
 
         response.EnsureSuccessStatusCode();
+
+        if (onglet is not null)
+        {
+            response = await client.GetAsync($"{AdminPath}?onglet={onglet}");
+            response.EnsureSuccessStatusCode();
+        }
 
         return WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
     }
@@ -4847,6 +4857,31 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         }
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<long> SellerIdByCodeAsync(string sellerCode)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return await dbContext.Sellers.Where(x => x.SellerCode == sellerCode).Select(x => x.Id).SingleAsync();
+    }
+
+    // Deposit actions need a desk open on the computer; releasing it at the end
+    // keeps letters free for the other tests sharing the database.
+    private static async Task<ClientDesk> OpenClientDeskAsync(HttpClient client, long sellerId)
+    {
+        var page = await client.GetStringAsync($"/vendeurs/{sellerId}");
+        (await client.PostAsync($"/vendeurs/{sellerId}?handler=OpenDesk", BuildFormContent(page))).EnsureSuccessStatusCode();
+        return new ClientDesk(client, sellerId);
+    }
+
+    private sealed class ClientDesk(HttpClient client, long sellerId) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            var page = await client.GetStringAsync($"/vendeurs/{sellerId}");
+            await client.PostAsync($"/vendeurs/{sellerId}?handler=ReleaseDesk", BuildFormContent(page));
+        }
     }
 
     private static FormUrlEncodedContent BuildFormContent(string html, params (string Name, string Value)[] fields)

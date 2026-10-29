@@ -207,7 +207,7 @@ always look up the seller in the administration screens. Identifying the
 seller from a stray label is explicitly not a requirement.
 
 An item has no reference until its seller's deposit is started at a deposit
-desk (`Commencer le dépôt`), or until the row is saved on an already started
+desk (`Étiqueter les jouets`), or until the row is saved on an already started
 deposit; see Item Reference Allocation below. Until then, screens show an em
 dash (`—`) in its place: on the seller page, on the `/donnees` Articles tab,
 and on the item edit page.
@@ -265,16 +265,21 @@ design is in `docs/superpowers/specs/2026-10-13-deposit-desk-letters-design.md`
 
 ### Deposit desks own letters
 
-A deposit desk is one computer at one physical queue, opened on
-`/vendeurs/poste`. Opening a desk assigns it `Labels:LettersPerDesk` letters
+A deposit desk is one computer at one physical queue. It is opened with
+`Prendre des lettres` on any seller detail page and named `Poste N`, a name
+shown only on the admin tab: operators only ever see "the letters of this
+computer". Opening a desk assigns it `Labels:LettersPerDesk` letters
 (default 2): the free, non-exhausted letters with the fewest numbers used, ties
 broken by alphabet order. At most one open desk holds a letter at any time
 (enforced by the server), so label sheets never travel between desks and the
 next number the application gives is always the next label on the sheet in
 front of the operator. The desk is identified by an `HttpOnly`,
-`SameSite=Strict` cookie `poste-depot` valid for 4 days. A desk is closed by
-itself (`Fermer le poste`) or by an admin (`Forcer la fermeture` on
-`/administration`); its letters then become free.
+`SameSite=Strict` cookie `poste-depot` valid for 4 days. A desk is closed with
+`Libérer les lettres`, from its own seller pages or by an admin on
+`/administration`; its letters then become free. The desk is a constraint, not
+a feature the operator manages: the seller page shows only its letters and the
+release button, and disables `Étiqueter les jouets` and `Finaliser le dépôt`
+until a desk is open (decision D-052).
 
 ### Per-letter counters and labels per letter
 
@@ -289,7 +294,7 @@ raising the setting makes exhausted letters usable again.
 
 ### When references are allocated
 
-- `Commencer le dépôt` on a seller's page gives every row that has no
+- `Étiqueter les jouets` on a seller's page gives every row that has no
   reference the desk's next numbers, in row creation order, in one run, and
   marks the deposit as started.
 - Once started, saving a new row gives it the next number in the same save.

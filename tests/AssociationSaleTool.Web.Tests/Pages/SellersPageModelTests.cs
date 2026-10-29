@@ -21,7 +21,7 @@ using SellerEditModel = AssociationSaleTool.Web.Pages.Sellers.EditModel;
 public sealed class SellersPageModelTests
 {
     [Fact]
-    public void SellerIndexPage_BuildSellerFilterText_IncludesCodeAndName()
+    public void SellerIndexPage_BuildSellerFilterText_IncludesNameOnly()
     {
         var seller = new AssociationSaleTool.Web.Data.Entities.SellerEntity
         {
@@ -32,7 +32,7 @@ public sealed class SellersPageModelTests
 
         var filterText = IndexModel.BuildSellerFilterText(seller);
 
-        Assert.Equal("sl-101 ariane martin", filterText);
+        Assert.Equal("ariane martin", filterText);
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public sealed class SellersPageModelTests
         var service = new IntakeService(context);
         var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
 
-        var pageModel = new DetailsModel(service, new DepositDeskService(context))
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context)
         {
             Input = new DetailsModel.ItemBatchInput
             {
@@ -258,13 +258,13 @@ public sealed class SellersPageModelTests
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
         var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
-        var pageModel = new DetailsModel(service, new DepositDeskService(context));
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context);
 
         var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal(IntakeMode.EmailPreregistration, pageModel.Input.IntakeMode);
-        Assert.Equal(10, pageModel.Input.Rows.Count);
+        Assert.Equal(5, pageModel.Input.Rows.Count);
     }
 
     [Fact]
@@ -288,7 +288,7 @@ public sealed class SellersPageModelTests
                 IntakeMode.EmailPreregistration,
                 [new CreateItemRowRequest("Toy train", 400)],
                 PendingSellerItemRowsSession.ExcelDuplicateAlertKey));
-        var pageModel = new DetailsModel(service, new DepositDeskService(context))
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context)
         {
             PageContext = new PageContext { HttpContext = CreateHttpContextWithSession(session) }
         };
@@ -300,7 +300,7 @@ public sealed class SellersPageModelTests
         Assert.Equal(IntakeMode.EmailPreregistration, pageModel.Input.IntakeMode);
         Assert.Equal("Toy train", pageModel.Input.Rows[0].Title);
         Assert.Equal("4", pageModel.Input.Rows[0].SellerPrice);
-        Assert.True(pageModel.Input.Rows.Count >= 10);
+        Assert.True(pageModel.Input.Rows.Count >= 5);
 
         var secondResult = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
         Assert.IsType<PageResult>(secondResult);
@@ -325,7 +325,7 @@ public sealed class SellersPageModelTests
             .Select(index => new CreateItemRowRequest($"Toy {index}", 100))
             .ToList();
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(seller.Id, IntakeMode.EmailPreregistration, rows));
-        var pageModel = new DetailsModel(service, new DepositDeskService(context));
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context);
 
         var result = await pageModel.OnGetAsync(seller.Id, CancellationToken.None);
 
@@ -364,8 +364,8 @@ public sealed class SellersPageModelTests
             .Select(index => new CreateItemRowRequest($"Toy {index}", 100))
             .ToList();
         await service.CreateItemBatchAsync(new CreateItemBatchRequest(seller.Id, IntakeMode.EmailPreregistration, rows));
-        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync(null)).DeskId);
-        var pageModel = new DetailsModel(service, new DepositDeskService(context))
+        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync()).DeskId);
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context)
         {
             DepositFeeInput = new DetailsModel.DepositFeeInputModel
             {
@@ -412,8 +412,8 @@ public sealed class SellersPageModelTests
             seller.Id,
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy", 100)]));
-        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync(null)).DeskId);
-        var pageModel = new DetailsModel(service, new DepositDeskService(context))
+        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync()).DeskId);
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context)
         {
             DepositFeeInput = new DetailsModel.DepositFeeInputModel
             {
@@ -690,7 +690,7 @@ public sealed class SellersPageModelTests
         var service = new IntakeService(context);
         var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
 
-        var pageModel = new DetailsModel(service, new DepositDeskService(context))
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context)
         {
             Input = new DetailsModel.ItemBatchInput
             {
@@ -793,7 +793,7 @@ public sealed class SellersPageModelTests
             IntakeMode.InPerson,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
 
-        var pageModel = new DetailsModel(service, new DepositDeskService(context));
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context);
 
         var result = await pageModel.OnPostDeleteItemAsync(seller.Id, item.Id, CancellationToken.None);
 
@@ -827,7 +827,7 @@ public sealed class SellersPageModelTests
         context.Items.Add(item);
         await context.SaveChangesAsync();
 
-        var pageModel = new DetailsModel(service, new DepositDeskService(context));
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context);
 
         var result = await pageModel.OnPostDeleteItemAsync(seller.Id, item.Id, CancellationToken.None);
 
@@ -864,9 +864,9 @@ public sealed class SellersPageModelTests
             seller.Id,
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
-        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync(null)).DeskId);
+        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync()).DeskId);
 
-        var pageModel = new DetailsModel(service, new DepositDeskService(context));
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context);
 
         var result = await pageModel.OnPostValidateDepositAsync(seller.Id, CancellationToken.None);
 
@@ -884,12 +884,18 @@ public sealed class SellersPageModelTests
         var split = new DepositAllocationResult(DepositAllocationStatus.Done, [], ["B019", "B020", "R001"], ['R']);
         var none = new DepositAllocationResult(DepositAllocationStatus.Done, [], [], []);
 
-        Assert.Equal("Référence attribuée : B007.", DetailsModel.ToAllocationMessage(single));
-        Assert.Equal("Références attribuées : B007 à B009.", DetailsModel.ToAllocationMessage(range));
         Assert.Equal(
-            "Références attribuées : B019, B020, R001. Allez chercher la planche R.",
+            "1 jouet étiqueté : B007. Décollez l'étiquette suivante de la planche B et collez-la sur le jouet surligné ci-dessous.",
+            DetailsModel.ToAllocationMessage(single));
+        Assert.Equal(
+            "3 jouets étiquetés : B007 à B009. Décollez les étiquettes de la planche B dans l'ordre et collez-les sur les jouets surlignés ci-dessous.",
+            DetailsModel.ToAllocationMessage(range));
+        Assert.Equal(
+            "3 jouets étiquetés : B019, B020, R001. Allez chercher la planche R. Décollez les étiquettes des planches B et R dans l'ordre et collez-les sur les jouets surlignés ci-dessous.",
             DetailsModel.ToAllocationMessage(split));
-        Assert.Equal("Dépôt commencé. Chaque article enregistré recevra sa référence.", DetailsModel.ToAllocationMessage(none));
+        Assert.Equal(
+            "Dépôt commencé : aucun jouet à étiqueter pour l'instant. Chaque jouet ajouté recevra son étiquette à l'enregistrement.",
+            DetailsModel.ToAllocationMessage(none));
     }
 
     [Theory]
@@ -901,13 +907,13 @@ public sealed class SellersPageModelTests
         // The desk can be closed between page load and save: the cookie still
         // shows it open, but the save refused it as closed.
         Assert.Equal(
-            "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.",
+            "Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.",
             DetailsModel.ToAllocationError(DepositAllocationStatus.DeskClosed, deskState, "refusé"));
     }
 
     [Theory]
-    [InlineData(DeskState.Closed, "Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.")]
-    [InlineData(DeskState.None, "Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.")]
+    [InlineData(DeskState.Closed, "Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.")]
+    [InlineData(DeskState.None, "Prenez des lettres pour attribuer des références.")]
     public void SellerDetailsPage_ToAllocationError_ReportsNoDeskFromTheCookieState(DeskState deskState, string expected)
     {
         Assert.Equal(expected, DetailsModel.ToAllocationError(DepositAllocationStatus.NoDesk, deskState, "refusé"));
@@ -945,13 +951,13 @@ public sealed class SellersPageModelTests
         // Deliberately skip StartDepositAsync: the seller and item data are
         // otherwise complete, so the only reason validation can refuse is
         // that the deposit was never started and has no references.
-        var pageModel = new DetailsModel(service, new DepositDeskService(context));
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context);
 
         var result = await pageModel.OnPostValidateDepositAsync(seller.Id, CancellationToken.None);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal(
-            ["Commencez le dépôt pour attribuer les références avant de le finaliser."],
+            ["Étiquetez les jouets avant de finaliser le dépôt."],
             pageModel.DepositValidationMessages);
 
         // Neither the seller-record nor the items are actually incomplete
@@ -984,7 +990,7 @@ public sealed class SellersPageModelTests
             IntakeMode.EmailPreregistration,
             [new CreateItemRowRequest("Toy piano", 1000)]))).Items.Single();
 
-        var pageModel = new DetailsModel(service, new DepositDeskService(context));
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context);
 
         var result = await pageModel.OnPostValidateDepositAsync(seller.Id, CancellationToken.None);
 

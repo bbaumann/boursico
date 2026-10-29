@@ -10,7 +10,7 @@ namespace AssociationSaleTool.Web.Pages.Sellers;
 
 public sealed class CreateModel(IntakeService intakeService) : PageModel
 {
-    private const int DefaultRowCount = 10;
+    private const int DefaultRowCount = 5;
 
     [BindProperty]
     public InputModel Input { get; set; } = CreateDefaultInput();

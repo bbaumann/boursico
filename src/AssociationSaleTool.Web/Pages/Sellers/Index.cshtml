@@ -36,13 +36,12 @@
                    type="search"
                    autocomplete="off"
                    data-seller-search
-                   placeholder="Code ou nom" />
+                   placeholder="Nom" />
             <p class="empty-state" data-seller-empty-message hidden>Aucun vendeur ne correspond à cette recherche.</p>
         </section>
 
         <table class="data-table seller-index-table">
             <colgroup>
-                <col class="seller-index-code-column" />
                 <col class="seller-index-name-column" />
                 <col class="seller-index-email-column seller-index-secondary-column" />
                 <col class="seller-index-items-column" />
@@ -50,7 +49,6 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th>Code</th>
                     <th>Nom</th>
                     <th class="seller-index-secondary-column">E-mail</th>
                     <th>Articles</th>
@@ -61,7 +59,6 @@
             @foreach (var seller in Model.Sellers)
             {
                 <tr data-seller-row data-seller-filter-text="@IndexModel.BuildSellerFilterText(seller)">
-                    <td class="seller-index-code-cell">@seller.SellerCode</td>
                     <td>@seller.FirstName @seller.LastName</td>
                     <td class="seller-index-secondary-column">@(seller.Email ?? "—")</td>
                     <td>@seller.Items.Count</td>

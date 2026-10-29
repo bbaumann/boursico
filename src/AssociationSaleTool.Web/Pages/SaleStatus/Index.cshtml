@@ -47,421 +47,448 @@ else
 
         <div asp-validation-summary="All" class="validation"></div>
 
-        <section class="subsection">
-            <h2>Statut de la vente</h2>
+        <nav class="data-list-tabs" aria-label="Rubriques d'administration">
+            <a class="@Model.TabClass(IndexModel.SaleTab)"
+               href="/administration?onglet=vente"
+               aria-current="@Model.TabAriaCurrent(IndexModel.SaleTab)">Statut de la vente</a>
+            <a class="@Model.TabClass(IndexModel.CashRegistersTab)"
+               href="/administration?onglet=caisses"
+               aria-current="@Model.TabAriaCurrent(IndexModel.CashRegistersTab)">Caisses</a>
+            <a class="@Model.TabClass(IndexModel.DesksTab)"
+               href="/administration?onglet=lettres"
+               aria-current="@Model.TabAriaCurrent(IndexModel.DesksTab)">Lettres et étiquettes</a>
+            <a class="@Model.TabClass(IndexModel.ItemCorrectionsTab)"
+               href="/administration?onglet=articles"
+               aria-current="@Model.TabAriaCurrent(IndexModel.ItemCorrectionsTab)">Correction des articles</a>
+        </nav>
 
-            <div class="phase-action-grid">
-                <form method="post" asp-page-handler="ChangePhase" class="phase-action">
-                    <input type="hidden" name="Input.Phase" value="presale" />
-                    <button type="submit"
-                            class="button-link @(Model.CurrentPhase == SalePhase.Presale ? null : "button-link-solid")"
-                            disabled="@(Model.CurrentPhase == SalePhase.Presale)">
-                        Passer en prévente
-                    </button>
-                </form>
+        @if (Model.IsActiveTab(IndexModel.SaleTab))
+        {
+            <section class="subsection">
+                <h2>Statut de la vente</h2>
 
-                <form method="post" asp-page-handler="ChangePhase" class="phase-action">
-                    <input type="hidden" name="Input.Phase" value="sale" />
-                    <button type="submit"
-                            class="button-link @(Model.CurrentPhase == SalePhase.Sale ? null : "button-link-solid")"
-                            disabled="@(Model.CurrentPhase == SalePhase.Sale)">
-                        Passer en vente
-                    </button>
-                </form>
+                <div class="phase-action-grid">
+                    <form method="post" asp-page-handler="ChangePhase" class="phase-action">
+                        <input type="hidden" name="Input.Phase" value="presale" />
+                        <button type="submit"
+                                class="button-link @(Model.CurrentPhase == SalePhase.Presale ? null : "button-link-solid")"
+                                disabled="@(Model.CurrentPhase == SalePhase.Presale)">
+                            Passer en prévente
+                        </button>
+                    </form>
 
-                <form method="post" asp-page-handler="ChangePhase" class="phase-action">
-                    <input type="hidden" name="Input.Phase" value="post_sale" />
-                    <button type="submit"
-                            class="button-link @(Model.CurrentPhase == SalePhase.PostSale ? null : "button-link-solid")"
-                            disabled="@(Model.CurrentPhase == SalePhase.PostSale)">
-                        Passer en après-vente
-                    </button>
-                </form>
-            </div>
-        </section>
+                    <form method="post" asp-page-handler="ChangePhase" class="phase-action">
+                        <input type="hidden" name="Input.Phase" value="sale" />
+                        <button type="submit"
+                                class="button-link @(Model.CurrentPhase == SalePhase.Sale ? null : "button-link-solid")"
+                                disabled="@(Model.CurrentPhase == SalePhase.Sale)">
+                            Passer en vente
+                        </button>
+                    </form>
 
-        <section class="subsection">
-            <h2>Caisses</h2>
-            <p class="seller-meta">Configurez les caisses physiques avant la vente. Le fond de caisse est ajouté au calcul des espèces attendues dans la clôture.</p>
-
-            <form method="post" asp-page-handler="SaveCashRegister" class="stack-form">
-                <div class="field-grid">
-                    <label for="cash-register-name-new">
-                        Nom de la caisse
-                        <input id="cash-register-name-new"
-                               name="CashRegisterInput.Name"
-                               type="text"
-                               maxlength="80"
-                               autocomplete="off"
-                               required />
-                    </label>
-                    <label for="cash-register-initial-cash-new">
-                        Fond de caisse (€)
-                        <input id="cash-register-initial-cash-new"
-                               name="CashRegisterInput.InitialCash"
-                               type="text"
-                               inputmode="decimal"
-                               autocomplete="off"
-                               required />
-                    </label>
-                    <label for="cash-register-active-new">
-                        Active
-                        <input id="cash-register-active-new"
-                               name="CashRegisterInput.IsActive"
-                               type="checkbox"
-                               value="true"
-                               checked />
-                        <input type="hidden" name="CashRegisterInput.IsActive" value="false" />
-                    </label>
+                    <form method="post" asp-page-handler="ChangePhase" class="phase-action">
+                        <input type="hidden" name="Input.Phase" value="post_sale" />
+                        <button type="submit"
+                                class="button-link @(Model.CurrentPhase == SalePhase.PostSale ? null : "button-link-solid")"
+                                disabled="@(Model.CurrentPhase == SalePhase.PostSale)">
+                            Passer en après-vente
+                        </button>
+                    </form>
                 </div>
-                <div class="form-actions">
-                    <button type="submit" class="button-link button-link-solid">Ajouter la caisse</button>
-                </div>
-            </form>
+            </section>
+        }
 
-            @if (Model.CashRegisters.Count > 0)
-            {
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Fond de caisse</th>
-                            <th>Active</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var cashRegister in Model.CashRegisters)
-                    {
-                        <tr>
-                            <td>
-                                <form id="cash-register-form-@cashRegister.Id"
-                                      method="post"
-                                      asp-page-handler="SaveCashRegister">
-                                    <input type="hidden" name="CashRegisterInput.Id" value="@cashRegister.Id" />
-                                    <input id="cash-register-name-@cashRegister.Id"
-                                           name="CashRegisterInput.Name"
-                                           type="text"
-                                           maxlength="80"
-                                           value="@cashRegister.Name"
-                                           readonly="@cashRegister.HasMovements"
-                                           aria-describedby="cash-register-note-@cashRegister.Id"
-                                           required />
-                                    @if (cashRegister.HasMovements)
-                                    {
-                                        <p id="cash-register-note-@cashRegister.Id" class="seller-meta">Nom verrouillé car la caisse est déjà utilisée.</p>
-                                    }
-                                </form>
-                            </td>
-                            <td>
-                                <input form="cash-register-form-@cashRegister.Id"
-                                       name="CashRegisterInput.InitialCash"
-                                       type="text"
-                                       inputmode="decimal"
-                                       value="@EuroPriceInput.FormatFromCents(cashRegister.InitialCashCents)"
-                                       required />
-                            </td>
-                            <td>
-                                <input form="cash-register-form-@cashRegister.Id"
-                                       name="CashRegisterInput.IsActive"
-                                       type="checkbox"
-                                       value="true"
-                                       checked="@cashRegister.IsActive" />
-                                <input form="cash-register-form-@cashRegister.Id"
-                                       type="hidden"
-                                       name="CashRegisterInput.IsActive"
-                                       value="false" />
-                            </td>
-                            <td class="table-actions-cell">
-                                <button form="cash-register-form-@cashRegister.Id"
-                                        type="submit"
-                                        class="table-action-button table-action-button-primary">
-                                    Enregistrer
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <p class="empty-state">Aucune caisse configurée.</p>
-            }
-        </section>
+        @if (Model.IsActiveTab(IndexModel.CashRegistersTab))
+        {
+            <section class="subsection">
+                <h2>Caisses</h2>
+                <p class="seller-meta">Configurez les caisses physiques avant la vente. Le fond de caisse est ajouté au calcul des espèces attendues dans la clôture.</p>
 
-        <section class="subsection">
-            <h2>Postes de dépôt et étiquettes</h2>
+                <form method="post" asp-page-handler="SaveCashRegister" class="stack-form">
+                    <div class="field-grid">
+                        <label for="cash-register-name-new">
+                            Nom de la caisse
+                            <input id="cash-register-name-new"
+                                   name="CashRegisterInput.Name"
+                                   type="text"
+                                   maxlength="80"
+                                   autocomplete="off"
+                                   required />
+                        </label>
+                        <label for="cash-register-initial-cash-new">
+                            Fond de caisse (€)
+                            <input id="cash-register-initial-cash-new"
+                                   name="CashRegisterInput.InitialCash"
+                                   type="text"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   required />
+                        </label>
+                        <label for="cash-register-active-new">
+                            Active
+                            <input id="cash-register-active-new"
+                                   name="CashRegisterInput.IsActive"
+                                   type="checkbox"
+                                   value="true"
+                                   checked />
+                            <input type="hidden" name="CashRegisterInput.IsActive" value="false" />
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="button-link button-link-solid">Ajouter la caisse</button>
+                    </div>
+                </form>
 
-            <form method="post" asp-page-handler="SaveLabelsPerLetter" class="stack-form">
-                <label for="labels-per-letter">
-                    Étiquettes imprimées par lettre
-                    <input id="labels-per-letter" name="LabelsPerLetterInput" value="@Model.LabelsPerLetterInput"
-                           type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
-                </label>
-                <span asp-validation-for="LabelsPerLetterInput" class="validation"></span>
-                <p class="seller-meta">Augmentez ce nombre si vous imprimez des planches supplémentaires. Il ne peut pas descendre sous un numéro déjà utilisé.</p>
-                <button type="submit" class="button-link">Enregistrer</button>
-            </form>
-
-            <div class="data-list-scroll">
-            <table class="data-table">
-                <thead>
-                    <tr><th>Lettre</th><th>Utilisées</th><th>Restantes</th><th>Poste</th></tr>
-                </thead>
-                <tbody>
-                @foreach (var letter in Model.ReferenceLetters)
+                @if (Model.CashRegisters.Count > 0)
                 {
-                    <tr>
-                        <td>@letter.Letter</td>
-                        <td>@letter.Used</td>
-                        <td>@(letter.LabelsLeft == 0 ? "Épuisée" : letter.LabelsLeft.ToString())</td>
-                        <td>@(letter.HeldByDeskName ?? "Libre")</td>
-                    </tr>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Fond de caisse</th>
+                                <th>Active</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var cashRegister in Model.CashRegisters)
+                        {
+                            <tr>
+                                <td>
+                                    <form id="cash-register-form-@cashRegister.Id"
+                                          method="post"
+                                          asp-page-handler="SaveCashRegister">
+                                        <input type="hidden" name="CashRegisterInput.Id" value="@cashRegister.Id" />
+                                        <input id="cash-register-name-@cashRegister.Id"
+                                               name="CashRegisterInput.Name"
+                                               type="text"
+                                               maxlength="80"
+                                               value="@cashRegister.Name"
+                                               readonly="@cashRegister.HasMovements"
+                                               aria-describedby="cash-register-note-@cashRegister.Id"
+                                               required />
+                                        @if (cashRegister.HasMovements)
+                                        {
+                                            <p id="cash-register-note-@cashRegister.Id" class="seller-meta">Nom verrouillé car la caisse est déjà utilisée.</p>
+                                        }
+                                    </form>
+                                </td>
+                                <td>
+                                    <input form="cash-register-form-@cashRegister.Id"
+                                           name="CashRegisterInput.InitialCash"
+                                           type="text"
+                                           inputmode="decimal"
+                                           value="@EuroPriceInput.FormatFromCents(cashRegister.InitialCashCents)"
+                                           required />
+                                </td>
+                                <td>
+                                    <input form="cash-register-form-@cashRegister.Id"
+                                           name="CashRegisterInput.IsActive"
+                                           type="checkbox"
+                                           value="true"
+                                           checked="@cashRegister.IsActive" />
+                                    <input form="cash-register-form-@cashRegister.Id"
+                                           type="hidden"
+                                           name="CashRegisterInput.IsActive"
+                                           value="false" />
+                                </td>
+                                <td class="table-actions-cell">
+                                    <button form="cash-register-form-@cashRegister.Id"
+                                            type="submit"
+                                            class="table-action-button table-action-button-primary">
+                                        Enregistrer
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
                 }
-                </tbody>
-            </table>
-            </div>
+                else
+                {
+                    <p class="empty-state">Aucune caisse configurée.</p>
+                }
+            </section>
 
-            <h3>Postes ouverts</h3>
-            @if (Model.OpenDesks.Count == 0)
-            {
-                <p class="empty-state">Aucun poste ouvert.</p>
-            }
-            else
-            {
+            <section class="subsection" data-device-cash-register-root>
+                <h2>Caisse de cet ordinateur</h2>
+                <p class="seller-meta">Ce réglage ne concerne que l'ordinateur sur lequel cette page est ouverte. Pendant la vente, la caisse d'un ordinateur ne peut être changée qu'ici.</p>
+                <p data-device-cash-register-current role="status"></p>
+                <label for="device-cash-register-select">
+                    Caisse
+                    <select id="device-cash-register-select" data-device-cash-register-select>
+                        <option value="">Choisir une caisse</option>
+                        @foreach (var cashRegister in Model.CashRegisters.Where(x => x.IsActive))
+                        {
+                            <option value="@cashRegister.Id">@cashRegister.Name</option>
+                        }
+                    </select>
+                </label>
+                <div class="form-actions">
+                    <button type="button" class="button-link button-link-solid" data-device-cash-register-save>
+                        Changer la caisse de cet ordinateur
+                    </button>
+                </div>
+                <p class="validation" data-device-cash-register-message role="status" aria-live="polite"></p>
+            </section>
+        }
+
+        @if (Model.IsActiveTab(IndexModel.DesksTab))
+        {
+            <section class="subsection">
+                <h2>Lettres et étiquettes</h2>
+
+                <form method="post" asp-page-handler="SaveLabelsPerLetter" class="stack-form">
+                    <label for="labels-per-letter">
+                        Étiquettes imprimées par lettre
+                        <input id="labels-per-letter" name="LabelsPerLetterInput" value="@Model.LabelsPerLetterInput"
+                               type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
+                    </label>
+                    <span asp-validation-for="LabelsPerLetterInput" class="validation"></span>
+                    <p class="seller-meta">Augmentez ce nombre si vous imprimez des planches supplémentaires. Il ne peut pas descendre sous un numéro déjà utilisé.</p>
+                    <button type="submit" class="button-link">Enregistrer</button>
+                </form>
+
                 <div class="data-list-scroll">
                 <table class="data-table">
                     <thead>
-                        <tr><th>Poste</th><th>Lettres</th><th>Ouvert le</th><th>Dernière activité</th><th></th></tr>
+                        <tr><th>Lettre</th><th>Utilisées</th><th>Restantes</th><th>Prise par</th></tr>
                     </thead>
                     <tbody>
-                    @foreach (var desk in Model.OpenDesks)
+                    @foreach (var letter in Model.ReferenceLetters)
                     {
                         <tr>
-                            <td>@desk.Name</td>
-                            <td>@(desk.Letters.Count == 0 ? "Aucune" : string.Join(", ", desk.Letters))</td>
-                            <td>@desk.OpenedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                            <td>@desk.LastActivityAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                            <td>
-                                <form method="post" asp-page-handler="ForceCloseDesk" class="inline-form" data-desk-name="@desk.Name"
-                                      onsubmit="return confirm('Forcer la fermeture de ce poste ? Ses lettres redeviendront disponibles pour les autres postes.');">
-                                    <input type="hidden" name="DeskId" value="@desk.Id" />
-                                    <button type="submit" class="button-link">Forcer la fermeture</button>
-                                </form>
-                            </td>
+                            <td>@letter.Letter</td>
+                            <td>@letter.Used</td>
+                            <td>@(letter.LabelsLeft == 0 ? "Épuisée" : letter.LabelsLeft.ToString())</td>
+                            <td>@(letter.HeldByDeskName ?? "Libre")</td>
                         </tr>
                     }
                     </tbody>
                 </table>
                 </div>
-            }
-        </section>
 
-        <section class="subsection" data-device-cash-register-root>
-            <h2>Caisse de cet ordinateur</h2>
-            <p class="seller-meta">Ce réglage ne concerne que l'ordinateur sur lequel cette page est ouverte. Pendant la vente, la caisse d'un ordinateur ne peut être changée qu'ici.</p>
-            <p data-device-cash-register-current role="status"></p>
-            <label for="device-cash-register-select">
-                Caisse
-                <select id="device-cash-register-select" data-device-cash-register-select>
-                    <option value="">Choisir une caisse</option>
-                    @foreach (var cashRegister in Model.CashRegisters.Where(x => x.IsActive))
-                    {
-                        <option value="@cashRegister.Id">@cashRegister.Name</option>
-                    }
-                </select>
-            </label>
-            <div class="form-actions">
-                <button type="button" class="button-link button-link-solid" data-device-cash-register-save>
-                    Changer la caisse de cet ordinateur
-                </button>
-            </div>
-            <p class="validation" data-device-cash-register-message role="status" aria-live="polite"></p>
-        </section>
-
-        <section class="subsection" data-item-correction-root>
-            <h2>Correction des articles</h2>
-            <p class="seller-meta">Utiliser uniquement pour corriger un article non enregistré : le remettre en stock, le marquer défectueux, ou rembourser un article vendu défectueux.</p>
-
-            <label for="item-correction-search">Filtrer les articles affichés</label>
-            <input id="item-correction-search"
-                   type="search"
-                   autocomplete="off"
-                   data-item-correction-search />
-            <p class="seller-meta" data-item-correction-prompt-message>Saisissez une recherche pour filtrer les articles.</p>
-            <p class="empty-state" data-item-correction-empty-message hidden>Aucun article ne correspond à cette recherche.</p>
-
-            @if (Model.ItemCorrectionCandidates.Count > 0)
-            {
-                <table class="data-table item-correction-table">
-                    <colgroup>
-                        <col class="item-correction-reference-column" />
-                        <col class="item-correction-title-column" />
-                        <col class="item-correction-seller-column" />
-                        <col class="item-correction-status-column" />
-                        <col class="item-correction-sale-column" />
-                        <col class="item-correction-price-column" />
-                        <col class="item-correction-action-column" />
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>REF</th>
-                            <th>Description</th>
-                            <th>Vendeur</th>
-                            <th>Statut</th>
-                            <th>Vente</th>
-                            <th>Prix</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody data-item-correction-results>
-                    @foreach (var item in Model.ItemCorrectionCandidates)
-                    {
-                        <tr data-item-correction-row
-                            data-item-correction-filter-text="@IndexModel.BuildCorrectionFilterText(item)">
-                            <td>@item.Reference</td>
-                            <td>@item.Title</td>
-                            <td>@item.SellerCode - @item.SellerName</td>
-                            <td>@ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
-                            <td>
-                                @if (item.SaleId is { } saleId)
-                                {
-                                    <a href="/caisse/ventes/@saleId">#@saleId</a>
-                                }
-                                else
-                                {
-                                    <span>-</span>
-                                }
-                            </td>
-                            <td>@IndexModel.FormatPrice(item.DisplayPriceCents)</td>
-                            <td class="table-actions-cell">
-                                @if (item.CanCorrectSaleLine && item.SaleLineId is { } correctionSaleLineId)
-                                {
-                                    <form method="post"
-                                          asp-page-handler="CorrectSaleLine"
-                                          asp-route-saleLineId="@correctionSaleLineId"
-                                          class="inline-form">
-                                        <button type="submit"
-                                                class="table-action-button table-action-button-primary"
-                                                onclick="return confirm('Voulez-vous corriger cette ligne de vente et remettre l'article en stock ?');">
-                                            Remettre en stock
-                                        </button>
+                <h3>Ordinateurs qui ont des lettres</h3>
+                @if (Model.OpenDesks.Count == 0)
+                {
+                    <p class="empty-state">Aucun ordinateur n'a de lettres.</p>
+                }
+                else
+                {
+                    <div class="data-list-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Ordinateur</th><th>Lettres</th><th>Prises le</th><th>Dernière activité</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var desk in Model.OpenDesks)
+                        {
+                            <tr>
+                                <td>@desk.Name</td>
+                                <td>@(desk.Letters.Count == 0 ? "Aucune" : string.Join(", ", desk.Letters))</td>
+                                <td>@desk.OpenedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td>@desk.LastActivityAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td>
+                                    <form method="post" asp-page-handler="ForceCloseDesk" class="inline-form"
+                                          onsubmit="return confirm('Libérer les lettres de cet ordinateur ? Elles redeviendront disponibles pour les autres ordinateurs.');">
+                                        <input type="hidden" name="DeskId" value="@desk.Id" />
+                                        <button type="submit" class="button-link">Libérer les lettres</button>
                                     </form>
-                                }
-                                @if (item.CanRefundDefective && item.SaleLineId is { } refundSaleLineId)
-                                {
-                                    <button type="button"
-                                            class="table-action-button"
-                                            onclick="document.getElementById('refund-dialog-@refundSaleLineId')?.showModal();">
-                                        Rembourser
-                                    </button>
-                                    <dialog id="refund-dialog-@refundSaleLineId" class="admin-dialog">
-                                        <h3>Remboursement article défectueux</h3>
-                                        <dl class="compact-definition-list">
-                                            <div>
-                                                <dt>Article</dt>
-                                                <dd>@item.Reference - @item.Title</dd>
-                                            </div>
-                                            <div>
-                                                <dt>Vente</dt>
-                                                <dd>#@item.SaleId</dd>
-                                            </div>
-                                            <div>
-                                                <dt>Prix article</dt>
-                                                <dd>@IndexModel.FormatPrice(item.DisplayPriceCents)</dd>
-                                            </div>
-                                            <div>
-                                                <dt>Frais association remboursés</dt>
-                                                <dd>@IndexModel.FormatPrice(item.RefundCheckoutFeeCents)</dd>
-                                            </div>
-                                            <div>
-                                                <dt>Montant à rembourser</dt>
-                                                <dd>@IndexModel.FormatPrice(item.RefundTotalCents)</dd>
-                                            </div>
-                                        </dl>
-                                        <div class="form-actions">
-                                            <form method="dialog" class="inline-form">
-                                                <button type="submit" class="button-link">Annuler</button>
-                                            </form>
-                                            <form method="post"
-                                                  asp-page-handler="RefundDefectiveSaleLine"
-                                                  asp-route-saleLineId="@refundSaleLineId"
-                                                  class="inline-form">
-                                                <label for="refund-cash-register-@refundSaleLineId">
-                                                    Caisse de remboursement
-                                                    <select id="refund-cash-register-@refundSaleLineId"
-                                                            name="refundCashRegisterId"
-                                                            required>
-                                                        <option value="">Choisir une caisse</option>
-                                                        @foreach (var cashRegister in Model.RefundCashRegisters)
-                                                        {
-                                                            <option value="@cashRegister.Id">@cashRegister.Name</option>
-                                                        }
-                                                    </select>
-                                                </label>
-                                                <button type="submit" class="button-link button-link-solid">
-                                                    Confirmer le remboursement
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </dialog>
-                                }
-                                @if (item.CanMarkDefective)
-                                {
-                                    <form method="post"
-                                          asp-page-handler="MarkDefectiveItem"
-                                          asp-route-itemId="@item.ItemId"
-                                          class="inline-form">
-                                        <button type="submit"
-                                                class="table-action-button table-action-button-primary"
-                                                onclick="return confirm('Marquer cet article comme défectueux ?');">
-                                            Marquer défectueux
-                                        </button>
-                                    </form>
-                                }
-                                else if (item.CanRestoreInStock)
-                                {
-                                    <form method="post"
-                                          asp-page-handler="RestoreDefectiveItem"
-                                          asp-route-itemId="@item.ItemId"
-                                          class="inline-form">
-                                        <button type="submit" class="table-action-button">
-                                            Remettre en stock
-                                        </button>
-                                    </form>
-                                }
-                                else if (item.CanCancelRefund && item.RefundedSaleLineId is { } refundedSaleLineId)
-                                {
-                                    <form method="post"
-                                          asp-page-handler="CancelDefectiveRefund"
-                                          asp-route-saleLineId="@refundedSaleLineId"
-                                          class="inline-form">
-                                        <button type="submit"
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    </div>
+                }
+            </section>
+        }
+
+        @if (Model.IsActiveTab(IndexModel.ItemCorrectionsTab))
+        {
+            <section class="subsection" data-item-correction-root>
+                <h2>Correction des articles</h2>
+                <p class="seller-meta">Utiliser uniquement pour corriger un article non enregistré : le remettre en stock, le marquer défectueux, ou rembourser un article vendu défectueux.</p>
+
+                <label for="item-correction-search">Filtrer les articles affichés</label>
+                <input id="item-correction-search"
+                       type="search"
+                       autocomplete="off"
+                       data-item-correction-search />
+                <p class="seller-meta" data-item-correction-prompt-message>Saisissez une recherche pour filtrer les articles.</p>
+                <p class="empty-state" data-item-correction-empty-message hidden>Aucun article ne correspond à cette recherche.</p>
+
+                @if (Model.ItemCorrectionCandidates.Count > 0)
+                {
+                    <table class="data-table item-correction-table">
+                        <colgroup>
+                            <col class="item-correction-reference-column" />
+                            <col class="item-correction-title-column" />
+                            <col class="item-correction-seller-column" />
+                            <col class="item-correction-status-column" />
+                            <col class="item-correction-sale-column" />
+                            <col class="item-correction-price-column" />
+                            <col class="item-correction-action-column" />
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>REF</th>
+                                <th>Description</th>
+                                <th>Vendeur</th>
+                                <th>Statut</th>
+                                <th>Vente</th>
+                                <th>Prix</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody data-item-correction-results>
+                        @foreach (var item in Model.ItemCorrectionCandidates)
+                        {
+                            <tr data-item-correction-row
+                                data-item-correction-filter-text="@IndexModel.BuildCorrectionFilterText(item)">
+                                <td>@item.Reference</td>
+                                <td>@item.Title</td>
+                                <td>@item.SellerName</td>
+                                <td>@ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
+                                <td>
+                                    @if (item.SaleId is { } saleId)
+                                    {
+                                        <a href="/caisse/ventes/@saleId">#@saleId</a>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                                <td>@IndexModel.FormatPrice(item.DisplayPriceCents)</td>
+                                <td class="table-actions-cell">
+                                    @if (item.CanCorrectSaleLine && item.SaleLineId is { } correctionSaleLineId)
+                                    {
+                                        <form method="post"
+                                              asp-page-handler="CorrectSaleLine"
+                                              asp-route-saleLineId="@correctionSaleLineId"
+                                              class="inline-form">
+                                            <button type="submit"
+                                                    class="table-action-button table-action-button-primary"
+                                                    onclick="return confirm('Voulez-vous corriger cette ligne de vente et remettre l'article en stock ?');">
+                                                Remettre en stock
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (item.CanRefundDefective && item.SaleLineId is { } refundSaleLineId)
+                                    {
+                                        <button type="button"
                                                 class="table-action-button"
-                                                onclick="return confirm('Annuler ce remboursement et remettre l'article vendu ? À utiliser uniquement si le remboursement a été saisi par erreur.');">
-                                            Annuler le remboursement
+                                                onclick="document.getElementById('refund-dialog-@refundSaleLineId')?.showModal();">
+                                            Rembourser
                                         </button>
-                                    </form>
-                                }
-                                else if (item.Status == "defective" && item.HasRefundHistory)
-                                {
-                                    <span class="seller-meta">Remboursé - à rendre</span>
-                                }
-                                else if (!item.CanCorrectSaleLine && !item.CanRefundDefective)
-                                {
-                                    <span class="seller-meta">Aucune action</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-                <p class="empty-state">Aucun article à corriger.</p>
-            }
-        </section>
+                                        <dialog id="refund-dialog-@refundSaleLineId" class="admin-dialog">
+                                            <h3>Remboursement article défectueux</h3>
+                                            <dl class="compact-definition-list">
+                                                <div>
+                                                    <dt>Article</dt>
+                                                    <dd>@item.Reference - @item.Title</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Vente</dt>
+                                                    <dd>#@item.SaleId</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Prix article</dt>
+                                                    <dd>@IndexModel.FormatPrice(item.DisplayPriceCents)</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Frais association remboursés</dt>
+                                                    <dd>@IndexModel.FormatPrice(item.RefundCheckoutFeeCents)</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Montant à rembourser</dt>
+                                                    <dd>@IndexModel.FormatPrice(item.RefundTotalCents)</dd>
+                                                </div>
+                                            </dl>
+                                            <div class="form-actions">
+                                                <form method="dialog" class="inline-form">
+                                                    <button type="submit" class="button-link">Annuler</button>
+                                                </form>
+                                                <form method="post"
+                                                      asp-page-handler="RefundDefectiveSaleLine"
+                                                      asp-route-saleLineId="@refundSaleLineId"
+                                                      class="inline-form">
+                                                    <label for="refund-cash-register-@refundSaleLineId">
+                                                        Caisse de remboursement
+                                                        <select id="refund-cash-register-@refundSaleLineId"
+                                                                name="refundCashRegisterId"
+                                                                required>
+                                                            <option value="">Choisir une caisse</option>
+                                                            @foreach (var cashRegister in Model.RefundCashRegisters)
+                                                            {
+                                                                <option value="@cashRegister.Id">@cashRegister.Name</option>
+                                                            }
+                                                        </select>
+                                                    </label>
+                                                    <button type="submit" class="button-link button-link-solid">
+                                                        Confirmer le remboursement
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </dialog>
+                                    }
+                                    @if (item.CanMarkDefective)
+                                    {
+                                        <form method="post"
+                                              asp-page-handler="MarkDefectiveItem"
+                                              asp-route-itemId="@item.ItemId"
+                                              class="inline-form">
+                                            <button type="submit"
+                                                    class="table-action-button table-action-button-primary"
+                                                    onclick="return confirm('Marquer cet article comme défectueux ?');">
+                                                Marquer défectueux
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (item.CanRestoreInStock)
+                                    {
+                                        <form method="post"
+                                              asp-page-handler="RestoreDefectiveItem"
+                                              asp-route-itemId="@item.ItemId"
+                                              class="inline-form">
+                                            <button type="submit" class="table-action-button">
+                                                Remettre en stock
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (item.CanCancelRefund && item.RefundedSaleLineId is { } refundedSaleLineId)
+                                    {
+                                        <form method="post"
+                                              asp-page-handler="CancelDefectiveRefund"
+                                              asp-route-saleLineId="@refundedSaleLineId"
+                                              class="inline-form">
+                                            <button type="submit"
+                                                    class="table-action-button"
+                                                    onclick="return confirm('Annuler ce remboursement et remettre l'article vendu ? À utiliser uniquement si le remboursement a été saisi par erreur.');">
+                                                Annuler le remboursement
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (item.Status == "defective" && item.HasRefundHistory)
+                                    {
+                                        <span class="seller-meta">Remboursé - à rendre</span>
+                                    }
+                                    else if (!item.CanCorrectSaleLine && !item.CanRefundDefective)
+                                    {
+                                        <span class="seller-meta">Aucune action</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="empty-state">Aucun article à corriger.</p>
+                }
+            </section>
+        }
     </section>
 }

@@ -37,7 +37,7 @@ public sealed class ReferenceAllocationServiceTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
-        var desk = await new DepositDeskService(context).OpenDeskAsync(null);
+        var desk = await new DepositDeskService(context).OpenDeskAsync();
         var seller = await SeedSellerAsync(context, 3);
 
         var result = await new ReferenceAllocationService(context).AllocateAsync(desk.DeskId, null, seller.Items);
@@ -54,7 +54,7 @@ public sealed class ReferenceAllocationServiceTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
-        var desk = await new DepositDeskService(context).OpenDeskAsync(null);
+        var desk = await new DepositDeskService(context).OpenDeskAsync();
         var seller = await SeedSellerAsync(context, 2);
         var service = new ReferenceAllocationService(context);
         await service.AllocateAsync(desk.DeskId, null, seller.Items);
@@ -76,7 +76,7 @@ public sealed class ReferenceAllocationServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var desks = new DepositDeskService(context);
-        var desk = await desks.OpenDeskAsync(null);
+        var desk = await desks.OpenDeskAsync();
         await desks.CloseDeskAsync(desk.DeskId);
         var seller = await SeedSellerAsync(context, 1);
         var service = new ReferenceAllocationService(context);
@@ -94,7 +94,7 @@ public sealed class ReferenceAllocationServiceTests
         await using var context = await CreateContextAsync(connection);
         var desks = new DepositDeskService(context);
         await desks.SetLabelsPerLetterAsync(20);
-        var desk = await desks.OpenDeskAsync(null);
+        var desk = await desks.OpenDeskAsync();
         (await context.ReferenceLetters.SingleAsync(x => x.Letter == "B")).LastNumber = 18;
         (await context.ReferenceLetters.SingleAsync(x => x.Letter == "C")).LastNumber = 17;
         await context.SaveChangesAsync();
@@ -119,7 +119,7 @@ public sealed class ReferenceAllocationServiceTests
         await using var context = await CreateContextAsync(connection);
         var desks = new DepositDeskService(context);
         await desks.SetLabelsPerLetterAsync(1);
-        var desk = await desks.OpenDeskAsync(null);
+        var desk = await desks.OpenDeskAsync();
         foreach (var letter in await context.ReferenceLetters.ToListAsync())
         {
             letter.LastNumber = 1;
@@ -139,7 +139,7 @@ public sealed class ReferenceAllocationServiceTests
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
-        var desk = await new DepositDeskService(context).OpenDeskAsync(null);
+        var desk = await new DepositDeskService(context).OpenDeskAsync();
         var old = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         (await context.DepositDesks.SingleAsync()).LastActivityAt = old;
         await context.SaveChangesAsync();
@@ -163,8 +163,8 @@ public sealed class ReferenceAllocationServiceTests
         await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
         // Desks without letters, so both runs must take the first free letter, B.
         var options = Options.Create(new LabelsOptions { LettersPerDesk = 0 });
-        var deskA = await new DepositDeskService(first, options).OpenDeskAsync("A");
-        var deskB = await new DepositDeskService(first, options).OpenDeskAsync("B");
+        var deskA = await new DepositDeskService(first, options).OpenDeskAsync();
+        var deskB = await new DepositDeskService(first, options).OpenDeskAsync();
         var sellerA = await SeedSellerAsync(first, 1);
         var sellerB = await SeedSellerAsync(first, 1, "BC");
         var itemB = await second.Items.SingleAsync(x => x.Id == sellerB.Items[0].Id);
@@ -188,8 +188,8 @@ public sealed class ReferenceAllocationServiceTests
         await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
         var noLetters = Options.Create(new LabelsOptions { LettersPerDesk = 0 });
         var oneLetter = Options.Create(new LabelsOptions { LettersPerDesk = 1 });
-        var deskA = await new DepositDeskService(first, noLetters).OpenDeskAsync("A");
-        var deskB = await new DepositDeskService(first, noLetters).OpenDeskAsync("B");
+        var deskA = await new DepositDeskService(first, noLetters).OpenDeskAsync();
+        var deskB = await new DepositDeskService(first, noLetters).OpenDeskAsync();
 
         var resultA = await new ReferenceAllocationService(first, oneLetter).AllocateAsync(deskA.DeskId, null, []);
         var resultB = await new ReferenceAllocationService(second, oneLetter).AllocateAsync(deskB.DeskId, null, []);

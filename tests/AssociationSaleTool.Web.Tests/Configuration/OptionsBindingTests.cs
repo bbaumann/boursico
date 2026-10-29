@@ -226,7 +226,7 @@ public class OptionsBindingTests
             using var scope = factory.Services.CreateScope();
             var deskService = scope.ServiceProvider.GetRequiredService<DepositDeskService>();
 
-            var desk = await deskService.OpenDeskAsync(null);
+            var desk = await deskService.OpenDeskAsync();
 
             Assert.Single(desk.Letters);
         }

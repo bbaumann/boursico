@@ -25,12 +25,12 @@ public sealed class DepositDeskServiceTests
         await using var context = await CreateContextAsync(connection);
         var service = new DepositDeskService(context);
 
-        var first = await service.OpenDeskAsync(null);
-        var second = await service.OpenDeskAsync("Entrée");
+        var first = await service.OpenDeskAsync();
+        var second = await service.OpenDeskAsync();
 
         Assert.Equal("Poste 1", first.Name);
         Assert.Equal(['B', 'C'], first.Letters);
-        Assert.Equal("Entrée", second.Name);
+        Assert.Equal("Poste 2", second.Name);
         Assert.Equal(['D', 'E'], second.Letters);
         Assert.NotEqual(first.Token, second.Token);
     }
@@ -42,7 +42,7 @@ public sealed class DepositDeskServiceTests
         await using var context = await CreateContextAsync(connection);
         var service = new DepositDeskService(context, Options.Create(new LabelsOptions { LettersPerDesk = 3 }));
 
-        var desk = await service.OpenDeskAsync(null);
+        var desk = await service.OpenDeskAsync();
 
         Assert.Equal(['B', 'C', 'D'], desk.Letters);
     }
@@ -55,10 +55,10 @@ public sealed class DepositDeskServiceTests
         var service = new DepositDeskService(context);
         for (var i = 0; i < 10; i++)
         {
-            await service.OpenDeskAsync(null);
+            await service.OpenDeskAsync();
         }
 
-        var eleventh = await service.OpenDeskAsync(null);
+        var eleventh = await service.OpenDeskAsync();
 
         Assert.Empty(eleventh.Letters);
         Assert.Equal(DeskState.Open, (await service.GetCurrentDeskAsync(eleventh.Token)).State);
@@ -70,10 +70,10 @@ public sealed class DepositDeskServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var service = new DepositDeskService(context);
-        var first = await service.OpenDeskAsync(null);
+        var first = await service.OpenDeskAsync();
 
         Assert.True(await service.CloseDeskAsync(first.DeskId));
-        var second = await service.OpenDeskAsync(null);
+        var second = await service.OpenDeskAsync();
 
         Assert.Equal(DeskState.Closed, (await service.GetCurrentDeskAsync(first.Token)).State);
         Assert.Equal(['B', 'C'], second.Letters);
@@ -97,7 +97,7 @@ public sealed class DepositDeskServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var service = new DepositDeskService(context);
-        var desk = await service.OpenDeskAsync(null);
+        var desk = await service.OpenDeskAsync();
         (await context.ReferenceLetters.SingleAsync(x => x.Letter == "B")).LastNumber = 440;
         await context.SaveChangesAsync();
 
@@ -142,13 +142,13 @@ public sealed class DepositDeskServiceTests
         await service.SetLabelsPerLetterAsync(20);
         (await context.ReferenceLetters.SingleAsync(x => x.Letter == "B")).LastNumber = 20;
         await context.SaveChangesAsync();
-        Assert.Equal(['C', 'D'], (await service.OpenDeskAsync(null)).Letters);
+        Assert.Equal(['C', 'D'], (await service.OpenDeskAsync()).Letters);
 
         Assert.Equal(LabelsPerLetterUpdateStatus.Saved, (await service.SetLabelsPerLetterAsync(30)).Status);
         // A desk asking for every free letter shows B is takeable again (a
         // default 2-letter desk would pick unused letters first).
         var next = await new DepositDeskService(context, Options.Create(new LabelsOptions { LettersPerDesk = 20 }))
-            .OpenDeskAsync(null);
+            .OpenDeskAsync();
 
         Assert.Contains('B', next.Letters);
     }
@@ -159,13 +159,13 @@ public sealed class DepositDeskServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var service = new DepositDeskService(context);
-        var closed = await service.OpenDeskAsync("Fermé");
-        await service.OpenDeskAsync("Ouvert");
+        var closed = await service.OpenDeskAsync();
+        await service.OpenDeskAsync();
         await service.CloseDeskAsync(closed.DeskId);
 
         var desk = Assert.Single(await service.ListOpenDesksAsync());
 
-        Assert.Equal("Ouvert", desk.Name);
+        Assert.Equal("Poste 2", desk.Name);
         Assert.Equal(['D', 'E'], desk.Letters);
     }
 
@@ -175,14 +175,14 @@ public sealed class DepositDeskServiceTests
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await using var context = await CreateContextAsync(connection);
         var service = new DepositDeskService(context);
-        await service.OpenDeskAsync("Poste A");
+        await service.OpenDeskAsync();
         (await context.ReferenceLetters.SingleAsync(x => x.Letter == "D")).LastNumber = 455;
         await context.SaveChangesAsync();
 
         var letters = await service.ListLettersAsync();
 
         Assert.Equal(20, letters.Count);
-        Assert.Equal(new ReferenceLetterRow('B', 0, 455, "Poste A"), letters[0]);
+        Assert.Equal(new ReferenceLetterRow('B', 0, 455, "Poste 1"), letters[0]);
         Assert.Equal(new ReferenceLetterRow('D', 455, 0, null), letters[2]);
     }
 
@@ -197,11 +197,11 @@ public sealed class DepositDeskServiceTests
         // Both contexts see the same free letters; the rival saves first, so
         // the loser's tracked letters are stale and its save must be refused.
         await context.ReferenceLetters.ToListAsync();
-        await new DepositDeskService(rival).OpenDeskAsync("Rival");
+        await new DepositDeskService(rival).OpenDeskAsync();
 
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => service.OpenDeskAsync("Perdant"));
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => service.OpenDeskAsync());
 
         var names = await rival.DepositDesks.AsNoTracking().Select(x => x.Name).ToListAsync();
-        Assert.Equal(["Rival"], names);
+        Assert.Equal(["Poste 1"], names);
     }
 }

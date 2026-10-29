@@ -46,11 +46,11 @@ else
         {
             <p class="success-message" role="status">@Model.SuccessMessage</p>
 
-            @if (Model.CanOperate && !string.IsNullOrWhiteSpace(Model.CorrectedSellerCode))
+            @if (Model.CanOperate && !string.IsNullOrWhiteSpace(Model.CorrectedSellerId))
             {
                 <p>
-                    <a href="/rapprochement/feuilles?codeVendeur=@Model.CorrectedSellerCode">
-                        Imprimer la feuille du vendeur @Model.CorrectedSellerCode
+                    <a href="/rapprochement/feuilles?vendeur=@Model.CorrectedSellerId">
+                        Imprimer la feuille de @(Model.CorrectedSellerName ?? "ce vendeur")
                     </a>
                 </p>
             }
@@ -72,18 +72,14 @@ else
             @if (Model.CanOperate)
             {
                 <form method="get" action="/rapprochement/feuilles">
-                    <label asp-for="SheetInput.SellerCode">Code ou nom du vendeur</label>
-                    <input name="codeVendeur"
-                           id="SheetInput_SellerCode"
-                           value="@Model.SheetInput.SellerCode"
-                           list="seller-sheet-options"
-                           autocomplete="off" />
-                    <datalist id="seller-sheet-options">
+                    <label for="SheetInput_SellerId">Vendeur</label>
+                    <select name="vendeur" id="SheetInput_SellerId" required>
+                        <option value="">Choisir un vendeur</option>
                         @foreach (var seller in Model.SellerSheetOptions)
                         {
-                            <option value="@($"{seller.SellerCode} - {seller.SellerName}")"></option>
+                            <option value="@seller.SellerId" selected="@(seller.SellerId == Model.SheetInput.SellerId)">@seller.SellerName</option>
                         }
-                    </datalist>
+                    </select>
 
                     <div class="form-actions">
                         <button type="submit" class="button-link">Imprimer une feuille</button>
@@ -126,7 +122,7 @@ else
                             data-reconciliation-filter-text="@IndexModel.BuildCorrectionFilterText(item)">
                             <td>@item.Reference</td>
                             <td>@item.Title</td>
-                            <td>@item.SellerCode - @item.SellerName</td>
+                            <td>@item.SellerName</td>
                             <td>@ItemStatusDisplay.ToFrenchLabel(item.Status)</td>
                             <td>@IndexModel.FormatPrice(item.SellerPriceCents)</td>
                             <td>
@@ -135,7 +131,7 @@ else
                                     <form method="post"
                                           asp-page-handler="MarkMissing"
                                           asp-route-itemId="@item.ItemId"
-                                          asp-route-sellerCode="@item.SellerCode">
+                                          asp-route-sellerId="@item.SellerId">
                                         <button type="submit" class="button-link">Marquer manquant</button>
                                     </form>
                                 }
@@ -145,7 +141,7 @@ else
                                     <form method="post"
                                           asp-page-handler="MarkInStock"
                                           asp-route-itemId="@item.ItemId"
-                                          asp-route-sellerCode="@item.SellerCode">
+                                          asp-route-sellerId="@item.SellerId">
                                         <button type="submit" class="button-link">Remettre en stock</button>
                                     </form>
                                 }

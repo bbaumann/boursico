@@ -12,11 +12,11 @@ public sealed class SheetsModel(
 {
     public IReadOnlyList<SellerSheet> Sheets { get; private set; } = [];
 
-    public string? RequestedSellerCode { get; private set; }
+    public long? RequestedSellerId { get; private set; }
 
     public string? ErrorMessage { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(string? codeVendeur, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(long? vendeur, CancellationToken cancellationToken)
     {
         if (!ReconciliationAdminSession.IsUnlocked(HttpContext))
         {
@@ -28,11 +28,11 @@ public sealed class SheetsModel(
             return Redirect("/rapprochement");
         }
 
-        RequestedSellerCode = NormalizeRequestedSellerCode(codeVendeur);
+        RequestedSellerId = vendeur;
 
         try
         {
-            Sheets = await reconciliationService.ListSellerSheetsAsync(RequestedSellerCode, cancellationToken);
+            Sheets = await reconciliationService.ListSellerSheetsAsync(RequestedSellerId, cancellationToken);
         }
         catch (ReconciliationSellerSheetDataException exception)
         {
@@ -47,21 +47,5 @@ public sealed class SheetsModel(
     public static string FormatPrice(int priceCents)
     {
         return $"{priceCents / 100m:0.00} €";
-    }
-
-    private static string? NormalizeRequestedSellerCode(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        var trimmedValue = value.Trim();
-        var codeSeparatorIndex = trimmedValue.IndexOf(" - ", StringComparison.Ordinal);
-        var sellerCode = codeSeparatorIndex < 0
-            ? trimmedValue
-            : trimmedValue[..codeSeparatorIndex];
-
-        return sellerCode.ToUpperInvariant();
     }
 }

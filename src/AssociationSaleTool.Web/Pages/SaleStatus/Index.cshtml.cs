@@ -20,6 +20,13 @@ public sealed class IndexModel(
 {
     private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
 
+    public const string SaleTab = "vente";
+    public const string CashRegistersTab = "caisses";
+    public const string DesksTab = "lettres";
+    public const string ItemCorrectionsTab = "articles";
+
+    public string ActiveTab { get; private set; } = SaleTab;
+
     public bool IsUnlocked { get; private set; }
 
     public SalePhase CurrentPhase { get; private set; }
@@ -67,8 +74,9 @@ public sealed class IndexModel(
     [TempData]
     public string? SuccessMessage { get; set; }
 
-    public async Task OnGetAsync(CancellationToken cancellationToken)
+    public async Task OnGetAsync(string? onglet, CancellationToken cancellationToken)
     {
+        ActiveTab = NormalizeTab(onglet);
         IsUnlocked = SaleStatusAdminSession.IsUnlocked(HttpContext);
 
         if (IsUnlocked)
@@ -93,6 +101,7 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostChangePhaseAsync(CancellationToken cancellationToken)
     {
+        ActiveTab = SaleTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -107,11 +116,12 @@ public sealed class IndexModel(
 
         await salePhaseService.SetPhaseAsync(phase, cancellationToken);
         SuccessMessage = $"Statut de vente modifié : {SalePhaseDisplay.ToFrenchLabel(phase)}.";
-        return RedirectToPage();
+        return RedirectToPage(new { onglet = SaleTab });
     }
 
     public async Task<IActionResult> OnPostSaveCashRegisterAsync(CancellationToken cancellationToken)
     {
+        ActiveTab = CashRegistersTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -137,7 +147,7 @@ public sealed class IndexModel(
         if (result == CashRegisterSaveResult.Saved)
         {
             SuccessMessage = "Caisse enregistrée.";
-            return RedirectToPage();
+            return RedirectToPage(new { onglet = CashRegistersTab });
         }
 
         ModelState.AddModelError("CashRegisterInput.Name", ToCashRegisterValidationMessage(result));
@@ -147,6 +157,7 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostSaveLabelsPerLetterAsync(CancellationToken cancellationToken)
     {
+        ActiveTab = DesksTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -159,7 +170,7 @@ public sealed class IndexModel(
         if (result.Status == LabelsPerLetterUpdateStatus.Saved)
         {
             SuccessMessage = "Nombre d'étiquettes par lettre enregistré.";
-            return RedirectToPage();
+            return RedirectToPage(new { onglet = DesksTab });
         }
 
         ModelState.AddModelError(
@@ -173,21 +184,23 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostForceCloseDeskAsync(CancellationToken cancellationToken)
     {
+        ActiveTab = DesksTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
         }
 
         SuccessMessage = await depositDeskService.CloseDeskAsync(DeskId, cancellationToken)
-            ? "Poste fermé. Ses lettres sont de nouveau disponibles."
-            : "Ce poste était déjà fermé.";
-        return RedirectToPage();
+            ? "Lettres libérées. Elles sont de nouveau disponibles pour les autres ordinateurs."
+            : "Ces lettres étaient déjà libérées.";
+        return RedirectToPage(new { onglet = DesksTab });
     }
 
     public async Task<IActionResult> OnPostCorrectSaleLineAsync(
         long saleLineId,
         CancellationToken cancellationToken)
     {
+        ActiveTab = ItemCorrectionsTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -197,7 +210,7 @@ public sealed class IndexModel(
         if (result == SaleCorrectionResult.Corrected)
         {
             SuccessMessage = "L'article est remis en stock. La ligne de vente reste marquée comme corrigée.";
-            return RedirectToPage();
+            return RedirectToPage(new { onglet = ItemCorrectionsTab });
         }
 
         var message = result == SaleCorrectionResult.NotFound
@@ -214,6 +227,7 @@ public sealed class IndexModel(
         long? refundCashRegisterId,
         CancellationToken cancellationToken)
     {
+        ActiveTab = ItemCorrectionsTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -223,7 +237,7 @@ public sealed class IndexModel(
         if (result == SaleCorrectionResult.Refunded)
         {
             SuccessMessage = "L'article est marqué défectueux. Remboursez l'acheteur du montant indiqué et rendez l'article au vendeur en fin de vente.";
-            return RedirectToPage();
+            return RedirectToPage(new { onglet = ItemCorrectionsTab });
         }
 
         var message = result switch
@@ -242,6 +256,7 @@ public sealed class IndexModel(
         long itemId,
         CancellationToken cancellationToken)
     {
+        ActiveTab = ItemCorrectionsTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -251,7 +266,7 @@ public sealed class IndexModel(
         if (result == DefectiveItemStatusChangeResult.Changed)
         {
             SuccessMessage = "L'article est marqué défectueux. Il ne peut plus être vendu et sera rendu au vendeur.";
-            return RedirectToPage();
+            return RedirectToPage(new { onglet = ItemCorrectionsTab });
         }
 
         var message = result == DefectiveItemStatusChangeResult.NotFound
@@ -267,6 +282,7 @@ public sealed class IndexModel(
         long itemId,
         CancellationToken cancellationToken)
     {
+        ActiveTab = ItemCorrectionsTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -276,7 +292,7 @@ public sealed class IndexModel(
         if (result == DefectiveItemStatusChangeResult.Changed)
         {
             SuccessMessage = "L'article est remis en stock.";
-            return RedirectToPage();
+            return RedirectToPage(new { onglet = ItemCorrectionsTab });
         }
 
         var message = result == DefectiveItemStatusChangeResult.NotFound
@@ -292,6 +308,7 @@ public sealed class IndexModel(
         long saleLineId,
         CancellationToken cancellationToken)
     {
+        ActiveTab = ItemCorrectionsTab;
         if (!UnlockPageIfSessionAllows())
         {
             return Page();
@@ -301,7 +318,7 @@ public sealed class IndexModel(
         if (result == SaleCorrectionResult.RefundCanceled)
         {
             SuccessMessage = "Le remboursement est annulé. L'article est de nouveau marqué vendu.";
-            return RedirectToPage();
+            return RedirectToPage(new { onglet = ItemCorrectionsTab });
         }
 
         var message = result == SaleCorrectionResult.NotFound
@@ -313,6 +330,34 @@ public sealed class IndexModel(
         return Page();
     }
 
+    public bool IsActiveTab(string tab)
+    {
+        return string.Equals(ActiveTab, tab, StringComparison.Ordinal);
+    }
+
+    public string TabClass(string tab)
+    {
+        return IsActiveTab(tab)
+            ? "data-list-tab data-list-tab-active"
+            : "data-list-tab";
+    }
+
+    public string? TabAriaCurrent(string tab)
+    {
+        return IsActiveTab(tab) ? "page" : null;
+    }
+
+    private static string NormalizeTab(string? value)
+    {
+        return value switch
+        {
+            CashRegistersTab => CashRegistersTab,
+            DesksTab => DesksTab,
+            ItemCorrectionsTab => ItemCorrectionsTab,
+            _ => SaleTab
+        };
+    }
+
     public static string FormatPrice(int priceCents)
     {
         return $"{priceCents / 100m:0.00} €";
@@ -320,7 +365,7 @@ public sealed class IndexModel(
 
     public static string BuildCorrectionFilterText(ItemCorrectionCandidate item)
     {
-        return $"{item.Reference} {item.Title} {item.SellerCode} {item.SellerName} {item.Status} {item.SaleId}".ToLower(FrenchCulture);
+        return $"{item.Reference} {item.Title} {item.SellerName} {item.Status} {item.SaleId}".ToLower(FrenchCulture);
     }
 
     private async Task LoadPageAsync(CancellationToken cancellationToken)

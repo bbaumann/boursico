@@ -2,7 +2,7 @@
 
 Ce document liste les scénarios à jouer pendant la recette utilisateur avant la première utilisation réelle de l'outil.
 
-Il a servi à la première session de recette en juin 2026 et a été mis à jour à partir du code actuel et de l'historique Git. Il décrit la version la plus récente du code. La version jouée le 17 septembre 2026, sans le changement des références articles du 12 septembre, est dans `scenarios-recette-utilisateur-2026-09-17.md`. Il a été mis à jour le 14 octobre 2026 pour les postes de dépôt et les lettres d'étiquettes, et le 29 septembre 2026 avec les corrections et évolutions demandées après la recette du 17 septembre. Les libellés entre accents graves sont ceux affichés à l'écran.
+Il a servi à la première session de recette en juin 2026 et a été mis à jour à partir du code actuel et de l'historique Git. Il décrit la version la plus récente du code. La version jouée le 17 septembre 2026, sans le changement des références articles du 12 septembre, est dans `scenarios-recette-utilisateur-2026-09-17.md`. Il a été mis à jour le 29 octobre 2026 après la revue des postes de dépôt, le 14 octobre 2026 pour les postes de dépôt et les lettres d'étiquettes, et le 29 septembre 2026 avec les corrections et évolutions demandées après la recette du 17 septembre. Les libellés entre accents graves sont ceux affichés à l'écran.
 
 ## Nouveautés depuis la recette du 17 septembre 2026
 
@@ -10,6 +10,7 @@ Les changements du 29 septembre 2026 répondent aux retours de la recette du 17 
 
 | Date | Changement | Scénarios concernés |
 | --- | --- | --- |
+| 29/10/2026 | Le poste de dépôt disparaît de l'écran : chaque ordinateur prend ses lettres d'étiquettes depuis la fiche vendeur avec `Prendre des lettres`, et les rend avec `Libérer les lettres` (qui remplace `Fermer le poste` et `Forcer la fermeture`). Plus de page `/vendeurs/poste`, plus de bandeau, plus de nom de poste. Sans lettres, `Commencer le dépôt` et `Finaliser le dépôt` sont grisés et `Prendre des lettres` est à côté ; avec des lettres, la fiche affiche `Lettres de cet ordinateur : B, C`. Le formulaire d'articles propose 5 lignes au lieu de 10. La page `ADMIN` est découpée en onglets (`Statut de la vente`, `Caisses`, `Lettres et étiquettes`, `Correction des articles`). Le code vendeur n'est plus affiché nulle part : les listes et recherches se font par nom, et la feuille d'un seul vendeur se choisit dans une liste `Vendeur`. `Commencer le dépôt` devient `Étiqueter les jouets` ; après le clic, le résultat (`12 jouets étiquetés : B001 à B012.` et la consigne de collage) s'affiche au-dessus du tableau des articles, où la page descend, et les jouets qui viennent de recevoir leur étiquette sont surlignés. | Prevente-03, Prevente-04, Prevente-05, Prevente-09, Prevente-10, Prevente-11, Vente-08, Vente-09, Vente-10, Vente-11, Vente-12, PostVente-02, PostVente-04 |
 | 14/10/2026 | Les références ne sont plus attribuées à l'étape `Frais` : chaque ordinateur de dépôt ouvre un poste (`/vendeurs/poste`) qui reçoit deux lettres d'étiquettes ; `Commencer le dépôt` donne à tous les articles du vendeur leurs références d'un coup, et une ligne ajoutée ensuite reçoit sa référence à l'enregistrement. `Continuer` n'attribue plus rien et `Finaliser le dépôt` exige un dépôt commencé. Les compteurs de lettres ne diminuent jamais. L'administration règle `Étiquettes imprimées par lettre`, voit les lettres et les postes ouverts, et peut `Forcer la fermeture` d'un poste. Un bandeau de poste apparaît sur les pages vendeurs. | Prevente-04, Prevente-05, Prevente-06, Prevente-07, Prevente-10, Prevente-11 |
 | 13/10/2026 | Nouvel onglet `Chèques par caisse` dans `DONNÉES` : pour chaque caisse, la liste des chèques (banque, numéro, montant, acheteur) et leur total, pour contrôler les chèques à la clôture. | PostVente-08 |
 | 13/10/2026 | L'onglet `Clôture` commence par les montants attendus dans chaque caisse (espèces, chèques, CB), séparés des colonnes de détail par un trait vertical ; les caisses sont listées d'abord et la ligne `Toutes les caisses` en dernier. Les colonnes `Articles`, `Sous-total`, `Frais`, `Encaissé` et `Net` sont retirées. | PostVente-07 |
@@ -146,14 +147,14 @@ Description : créer un vendeur sans passer par l'import, ou compléter les info
 
 #### Critères d'acceptation
 
-- Le vendeur reçoit un code vendeur.
+- Aucun code vendeur n'est affiché : le vendeur se retrouve par son nom.
 - La pièce d'identité se renseigne en trois champs : nature, numéro et date de délivrance. Le champ `Autorité de délivrance` n'existe plus.
 - Sur `Créer un vendeur`, le compteur affiche `0 article` à l'ouverture, puis compte seulement les lignes remplies (`1 article`, `3 articles`…).
 - Les champs `Prénom`, `Nom`, `Téléphone`, `Adresse postale`, `Code postal` et `Ville` portent le badge `Obligatoire`.
 - Seuls le prénom et le nom bloquent l'enregistrement. Les autres champs marqués `Obligatoire` peuvent rester vides tant que le dépôt n'est pas validé.
 - Les doublons évidents sont signalés avant enregistrement dans une liste `Vendeurs existants` avec un lien `Ouvrir ce vendeur`.
 - Sans téléphone saisi, le doublon est détecté sur le prénom et le nom seuls.
-- La liste `VENDEURS` se filtre par code ou nom et affiche code, nom, e-mail et nombre d'articles.
+- La liste `VENDEURS` se filtre par nom et affiche nom, e-mail et nombre d'articles.
 
 ### Prevente-04 - Ajouter les articles d'un vendeur
 
@@ -164,23 +165,25 @@ Description : ajouter les jouets prévus pour un vendeur depuis la fiche vendeur
 
 #### Étapes
 
-1. Avoir un poste de dépôt ouvert sur l'ordinateur (voir Prevente-10), puis ouvrir la fiche vendeur.
-2. Dans `Ajouter des articles`, saisir la description (colonne `Description`) et le prix vendeur de chaque article. Utiliser `+` pour ajouter des lignes.
+1. Avoir pris des lettres sur l'ordinateur (voir Prevente-10), puis ouvrir la fiche vendeur.
+2. Dans `Ajouter des articles` (5 lignes proposées), saisir la description (colonne `Description`) et le prix vendeur de chaque article. Utiliser `+` pour ajouter des lignes.
 3. Pendant la saisie, observer le compteur à droite du bouton `+` : remplir une ligne, en effacer une, ajouter une ligne vide.
 4. Cliquer sur `Enregistrer le lot`.
-5. Cliquer sur `Commencer le dépôt` (voir Prevente-05), puis ajouter encore un article avec `Enregistrer le lot`.
+5. Cliquer sur `Étiqueter les jouets` (voir Prevente-05), puis ajouter encore un article avec `Enregistrer le lot`.
 6. Contrôle de régression, sur un vendeur dont la fiche est complète (téléphone, adresse, code postal, ville et pièce d'identité) : cliquer sur `Finaliser le dépôt`, cliquer sur `Retour` pour fermer la fenêtre, puis ajouter un nouveau lot avec `Enregistrer le lot`.
 
 #### Critères d'acceptation
 
+- Le formulaire propose 5 lignes vides.
 - Les articles sont créés en `enregistré`.
+- Avant `Étiqueter les jouets`, les articles s'enregistrent même sans lettres ; une fois le dépôt commencé, `Enregistrer le lot` est grisé tant que l'ordinateur n'a pas de lettres.
 - Le prix vendeur doit être un montant entier en euros ; un prix avec centimes est refusé.
 - Une ligne avec une description sans prix, ou un prix sans description, est refusée avec un message explicite.
 - Le compteur affiche le total des articles du vendeur, lignes remplies comprises, par exemple `14 articles (dont 3 nouveaux)`. Les lignes vides ne comptent pas.
 - Supprimer un article recharge la fiche et met le compteur à jour.
 - Les articles `enregistré` ne sont pas visibles en caisse.
 - Tant que le dépôt n'est pas commencé, les articles n'ont pas de référence ; l'écran affiche un tiret (`—`) à la place.
-- Une fois le dépôt commencé, l'article ajouté reçoit sa référence dès l'enregistrement du lot, à la suite de la série du vendeur (même lettre si elle a de la place), et l'écran l'indique (`Référence attribuée : B013.`).
+- Une fois le dépôt commencé, l'article ajouté reçoit sa référence dès l'enregistrement du lot, à la suite de la série du vendeur (même lettre si elle a de la place), et l'écran l'indique au-dessus du tableau des articles (`1 jouet étiqueté : B013.`), avec la ligne surlignée.
 - Le lot ajouté après ouverture puis fermeture de `Finaliser le dépôt` est bien créé, sans rouvrir la fenêtre.
 - Les prix saisis seront repris dans le contrat et dans les calculs vendeur.
 
@@ -189,12 +192,12 @@ Description : ajouter les jouets prévus pour un vendeur depuis la fiche vendeur
 - Niveau : `Bénévole`
 - Rôle typique : Bénévole
 
-Description : confirmer les jouets physiquement déposés, attribuer les références avec `Commencer le dépôt`, faire signer le contrat, puis rendre les articles vendables.
+Description : confirmer les jouets physiquement déposés, attribuer les références avec `Étiqueter les jouets`, faire signer le contrat, puis rendre les articles vendables.
 
 #### Étapes
 
 1. Avoir un poste de dépôt ouvert sur l'ordinateur (voir Prevente-10), puis ouvrir la fiche vendeur d'un vendeur qui a plusieurs articles enregistrés.
-2. Cliquer sur `Commencer le dépôt`. Noter les références affichées et coller (ou imaginer coller) chaque étiquette sur le jouet correspondant, en s'aidant de la liste triée par référence.
+2. Cliquer sur `Étiqueter les jouets`. Noter les références affichées et coller (ou imaginer coller) chaque étiquette sur le jouet correspondant, en s'aidant de la liste triée par référence.
 3. Vérifier les articles apportés physiquement.
 4. Supprimer ou corriger les articles créés par erreur avant validation.
 5. Cliquer une première fois sur `Finaliser le dépôt` avec des informations manquantes pour voir la liste des blocages.
@@ -214,17 +217,17 @@ Description : confirmer les jouets physiquement déposés, attribuer les référ
 - Tant qu'il manque une information, `Finaliser le dépôt` n'ouvre pas la fenêtre et affiche un résumé `Fiche vendeur` et/ou `Articles` avec la liste des points à corriger.
 - La validation est refusée tant qu'un article a un prix `À compléter`.
 - La validation reste possible si des frais vendeur restent à payer ; l'étape `Frais` affiche alors `Déduit au rapprochement`.
-- Avant `Commencer le dépôt`, les articles n'ont pas de référence. Après le clic, chaque article du vendeur a une référence de la forme une lettre plus trois chiffres, par exemple `B157`, et l'écran affiche la série (`Références attribuées : B001 à B012.`). Le bouton `Commencer le dépôt` disparaît.
+- Avant `Étiqueter les jouets`, les articles n'ont pas de référence. Après le clic, chaque article du vendeur a une référence de la forme une lettre plus trois chiffres, par exemple `B157`, et la page descend au tableau des articles, où s'affichent la série et la consigne (`12 jouets étiquetés : B001 à B012. Décollez les étiquettes de la planche B dans l'ordre et collez-les sur les jouets surlignés ci-dessous.`) ; les jouets étiquetés sont surlignés. Le bouton `Étiqueter les jouets` disparaît.
 - Les articles d'un même vendeur démarrés ensemble portent la même lettre et des numéros qui se suivent, sauf si la lettre n'a pas assez de place : la série est alors répartie sur plusieurs lettres et la page dit `Allez chercher la planche R.` pour une lettre nouvellement prise.
-- La lettre vient du poste, pas du code vendeur : elle sert au tri physique des invendus après la vente.
+- La lettre vient du poste : elle sert au tri physique des invendus après la vente.
 - `Continuer` n'attribue plus de référence : les références sont identiques avant et après.
-- Sur le vendeur dont le dépôt n'est pas commencé, `Finaliser le dépôt` est refusé avec `Commencez le dépôt pour attribuer les références avant de le finaliser.`
-- Sans poste ouvert, `Commencer le dépôt` est refusé avec `Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.` et aucune référence n'est créée.
+- Sur le vendeur dont le dépôt n'est pas commencé, `Finaliser le dépôt` est refusé avec `Étiquetez les jouets avant de finaliser le dépôt.`
+- Sans lettres sur l'ordinateur, `Étiqueter les jouets` et `Finaliser le dépôt` sont grisés, `Prendre des lettres` est proposé à côté, et aucune référence n'est créée.
 - Le contrat imprimé contient l'identité de l'association, les informations vendeur, les frais vendeur et la liste des articles avec leur référence. Il n'imprime pas la pièce d'identité ni le statut de l'événement.
 - `Valider le dépôt` reste grisé tant que la case de signature n'est pas cochée.
 - Après validation, le message `Dépôt validé : N articles sont maintenant en stock.` s'affiche et les articles passent en `en stock`.
 - Après validation, les modifications normales du vendeur et de ses articles sont verrouillées.
-- Si deux postes prennent la même lettre au même instant, l'un affiche un message demandant de réessayer ; recliquer aboutit sans perte de données.
+- Si deux ordinateurs prennent la même lettre au même instant, l'un affiche un message demandant de réessayer ; recliquer aboutit sans perte de données.
 
 ### Prevente-06 - Refuser un jouet avant signature
 
@@ -306,7 +309,7 @@ Description : déclarer les postes de caisse physiques et leur fond de caisse av
 #### Étapes
 
 1. Ouvrir `ADMIN` et déverrouiller.
-2. Dans `Caisses`, saisir un `Nom de la caisse` et un `Fond de caisse (€)`, laisser `Active` cochée, puis cliquer sur `Ajouter la caisse`.
+2. Dans l'onglet `Caisses`, saisir un `Nom de la caisse` et un `Fond de caisse (€)`, laisser `Active` cochée, puis cliquer sur `Ajouter la caisse`.
 3. Créer une seconde caisse.
 4. Modifier le fond de caisse d'une caisse existante et cliquer sur `Enregistrer`.
 5. Décocher `Active` sur une caisse et enregistrer.
@@ -320,53 +323,54 @@ Description : déclarer les postes de caisse physiques et leur fond de caisse av
 - Le nom d'une caisse déjà utilisée par une vente ou un remboursement est verrouillé, avec le message `Nom verrouillé car la caisse est déjà utilisée.`
 - Le fond de caisse est repris dans la colonne `Fond` de l'onglet `Clôture`.
 
-### Prevente-10 - Ouvrir et fermer un poste de dépôt
+### Prevente-10 - Prendre des lettres d'étiquettes et les libérer
 
 - Niveau : `Bénévole`
 - Rôle typique : Opérateur de saisie
 
-Description : ouvrir le poste de dépôt d'un ordinateur, voir ses lettres d'étiquettes, puis le fermer.
+Description : prendre les lettres d'étiquettes d'un ordinateur depuis une fiche vendeur, les voir, puis les libérer.
 
 #### Étapes
 
-1. Sur un ordinateur sans poste, ouvrir une fiche vendeur : le bandeau affiche `Aucun poste de dépôt ouvert sur cet ordinateur.`
-2. Cliquer sur `Ouvrir un poste` (ou ouvrir `/vendeurs/poste`), saisir éventuellement un nom, puis cliquer sur `Ouvrir un poste`.
+1. Sur un ordinateur sans lettres, ouvrir la fiche d'un vendeur dont le dépôt est à valider.
+2. Cliquer sur `Prendre des lettres`, à côté de `Étiqueter les jouets`.
 3. Noter les deux lettres affichées et le message `Allez chercher les planches B et C.`
-4. Sur un second ordinateur (ou un second profil de navigateur), ouvrir un second poste.
-5. Sur le premier ordinateur, ouvrir une fiche vendeur et cliquer sur `Commencer le dépôt` : vérifier que les références utilisent une des lettres du premier poste.
-6. Sur le premier ordinateur, cliquer sur `Fermer le poste` et lire la confirmation, puis confirmer.
-7. Ouvrir `/administration`, section `Postes de dépôt et étiquettes`.
+4. Sur un second ordinateur (ou un second profil de navigateur), prendre des lettres de la même façon.
+5. Sur le premier ordinateur, cliquer sur `Étiqueter les jouets` : vérifier que les références utilisent une des lettres du premier ordinateur.
+6. Ouvrir la fiche d'un autre vendeur sur le premier ordinateur, cliquer sur `Libérer les lettres` et lire la confirmation, puis confirmer.
+7. Ouvrir `ADMIN`, onglet `Lettres et étiquettes`.
 
 #### Critères d'acceptation
 
-- Le premier poste reçoit deux lettres ; le second reçoit deux autres lettres : une lettre n'est jamais détenue par deux postes ouverts.
-- Le bandeau des pages vendeurs affiche le nom du poste et ses lettres, par exemple `Poste 1 · lettres B, C`.
-- Un ordinateur qui a déjà un poste ouvert ne peut pas en ouvrir un second.
-- Les références attribuées par le premier poste viennent de ses lettres, jamais de celles du second.
-- La confirmation de `Fermer le poste` rappelle de rapporter les planches sur la table centrale.
-- Après la fermeture, les lettres du premier poste apparaissent `Libres` dans `/administration` avec leurs numéros utilisés conservés, et un nouveau poste peut les reprendre (les moins utilisées en premier).
-- Quand une lettre du poste a 20 étiquettes ou moins, le bandeau affiche `Plus que N étiquettes en X.`
+- Avant l'étape 2, la fiche affiche `Prenez des lettres pour étiqueter les jouets ou finaliser le dépôt.` ; `Étiqueter les jouets` et `Finaliser le dépôt` sont grisés et `Prendre des lettres` est le seul bouton actif du dépôt.
+- Le mot « poste » n'apparaît nulle part sur la fiche vendeur.
+- Le premier ordinateur reçoit deux lettres ; le second reçoit deux autres lettres : une lettre n'est jamais prise par deux ordinateurs à la fois.
+- Toutes les fiches vendeurs de l'ordinateur affichent `Lettres de cet ordinateur : B, C` avec le bouton `Libérer les lettres`. Il n'y a pas de bandeau au-dessus du menu.
+- Les références attribuées sur le premier ordinateur viennent de ses lettres, jamais de celles du second.
+- La confirmation de `Libérer les lettres` rappelle de rapporter les planches sur la table centrale ; après confirmation, la fiche affiche `Lettres B et C libérées. Rapportez leurs planches sur la table centrale.` et propose de nouveau `Prendre des lettres`.
+- Après la libération, les lettres du premier ordinateur apparaissent `Libres` dans `ADMIN` avec leurs numéros utilisés conservés, et un autre ordinateur peut les reprendre (les moins utilisées en premier).
+- Quand une des lettres de l'ordinateur a 20 étiquettes ou moins, la fiche vendeur affiche `Plus que N étiquettes en X.`
 
-### Prevente-11 - Forcer la fermeture d'un poste et régler les étiquettes par lettre
+### Prevente-11 - Libérer les lettres d'un ordinateur depuis l'administration et régler les étiquettes par lettre
 
 - Niveau : `Avancé`
 - Rôle typique : Admin
 
-Description : libérer les lettres d'un poste dont l'ordinateur est tombé en panne, et ajuster le nombre d'étiquettes imprimées par lettre.
+Description : libérer les lettres d'un ordinateur tombé en panne, et ajuster le nombre d'étiquettes imprimées par lettre.
 
 #### Étapes
 
-1. Avoir deux postes ouverts (voir Prevente-10) et un vendeur dont le dépôt est commencé sur le second poste.
+1. Avoir deux ordinateurs avec des lettres (voir Prevente-10) et un vendeur dont le dépôt est commencé sur le second.
 2. Sur un ordinateur administrateur, ouvrir `/administration`, saisir le mot de passe administrateur.
-3. Dans `Postes de dépôt et étiquettes`, cliquer sur `Forcer la fermeture` à côté du second poste, puis confirmer.
-4. Sur l'ordinateur du second poste, sans le fermer, ajouter un article au vendeur dont le dépôt est commencé, puis enregistrer.
+3. Dans l'onglet `Lettres et étiquettes`, tableau `Ordinateurs qui ont des lettres`, cliquer sur `Libérer les lettres` à côté du second ordinateur, puis confirmer.
+4. Sur le second ordinateur, sans recharger la fiche du vendeur dont le dépôt est commencé, y ajouter un article puis enregistrer. Recharger ensuite la fiche.
 5. Dans `Étiquettes imprimées par lettre`, saisir un nombre inférieur au plus grand nombre déjà utilisé dans une lettre, puis cliquer sur `Enregistrer`.
 6. Saisir ensuite un nombre supérieur (par exemple 600), puis cliquer sur `Enregistrer`.
 
 #### Critères d'acceptation
 
-- Le message `Poste fermé. Ses lettres sont de nouveau disponibles.` s'affiche et les lettres du second poste passent à `Libre`.
-- À l'étape 4, l'enregistrement est refusé avec `Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.` et aucun article n'est créé.
+- Le message `Lettres libérées. Elles sont de nouveau disponibles pour les autres ordinateurs.` s'affiche, la page reste sur l'onglet `Lettres et étiquettes`, et les lettres du second ordinateur passent à `Libre`.
+- À l'étape 4, l'enregistrement est refusé avec `Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.` et aucun article n'est créé. Après rechargement, la fiche affiche `Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer le dépôt.` et `Enregistrer le lot` est grisé.
 - À l'étape 5, la valeur est refusée avec `Le nombre d'étiquettes par lettre ne peut pas être inférieur à N, déjà utilisé pour la lettre X.`
 - Une valeur hors de 1 à 999 est refusée avec `Le nombre d'étiquettes par lettre doit être compris entre 1 et 999.`
 - À l'étape 6, `Nombre d'étiquettes par lettre enregistré.` s'affiche ; une lettre qui était `Épuisée` redevient utilisable.
@@ -568,7 +572,7 @@ Description : une vente a été enregistrée avec une mauvaise référence et l'
 
 1. Ouvrir `ADMIN`.
 2. Déverrouiller avec le mot de passe administrateur.
-3. Dans `Correction des articles`, filtrer par référence, description, vendeur, statut ou numéro de vente.
+3. Dans l'onglet `Correction des articles`, filtrer par référence, description, nom du vendeur, statut ou numéro de vente.
 4. Trouver la ligne vendue par erreur.
 5. Cliquer sur `Remettre en stock`.
 6. Confirmer.
@@ -592,7 +596,7 @@ Description : un article déjà accepté en stock est trouvé défectueux avant 
 
 1. Ouvrir `ADMIN`.
 2. Déverrouiller avec le mot de passe administrateur.
-3. Filtrer `Correction des articles`.
+3. Ouvrir l'onglet `Correction des articles` et filtrer.
 4. Trouver l'article `en stock`.
 5. Cliquer sur `Marquer défectueux` et confirmer.
 
@@ -615,7 +619,7 @@ Description : un acheteur rapporte un article vendu parce qu'il est défectueux.
 
 1. Ouvrir `ADMIN`.
 2. Déverrouiller avec le mot de passe administrateur.
-3. Trouver la ligne vendue.
+3. Dans l'onglet `Correction des articles`, trouver la ligne vendue.
 4. Cliquer sur `Rembourser`.
 5. Vérifier `Prix article`, `Frais association remboursés` et `Montant à rembourser` dans la fenêtre.
 6. Choisir la `Caisse de remboursement` qui rend physiquement l'argent.
@@ -642,7 +646,7 @@ Description : le remboursement a été saisi par erreur et doit être annulé.
 
 1. Ouvrir `ADMIN`.
 2. Déverrouiller avec le mot de passe administrateur.
-3. Retrouver la ligne remboursée.
+3. Dans l'onglet `Correction des articles`, retrouver la ligne remboursée.
 4. Cliquer sur `Annuler le remboursement`.
 5. Confirmer.
 
@@ -664,7 +668,7 @@ Description : pendant la vente, un ordinateur doit changer de caisse, par exempl
 
 1. Vérifier que l'événement est en `Vente` et que le poste utilise une caisse, par exemple `Caisse 1`.
 2. Sur ce poste, ouvrir `ADMIN` et déverrouiller avec le mot de passe administrateur.
-3. Dans `Caisse de cet ordinateur`, lire la caisse actuelle.
+3. Dans l'onglet `Caisses`, section `Caisse de cet ordinateur`, lire la caisse actuelle.
 4. Choisir une autre caisse et cliquer sur `Changer la caisse de cet ordinateur`.
 5. Revenir dans `CAISSE` sur ce poste et enregistrer une vente.
 6. Sur un autre poste, vérifier que sa caisse n'a pas changé.
@@ -709,7 +713,7 @@ Description : produire les feuilles utilisées pour rassembler les articles et p
 
 1. Ouvrir `RAPPROCHEMENT`.
 2. Cliquer sur `Imprimer toutes les feuilles`.
-3. Revenir, saisir un vendeur dans `Code ou nom du vendeur` (la liste propose `code - nom`), puis cliquer sur `Imprimer une feuille`.
+3. Revenir, choisir un vendeur dans la liste `Vendeur` (les vendeurs y sont listés par nom), puis cliquer sur `Imprimer une feuille`.
 
 #### Critères d'acceptation
 
@@ -752,9 +756,9 @@ Description : un article encore en stock ne peut pas être retrouvé pendant le 
 #### Étapes
 
 1. Ouvrir `RAPPROCHEMENT`.
-2. Dans `Correction des articles`, filtrer par code vendeur, nom, référence ou description.
+2. Dans `Correction des articles`, filtrer par nom du vendeur, référence ou description.
 3. Sur l'article `en stock`, cliquer sur `Marquer manquant`.
-4. Cliquer sur le lien `Imprimer la feuille du vendeur <code>` proposé sous le message de confirmation.
+4. Cliquer sur le lien `Imprimer la feuille de <nom du vendeur>` proposé sous le message de confirmation.
 
 #### Critères d'acceptation
 
@@ -886,7 +890,7 @@ Pour une session de recette courte, jouer au minimum :
 1. `Prevente-01` : import formulaire avec un cas simple et une ligne sans prix.
 2. `Prevente-02` : traitement d'un doublon.
 3. `Prevente-09` : configuration de deux caisses.
-4. `Prevente-10`, `Prevente-04` puis `Prevente-05` : ouverture d'un poste de dépôt, saisie d'articles, `Commencer le dépôt` avec attribution des références, puis finalisation du dépôt et impression du contrat.
+4. `Prevente-10`, `Prevente-04` puis `Prevente-05` : ouverture d'un poste de dépôt, saisie d'articles, `Étiqueter les jouets` avec attribution des références, puis finalisation du dépôt et impression du contrat.
    `Prevente-11` : fermeture forcée d'un poste et réglage des étiquettes par lettre, si l'administrateur est présent.
 5. `Vente-01` puis `Vente-02` : choix de la caisse, verrouillage en `Vente`, encaissement simple avec paiement non chèque, puis client suivant sur un écran vide.
 6. `Vente-02` : encaissement chèque avec numéro et banque.

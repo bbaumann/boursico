@@ -1504,7 +1504,7 @@ public sealed class IntakeServiceTests
 
     private static async Task<long> OpenDeskAsync(AppDbContext context)
     {
-        return (await new DepositDeskService(context).OpenDeskAsync(null)).DeskId;
+        return (await new DepositDeskService(context).OpenDeskAsync()).DeskId;
     }
 
     [Fact]
@@ -1596,8 +1596,8 @@ public sealed class IntakeServiceTests
         await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
         // Desks without letters, so both runs take the first free letter, B.
         var noLetters = Options.Create(new LabelsOptions { LettersPerDesk = 0 });
-        var deskA = (await new DepositDeskService(first, noLetters).OpenDeskAsync("A")).DeskId;
-        var deskB = (await new DepositDeskService(first, noLetters).OpenDeskAsync("B")).DeskId;
+        var deskA = (await new DepositDeskService(first, noLetters).OpenDeskAsync()).DeskId;
+        var deskB = (await new DepositDeskService(first, noLetters).OpenDeskAsync()).DeskId;
         var firstService = new IntakeService(first, labelsOptions: noLetters);
         var secondService = new IntakeService(second, labelsOptions: noLetters);
         var sellerA = await CreateValidatableSellerAsync(first, firstService);
@@ -1632,8 +1632,8 @@ public sealed class IntakeServiceTests
         await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
         var noLetters = Options.Create(new LabelsOptions { LettersPerDesk = 0 });
         var oneLetter = Options.Create(new LabelsOptions { LettersPerDesk = 1 });
-        var deskA = (await new DepositDeskService(first, noLetters).OpenDeskAsync("A")).DeskId;
-        var deskB = (await new DepositDeskService(first, noLetters).OpenDeskAsync("B")).DeskId;
+        var deskA = (await new DepositDeskService(first, noLetters).OpenDeskAsync()).DeskId;
+        var deskB = (await new DepositDeskService(first, noLetters).OpenDeskAsync()).DeskId;
         var firstService = new IntakeService(first, labelsOptions: oneLetter);
         var secondService = new IntakeService(second, labelsOptions: oneLetter);
         var sellerA = await CreateValidatableSellerAsync(first, firstService);
@@ -1664,8 +1664,8 @@ public sealed class IntakeServiceTests
         await first.Database.EnsureCreatedAsync();
         await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
         var oneLetter = Options.Create(new LabelsOptions { LettersPerDesk = 1 });
-        var deskA = (await new DepositDeskService(first, oneLetter).OpenDeskAsync("A")).DeskId;
-        var deskB = (await new DepositDeskService(first, oneLetter).OpenDeskAsync("B")).DeskId;
+        var deskA = (await new DepositDeskService(first, oneLetter).OpenDeskAsync()).DeskId;
+        var deskB = (await new DepositDeskService(first, oneLetter).OpenDeskAsync()).DeskId;
         var firstService = new IntakeService(first, labelsOptions: oneLetter);
         var secondService = new IntakeService(second, labelsOptions: oneLetter);
         var seller = await CreateValidatableSellerAsync(first, firstService);
@@ -1705,7 +1705,7 @@ public sealed class IntakeServiceTests
         await using var second = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
         var noLetters = Options.Create(new LabelsOptions { LettersPerDesk = 0 });
         var oneLetter = Options.Create(new LabelsOptions { LettersPerDesk = 1 });
-        var deskId = (await new DepositDeskService(first, noLetters).OpenDeskAsync("A")).DeskId;
+        var deskId = (await new DepositDeskService(first, noLetters).OpenDeskAsync()).DeskId;
         var firstService = new IntakeService(first, labelsOptions: oneLetter);
         var secondService = new IntakeService(second, labelsOptions: oneLetter);
         var seller = await CreateValidatableSellerAsync(first, firstService);

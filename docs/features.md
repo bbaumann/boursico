@@ -30,9 +30,9 @@ Allow organizers to register toys before the event and allow sale-day volunteers
 - Validate one signed seller deposit, moving that seller's accepted `registered` items to `in_stock`
 - Allow admin cancellation of a validated deposit with a local admin-password confirmation, reopening only items still `in_stock`
 - Configure physical caisses with a name and initial cash amount (`fond de caisse`) from `/administration`
-- Open a deposit desk per computer on `/vendeurs/poste`; each open desk owns two reference letters, and a desk banner on the seller pages shows its letters and labels left
-- Start a seller's deposit with `Commencer le dépôt`, which allocates the desk's next `<LETTER><NNN>` references to all existing rows in one run; rows added later get their reference when saved
-- Set the number of labels per letter and see letters and open desks on `/administration`, where an admin can force-close a desk
+- Take reference letters for a computer from any seller detail page (`Prendre des lettres`, internally an open deposit desk); each computer then owns two letters, which the seller detail page shows with the labels left and a `Libérer les lettres` button
+- Start a seller's deposit with `Étiqueter les jouets`, which allocates the desk's next `<LETTER><NNN>` references to all existing rows in one run; rows added later get their reference when saved
+- Set the number of labels per letter and see letters and open desks on `/administration`, where an admin can free a desk's letters
 - Store one seller-set printed price per item
 - Search validated `in_stock` items by `reference + title` using a live-filtered table
 - Store the configured physical caisse on every sale
@@ -76,7 +76,7 @@ The event has one persisted sale phase:
 
 `presale` is the default. Sales are allowed in `presale` and `sale` so the sale day is not blocked if organizers are still doing final corrections. `sale` locks seller and item master data. `post_sale` blocks new sale validation and sale save server-side.
 
-The phase appears near the event/software name on every page as information only. The admin page is available as a fourth main navigation item. Admins unlock `/administration` with the shared admin password, then change the phase from that page without re-entering the password for every action.
+The phase appears near the event/software name on every page as information only. The admin page is available as a fourth main navigation item. Admins unlock `/administration` with the shared admin password, then change the phase from that page without re-entering the password for every action. Once unlocked, the page shows one tab at a time (`?onglet=`): `Statut de la vente` (`vente`, default), `Caisses` (`caisses`, including this computer's caisse), `Lettres et étiquettes` (`lettres`), and `Correction des articles` (`articles`); each action returns to its own tab.
 
 ### Seller And Item Data Freeze At Sale Start
 
@@ -163,8 +163,8 @@ Operators can inspect the main event data from `/donnees` without admin unlock:
 - the page is read-only and does not expose edit, correction, or workflow actions
 - the page uses seven tabs: `Articles`, `Vendeurs`, `Ventes`, `Chèques`, `Chèques par caisse`, `Clôture`, and `Statistiques`
 - the `Articles` tab lists all item statuses and supports a status filter in addition to live text search
-- article text search matches item reference, title, seller code, seller name, and status
-- the `Vendeurs` tab supports live text search by seller code and seller name only
+- article text search matches item reference, title, seller name, and status
+- the `Vendeurs` tab supports live text search by seller name only
 - the `Ventes` tab supports live text search by sale id, buyer details, payment method, item reference, and item title
 - invoice address details, cheque number, and bank name stay visible in checkout sales history, but are not part of the general data-list sale search
 - the `Chèques` tab lists only cheque-payment sales with stored cheque number and bank name
@@ -266,12 +266,12 @@ Before validation:
 
 When the seller physically gives the toys to the association:
 
-1. The operator's computer has an open deposit desk (`/vendeurs/poste`), which holds two letters.
-2. The operator opens the seller detail page and clicks `Commencer le dépôt`; every existing row receives the desk's next numbers in one consecutive run, shown on screen.
+1. The operator's computer holds two letters, taken with `Prendre des lettres` on a seller detail page (internally an open deposit desk).
+2. The operator opens the seller detail page and clicks `Étiqueter les jouets`; every existing row receives the desk's next numbers in one consecutive run. The page scrolls to the articles table, where the result is shown (`12 jouets étiquetés : B001 à B012.` and which sheet to peel) and the rows just labelled are highlighted; a row saved on a started deposit gets the same feedback (`1 jouet étiqueté : B013.`).
 3. The operator peels that many labels and sticks each on the matching toy, using the list sorted by reference.
 4. A toy that was not registered is added as a row; saving it gives it the next number, and the operator peels the next label.
 5. A refused or forgotten toy is deleted; its label is thrown away and its number is never reused.
-6. The operator completes any missing phone, postal address, postal code, city, identity document nature, identity document number, issue date, or issuing authority, then starts `Finaliser le dépôt`. It is refused until the deposit is started.
+6. The operator completes any missing phone, postal address, postal code, city, identity document nature, identity document number, issue date, or issuing authority, then starts `Finaliser le dépôt`. It is refused until the deposit is started, and while the computer has no open desk.
 7. The operator verifies the expected seller fee, the fee already paid, and the remaining fee, then updates `Frais payés` when the seller pays at deposit time, and clicks `Continuer`. `Continuer` no longer allocates references.
 8. The operator prints `Imprimer le contrat`, which lists the allocated references.
 9. The seller signs the printed recap with the association identity, legal mentions, seller fee status, and item prices.
@@ -280,13 +280,13 @@ When the seller physically gives the toys to the association:
 
 Deposit desks:
 
-- Any computer can open a desk on `/vendeurs/poste` (optional name, otherwise `Poste N`). A computer that already holds an open desk cannot open a second one. The desk is identified by the `poste-depot` cookie (`HttpOnly`, `SameSite=Strict`, 4 days).
-- Opening assigns two letters (`Labels:LettersPerDesk`): the free, non-exhausted letters with the fewest numbers used. The page tells the operator which sheets to fetch (`Allez chercher les planches B et C.`). With fewer free letters than needed the desk opens with what is available, possibly none; `Commencer le dépôt` and adding rows to a started deposit are then refused until a letter is free.
-- A desk is closed with `Fermer le poste` (after a confirmation reminding the volunteer to bring the sheets back to the central table) or by an admin with `Forcer la fermeture` on `/administration`. Closing frees the letters. There is no takeover after a crash and no automatic timeout.
-- Allocation requires an open desk. With no desk the page shows `Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.`; with a closed desk, `Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.`. Nothing is written in either case.
-- Seller pages (`/vendeurs` and below) show a banner with the desk name and letters, `Plus que N étiquettes en X.` when a held letter has 20 or fewer labels left, and the closed-desk or no-desk message.
-- When no held letter can provide the numbers needed, the save is refused: `Plus aucune étiquette disponible pour ce poste. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.`
-- `/administration` has a `Postes de dépôt et étiquettes` section: `Étiquettes imprimées par lettre` (default 455, 1 to 999, not below the highest number already used), one row per letter (used, left or `Épuisée`, holding desk or `Libre`), and the open desks with their last activity.
+- The word `poste` never reaches the deposit operator: the UI talks about the computer's letters. The seller detail page holds the whole interaction; there is no separate desk page and no banner. Without letters, `Étiqueter les jouets` and `Finaliser le dépôt` are disabled and `Prendre des lettres` sits next to them, with `Prenez des lettres pour étiqueter les jouets ou finaliser le dépôt.` (or `Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer le dépôt.` when an admin freed them). `BeginDepositFinalization` also refuses server-side without an open desk. On a started deposit, `Enregistrer le lot` is disabled without letters; before the start, rows can be saved without them.
+- `Prendre des lettres` opens a desk named `Poste N` (the name is shown only on the admin tab) and is a no-op on a computer that already holds an open desk. The desk is identified by the `poste-depot` cookie (`HttpOnly`, `SameSite=Strict`, 4 days).
+- Taking letters assigns two (`Labels:LettersPerDesk`): the free, non-exhausted letters with the fewest numbers used. The page tells the operator which sheets to fetch (`Allez chercher les planches B et C.`). With fewer free letters than needed the computer gets what is available, possibly none; `Étiqueter les jouets` and adding rows to a started deposit are then refused until a letter is free.
+- With letters taken, every seller detail page shows `Lettres de cet ordinateur : B, C`, `Plus que N étiquettes en X.` when a held letter has 20 or fewer labels left, and `Libérer les lettres`, which closes the desk after a confirmation reminding the volunteer to bring the sheets back to the central table. An admin can do the same with `Libérer les lettres` on `/administration`. There is no takeover after a crash and no automatic timeout.
+- Allocation requires an open desk. Without one the save shows `Prenez des lettres pour attribuer des références.`; with a closed one, `Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.`. Nothing is written in either case.
+- When no held letter can provide the numbers needed, the save is refused: `Plus aucune étiquette disponible dans les lettres de cet ordinateur. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.`
+- `/administration` has a `Lettres et étiquettes` tab (`?onglet=lettres`): `Étiquettes imprimées par lettre` (default 455, 1 to 999, not below the highest number already used), one row per letter (used, left or `Épuisée`, `Prise par` the holding `Poste N` or `Libre`), and `Ordinateurs qui ont des lettres` with their last activity.
 
 The printed contract uses the configured association name, address, SIRET, and legal status. It shows the seller fee rule (`EUR 2` per started block of 15 items), expected fee, paid fee, whether payment is still due, and item prices. It does not print the seller identity document fields. It contains only the seller signature area with the acceptance text for the toy-sale rules; the application sale phase is hidden from the printed document.
 

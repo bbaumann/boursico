@@ -89,7 +89,7 @@
                             data-data-list-status="@item.Status">
                             <td data-data-list-sort-value="@item.Reference"><a href="/vendeurs/@item.SellerId">@(string.IsNullOrEmpty(item.Reference) ? "—" : item.Reference)</a></td>
                             <td data-data-list-sort-value="@item.Title">@item.Title</td>
-                            <td data-data-list-sort-value="@item.SellerCode @item.SellerName">@item.SellerCode - @item.SellerName</td>
+                            <td data-data-list-sort-value="@item.SellerName">@item.SellerName</td>
                             <td data-data-list-sort-value="@item.StatusLabel">@item.StatusLabel</td>
                             <td data-data-list-sort-value="@item.SellerPriceCents">@IndexModel.FormatPrice(item.SellerPriceCents)</td>
                         </tr>
@@ -111,7 +111,7 @@
                            type="search"
                            autocomplete="off"
                            data-data-list-search
-                           placeholder="Code ou nom" />
+                           placeholder="Nom" />
                 </div>
             </div>
             <p class="empty-state" data-data-list-empty-message hidden>Aucun vendeur ne correspond &agrave; cette recherche.</p>
@@ -126,7 +126,6 @@
                 <table class="data-table data-list-table data-list-seller-table" data-data-list-table>
                     <thead>
                         <tr>
-                            <th class="data-list-size-xxs data-list-code-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par code">Code<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
                             <th class="data-list-size-l data-list-name-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par nom">Nom<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
                             <th class="data-list-size-l data-list-email-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par e-mail">E-mail<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
                             <th class="data-list-size-m data-list-phone-column" aria-sort="none"><button type="button" class="data-list-sort-button" data-data-list-sort data-data-list-sort-type="text" aria-label="Trier par t&eacute;l&eacute;phone">T&eacute;l&eacute;phone<span class="data-list-sort-indicator" aria-hidden="true"></span></button></th>
@@ -143,8 +142,7 @@
                     @foreach (var seller in Model.Sellers)
                     {
                         <tr data-data-list-row data-data-list-filter-text="@seller.SearchText">
-                            <td class="data-list-size-xxs data-list-code-column" data-data-list-sort-value="@seller.SellerCode"><a href="/vendeurs/@seller.SellerId">@seller.SellerCode</a></td>
-                            <td class="data-list-size-l data-list-name-column" data-data-list-sort-value="@seller.SellerName">@seller.SellerName</td>
+                            <td class="data-list-size-l data-list-name-column" data-data-list-sort-value="@seller.SellerName"><a href="/vendeurs/@seller.SellerId">@seller.SellerName</a></td>
                             <td class="data-list-size-l data-list-email-column" data-data-list-sort-value="@(seller.Email ?? string.Empty)">@(seller.Email ?? "-")</td>
                             <td class="data-list-size-m data-list-phone-column" data-data-list-sort-value="@seller.Phone">@seller.Phone</td>
                             <td class="data-list-size-xs data-list-count-column" data-data-list-sort-value="@seller.ItemCount">@seller.ItemCount</td>

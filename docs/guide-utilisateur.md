@@ -124,7 +124,7 @@ Renseigner au minimum le prénom et le nom. Ajouter les informations disponibles
 - nature, numéro et date de délivrance de la pièce d'identité si disponibles ;
 - notes si nécessaire.
 
-À l'enregistrement, l'outil attribue un code vendeur. Ce code sert à retrouver le vendeur dans les recherches et les listes ; il n'apparaît pas dans la référence de ses articles, qui n'est attribuée que plus tard, au moment du dépôt. Les coordonnées et les informations de pièce d'identité manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
+Le vendeur se retrouve par son nom dans les recherches et les listes. La référence de ses articles n'est attribuée que plus tard, au moment du dépôt. Les coordonnées et les informations de pièce d'identité manquantes peuvent être complétées plus tard, mais elles sont obligatoires avant la validation du dépôt.
 
 ### Importer des soumissions de formulaire
 
@@ -146,7 +146,6 @@ Quand on crée ou modifie un vendeur, l'outil bloque les doublons évidents.
 
 Si un vendeur similaire existe déjà, la page affiche la liste des vendeurs existants avec :
 
-- code vendeur ;
 - nom ;
 - téléphone ;
 - e-mail ou indication `Sans e-mail` ;
@@ -159,7 +158,7 @@ Si aucun téléphone n'est saisi, le doublon est bloqué sur le prénom et le no
 
 ### Ajouter des articles
 
-Ouvrir la fiche du vendeur, puis utiliser la section `Ajouter des articles`.
+Ouvrir la fiche du vendeur, puis utiliser la section `Ajouter des articles`. Le formulaire propose 5 lignes ; le bouton `+` en ajoute d'autres.
 
 Pour chaque article, saisir :
 
@@ -172,42 +171,41 @@ Le prix vendeur est aussi le prix imprimé vu par le client dans l'outil actuel.
 
 ### Valider le dépôt vendeur
 
-Les articles ajoutés restent `enregistré` tant que le dépôt du vendeur n'est pas validé. Ils ne sont pas visibles en caisse. Tant qu'ils n'ont pas de référence, l'écran affiche un tiret (`—`) à la place : la référence est attribuée au moment où l'on clique sur `Commencer le dépôt`, ou à l'enregistrement d'une ligne ajoutée après ce clic.
+Les articles ajoutés restent `enregistré` tant que le dépôt du vendeur n'est pas validé. Ils ne sont pas visibles en caisse. Tant qu'ils n'ont pas de référence, l'écran affiche un tiret (`—`) à la place : la référence est attribuée au moment où l'on clique sur `Étiqueter les jouets`, ou à l'enregistrement d'une ligne ajoutée après ce clic.
 
 Les planches d'étiquettes à préparer avant l'événement doivent utiliser exactement 20 lettres : `B C D E G H J K L M N P R S T U W X Y Z` (sans A, F, I, O, Q, V), chacune numérotée de `001` à `455`. Une planche imprimée avec A à Z, avec une plage `001`-`500`, ou avec une lettre en moins, ne correspondra pas aux références attribuées par l'outil, et l'écart n'apparaîtra qu'à l'accueil des dépôts le jour de la vente.
 
-#### Ouvrir le poste de dépôt de l'ordinateur
+#### Prendre les lettres d'étiquettes de l'ordinateur
 
-Chaque ordinateur de dépôt ouvre son propre poste, une seule fois, avant le premier vendeur :
+Chaque ordinateur de dépôt doit avoir ses propres lettres d'étiquettes pour commencer ou finaliser un dépôt. Tant qu'il n'en a pas, la fiche vendeur affiche `Prenez des lettres pour étiqueter les jouets ou finaliser le dépôt.`, les boutons `Étiqueter les jouets` et `Finaliser le dépôt` sont grisés, et le seul bouton actif est `Prendre des lettres`, juste à côté.
 
-1. Ouvrir `/vendeurs/poste` (ou cliquer sur le lien du bandeau de poste, sous l'en-tête des pages vendeurs).
-2. Saisir éventuellement un nom de poste, puis cliquer sur `Ouvrir un poste`. Sans nom, le poste s'appelle `Poste N`.
-3. L'outil attribue deux lettres au poste et affiche `Allez chercher les planches B et C.` Un bénévole va chercher ces planches sur la table centrale. Ne jamais prendre d'autres planches que celles du poste : c'est ce qui garantit que le numéro affiché est toujours l'étiquette suivante de la planche.
+1. Sur la fiche d'un vendeur, cliquer sur `Prendre des lettres`.
+2. L'outil attribue deux lettres à l'ordinateur et affiche `Allez chercher les planches B et C.` Un bénévole va chercher ces planches sur la table centrale. Ne jamais prendre d'autres planches que celles de l'ordinateur : c'est ce qui garantit que le numéro affiché est toujours l'étiquette suivante de la planche.
 
-Le bandeau des pages vendeurs rappelle le poste et ses lettres (`Poste 3 · lettres K, R`). Quand une lettre du poste a 20 étiquettes ou moins, il affiche `Plus que 12 étiquettes en K.` Quand une lettre est épuisée, elle est rendue à l'administration et le poste en reçoit une autre : la page indique alors `Allez chercher la planche R.`
+Ensuite, chaque fiche vendeur rappelle `Lettres de cet ordinateur : B, C`. Quand une de ces lettres a 20 étiquettes ou moins, la fiche affiche `Plus que 12 étiquettes en B.` Quand une lettre est épuisée, elle est rendue à l'administration et l'ordinateur en reçoit une autre : la page indique alors `Allez chercher la planche R.`
 
-Si le poste est fermé (par l'administration, par exemple), l'outil affiche `Ce poste a été fermé. Ouvrez un nouveau poste pour continuer.` et n'écrit rien. S'il n'y a pas de poste sur l'ordinateur, il affiche `Ouvrez un poste de dépôt sur cet ordinateur pour attribuer des références.`
+Avant de ranger l'ordinateur, cliquer sur `Libérer les lettres` (sur n'importe quelle fiche vendeur) et rapporter les planches sur la table centrale : les lettres redeviennent disponibles pour un autre ordinateur. Si un ordinateur est tombé en panne sans avoir libéré ses lettres, l'administration les libère depuis `/administration`. L'ancien ordinateur affiche alors `Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer le dépôt.`, et un enregistrement tenté avec les anciennes lettres est refusé avec `Les lettres de cet ordinateur ont été libérées. Reprenez des lettres pour continuer.` sans rien écrire.
 
-Avant de ranger l'ordinateur, cliquer sur `Fermer le poste` et rapporter les planches sur la table centrale : les lettres redeviennent disponibles pour un autre poste. Si un ordinateur est tombé en panne sans avoir fermé son poste, l'administration le ferme de force depuis `/administration`.
+Sur un dépôt déjà commencé, `Enregistrer le lot` est grisé tant que l'ordinateur n'a pas de lettres, car chaque ligne enregistrée reçoit une étiquette. Avant `Étiqueter les jouets`, on peut saisir et enregistrer des articles sans lettres.
 
 Quand le vendeur apporte les jouets :
 
 1. Ouvrir sa fiche vendeur.
-2. Cliquer sur `Commencer le dépôt`. Chaque article déjà enregistré reçoit sa référence, à la suite, dans une seule série affichée à l'écran (par exemple `Références attribuées : B001 à B012.`). Décoller autant d'étiquettes de la planche et coller chacune sur le jouet correspondant, en s'aidant de la liste triée par référence. Pour un vendeur sans article saisi à l'avance, le dépôt est simplement marqué comme commencé.
+2. Cliquer sur `Étiqueter les jouets`. Chaque article déjà enregistré reçoit sa référence, à la suite, dans une seule série affichée à l'écran (par exemple `12 jouets étiquetés : B001 à B012.`, affiché au-dessus du tableau des articles avec la consigne de collage ; les jouets concernés sont surlignés dans le tableau). Décoller autant d'étiquettes de la planche et coller chacune sur le jouet correspondant, en s'aidant de la liste triée par référence. Pour un vendeur sans article saisi à l'avance, le dépôt est simplement marqué comme commencé.
 3. Pour un jouet qui n'était pas enregistré, ajouter une ligne et l'enregistrer : elle reçoit la référence suivante, et l'on décolle l'étiquette suivante de la planche.
 4. Pour un jouet refusé ou oublié, supprimer sa ligne et jeter son étiquette. Son numéro n'est jamais réutilisé.
 5. Compléter le téléphone, l'adresse postale, le code postal, la ville et les informations de pièce d'identité du vendeur : nature de la pièce, numéro et date de délivrance.
 6. Corriger ou supprimer les lignes incomplètes avant signature.
-7. Cliquer sur `Finaliser le dépôt`. Si le dépôt n'est pas commencé, l'outil répond `Commencez le dépôt pour attribuer les références avant de le finaliser.`
+7. Cliquer sur `Finaliser le dépôt`. Si le dépôt n'est pas commencé, l'outil répond `Étiquetez les jouets avant de finaliser le dépôt.`
 8. Vérifier les frais vendeurs attendus, déjà payés et restant à payer. Corriger `Frais payés` si le vendeur règle tout ou partie des frais à ce moment.
 9. Cliquer sur `Continuer`. Cette étape n'attribue plus de références : elle enregistre les frais et passe à l'impression.
 10. Cliquer sur `Imprimer le contrat`. Le contrat imprimé liste les articles avec leur référence.
 11. Faire signer le contrat papier par le vendeur.
 12. Cliquer sur `Valider le dépôt`, puis confirmer `Le contrat est signé`.
 
-Si l'outil répond `Plus aucune étiquette disponible pour ce poste. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.`, rien n'a été enregistré : l'administration augmente `Étiquettes imprimées par lettre` après avoir imprimé des planches supplémentaires, ou un autre poste rend une lettre.
+Si l'outil répond `Plus aucune étiquette disponible dans les lettres de cet ordinateur. Demandez à l'administration d'augmenter le nombre d'étiquettes par lettre ou de libérer une lettre.`, rien n'a été enregistré : l'administration augmente `Étiquettes imprimées par lettre` après avoir imprimé des planches supplémentaires, ou un autre ordinateur libère une lettre.
 
-Si deux postes prennent la même lettre au même instant, l'un des deux affiche un message demandant de réessayer : cliquer à nouveau suffit, rien n'a été écrit.
+Si deux ordinateurs prennent la même lettre au même instant, l'un des deux affiche un message demandant de réessayer : cliquer à nouveau suffit, rien n'a été écrit.
 
 Les frais restants ne bloquent pas la validation du dépôt. S'il reste un montant à payer, il sera déduit lors du rapprochement vendeur.
 
@@ -297,13 +295,17 @@ Aller dans `ADMIN` ou `/administration`.
 
 La page demande le `Mot de passe administrateur`. Une fois déverrouillée dans le navigateur, elle permet de changer le statut de la vente et de corriger des articles exceptionnels sans redemander le mot de passe à chaque clic.
 
-### Postes de dépôt et étiquettes
+### Onglets de l'administration
 
-La section `Postes de dépôt et étiquettes` de `/administration` (visible une fois la page déverrouillée) permet de :
+Une fois déverrouillée, la page `/administration` est découpée en quatre onglets : `Statut de la vente`, `Caisses` (caisses et caisse de cet ordinateur), `Lettres et étiquettes` et `Correction des articles`. Après une action, la page revient sur l'onglet de cette action.
+
+### Lettres et étiquettes
+
+L'onglet `Lettres et étiquettes` de `/administration` permet de :
 
 - régler `Étiquettes imprimées par lettre` (455 par défaut, entre 1 et 999). La valeur ne peut pas descendre sous un numéro déjà utilisé : `Le nombre d'étiquettes par lettre ne peut pas être inférieur à 212, déjà utilisé pour la lettre K.` Après avoir imprimé des planches supplémentaires, augmenter la valeur rend de nouveau utilisables les lettres épuisées ;
-- voir chaque lettre avec ses numéros utilisés, ses étiquettes restantes (ou `Épuisée`) et le poste qui la détient (ou `Libre`) ;
-- voir les postes ouverts (nom, lettres, heure d'ouverture, dernière activité) et cliquer sur `Forcer la fermeture` pour un poste dont l'ordinateur est tombé en panne ou a été rangé sans fermer le poste. Ses lettres redeviennent libres. Sur l'ancien ordinateur, la prochaine tentative d'attribution est refusée avec le message de poste fermé.
+- voir chaque lettre avec ses numéros utilisés, ses étiquettes restantes (ou `Épuisée`) et l'ordinateur qui l'a prise (`Prise par`, ou `Libre`) ;
+- voir les `Ordinateurs qui ont des lettres` (l'ordinateur, désigné `Poste N` dans ce seul tableau, ses lettres, l'heure de prise et la dernière activité) et cliquer sur `Libérer les lettres` pour un ordinateur tombé en panne ou rangé sans libérer ses lettres. Elles redeviennent libres. Sur l'ancien ordinateur, la prochaine tentative d'attribution est refusée.
 
 ### Prévente
 
@@ -402,7 +404,7 @@ La page demande le mot de passe administrateur. Avant le statut `Après-vente`, 
 En `Après-vente`, utiliser :
 
 - `Imprimer toutes les feuilles` pour générer toutes les feuilles ;
-- `Code ou nom du vendeur` puis `Imprimer une feuille` pour sortir une seule feuille.
+- `Vendeur` (liste des vendeurs par nom) puis `Imprimer une feuille` pour sortir une seule feuille.
 
 Les feuilles sont disponibles sur `/rapprochement/feuilles`.
 
@@ -501,7 +503,7 @@ Pour présenter l'outil à des utilisateurs :
 1. Montrer le statut visible en haut de page.
 2. Ouvrir `VENDEURS`, créer ou ouvrir un vendeur.
 3. Ajouter quelques articles : ils restent `enregistré`.
-4. Ouvrir un poste de dépôt, cliquer sur `Commencer le dépôt` et montrer les références attribuées, puis ouvrir `Finaliser le dépôt`, montrer l'étape des frais vendeur, puis montrer `Imprimer le contrat` et la confirmation `Valider le dépôt` / `Le contrat est signé`.
+4. Cliquer sur `Prendre des lettres`, puis sur `Étiqueter les jouets` et montrer les références attribuées, puis ouvrir `Finaliser le dépôt`, montrer l'étape des frais vendeur, puis montrer `Imprimer le contrat` et la confirmation `Valider le dépôt` / `Le contrat est signé`.
 5. Passer dans `CAISSE`, chercher un article, l'ajouter au panier et montrer le calcul du total.
 6. Ouvrir `ADMIN`, expliquer le mot de passe et les trois statuts.
 7. Passer en `Après-vente`.

@@ -63,7 +63,7 @@ Represents one seller.
 - `fee_paid_cents` stores the manually collected seller registration fee amount and defaults to `0`.
 - The expected seller fee is derived from the seller's item count and is not stored. `registered` items count because they remain seller items in the system.
 - `deposit_status` stores the operational seller deposit gate and defaults to `deposit_pending`.
-- `deposit_started_at` is null until the operator clicks `Commencer le dépôt` on the seller page; once set, saving new item rows allocates their references in the same save. Canceling a validated deposit keeps it. It is a concurrency token: if two desks start the same seller at once, the second save fails as a conflict instead of overwriting the references the first desk already showed.
+- `deposit_started_at` is null until the operator clicks `Étiqueter les jouets` on the seller page; once set, saving new item rows allocates their references in the same save. Canceling a validated deposit keeps it. It is a concurrency token: if two desks start the same seller at once, the second save fails as a conflict instead of overwriting the references the first desk already showed.
 - `import_notes` stores durable warnings from the external form import, such as ignored item lines or a submitted city that could not be reconciled.
 - Phone, postal address, postal code, city, and identity document fields may be blank while `deposit_status = deposit_pending`; the application requires them before deposit validation.
 - The signed paper deposit contract is the legal proof of deposit and price agreement; V1 does not store a contract number, signed timestamp, or contract snapshot.
@@ -433,7 +433,7 @@ These are important invariants even if they are enforced first in application lo
 - at most one open `deposit_desk` holds a given letter
 - normal `registered -> in_stock` transition is seller-level: validating the signed seller deposit moves that seller's accepted `registered` items to `in_stock`
 - seller deposit validation requires complete seller contact fields, complete identity document fields, and at least one complete item row
-- an item with `status = registered` must never be moved to `in_stock` while it still has a null `reference`; `IntakeService.ValidateSellerDepositAsync` enforces this server-side, independently of the sequencing between `Commencer le dépôt` and deposit validation
+- an item with `status = registered` must never be moved to `in_stock` while it still has a null `reference`; `IntakeService.ValidateSellerDepositAsync` enforces this server-side, independently of the sequencing between `Étiqueter les jouets` and deposit validation
 
 ## Derived Business Meaning
 
@@ -525,7 +525,7 @@ load-bearing because `ORDER BY reference` must sort in physical label order.
 Allocation rule, run inside the transaction that saves the rows, at the open
 desk resolved from the `poste-depot` cookie, only during `presale`:
 
-1. `Commencer le dépôt` allocates a run to every row of the seller that has no
+1. `Étiqueter les jouets` allocates a run to every row of the seller that has no
    reference, in `item.id` order, and sets `seller.deposit_started_at`. Once
    the deposit is started, saving a new row allocates its reference in the
    same save. Saving rows on a non-started deposit allocates nothing.
