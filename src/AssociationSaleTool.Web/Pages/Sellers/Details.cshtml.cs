@@ -57,7 +57,7 @@ public sealed class DetailsModel(
 
     public string DepositStatusLabel => Seller is null
         ? string.Empty
-        : SellerDepositStatuses.ToFrenchLabel(Seller.DepositStatus);
+        : SellerDepositStatuses.ToFrenchLabel(Seller.DepositStatus, Seller.DepositStartedAt);
 
     public SellerFeeStatus FeeStatus { get; private set; } = SellerFeeStatus.Empty;
 

@@ -1,5 +1,6 @@
 @page "/vendeurs/{id:long}"
 @using AssociationSaleTool.Web.Domain.Items
+@using AssociationSaleTool.Web.Domain.Sellers
 @using AssociationSaleTool.Web.Infrastructure
 @using AssociationSaleTool.Web.Services.Models
 @model AssociationSaleTool.Web.Pages.Sellers.DetailsModel
@@ -10,7 +11,9 @@
         ? "Le dépôt est validé. Les articles sont en stock et le dépôt reste annulable par un administrateur."
         : depositValidationCount > 0
             ? $"{depositValidationCount} information{(depositValidationCount > 1 ? "s" : string.Empty)} à corriger avant de finaliser le dépôt."
-            : "Le dépôt sera prêt à être validé quand le contrat papier sera imprimé et signé.";
+            : Model.IsDepositStarted
+                ? "Le dépôt sera prêt à être validé quand le contrat papier sera imprimé et signé."
+                : "Étiquetez les jouets quand le vendeur les apporte.";
 }
 
 @if (!string.IsNullOrWhiteSpace(Model.PendingRowsAlert))
@@ -51,7 +54,7 @@
     <section class="subsection seller-deposit-panel">
         <div>
             <h2>Dépôt vendeur</h2>
-            <p class="seller-deposit-status @(Model.IsDepositValidated ? "seller-deposit-status-validated" : "seller-deposit-status-pending")">
+            <p class="seller-deposit-status @SellerDepositStatuses.ToCssClass(Model.Seller!.DepositStatus, Model.Seller.DepositStartedAt)">
                 @Model.DepositStatusLabel
             </p>
             <p class="seller-deposit-summary">@depositSummary</p>

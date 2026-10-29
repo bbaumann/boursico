@@ -93,7 +93,7 @@ Description : importer les soumissions CSV ou TSV produites par le formulaire in
 
 #### Critères d'acceptation
 
-- Les soumissions avec prénom et nom créent des vendeurs en `Dépôt à valider`.
+- Les soumissions avec prénom et nom créent des vendeurs en `Dépôt non commencé`.
 - Les articles valides du champ `Jouet,Prix` sont ajoutés en `enregistré`.
 - Les lignes invalides ne bloquent pas l'import et apparaissent dans `Import à vérifier`.
 - Les coordonnées ou informations de pièce d'identité manquantes pourront être complétées plus tard.

@@ -962,6 +962,11 @@ This file captures the main project decisions in a lightweight ADR format.
   - `Commencer le dépôt` is renamed `Étiqueter les jouets`, after what the click
     does; its result is shown above the articles table the redirect scrolls to,
     and the rows that just got a reference are highlighted
+  - the seller page and a new `Dépôt` column of the `VENDEURS` list show three
+    deposit states: `Dépôt non commencé`, `Dépôt à valider`, `Dépôt validé`;
+    the first is derived from a null `deposit_started_at`, so
+    `deposit_status` keeps its two stored values and every server-side rule
+    is unchanged
 - Consequence:
   - pre-registered items can still be typed away from the deposit tables
   - taking letters stays an explicit click rather than a side effect of
