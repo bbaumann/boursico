@@ -241,12 +241,14 @@ else
                 <form method="post" asp-page-handler="SaveLabelsPerLetter" class="stack-form">
                     <label for="labels-per-letter">
                         Étiquettes imprimées par lettre
-                        <input id="labels-per-letter" name="LabelsPerLetterInput" value="@Model.LabelsPerLetterInput"
-                               type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
+                        <span class="labels-per-letter-row">
+                            <input id="labels-per-letter" name="LabelsPerLetterInput" value="@Model.LabelsPerLetterInput"
+                                   type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
+                            <button type="submit" class="button-link button-link-solid">Régler</button>
+                        </span>
                     </label>
                     <span asp-validation-for="LabelsPerLetterInput" class="validation"></span>
                     <p class="seller-meta">Augmentez ce nombre si vous imprimez des planches supplémentaires. Il ne peut pas descendre sous un numéro déjà utilisé.</p>
-                    <button type="submit" class="button-link">Enregistrer</button>
                 </form>
 
                 <div class="data-list-scroll">

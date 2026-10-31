@@ -432,6 +432,51 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
+    public async Task SellerDetailsPage_PostUpdateDepositFeePaid_RejectsAmountAboveExpectedFee()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var service = new IntakeService(context);
+        var seller = (await service.CreateSellerAsync(new CreateSellerRequest(
+            "Ada",
+            "Lovelace",
+            null,
+            "0123",
+            "1 rue des Tests",
+            null,
+            PostalCode: "38000",
+            City: "Grenoble",
+            IdentityDocumentType: "CNI",
+            IdentityDocumentNumber: "123456789",
+            IdentityDocumentIssuedOn: new DateOnly(2020, 1, 15)))).Seller!;
+        var rows = Enumerable.Range(1, 16)
+            .Select(index => new CreateItemRowRequest($"Toy {index}", 100))
+            .ToList();
+        await service.CreateItemBatchAsync(new CreateItemBatchRequest(seller.Id, IntakeMode.EmailPreregistration, rows));
+        await service.StartDepositAsync(seller.Id, (await new DepositDeskService(context).OpenDeskAsync()).DeskId);
+        var pageModel = new DetailsModel(service, new DepositDeskService(context), context)
+        {
+            DepositFeeInput = new DetailsModel.DepositFeeInputModel
+            {
+                FeePaid = "5"
+            }
+        };
+
+        var result = await pageModel.OnPostUpdateDepositFeeAsync(seller.Id, CancellationToken.None);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("fees", pageModel.DepositFinalizationInitialStep);
+        Assert.Contains("ne peuvent pas dépasser les frais attendus", pageModel.ModelState["DepositFeeInput.FeePaid"]!.Errors.Single().ErrorMessage);
+        Assert.Equal(0, (await context.Sellers.SingleAsync()).FeePaidCents);
+    }
+
+    [Fact]
     public async Task SellerEditPage_Post_UpdatesSellerAndRedirectsToDetails()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -466,7 +511,7 @@ public sealed class SellersPageModelTests
     }
 
     [Fact]
-    public async Task SellerEditPage_Post_UpdatesSellerFeePaid()
+    public async Task SellerEditPage_Post_KeepsSellerFeePaid()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -477,7 +522,7 @@ public sealed class SellersPageModelTests
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
         var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
+        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null, FeePaidCents: 400));
 
         var pageModel = new SellerEditModel(service)
         {
@@ -486,8 +531,7 @@ public sealed class SellersPageModelTests
                 FirstName = "Ada",
                 LastName = "Lovelace",
                 Phone = "0123",
-                PostalAddress = "1 rue des Tests",
-                FeePaid = "4"
+                PostalAddress = "1 rue des Tests"
             }
         };
 
@@ -495,40 +539,6 @@ public sealed class SellersPageModelTests
 
         Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(400, (await context.Sellers.SingleAsync()).FeePaidCents);
-    }
-
-    [Fact]
-    public async Task SellerEditPage_Post_ReturnsPageForNegativeSellerFeePaid()
-    {
-        await using var connection = new SqliteConnection("Data Source=:memory:");
-        await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        await using var context = new AppDbContext(options);
-        await context.Database.EnsureCreatedAsync();
-        var service = new IntakeService(context);
-        var seller = await service.CreateSellerAsync(new CreateSellerRequest("Ada", "Lovelace", null, "0123", "1 rue des Tests", null));
-
-        var pageModel = new SellerEditModel(service)
-        {
-            Input = new SellerEditModel.InputModel
-            {
-                FirstName = "Ada",
-                LastName = "Lovelace",
-                Phone = "0123",
-                PostalAddress = "1 rue des Tests",
-                FeePaid = "-1"
-            }
-        };
-
-        var result = await pageModel.OnPostAsync(seller.Id, CancellationToken.None);
-
-        Assert.IsType<PageResult>(result);
-        Assert.False(pageModel.ModelState.IsValid);
-        Assert.Contains("supérieurs ou égaux à zéro", pageModel.ModelState["Input.FeePaid"]!.Errors.Single().ErrorMessage);
-        Assert.Equal(0, (await context.Sellers.SingleAsync()).FeePaidCents);
     }
 
     [Fact]

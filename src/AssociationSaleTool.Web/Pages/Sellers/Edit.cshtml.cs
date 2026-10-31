@@ -59,12 +59,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             return Page();
         }
 
-        var feePaidCents = ParseFeePaid();
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
-
         UpdateSellerResult result;
         try
         {
@@ -77,7 +71,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
                     Input.Phone,
                     Input.PostalAddress,
                     Input.Notes,
-                    feePaidCents,
                     Input.PostalCode,
                     Input.City,
                     Input.ImportNotes,
@@ -123,28 +116,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         return "Un vendeur existe déjà avec les mêmes nom, prénom et téléphone. Ouvrez le vendeur existant avant de continuer.";
     }
 
-    private int ParseFeePaid()
-    {
-        if (string.IsNullOrWhiteSpace(Input.FeePaid))
-        {
-            return 0;
-        }
-
-        if (!EuroPriceInput.TryParseToCents(Input.FeePaid, out var feePaidCents))
-        {
-            ModelState.AddModelError("Input.FeePaid", "Les frais payés doivent être un montant entier en euros.");
-            return 0;
-        }
-
-        if (feePaidCents < 0)
-        {
-            ModelState.AddModelError("Input.FeePaid", "Les frais payés doivent être supérieurs ou égaux à zéro.");
-            return 0;
-        }
-
-        return feePaidCents;
-    }
-
     private void PopulateInput(AssociationSaleTool.Web.Data.Entities.SellerEntity seller)
     {
         Input = new InputModel
@@ -159,7 +130,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
             IdentityDocumentType = seller.IdentityDocumentType,
             IdentityDocumentNumber = seller.IdentityDocumentNumber,
             IdentityDocumentIssuedOn = seller.IdentityDocumentIssuedOn,
-            FeePaid = EuroPriceInput.FormatFromCents(seller.FeePaidCents),
             Notes = seller.Notes,
             ImportNotes = seller.ImportNotes
         };
@@ -190,8 +160,6 @@ public sealed class EditModel(IntakeService intakeService) : PageModel
         public string? IdentityDocumentNumber { get; set; }
 
         public DateOnly? IdentityDocumentIssuedOn { get; set; }
-
-        public string? FeePaid { get; set; } = "0";
 
         public string? Notes { get; set; }
 

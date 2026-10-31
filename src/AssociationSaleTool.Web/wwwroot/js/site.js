@@ -51,6 +51,10 @@ function updateItemRegistrationCount(counter) {
     Array.from(row.querySelectorAll('input:not([type="hidden"])')).some(input => input.value.trim() !== "")).length;
   const existingCount = Number.parseInt(counter.dataset.existingItemCount, 10) || 0;
   counter.textContent = formatItemRegistrationCount(existingCount, newCount);
+  // The seller page repeats the count above the item list, outside the form.
+  document.querySelectorAll("[data-item-registration-count-mirror]").forEach(mirror => {
+    mirror.textContent = counter.textContent;
+  });
 }
 
 function refreshItemRegistrationCount(element) {
@@ -386,6 +390,11 @@ function initializeWholeEuroInput(input) {
   function updateValidityMessage() {
     if (input.validity.patternMismatch) {
       input.setCustomValidity(message);
+      return;
+    }
+
+    if (input.dataset.maxEuro !== undefined && input.value !== "" && Number(input.value) > Number(input.dataset.maxEuro)) {
+      input.setCustomValidity(input.dataset.maxEuroMessage || message);
       return;
     }
 

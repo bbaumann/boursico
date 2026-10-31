@@ -1084,6 +1084,16 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   margin: 0;
 }
 
+.labels-per-letter-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.labels-per-letter-row input {
+  max-width: 8rem;
+}
+
 .table-action-button {
   padding: 0;
   border: 0;

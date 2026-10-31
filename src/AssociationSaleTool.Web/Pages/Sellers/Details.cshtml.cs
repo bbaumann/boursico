@@ -694,6 +694,14 @@ public sealed class DetailsModel(
             return 0;
         }
 
+        if (feePaidCents > FeeStatus.ExpectedFeeCents)
+        {
+            ModelState.AddModelError(
+                "DepositFeeInput.FeePaid",
+                $"Les frais payés ne peuvent pas dépasser les frais attendus ({FormatPrice(FeeStatus.ExpectedFeeCents)}).");
+            return 0;
+        }
+
         return feePaidCents;
     }
 

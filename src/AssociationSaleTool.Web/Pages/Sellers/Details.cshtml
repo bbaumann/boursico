@@ -194,7 +194,9 @@
                                            inputmode="numeric"
                                            pattern="[0-9]+"
                                            data-whole-euro-input="true"
-                                           data-whole-euro-message="Les frais payés doivent être un montant entier en euros." />
+                                           data-whole-euro-message="Les frais payés doivent être un montant entier en euros."
+                                           data-max-euro="@(Model.FeeStatus.ExpectedFeeCents / 100)"
+                                           data-max-euro-message="Les frais payés ne peuvent pas dépasser les frais attendus (@DetailsModel.FormatPrice(Model.FeeStatus.ExpectedFeeCents))." />
                                     <span asp-validation-for="DepositFeeInput.FeePaid" class="validation"></span>
                                 </label>
                                 <div class="form-actions">
@@ -238,6 +240,10 @@
             }
         </div>
     </section>
+
+    <p class="item-registration-count" data-item-registration-count-mirror aria-hidden="true">
+        @Model.Seller.Items.Count @(Model.Seller.Items.Count > 1 ? "articles" : "article")
+    </p>
 
     @if (!string.IsNullOrWhiteSpace(Model.ReadOnlyMessage))
     {

@@ -55,17 +55,6 @@
                 <input asp-for="Input.Phone" type="tel" inputmode="numeric" pattern="[0-9]*" title="Chiffres uniquement" aria-required="true" disabled="@(!Model.CanEditSellerMasterData)" />
                 <span asp-validation-for="Input.Phone" class="validation"></span>
             </label>
-            <label>
-                <span>Frais payés (€ entier)</span>
-                <input asp-for="Input.FeePaid"
-                       type="text"
-                       inputmode="numeric"
-                       pattern="[0-9]+"
-                       data-whole-euro-input="true"
-                       data-whole-euro-message="Les frais payés doivent être un montant entier en euros."
-                       disabled="@(!Model.CanEditSellerMasterData)" />
-                <span asp-validation-for="Input.FeePaid" class="validation"></span>
-            </label>
         </div>
 
         <label>

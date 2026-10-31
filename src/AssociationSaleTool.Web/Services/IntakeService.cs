@@ -244,7 +244,6 @@ public sealed class IntakeService
         var normalizedPostalCity = NormalizeSellerPostalCity(request.PostalCode, request.City);
         var normalizedIdentityDocumentType = NormalizeOptional(request.IdentityDocumentType);
         var normalizedIdentityDocumentNumber = NormalizeOptional(request.IdentityDocumentNumber);
-        EnsureSellerFeePaidIsValid(request.FeePaidCents);
 
         var duplicateMatches = await _sellerDuplicateService.FindDuplicateSellersAsync(
             new SellerDuplicateCheckRequest(request.FirstName, request.LastName, normalizedPhone, sellerId),
@@ -264,7 +263,6 @@ public sealed class IntakeService
         seller.IdentityDocumentType = normalizedIdentityDocumentType;
         seller.IdentityDocumentNumber = normalizedIdentityDocumentNumber;
         seller.IdentityDocumentIssuedOn = request.IdentityDocumentIssuedOn;
-        seller.FeePaidCents = request.FeePaidCents;
         seller.Notes = NormalizeOptional(request.Notes);
         seller.ImportNotes = NormalizeOptional(request.ImportNotes);
 
@@ -277,7 +275,9 @@ public sealed class IntakeService
         int feePaidCents,
         CancellationToken cancellationToken = default)
     {
-        var seller = await _dbContext.Sellers.SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
+        var seller = await _dbContext.Sellers
+            .Include(x => x.Items)
+            .SingleOrDefaultAsync(x => x.Id == sellerId, cancellationToken);
         if (seller is null)
         {
             return UpdateSellerResult.NotFound;
@@ -290,6 +290,11 @@ public sealed class IntakeService
         }
 
         EnsureSellerFeePaidIsValid(feePaidCents);
+        if (feePaidCents > SellerFeeCalculator.CalculateExpectedFeeCents(seller.Items.Count))
+        {
+            throw new ArgumentException("Seller fee paid must not exceed the expected fee.", nameof(feePaidCents));
+        }
+
         seller.FeePaidCents = feePaidCents;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return UpdateSellerResult.Updated;
