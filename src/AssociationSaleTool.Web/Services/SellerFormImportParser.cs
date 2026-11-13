@@ -214,7 +214,8 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
 
     private static string NormalizeItemTitle(string value)
     {
-        return value.Trim().Trim(',', ';');
+        var withoutListMarker = ListMarkerPrefixPattern().Replace(value, string.Empty);
+        return withoutListMarker.Trim().Trim(',', ';', ':', ' ', '\t');
     }
 
     private sealed record ParsedItemLine(CreateItemRowRequest? Row, string Reason);
@@ -310,12 +311,16 @@ public sealed partial class SellerFormImportParser(IserePostalCityLookup? postal
         return builder.ToString().Normalize(NormalizationForm.FormC);
     }
 
-    [GeneratedRegex("^(?<title>.+?)(?:\\s*[,;]\\s*|\\s+)(?<amount>\\d+(?:[,.]\\d{1,2})?)(?:\\s*(?:€|EUR))?\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^(?<title>.+?)(?:\\s*[,;]\\s*|\\s+)(?<amount>\\d+(?:\\.\\d{1,2}|,\\d{2})?)(?:\\s*(?:€|euros?|eur))?\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex ItemLinePattern();
 
-    [GeneratedRegex("^(?<euros>\\d+)(?:[,.](?<decimals>\\d{2}))?(?:\\s*(?:€|EUR))?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^(?<euros>\\d+)(?:[,.](?<decimals>\\d{2}))?(?:\\s*(?:€|euros?|eur))?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex PriceOnlyPattern();
 
-    [GeneratedRegex("^\\d+(?:[,.]\\d{1,2})?(?:\\s*(?:€|EUR))?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^\\d+(?:[,.]\\d{1,2})?(?:\\s*(?:€|euros?|eur))?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex PriceLikeOnlyPattern();
+
+    // Bullets ("- ", "•\t", "*") and list numbering ("1. ", "12) ") that sellers put in front of each toy.
+    [GeneratedRegex("^\\s*(?:[-–—•·*]+|\\d{1,3}[.)](?!\\d))\\s*", RegexOptions.CultureInvariant)]
+    private static partial Regex ListMarkerPrefixPattern();
 }
