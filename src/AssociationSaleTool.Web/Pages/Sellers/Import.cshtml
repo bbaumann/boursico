@@ -6,6 +6,7 @@
     var importedCount = Model.ImportResult?.Rows.Count(row => row.Outcome == SellerFormImportRowOutcome.Imported) ?? 0;
     var duplicateCount = Model.ImportResult?.Rows.Count(row => row.Outcome == SellerFormImportRowOutcome.Duplicate) ?? 0;
     var sellerErrorCount = Model.ImportResult?.Rows.Count(row => row.Outcome == SellerFormImportRowOutcome.SellerError) ?? 0;
+    var mergeableCount = Model.ImportResult?.Rows.Count(row => row.CanAppendToExistingSeller && row.Submission.ItemRows.Count > 0) ?? 0;
 }
 
 <section class="page-card form-card">
@@ -48,7 +49,7 @@
     {
         <section class="subsection existing-seller-alert" role="status">
             <h2>Soumission ajoutée au vendeur existant</h2>
-            <p>@Model.AppendResult.CreatedItemCount article@(Model.AppendResult.CreatedItemCount > 1 ? "s" : "") ajouté@(Model.AppendResult.CreatedItemCount > 1 ? "s" : ""). @Model.AppendResult.IgnoredExistingItemCount article@(Model.AppendResult.IgnoredExistingItemCount > 1 ? "s" : "") déjà présent@(Model.AppendResult.IgnoredExistingItemCount > 1 ? "s" : "") ignoré@(Model.AppendResult.IgnoredExistingItemCount > 1 ? "s" : "").</p>
+            <p>@ImportModel.FormatAppendSummary(Model.AppendResult)</p>
             @if (Model.AppendResult.Seller is not null)
             {
                 <a class="button-link" asp-page="/Sellers/Details" asp-route-id="@Model.AppendResult.Seller.Id">Ouvrir le vendeur</a>
@@ -65,6 +66,14 @@
                 @duplicateCount doublon@(duplicateCount > 1 ? "s" : "") possible@(duplicateCount > 1 ? "s" : "").
                 @sellerErrorCount dossier@(sellerErrorCount > 1 ? "s" : "") sans prénom ou nom.
             </p>
+
+            @if (mergeableCount > 0)
+            {
+                <div class="table-actions">
+                    <button type="button" class="button-link button-link-solid" data-merge-all-duplicates>Fusionner tous les doublons (@mergeableCount)</button>
+                    <span role="status" data-merge-all-status></span>
+                </div>
+            }
 
             <table class="data-table">
                 <thead>
@@ -100,7 +109,7 @@
                             <div>@row.Submission.IncompleteRows.Count article@(row.Submission.IncompleteRows.Count > 1 ? "s" : "") à corriger</div>
                             <div>@row.Submission.IgnoredItemLines.Count ligne@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "") non importée@(row.Submission.IgnoredItemLines.Count > 1 ? "s" : "")</div>
                         </td>
-                        <td>@ImportModel.FormatOutcome(row.Outcome)</td>
+                        <td data-import-row-outcome>@ImportModel.FormatOutcome(row.Outcome)</td>
                         <td>
                             <div class="table-actions">
                                 @if (row.Outcome == SellerFormImportRowOutcome.Imported && row.SellerId is not null)
@@ -122,7 +131,7 @@
                                     @if (row.CanAppendToExistingSeller && row.Submission.ItemRows.Count > 0)
                                     {
                                         var match = row.DuplicateMatches[0];
-                                        <form method="post" class="inline-form" asp-page-handler="AppendDuplicate">
+                                        <form method="post" class="inline-form" asp-page-handler="AppendDuplicate" data-duplicate-append-form>
                                             <input type="hidden" asp-for="DuplicateInput.SellerId" value="@match.SellerId" />
                                             <input type="hidden" asp-for="DuplicateInput.ImportNotes" value="@row.Submission.ImportNotes" />
                                             @for (var i = 0; i < row.Submission.ItemRows.Count; i++)
@@ -133,7 +142,8 @@
                                             <button type="submit" class="table-action-button">Ajouter les articles au vendeur existant</button>
                                         </form>
                                     }
-                                    <button type="button" class="table-action-button" onclick="this.closest('tr')?.remove();">Ignorer cette soumission</button>
+                                    <button type="button" class="table-action-button" onclick="this.closest('tr')?.remove();" data-ignore-submission>Ignorer cette soumission</button>
+                                    <p role="status" data-duplicate-append-status></p>
                                 }
                             </div>
                         </td>

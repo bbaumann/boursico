@@ -114,6 +114,107 @@ document.addEventListener("change", event => {
   }
 });
 
+// The import summary exists only in this page, so merges are posted in the background
+// and each row is updated in place instead of reloading the page.
+async function submitDuplicateAppendForm(form) {
+  const row = form.closest("tr");
+  const status = row?.querySelector("[data-duplicate-append-status]");
+  const submitButton = form.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
+  if (status) {
+    status.textContent = "Fusion en cours...";
+  }
+
+  let payload = null;
+  try {
+    const response = await fetch(form.action, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: new FormData(form)
+    });
+    payload = response.ok ? await response.json() : null;
+  } catch {
+    payload = null;
+  }
+
+  if (payload?.outcome !== "appended") {
+    if (submitButton) {
+      submitButton.disabled = false;
+    }
+    if (status) {
+      status.textContent = payload?.message || "La fusion a échoué. Réessayez.";
+    }
+    return false;
+  }
+
+  const outcomeCell = row?.querySelector("[data-import-row-outcome]");
+  if (outcomeCell) {
+    outcomeCell.textContent = "Fusionné";
+  }
+  row?.querySelector("[data-ignore-submission]")?.remove();
+  form.remove();
+  if (status) {
+    status.textContent = `Fusionné : ${payload.message} `;
+    if (payload.sellerUrl) {
+      const link = document.createElement("a");
+      link.href = payload.sellerUrl;
+      link.textContent = "Ouvrir le vendeur";
+      status.appendChild(link);
+    }
+  }
+  return true;
+}
+
+document.addEventListener("submit", event => {
+  const form = event.target.closest?.("[data-duplicate-append-form]");
+  if (!form) {
+    return;
+  }
+
+  event.preventDefault();
+  submitDuplicateAppendForm(form);
+});
+
+document.addEventListener("click", async event => {
+  const button = event.target.closest("[data-merge-all-duplicates]");
+  if (!button) {
+    return;
+  }
+
+  const status = button.parentElement?.querySelector("[data-merge-all-status]");
+  // Rows the operator ignored are already gone from the table, so they are skipped.
+  const forms = Array.from(document.querySelectorAll("[data-duplicate-append-form]"));
+  button.disabled = true;
+  let merged = 0;
+  let failed = 0;
+  // One merge at a time: several submissions of the same seller merge into the same record.
+  for (const [index, form] of forms.entries()) {
+    if (status) {
+      status.textContent = `Fusion ${index + 1} / ${forms.length}...`;
+    }
+    if (await submitDuplicateAppendForm(form)) {
+      merged++;
+    } else {
+      failed++;
+    }
+  }
+
+  if (status) {
+    const mergedText = `${merged} doublon${merged > 1 ? "s" : ""} fusionné${merged > 1 ? "s" : ""}`;
+    status.textContent = failed > 0
+      ? `${mergedText}, ${failed} en échec : voir le détail dans le tableau.`
+      : `${mergedText}.`;
+  }
+  if (failed > 0) {
+    button.disabled = false;
+    button.textContent = `Fusionner tous les doublons (${failed})`;
+  } else {
+    button.hidden = true;
+  }
+});
+
 function formatCheckoutPrice(cents) {
   return `${(cents / 100).toFixed(2)} €`;
 }

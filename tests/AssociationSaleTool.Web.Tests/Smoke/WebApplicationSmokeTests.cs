@@ -2754,6 +2754,75 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         Assert.Contains(sellers, seller => seller.LastName == "Bulteau" && seller.City == "Saint-Égrève" && seller.Items.Count == 2);
     }
 
+    [Fact]
+    public async Task SellerFormImportMergesRepeatedSubmissionInTheBackground()
+    {
+        var client = _factory.CreateClient();
+        await SetSalePhaseAsync(SalePhase.Presale);
+
+        var form = await client.GetAsync("/vendeurs/importer");
+        form.EnsureSuccessStatusCode();
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StringContent(ExtractRequestVerificationToken(await form.Content.ReadAsStringAsync())), "__RequestVerificationToken");
+        multipart.Add(
+            new ByteArrayContent(Encoding.UTF8.GetBytes(RepeatedSubmissionImportCsv)),
+            "FormFile",
+            "soumissions.csv");
+
+        var importResponse = await client.PostAsync("/vendeurs/importer?handler=Import", multipart);
+
+        importResponse.EnsureSuccessStatusCode();
+        var importContent = await importResponse.Content.ReadAsStringAsync();
+        var decodedImport = WebUtility.HtmlDecode(importContent);
+        Assert.Contains("Fusionner tous les doublons (1)", decodedImport);
+        Assert.Contains("data-duplicate-append-form", decodedImport);
+
+        long sellerId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            sellerId = (await dbContext.Sellers.SingleAsync(x => x.LastName == "Repetee")).Id;
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/vendeurs/importer?handler=AppendDuplicate")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = ExtractRequestVerificationToken(importContent),
+                ["DuplicateInput.SellerId"] = sellerId.ToString(CultureInfo.InvariantCulture),
+                ["DuplicateInput.Rows[0].Title"] = "Puzzle ferme",
+                ["DuplicateInput.Rows[0].SellerPriceCents"] = "300",
+                ["DuplicateInput.Rows[1].Title"] = "Lego Pirate",
+                ["DuplicateInput.Rows[1].SellerPriceCents"] = "500"
+            })
+        };
+        request.Headers.Accept.ParseAdd("application/json");
+
+        var appendResponse = await client.SendAsync(request);
+
+        appendResponse.EnsureSuccessStatusCode();
+        Assert.Equal("application/json", appendResponse.Content.Headers.ContentType?.MediaType);
+        using var payload = JsonDocument.Parse(await appendResponse.Content.ReadAsStringAsync());
+        Assert.Equal("appended", payload.RootElement.GetProperty("outcome").GetString());
+        Assert.Equal("1 article ajouté, 1 article déjà présent ignoré.", payload.RootElement.GetProperty("message").GetString());
+        Assert.Equal($"/vendeurs/{sellerId}", payload.RootElement.GetProperty("sellerUrl").GetString());
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = await dbContext.Sellers.Include(x => x.Items).SingleAsync(x => x.Id == sellerId);
+            Assert.Equal(["Lego Pirate", "Puzzle ferme"], seller.Items.Select(x => x.Title).Order());
+        }
+    }
+
+    private const string RepeatedSubmissionImportCsv =
+        """
+        "Séquentiel","SID","Heure de soumission","Heure de complétion","Heure de modification","Brouillon","Adresse IP","UID","Nom d'utilisateur","Nom","Prénom","Téléphone","Email","Adresse","Code Postal","Ville","Jouet,Prix"
+        "1","1","","","","0","","","","Repetee","Lucie","0611111111","","","","","Lego Pirate, 5"
+        "2","2","","","","0","","","","Repetee","Lucie","0611111111","","","","","Puzzle ferme, 3
+        Lego Pirate, 5"
+        """;
+
     private const string SellerFormImportCsv =
         """
         "Bourse aux jouets Test","","","","","","","","","","","","","","","",""
