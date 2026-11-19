@@ -10,11 +10,12 @@ const siteScript = readFileSync(
 
 // Runs the real site.js against a document stub that has no matching
 // elements, so only its function declarations are exercised.
-function loadSiteScript() {
+// elementsBySelector lets a test hand back elements for selectors the functions query later.
+function loadSiteScript(elementsBySelector = {}) {
   const document = {
     addEventListener() {},
     querySelector: () => null,
-    querySelectorAll: () => []
+    querySelectorAll: selector => elementsBySelector[selector] ?? []
   };
   const context = vm.createContext({ document, window: {}, Intl });
   vm.runInContext(siteScript, context);
@@ -93,6 +94,43 @@ test("item counter ignores hidden inputs ASP.NET adds to number fields", () => {
   assert.equal(counter.textContent, "1 article");
 });
 
+test("item counter updates the Articles heading badge and its new-item detail", () => {
+  const total = { textContent: "11" };
+  const detail = { textContent: "", hidden: true };
+  const { updateItemRegistrationCount } = loadSiteScript({
+    "[data-item-count-total]": [total],
+    "[data-item-count-new]": [detail]
+  });
+
+  const typing = fakeForm(11, [fakeRow("Puzzle", "5"), fakeRow("Livre", "2"), fakeRow("", "")]);
+  updateItemRegistrationCount(typing.counter);
+  assert.equal(total.textContent, "13");
+  assert.equal(detail.textContent, "dont 2 nouveaux");
+  assert.equal(detail.hidden, false);
+
+  const idle = fakeForm(11, [fakeRow("", "")]);
+  updateItemRegistrationCount(idle.counter);
+  assert.equal(total.textContent, "11");
+  assert.equal(detail.textContent, "");
+  assert.equal(detail.hidden, true);
+});
+
+test("seller page shows the item count in the Articles heading and the deposit dialog", () => {
+  const content = readFileSync(
+    join(process.cwd(), "src", "AssociationSaleTool.Web", "Pages", "Sellers", "Details.cshtml"),
+    "utf8");
+
+  const heading = content.match(/<h2 class="seller-items-heading">[\s\S]*?<\/h2>/);
+  assert.ok(heading, "the Articles heading is missing its count badge");
+  assert.match(heading[0], /data-item-count-total>@Model\.Seller\.Items\.Count</);
+  assert.match(heading[0], /data-item-count-new hidden/);
+
+  const dialog = content.match(/<dialog id="deposit-finalization-dialog"[\s\S]*?<\/dialog>/);
+  assert.ok(dialog, "the deposit finalization dialog is missing");
+  assert.match(dialog[0], /data-seller-deposit-item-count/);
+  assert.match(dialog[0], /articles déposés/);
+});
+
 test("item counter is refreshed on typing and after adding a row", () => {
   assert.match(siteScript, /document\.addEventListener\("input",[\s\S]*?refreshItemRegistrationCount\(event\.target\)/);
   assert.match(siteScript, /tbody\.appendChild\(row\);\s*refreshItemRegistrationCount\(form\);/);
@@ -115,5 +153,6 @@ test("both item registration forms render the counter next to the add-row button
     assert.match(actions[0], /data-item-registration-count/);
     assert.match(actions[0], existingCountPattern);
     assert.match(actions[0], /aria-live="polite"/);
+    assert.match(actions[0], /item-registration-count-pill/);
   }
 });
