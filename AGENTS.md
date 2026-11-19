@@ -9,3 +9,8 @@
 ## Shell Commands
 
 - Follow the local `RTK` rule for shell commands when working in this repository.
+
+## Branches and Worktrees
+
+- Work directly on `main` by default.
+- Do not create a branch or a git worktree unless the change is a big feature or the user explicitly asks for one.
