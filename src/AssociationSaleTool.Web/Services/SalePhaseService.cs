@@ -1,5 +1,7 @@
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Sellers;
+using AssociationSaleTool.Web.Services.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssociationSaleTool.Web.Services;
@@ -20,6 +22,19 @@ public sealed class SalePhaseService(AppDbContext dbContext)
         eventState.SalePhase = ToStorageValue(phase);
         eventState.UpdatedAt = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    // Deposits started at a desk but never validated: their items stay out of the checkout,
+    // and validating them needs the presale phase. Sellers who never came are not listed.
+    public async Task<IReadOnlyList<UnfinishedDeposit>> ListUnfinishedDepositsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Sellers
+            .AsNoTracking()
+            .Where(x => x.DepositStatus == SellerDepositStatuses.Pending && x.DepositStartedAt != null)
+            .OrderBy(x => x.SellerCode)
+            .Select(x => new UnfinishedDeposit(x.Id, x.SellerCode, x.FirstName + " " + x.LastName))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<bool> CanCreateSalesAsync(CancellationToken cancellationToken = default)

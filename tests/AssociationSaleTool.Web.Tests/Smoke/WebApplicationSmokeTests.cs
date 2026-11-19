@@ -889,11 +889,14 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         }
 
         var dashboardContent = await UnlockSaleStatusPageAsync(client);
+        // Other tests share this database and leave unfinished deposits behind, so the
+        // warning they trigger is confirmed up front.
         var response = await client.PostAsync(
             $"{AdminPath}?handler=ChangePhase",
             BuildFormContent(
                 dashboardContent,
-                ("Input.Phase", "sale")));
+                ("Input.Phase", "sale"),
+                ("Input.ConfirmUnfinishedDeposits", "true")));
 
         response.EnsureSuccessStatusCode();
         var content = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
@@ -904,6 +907,70 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             Assert.Equal(SalePhase.Sale, await new SalePhaseService(dbContext).GetCurrentPhaseAsync());
+            await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Presale);
+        }
+    }
+
+    [Fact]
+    public async Task SaleStatusPageWarnsBeforeOpeningTheSaleWithUnfinishedDeposits()
+    {
+        var client = _factory.CreateClient();
+        long sellerId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Presale);
+            var seller = new SellerEntity
+            {
+                SellerCode = "UD-001",
+                FirstName = "Ulysse",
+                LastName = "Inacheve",
+                DepositStatus = "deposit_pending",
+                DepositStartedAt = DateTime.UtcNow
+            };
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+            sellerId = seller.Id;
+        }
+
+        try
+        {
+            var dashboardContent = await UnlockSaleStatusPageAsync(client);
+            var warningResponse = await client.PostAsync(
+                $"{AdminPath}?handler=ChangePhase",
+                BuildFormContent(dashboardContent, ("Input.Phase", "sale")));
+
+            warningResponse.EnsureSuccessStatusCode();
+            var warningContent = WebUtility.HtmlDecode(await warningResponse.Content.ReadAsStringAsync());
+            Assert.Contains("data-open-on-load", warningContent);
+            Assert.Contains("ne sont pas finalisés", warningContent);
+            Assert.Contains($"<a href=\"/vendeurs/{sellerId}\">UD-001 - Ulysse Inacheve</a>", warningContent);
+            Assert.Contains("Passer en vente quand même", warningContent);
+
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                Assert.Equal(SalePhase.Presale, await new SalePhaseService(dbContext).GetCurrentPhaseAsync());
+            }
+
+            var confirmResponse = await client.PostAsync(
+                $"{AdminPath}?handler=ChangePhase",
+                BuildFormContent(
+                    warningContent,
+                    ("Input.Phase", "sale"),
+                    ("Input.ConfirmUnfinishedDeposits", "true")));
+
+            confirmResponse.EnsureSuccessStatusCode();
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                Assert.Equal(SalePhase.Sale, await new SalePhaseService(dbContext).GetCurrentPhaseAsync());
+            }
+        }
+        finally
+        {
+            using var scope = _factory.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await new SalePhaseService(dbContext).SetPhaseAsync(SalePhase.Presale);
         }
     }

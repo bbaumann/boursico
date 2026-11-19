@@ -1625,6 +1625,8 @@ document.querySelectorAll("[data-checkout-root]").forEach(initializeCheckout);
 document.querySelectorAll("[data-device-cash-register-root]").forEach(initializeDeviceCashRegister);
 document.querySelectorAll("[data-seller-deposit-flow]").forEach(initializeSellerDepositFlow);
 document.querySelectorAll("[data-deposit-contract-auto-print]").forEach(initializeDepositContractAutoPrint);
+// A warning rendered by the server after a refused action opens as soon as the page loads.
+document.querySelectorAll("dialog[data-open-on-load]").forEach(dialog => dialog.showModal());
 
 function initializeReconciliation(root) {
   const searchInput = root.querySelector("[data-reconciliation-search]");

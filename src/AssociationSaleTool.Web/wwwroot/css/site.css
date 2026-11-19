@@ -1166,6 +1166,12 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   background: rgba(35, 31, 28, 0.3);
 }
 
+.unfinished-deposits-list {
+  max-height: 16rem;
+  overflow-y: auto;
+  padding-left: 1.25rem;
+}
+
 /* Must follow .admin-dialog: both apply to the deposit dialog with equal specificity,
    so the later rule wins. */
 .seller-deposit-dialog {

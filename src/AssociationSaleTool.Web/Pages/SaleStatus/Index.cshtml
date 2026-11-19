@@ -95,6 +95,35 @@ else
                         </button>
                     </form>
                 </div>
+
+                @if (Model.UnfinishedDeposits.Count > 0)
+                {
+                    <dialog class="admin-dialog unfinished-deposits-dialog"
+                            data-open-on-load
+                            aria-labelledby="unfinished-deposits-title">
+                        <h3 id="unfinished-deposits-title">
+                            @(Model.UnfinishedDeposits.Count == 1
+                                ? "1 dépôt n'est pas finalisé"
+                                : $"{Model.UnfinishedDeposits.Count} dépôts ne sont pas finalisés")
+                        </h3>
+                        <p>Ces dépôts ont été commencés mais pas validés. Leurs articles ne seront pas trouvables en caisse, et il faudra repasser en prévente pour les finaliser.</p>
+                        <ul class="unfinished-deposits-list">
+                            @foreach (var deposit in Model.UnfinishedDeposits)
+                            {
+                                <li><a href="/vendeurs/@deposit.SellerId">@deposit.SellerCode - @deposit.SellerName</a></li>
+                            }
+                        </ul>
+                        <div class="form-actions">
+                            @* A link rather than closing the dialog, so a page refresh does not replay the refused POST. *@
+                            <a href="/administration?onglet=vente" class="button-link button-link-solid" autofocus>Retour</a>
+                            <form method="post" asp-page-handler="ChangePhase">
+                                <input type="hidden" name="Input.Phase" value="sale" />
+                                <input type="hidden" name="Input.ConfirmUnfinishedDeposits" value="true" />
+                                <button type="submit" class="button-link">Passer en vente quand même</button>
+                            </form>
+                        </div>
+                    </dialog>
+                }
             </section>
         }
 

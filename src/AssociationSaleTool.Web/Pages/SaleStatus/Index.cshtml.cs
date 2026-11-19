@@ -56,6 +56,9 @@ public sealed class IndexModel(
 
     public IReadOnlyList<OpenDeskRow> OpenDesks { get; private set; } = [];
 
+    // Filled only when opening the sale was refused pending confirmation.
+    public IReadOnlyList<UnfinishedDeposit> UnfinishedDeposits { get; private set; } = [];
+
     [BindProperty]
     public string? LabelsPerLetterInput { get; set; }
 
@@ -112,6 +115,18 @@ public sealed class IndexModel(
             ModelState.AddModelError("Input.Phase", "Statut de vente invalide.");
             await LoadPageAsync(cancellationToken);
             return Page();
+        }
+
+        // Checked on the server, not only in the page, so a double click or an old tab cannot
+        // open the sale past the warning.
+        if (phase == SalePhase.Sale && !Input.ConfirmUnfinishedDeposits)
+        {
+            UnfinishedDeposits = await salePhaseService.ListUnfinishedDepositsAsync(cancellationToken);
+            if (UnfinishedDeposits.Count > 0)
+            {
+                await LoadPageAsync(cancellationToken);
+                return Page();
+            }
         }
 
         await salePhaseService.SetPhaseAsync(phase, cancellationToken);
@@ -390,6 +405,8 @@ public sealed class IndexModel(
     public sealed class PhaseInputModel
     {
         public string? Phase { get; set; }
+
+        public bool ConfirmUnfinishedDeposits { get; set; }
     }
 
     public sealed class PasswordInputModel
