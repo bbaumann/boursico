@@ -1157,6 +1157,8 @@ function initializeCheckout(root) {
     conflictItemIds.delete(Number(item.id));
     clearCheckoutResults();
     renderCart();
+    // Send the operator back to the search field so they can scan or type the next item.
+    searchInput.focus();
   });
 
   cartBody.addEventListener("click", event => {
