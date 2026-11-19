@@ -80,8 +80,16 @@ foreach ($rid in $Runtime) {
     ) -join "`r`n"
     Set-Content -Path (Join-Path $stage 'VERSION.txt') -Value $stamp -Encoding utf8
 
+    # Keep the previous handover archive in dist/<build date>/ instead of
+    # overwriting it, so the bundle given to the host can still be found.
     $zip = Join-Path $outPath "bourse-aux-jouets-$rid.zip"
-    if (Test-Path $zip) { Remove-Item $zip -Force }
+    if (Test-Path $zip) {
+        $archiveDate = (Get-Item $zip).LastWriteTime.ToString('yyyy-MM-dd')
+        $archiveDir = Join-Path $outPath $archiveDate
+        if (-not (Test-Path $archiveDir)) { New-Item -ItemType Directory -Path $archiveDir | Out-Null }
+        Move-Item $zip (Join-Path $archiveDir (Split-Path $zip -Leaf)) -Force
+        Write-Host "Previous archive moved to $archiveDir"
+    }
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $stage, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
 

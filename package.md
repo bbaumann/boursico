@@ -10,6 +10,12 @@ the operator guide shipped inside the archives is in French.
 pwsh tools/Package-Release.ps1
 ```
 
+Without PowerShell 7, Windows PowerShell 5.1 runs it too:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/Package-Release.ps1 -Runtime win-x64
+```
+
 Produces in `dist/` (gitignored):
 
 | Archive | Zipped | Unpacked |
@@ -45,7 +51,8 @@ For each runtime identifier:
 3. Copies `deploy/INSTALLATION.md` and the matching launcher
    (`demarrer.sh` for Linux, `demarrer.bat` for Windows)
 4. Writes `VERSION.txt` (version, runtime, build date, full commit SHA)
-5. Zips the staging folder into `dist/`
+5. Moves any previous archive for that runtime into `dist/<its date>/`
+6. Zips the staging folder into `dist/`
 
 Staging lives in `.tmp/package/<rid>/` and is wiped on each run.
 
