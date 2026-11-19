@@ -92,6 +92,70 @@ public sealed class SellerFormImportParserTests
         Assert.Contains("prix manquant", submission.ImportNotes);
     }
 
+    [Theory]
+    [InlineData("livre volume 2,5", "livre volume 2", 500)]
+    [InlineData("Livre les enfants de la résistance Tome1,7", "Livre les enfants de la résistance Tome1", 700)]
+    [InlineData("Trivial Pursuit nos années 90,3", "Trivial Pursuit nos années 90", 300)]
+    [InlineData("Memo barbapa Dujardin, 6 euros", "Memo barbapa Dujardin", 600)]
+    [InlineData("Jack O'Lasso, 8 euro", "Jack O'Lasso", 800)]
+    [InlineData("Gravitrax, 20€", "Gravitrax", 2000)]
+    [InlineData("Little circuit, 5 €", "Little circuit", 500)]
+    [InlineData("Risque 12 EUR", "Risque", 1200)]
+    [InlineData("j'aime lire N°123, N°424, 2", "j'aime lire N°123, N°424", 200)]
+    [InlineData("Livre j'aime lire N°479,480, 488,496,500, 502, 3", "Livre j'aime lire N°479,480, 488,496,500, 502", 300)]
+    [InlineData("Lot (voiture tout terrain, moto spiderman, 1 ballon jaune à gonfler), 3 euros", "Lot (voiture tout terrain, moto spiderman, 1 ballon jaune à gonfler)", 300)]
+    [InlineData("- Memo barbapa Dujardin, 6 euros", "Memo barbapa Dujardin", 600)]
+    [InlineData("-jeu maman et ses petits, 2", "jeu maman et ses petits", 200)]
+    [InlineData("-\tDjeco Puzzle en bois chiffres, 3", "Djeco Puzzle en bois chiffres", 300)]
+    [InlineData("•\tGarage Hot wheels, 15€", "Garage Hot wheels", 1500)]
+    [InlineData("* Lot de Playmobil, 7", "Lot de Playmobil", 700)]
+    [InlineData("1. Barbie \"Ailes féeriques\" + 1 flacon de produit à bulles 13", "Barbie \"Ailes féeriques\" + 1 flacon de produit à bulles", 1300)]
+    [InlineData("12) Jeux \"Trésor de glace\" de Haba 10", "Jeux \"Trésor de glace\" de Haba", 1000)]
+    [InlineData("Jeu de Domino imagé : 4€", "Jeu de Domino imagé", 400)]
+    [InlineData("Circuit de train Thomas et ses amis (2) : 10€", "Circuit de train Thomas et ses amis (2)", 1000)]
+    [InlineData("1 sachet de duplo, 8", "1 sachet de duplo", 800)]
+    [InlineData("2 pommes 3 pains, 5€", "2 pommes 3 pains", 500)]
+    [InlineData("Jeu-cible, 5", "Jeu-cible", 500)]
+    public async Task ParseAsync_ParsesItemLinePriceVariants(string line, string expectedTitle, int expectedPriceCents)
+    {
+        var parser = new SellerFormImportParser();
+
+        var result = await parser.ParseAsync(CreateCsv(CreateSingleItemCsv(line)));
+
+        Assert.True(result.Succeeded, string.Join(Environment.NewLine, result.Errors));
+        var submission = Assert.Single(result.Submissions);
+        var item = Assert.Single(submission.ValidRows);
+        Assert.Equal(expectedTitle, item.Title);
+        Assert.Equal(expectedPriceCents, item.SellerPriceCents);
+        Assert.Empty(submission.IncompleteItemLines);
+        Assert.Empty(submission.IgnoredItemLines);
+    }
+
+    [Theory]
+    [InlineData("Voiture 4,50", "Voiture")]
+    [InlineData("Voiture, 4,50 euros", "Voiture")]
+    public async Task ParseAsync_RejectsNonWholeEuroPrices(string line, string expectedTitle)
+    {
+        var parser = new SellerFormImportParser();
+
+        var result = await parser.ParseAsync(CreateCsv(CreateSingleItemCsv(line)));
+
+        var submission = Assert.Single(result.Submissions);
+        var item = Assert.Single(submission.IncompleteRows);
+        Assert.Equal(expectedTitle, item.Title);
+        Assert.Null(item.SellerPriceCents);
+        Assert.Contains(submission.IncompleteItemLines, incomplete => incomplete.Reason == "prix non accepté");
+    }
+
+    private static string CreateSingleItemCsv(string itemLine)
+    {
+        var escaped = itemLine.Replace("\"", "\"\"");
+        return $"""
+            "Séquentiel","SID","Heure de soumission","Heure de complétion","Heure de modification","Brouillon","Adresse IP","UID","Nom d'utilisateur","Nom","Prénom","Téléphone","Email","Adresse","Code Postal","Ville","Jouet,Prix"
+            "1","1","","","","0","","","","Durand","Marie","","","","","","{escaped}"
+            """;
+    }
+
     private const string SampleCsv =
         """
         "Bourse aux jouets Test","","","","","","","","","","","","","","","",""

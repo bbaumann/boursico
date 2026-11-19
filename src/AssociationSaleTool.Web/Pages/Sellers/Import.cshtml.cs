@@ -43,12 +43,22 @@ public sealed class ImportModel(SellerFormImportService importService, IntakeSer
         return Page();
     }
 
+    // The import summary lives only in the page: the browser posts each merge in the
+    // background and asks for JSON, so the summary stays on screen. A plain form post
+    // (no JavaScript) still gets the page back.
     public async Task<IActionResult> OnPostAppendDuplicateAsync(CancellationToken cancellationToken)
     {
+        var wantsJson = Request.Headers.Accept.Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
         CanImportSellerData = await intakeService.CanEditSellerMasterDataAsync(cancellationToken);
         if (!CanImportSellerData)
         {
-            ModelState.AddModelError(string.Empty, "Les articles ne peuvent pas être ajoutés dans le statut actuel de la vente.");
+            const string notAllowedMessage = "Les articles ne peuvent pas être ajoutés dans le statut actuel de la vente.";
+            if (wantsJson)
+            {
+                return new JsonResult(new { outcome = "notAllowed", message = notAllowedMessage });
+            }
+
+            ModelState.AddModelError(string.Empty, notAllowedMessage);
             return Page();
         }
 
@@ -61,6 +71,21 @@ public sealed class ImportModel(SellerFormImportService importService, IntakeSer
             rows,
             DuplicateInput.ImportNotes,
             cancellationToken);
+
+        if (wantsJson)
+        {
+            return AppendResult.Outcome switch
+            {
+                SellerFormDuplicateAppendOutcome.Appended => new JsonResult(new
+                {
+                    outcome = "appended",
+                    message = FormatAppendSummary(AppendResult),
+                    sellerUrl = Url.Page("/Sellers/Details", new { id = AppendResult.Seller!.Id })
+                }),
+                SellerFormDuplicateAppendOutcome.NotFound => new JsonResult(new { outcome = "notFound", message = AppendResult.Message }),
+                _ => new JsonResult(new { outcome = "notAllowed", message = AppendResult.Message })
+            };
+        }
 
         if (AppendResult.Outcome == SellerFormDuplicateAppendOutcome.NotFound)
         {
@@ -85,6 +110,16 @@ public sealed class ImportModel(SellerFormImportService importService, IntakeSer
             SellerFormImportRowOutcome.ImportError => "Erreur d'import",
             _ => outcome.ToString()
         };
+    }
+
+    public static string FormatAppendSummary(SellerFormDuplicateAppendResult result)
+    {
+        var created = result.CreatedItemCount;
+        var ignored = result.IgnoredExistingItemCount;
+        return $"{created} article{Plural(created)} ajouté{Plural(created)}, "
+            + $"{ignored} article{Plural(ignored)} déjà présent{Plural(ignored)} ignoré{Plural(ignored)}.";
+
+        static string Plural(int count) => count > 1 ? "s" : string.Empty;
     }
 
     public static string FormatPrice(int? priceCents)
