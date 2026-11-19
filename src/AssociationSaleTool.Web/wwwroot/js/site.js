@@ -1,3 +1,66 @@
+// Text search shared by every search field: the query is split into words and an entry
+// matches when each word appears somewhere in its text, in any order. Case, accents and
+// punctuation are ignored, filler words ("de", "la", "avec"…) are dropped, and plurals are
+// reduced so "camions de pompiers" finds "Camion pompier". Keep in sync with TextSearch.cs.
+const searchStopWords = new Set([
+  "a", "au", "aux", "avec", "d", "de", "des", "du", "en", "et",
+  "l", "la", "le", "les", "ou", "par", "pour", "sur", "un", "une"
+]);
+const normalizedSearchTextCache = new Map();
+
+function normalizeSearchText(value) {
+  return (value || "")
+    .toLocaleLowerCase("fr-FR")
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function stemSearchWord(word) {
+  if (!/^[a-z]+$/.test(word)) {
+    return word;
+  }
+
+  // "chevaux" -> "cheva", which is contained in both "cheval" and "chevaux".
+  if (word.length >= 5 && word.endsWith("aux")) {
+    return word.slice(0, -2);
+  }
+
+  if (word.length >= 4 && (word.endsWith("s") || word.endsWith("x"))) {
+    return word.slice(0, -1);
+  }
+
+  return word;
+}
+
+function parseSearchQuery(query) {
+  const words = normalizeSearchText(query).split(" ").filter(Boolean);
+  const meaningfulWords = words.filter(word => !searchStopWords.has(word));
+  // A query made only of short words ("le", while typing "lego") is kept as typed.
+  return (meaningfulWords.length > 0 ? meaningfulWords : words).map(stemSearchWord);
+}
+
+function matchesSearchWords(text, searchWords) {
+  if (searchWords.length === 0) {
+    return true;
+  }
+
+  let normalizedText = normalizedSearchTextCache.get(text);
+  if (normalizedText === undefined) {
+    if (normalizedSearchTextCache.size > 20000) {
+      normalizedSearchTextCache.clear();
+    }
+
+    normalizedText = normalizeSearchText(text);
+    normalizedSearchTextCache.set(text, normalizedText);
+  }
+
+  return searchWords.every(word => normalizedText.includes(word));
+}
+
 const rowIndexPatterns = [
   /Input\.Rows\[\d+\]/g,
   /Input_Rows_\d+__/g
@@ -1163,10 +1226,11 @@ function initializeCheckout(root) {
   }
 
   function renderResults() {
-    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    const searchWords = parseSearchQuery(searchInput.value);
+    const hasQuery = searchWords.length > 0;
     resultsBody.replaceChildren();
 
-    if (!query) {
+    if (!hasQuery) {
       clearCheckoutResults();
       return;
     }
@@ -1176,7 +1240,7 @@ function initializeCheckout(root) {
     }
 
     const matches = catalog.filter(item =>
-      `${item.reference} ${item.title}`.toLocaleLowerCase("fr-FR").includes(query));
+      matchesSearchWords(`${item.reference} ${item.title}`, searchWords));
 
     if (matches.length === 0) {
       resultsBody.appendChild(createCheckoutEmptyRow("Aucun article ne correspond à cette recherche.", 4));
@@ -1638,12 +1702,13 @@ function initializeReconciliation(root) {
   }
 
   function renderRows() {
-    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    const searchWords = parseSearchQuery(searchInput.value);
+    const hasQuery = searchWords.length > 0;
     let visibleRows = 0;
 
     for (const row of rows) {
       const filterText = row.dataset.reconciliationFilterText || "";
-      const isVisible = !query || filterText.includes(query);
+      const isVisible = matchesSearchWords(filterText, searchWords);
       row.hidden = !isVisible;
 
       if (isVisible) {
@@ -1652,7 +1717,7 @@ function initializeReconciliation(root) {
     }
 
     if (emptyMessage) {
-      emptyMessage.hidden = visibleRows > 0 || !query;
+      emptyMessage.hidden = visibleRows > 0 || !hasQuery;
     }
   }
 
@@ -1673,10 +1738,11 @@ function initializeItemCorrection(root) {
   }
 
   function renderRows() {
-    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    const searchWords = parseSearchQuery(searchInput.value);
+    const hasQuery = searchWords.length > 0;
     let visibleRows = 0;
 
-    if (!query) {
+    if (!hasQuery) {
       for (const row of rows) {
         row.hidden = true;
       }
@@ -1698,7 +1764,7 @@ function initializeItemCorrection(root) {
 
     for (const row of rows) {
       const filterText = row.dataset.itemCorrectionFilterText || "";
-      const isVisible = filterText.includes(query);
+      const isVisible = matchesSearchWords(filterText, searchWords);
       row.hidden = !isVisible;
 
       if (isVisible) {
@@ -1727,12 +1793,13 @@ function initializeSalesView(root) {
   }
 
   function renderRows() {
-    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    const searchWords = parseSearchQuery(searchInput.value);
+    const hasQuery = searchWords.length > 0;
     let visibleRows = 0;
 
     for (const row of rows) {
       const filterText = row.dataset.salesViewFilterText || "";
-      const isVisible = !query || filterText.includes(query);
+      const isVisible = matchesSearchWords(filterText, searchWords);
       row.hidden = !isVisible;
 
       if (isVisible) {
@@ -1741,7 +1808,7 @@ function initializeSalesView(root) {
     }
 
     if (emptyMessage) {
-      emptyMessage.hidden = visibleRows > 0 || !query;
+      emptyMessage.hidden = visibleRows > 0 || !hasQuery;
     }
   }
 
@@ -1847,14 +1914,15 @@ function initializeDataList(root) {
   }
 
   function renderRows() {
-    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    const searchWords = parseSearchQuery(searchInput.value);
+    const hasQuery = searchWords.length > 0;
     const selectedStatus = statusFilter?.value || "";
     let visibleRows = 0;
 
     for (const row of rows) {
       const filterText = row.dataset.dataListFilterText || "";
       const rowStatus = row.dataset.dataListStatus || "";
-      const matchesText = !query || filterText.includes(query);
+      const matchesText = matchesSearchWords(filterText, searchWords);
       const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
       const isVisible = matchesText && matchesStatus;
       row.hidden = !isVisible;
@@ -1865,7 +1933,7 @@ function initializeDataList(root) {
     }
 
     if (emptyMessage) {
-      emptyMessage.hidden = visibleRows > 0 || (!query && !selectedStatus);
+      emptyMessage.hidden = visibleRows > 0 || (!hasQuery && !selectedStatus);
     }
   }
 
@@ -1887,12 +1955,13 @@ function initializeSellerSearch(root) {
   }
 
   function renderRows() {
-    const query = searchInput.value.trim().toLocaleLowerCase("fr-FR");
+    const searchWords = parseSearchQuery(searchInput.value);
+    const hasQuery = searchWords.length > 0;
     let visibleRows = 0;
 
     for (const row of rows) {
       const filterText = row.dataset.sellerFilterText || "";
-      const isVisible = !query || filterText.includes(query);
+      const isVisible = matchesSearchWords(filterText, searchWords);
       row.hidden = !isVisible;
 
       if (isVisible) {
@@ -1901,7 +1970,7 @@ function initializeSellerSearch(root) {
     }
 
     if (emptyMessage) {
-      emptyMessage.hidden = visibleRows > 0 || !query;
+      emptyMessage.hidden = visibleRows > 0 || !hasQuery;
     }
   }
 

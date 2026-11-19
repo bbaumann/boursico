@@ -1,6 +1,6 @@
-using System.Globalization;
 using AssociationSaleTool.Web.Data;
 using AssociationSaleTool.Web.Data.Entities;
+using AssociationSaleTool.Web.Domain.Search;
 using AssociationSaleTool.Web.Domain.Sellers;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +9,6 @@ namespace AssociationSaleTool.Web.Services;
 
 public sealed class ReconciliationService(AppDbContext dbContext)
 {
-    private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
     private static readonly string[] SellerSheetStatuses = ["sold", "missing", "in_stock", "defective"];
     private static readonly string[] CorrectionStatuses = ["in_stock", "missing"];
 
@@ -17,8 +16,8 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         string query,
         CancellationToken cancellationToken = default)
     {
-        var normalizedQuery = query.Trim().ToLower(FrenchCulture);
-        if (string.IsNullOrEmpty(normalizedQuery))
+        var search = TextSearch.Parse(query);
+        if (search.IsEmpty)
         {
             return [];
         }
@@ -26,10 +25,7 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         var candidates = await ListCorrectionItemsAsync(cancellationToken);
 
         return candidates
-            .Where(x =>
-                ContainsNormalized(x.Reference, normalizedQuery) ||
-                ContainsNormalized(x.Title, normalizedQuery) ||
-                ContainsNormalized(x.SellerName, normalizedQuery))
+            .Where(x => search.Matches(x.Reference, x.Title, x.SellerName))
             .OrderBy(x => x.Reference)
             .Take(25)
             .ToList();
@@ -170,11 +166,6 @@ public sealed class ReconciliationService(AppDbContext dbContext)
         return itemExists
             ? ReconciliationStatusChangeResult.NotAllowed
             : ReconciliationStatusChangeResult.NotFound;
-    }
-
-    private static bool ContainsNormalized(string value, string normalizedQuery)
-    {
-        return value.ToLower(FrenchCulture).Contains(normalizedQuery);
     }
 
     // "sold"/"missing" implies a reference was already allocated:

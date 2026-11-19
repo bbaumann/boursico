@@ -1,4 +1,5 @@
 using AssociationSaleTool.Web.Data;
+using AssociationSaleTool.Web.Domain.Search;
 using AssociationSaleTool.Web.Services.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,33 +33,19 @@ public sealed class DefectiveItemService(AppDbContext dbContext)
         string? query,
         CancellationToken cancellationToken = default)
     {
-        var normalizedQuery = query?.Trim();
-        if (string.IsNullOrWhiteSpace(normalizedQuery))
+        var search = TextSearch.Parse(query);
+        if (search.IsEmpty)
         {
             return [];
         }
 
-        var pattern = $"%{normalizedQuery}%";
-        return await BuildCandidateQuery()
-            .Where(x =>
-                EF.Functions.Like(x.Reference, pattern)
-                || EF.Functions.Like(x.Title, pattern)
-                || EF.Functions.Like(x.Seller.FirstName + " " + x.Seller.LastName, pattern)
-                || EF.Functions.Like(x.Seller.LastName + " " + x.Seller.FirstName, pattern))
-            .OrderBy(x => x.Reference)
+        // Accent-insensitive word matching cannot be expressed in SQLite, and the
+        // candidate list (in-stock and defective items) is small enough to filter here.
+        var candidates = await ListCandidatesAsync(cancellationToken);
+        return candidates
+            .Where(x => search.Matches(x.Reference, x.Title, x.SellerName))
             .Take(25)
-            .Select(x => new DefectiveItemCandidate(
-                x.Id,
-                x.SellerId,
-                x.Seller.SellerCode,
-                x.Seller.FirstName + " " + x.Seller.LastName,
-                // Same guarantee as ListCandidatesAsync above.
-                x.Reference!,
-                x.Title,
-                x.Status,
-                x.SellerPriceCents!.Value,
-                x.SaleLines.Any(line => line.RefundedAt != null)))
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 
     private IQueryable<Data.Entities.ItemEntity> BuildCandidateQuery()
