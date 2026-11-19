@@ -1245,6 +1245,56 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   font-weight: 700;
 }
 
+/* Operators missed the plain-text count during the 2026 event, so it is shown as a pill. */
+.item-registration-count-pill {
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--accent);
+  font-size: 1.15rem;
+}
+
+.seller-items-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.item-count-badge {
+  min-width: 2.2em;
+  padding: 0.15rem 0.8rem;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--accent);
+  font-size: 1.6rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.item-count-new-detail {
+  color: var(--accent-strong);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.seller-deposit-item-count {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.seller-deposit-item-count strong {
+  display: inline-block;
+  min-width: 2em;
+  padding: 0.1rem 0.7rem;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--accent);
+  font-size: 1.4rem;
+  text-align: center;
+}
+
 .add-row-button {
   width: 2.5rem;
   height: 2.5rem;

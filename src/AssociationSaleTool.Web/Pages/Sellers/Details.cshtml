@@ -170,6 +170,10 @@
                             <li data-seller-deposit-step-indicator="print">Contrat</li>
                             <li data-seller-deposit-step-indicator="validate">Signature</li>
                         </ol>
+                        @* Shown on every step: fees depend on it, and the operator checks it against the toys and the contract before signing. *@
+                        <p class="seller-deposit-item-count" data-seller-deposit-item-count>
+                            <strong>@Model.Seller.Items.Count</strong> @(Model.Seller.Items.Count > 1 ? "articles déposés" : "article déposé")
+                        </p>
                         <section class="seller-deposit-step-panel" data-seller-deposit-fee-step>
                             <h4>Frais</h4>
                             <div class="seller-deposit-fee-recap">
@@ -241,10 +245,6 @@
         </div>
     </section>
 
-    <p class="item-registration-count" data-item-registration-count-mirror aria-hidden="true">
-        @Model.Seller.Items.Count @(Model.Seller.Items.Count > 1 ? "articles" : "article")
-    </p>
-
     @if (!string.IsNullOrWhiteSpace(Model.ReadOnlyMessage))
     {
         <p class="validation">@Model.ReadOnlyMessage</p>
@@ -297,7 +297,12 @@
     }
 
     <section class="subsection" id="articles">
-        <h2>Articles</h2>
+        @* The page lands on #articles after labelling, so the count sits in this heading where the eye lands. *@
+        <h2 class="seller-items-heading">
+            Articles
+            <span class="item-count-badge" data-item-count-total>@Model.Seller.Items.Count</span>
+            <span class="item-count-new-detail" data-item-count-new hidden></span>
+        </h2>
         @* The redirect after labelling lands on #articles, so the result is shown here, where the eye lands. *@
         @if (!string.IsNullOrWhiteSpace(Model.AllocationMessage))
         {
@@ -447,7 +452,7 @@
 
             <div class="item-registration-actions">
                 <button type="button" class="add-row-button" data-add-item-row aria-label="Ajouter une ligne" title="Ajouter une ligne">+</button>
-                <p class="item-registration-count"
+                <p class="item-registration-count item-registration-count-pill"
                    data-item-registration-count
                    data-existing-item-count="@Model.Seller.Items.Count"
                    aria-live="polite"></p>

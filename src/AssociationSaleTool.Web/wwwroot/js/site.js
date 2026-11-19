@@ -30,14 +30,20 @@ function reindexRow(row, nextIndex) {
   });
 }
 
+// The "dont N nouveaux" detail only helps when typed rows add to already saved articles.
+function formatNewItemDetail(existingCount, newCount) {
+  if (existingCount === 0 || newCount === 0) {
+    return "";
+  }
+
+  return `dont ${newCount} ${newCount > 1 ? "nouveaux" : "nouveau"}`;
+}
+
 function formatItemRegistrationCount(existingCount, newCount) {
   const total = existingCount + newCount;
   const label = `${total} ${total > 1 ? "articles" : "article"}`;
-  if (existingCount === 0 || newCount === 0) {
-    return label;
-  }
-
-  return `${label} (dont ${newCount} ${newCount > 1 ? "nouveaux" : "nouveau"})`;
+  const detail = formatNewItemDetail(existingCount, newCount);
+  return detail ? `${label} (${detail})` : label;
 }
 
 // Counts the rows saving would try to create: a row with only a description or only a
@@ -51,9 +57,13 @@ function updateItemRegistrationCount(counter) {
     Array.from(row.querySelectorAll('input:not([type="hidden"])')).some(input => input.value.trim() !== "")).length;
   const existingCount = Number.parseInt(counter.dataset.existingItemCount, 10) || 0;
   counter.textContent = formatItemRegistrationCount(existingCount, newCount);
-  // The seller page repeats the count above the item list, outside the form.
-  document.querySelectorAll("[data-item-registration-count-mirror]").forEach(mirror => {
-    mirror.textContent = counter.textContent;
+  // The seller page also shows the count as a badge in the "Articles" heading, outside the form.
+  document.querySelectorAll("[data-item-count-total]").forEach(total => {
+    total.textContent = String(existingCount + newCount);
+  });
+  document.querySelectorAll("[data-item-count-new]").forEach(detail => {
+    detail.textContent = formatNewItemDetail(existingCount, newCount);
+    detail.hidden = detail.textContent === "";
   });
 }
 
