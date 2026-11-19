@@ -1356,6 +1356,15 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
   min-width: 0;
 }
 
+.checkout-search-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.35rem;
+}
+
 .checkout-buyer-fields {
   margin-bottom: 1.75rem;
 }
@@ -1529,6 +1538,16 @@ th[aria-sort="descending"] .data-list-sort-indicator::after {
 /* Opens on top of the payment dialog. */
 .checkout-invoice-confirmation {
   z-index: 31;
+}
+
+/* Must stay readable whatever dialog is open underneath. */
+.checkout-item-changes {
+  z-index: 32;
+}
+
+.checkout-item-changes-table {
+  width: 100%;
+  margin-top: 1rem;
 }
 
 /* Wide enough for the three action buttons on one line (about 630px); on a narrower

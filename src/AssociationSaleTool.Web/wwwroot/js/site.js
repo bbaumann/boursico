@@ -598,6 +598,10 @@ function initializeCheckout(root) {
   const invoiceConfirmationPrintButton = root.querySelector("[data-checkout-invoice-confirmation-print]");
   const invoiceConfirmationWithoutInvoiceButton = root.querySelector("[data-checkout-invoice-confirmation-without-invoice]");
   const invoiceConfirmationBackButton = root.querySelector("[data-checkout-invoice-confirmation-back]");
+  const refreshCatalogButton = root.querySelector("[data-checkout-refresh-catalog]");
+  const itemChanges = root.querySelector("[data-checkout-item-changes]");
+  const itemChangesLines = root.querySelector("[data-checkout-item-changes-lines]");
+  const itemChangesCloseButton = root.querySelector("[data-checkout-item-changes-close]");
   const checkoutWorkflow = root.querySelector("[data-checkout-workflow]");
   const cashRegisterSetup = root.querySelector("[data-checkout-cash-register-setup]");
   const cashRegisterChoice = root.querySelector("[data-checkout-cash-register-choice]");
@@ -692,6 +696,126 @@ function initializeCheckout(root) {
 
   function findCatalogItem(itemId) {
     return catalog.find(item => String(item.id) === String(itemId));
+  }
+
+  // The catalog is a snapshot taken when the page loaded, so an item repriced or renamed
+  // since then keeps its old values in the cart. Cart and catalog entries are replaced by
+  // their current version, and the cart changes are returned so the operator can be told.
+  function applyCurrentItems(currentItems) {
+    const currentById = new Map(currentItems.map(item => [String(item.id), item]));
+    const changes = [];
+
+    cart.forEach((cartItem, index) => {
+      const current = currentById.get(String(cartItem.id));
+      if (!current) {
+        return;
+      }
+
+      if (current.title !== cartItem.title || current.sellerPriceCents !== cartItem.sellerPriceCents) {
+        changes.push({ before: cartItem, after: current });
+      }
+
+      cart[index] = current;
+    });
+
+    catalog.forEach((catalogItem, index) => {
+      const current = currentById.get(String(catalogItem.id));
+      if (current) {
+        catalog[index] = current;
+      }
+    });
+
+    return changes;
+  }
+
+  function describeCheckoutItem(item) {
+    return `${item.title} - ${formatCheckoutPrice(item.sellerPriceCents)}`;
+  }
+
+  let afterItemChangesClosed = null;
+
+  // Changed items are rare, so they get a dialog the operator must acknowledge rather than
+  // a status line that is easy to miss while the buyer is waiting.
+  function showItemChanges(changes, onClose = null) {
+    if (!itemChanges || !itemChangesLines) {
+      onClose?.();
+      return;
+    }
+
+    itemChangesLines.replaceChildren();
+    for (const change of changes) {
+      const row = document.createElement("tr");
+      row.appendChild(createCheckoutCell(change.after.reference));
+      row.appendChild(createCheckoutCell(describeCheckoutItem(change.before)));
+      row.appendChild(createCheckoutCell(describeCheckoutItem(change.after)));
+      itemChangesLines.appendChild(row);
+    }
+
+    afterItemChangesClosed = onClose;
+    itemChanges.hidden = false;
+    itemChangesCloseButton?.focus();
+  }
+
+  function closeItemChanges() {
+    if (itemChanges) {
+      itemChanges.hidden = true;
+    }
+
+    const next = afterItemChangesClosed;
+    afterItemChangesClosed = null;
+    if (next) {
+      next();
+      return;
+    }
+
+    searchInput.focus();
+  }
+
+  // Reloads the catalog without reloading the page, so the buyer, the cart and the payment
+  // typed so far are kept. Items put back in stock become searchable again, and cart items
+  // sold elsewhere or withdrawn are flagged like any other conflict.
+  async function refreshCatalog() {
+    if (refreshCatalogButton) {
+      refreshCatalogButton.disabled = true;
+    }
+
+    try {
+      const response = await fetch("/api/caisse/articles", { cache: "no-store" });
+      if (!response.ok) {
+        setMessage("Les articles n'ont pas pu être actualisés. Réessayez.");
+        return;
+      }
+
+      const currentItems = await response.json();
+      catalog.length = 0;
+      for (const item of currentItems) {
+        catalog.push(item);
+      }
+
+      const changes = applyCurrentItems(currentItems);
+      const unavailableItemIds = cart
+        .filter(item => !findCatalogItem(item.id))
+        .map(item => item.id);
+      setConflictItems(unavailableItemIds);
+      setMessage(unavailableItemIds.length > 0
+        ? "Un article du panier n'est plus disponible. Retirez la ligne en rouge avant de continuer."
+        : "Articles actualisés.");
+
+      renderCart();
+      if (searchInput.value.trim()) {
+        renderResults();
+      }
+
+      if (changes.length > 0) {
+        showItemChanges(changes);
+      }
+    } catch {
+      setMessage("Les articles n'ont pas pu être actualisés. Réessayez.");
+    } finally {
+      if (refreshCatalogButton) {
+        refreshCatalogButton.disabled = false;
+      }
+    }
   }
 
   function setMessage(text) {
@@ -1203,7 +1327,19 @@ function initializeCheckout(root) {
     renderCart();
 
     const { response, payload } = await postCheckoutCart("/api/caisse/validation", cart);
+    // The server answers with the current price and title of each available item: the cart,
+    // and therefore the printed invoice, must match the total actually charged.
+    const changes = applyCurrentItems(payload.items || []);
+    if (changes.length > 0) {
+      renderCart();
+    }
+
     if (response.ok && payload.isValid) {
+      if (changes.length > 0) {
+        showItemChanges(changes, () => showModal(payload.totals, payload.itemCount));
+        return;
+      }
+
       showModal(payload.totals, payload.itemCount);
       return;
     }
@@ -1213,6 +1349,9 @@ function initializeCheckout(root) {
       setMessage(payload.message || "Un article du panier n'est plus disponible. Retirez la ligne en rouge avant de continuer.");
       hideModal();
       renderCart();
+      if (changes.length > 0) {
+        showItemChanges(changes);
+      }
       return;
     }
 
@@ -1358,6 +1497,14 @@ function initializeCheckout(root) {
   invoiceConfirmation?.addEventListener("keydown", event => {
     if (event.key === "Escape") {
       invoiceConfirmationBackButton?.click();
+    }
+  });
+
+  refreshCatalogButton?.addEventListener("click", refreshCatalog);
+  itemChangesCloseButton?.addEventListener("click", closeItemChanges);
+  itemChanges?.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      closeItemChanges();
     }
   });
 

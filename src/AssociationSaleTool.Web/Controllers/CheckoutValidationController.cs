@@ -8,6 +8,15 @@ namespace AssociationSaleTool.Web.Controllers;
 [Route("api/caisse")]
 public sealed class CheckoutValidationController(CheckoutService checkoutService) : ControllerBase
 {
+    // Lets the checkout reload its catalog without reloading the page, so items put back in
+    // stock or repriced during the sale show up without losing the sale being typed.
+    [HttpGet("articles")]
+    public async Task<IActionResult> ListCatalogItemsAsync(CancellationToken cancellationToken)
+    {
+        var catalog = await checkoutService.ListCatalogItemsAsync(cancellationToken);
+        return Ok(catalog);
+    }
+
     [HttpPost("validation")]
     public async Task<IActionResult> ValidateCartAsync(
         CheckoutCartRequest request,

@@ -4436,6 +4436,58 @@ public class WebApplicationSmokeTests : IClassFixture<IntakeWebApplicationFactor
     }
 
     [Fact]
+    public async Task CheckoutCatalogApiReturnsOnlyItemsAvailableForSale()
+    {
+        var client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var seller = new SellerEntity
+            {
+                SellerCode = "CR-001",
+                FirstName = "Camille",
+                LastName = "Rafraichie",
+                Email = "camille.rafraichie@example.test",
+                DepositStatus = "deposit_validated"
+            };
+
+            dbContext.Sellers.Add(seller);
+            await dbContext.SaveChangesAsync();
+
+            dbContext.Items.AddRange(
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "CR-001-001",
+                    Title = "Poupée remise en stock",
+                    SellerPriceCents = 700,
+                    Status = "in_stock"
+                },
+                new ItemEntity
+                {
+                    SellerId = seller.Id,
+                    Reference = "CR-001-002",
+                    Title = "Ballon vendu",
+                    SellerPriceCents = 300,
+                    Status = "sold"
+                });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/api/caisse/articles");
+
+        response.EnsureSuccessStatusCode();
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var items = document.RootElement.EnumerateArray().ToList();
+        var restocked = Assert.Single(items, item => item.GetProperty("reference").GetString() == "CR-001-001");
+        Assert.Equal("Poupée remise en stock", restocked.GetProperty("title").GetString());
+        Assert.Equal(700, restocked.GetProperty("sellerPriceCents").GetInt32());
+        Assert.DoesNotContain(items, item => item.GetProperty("reference").GetString() == "CR-001-002");
+    }
+
+    [Fact]
     public async Task CheckoutValidationApiReturnsTotalsForAvailableItems()
     {
         var client = _factory.CreateClient();

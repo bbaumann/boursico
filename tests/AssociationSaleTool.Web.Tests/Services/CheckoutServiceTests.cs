@@ -152,6 +152,58 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task ValidateCartAsync_ReturnsCurrentTitleAndPriceOfEachCartItem()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "in_stock");
+        // Repriced and renamed after the checkout page loaded its catalog.
+        firstItem.SellerPriceCents = 300;
+        firstItem.Title = "Puzzle 100 pièces";
+        await context.SaveChangesAsync();
+        var service = new CheckoutService(context);
+
+        var result = await service.ValidateCartAsync([secondItem.Id, firstItem.Id]);
+
+        Assert.True(result.IsValid);
+        Assert.NotNull(result.Items);
+        Assert.Equal(
+            [
+                new CheckoutCatalogItem(firstItem.Id, "BB-001", "Puzzle 100 pièces", 300),
+                new CheckoutCatalogItem(secondItem.Id, "BB-002", "Camion", 1000)
+            ],
+            result.Items);
+        Assert.Equal(1300, result.Totals!.SubtotalSellerPriceCents);
+    }
+
+    [Fact]
+    public async Task ValidateCartAsync_ReturnsCurrentItemsOnlyForAvailableItemsWhenInConflict()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var context = new AppDbContext(options);
+        await context.Database.EnsureCreatedAsync();
+        var (firstItem, secondItem) = await SeedTwoItemsAsync(context, "in_stock", "sold");
+        var service = new CheckoutService(context);
+
+        var result = await service.ValidateCartAsync([firstItem.Id, secondItem.Id]);
+
+        Assert.False(result.IsValid);
+        var item = Assert.Single(result.Items!);
+        Assert.Equal(firstItem.Id, item.Id);
+    }
+
+    [Fact]
     public async Task ValidateCartAsync_ReturnsConflictsForItemsThatAreNotInStock()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

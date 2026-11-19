@@ -289,9 +289,19 @@ public sealed class CheckoutService
             .Distinct()
             .ToList();
 
+        var currentItems = loadedItems
+            .Where(item => !conflictItemIds.Contains(item.Id))
+            .OrderBy(item => item.Reference)
+            .Select(item => new CheckoutCatalogItem(
+                item.Id,
+                item.Reference!,
+                item.Title,
+                item.SellerPriceCents!.Value))
+            .ToList();
+
         if (requestedItemIds.Count == 0 || conflictItemIds.Count > 0)
         {
-            return new CheckoutValidationResult(false, conflictItemIds, null, loadedItems.Count);
+            return new CheckoutValidationResult(false, conflictItemIds, null, loadedItems.Count, Items: currentItems);
         }
 
         var subtotalCents = loadedItems.Sum(x => x.SellerPriceCents!.Value);
@@ -301,7 +311,7 @@ public sealed class CheckoutService
             totals.CheckoutFeeCents,
             totals.TotalPaidCents);
 
-        return new CheckoutValidationResult(true, [], cartTotals, loadedItems.Count);
+        return new CheckoutValidationResult(true, [], cartTotals, loadedItems.Count, Items: currentItems);
     }
 
     private sealed record PaymentNormalizationResult(

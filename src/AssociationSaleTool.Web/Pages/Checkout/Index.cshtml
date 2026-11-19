@@ -117,7 +117,10 @@
         <aside class="subsection checkout-cart-panel checkout-step-panel" aria-labelledby="checkout-step-items-title">
             <h2 id="checkout-step-items-title"><span class="checkout-step-number">Étape 2</span> Articles</h2>
 
-            <label for="checkout-search">Rechercher un article</label>
+            <div class="checkout-search-header">
+                <label for="checkout-search">Rechercher un article</label>
+                <button type="button" class="button-link" data-checkout-refresh-catalog>Actualiser les articles</button>
+            </div>
             <input id="checkout-search"
                    type="search"
                    autocomplete="off"
@@ -311,6 +314,26 @@
                 <button type="button" class="button-link" data-checkout-invoice-confirmation-back>Retour</button>
                 <button type="button" class="button-link" data-checkout-invoice-confirmation-without-invoice>Valider sans facture</button>
                 <button type="button" class="button-link button-link-solid" data-checkout-invoice-confirmation-print>Valider et imprimer la facture</button>
+            </div>
+        </div>
+    </div>
+    <div class="checkout-modal checkout-item-changes" data-checkout-item-changes hidden role="dialog" aria-modal="true" aria-labelledby="checkout-item-changes-title">
+        <div class="checkout-modal-panel">
+            <h2 id="checkout-item-changes-title">Articles modifiés</h2>
+            <p>Des articles du panier ont été modifiés depuis l'ouverture de la caisse. Le panier a été mis à jour : vérifiez avec l'acheteur.</p>
+            <table class="data-table checkout-item-changes-table">
+                <thead>
+                    <tr>
+                        <th>REF</th>
+                        <th>Avant</th>
+                        <th>Maintenant</th>
+                    </tr>
+                </thead>
+                <tbody data-checkout-item-changes-lines>
+                </tbody>
+            </table>
+            <div class="form-actions checkout-modal-actions">
+                <button type="button" class="button-link button-link-solid" data-checkout-item-changes-close>J'ai compris</button>
             </div>
         </div>
     </div>
